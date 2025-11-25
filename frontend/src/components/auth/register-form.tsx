@@ -1,9 +1,9 @@
-// src/components/auth/register-form.tsx
 'use client';
 
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
+import { useState } from 'react';
 import { registerSchema, RegisterFormData } from '@/lib/validations/auth.schema';
 import { useAuth } from '@/lib/hooks/use-auth';
 import { Button } from '@/components/ui/button';
@@ -12,7 +12,8 @@ import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
 
 export function RegisterForm() {
-  const { register: registerUser, isRegistering } = useAuth();
+  const { register: registerUser } = useAuth();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const {
     register,
@@ -22,9 +23,14 @@ export function RegisterForm() {
     resolver: zodResolver(registerSchema),
   });
 
-  const onSubmit = (data: RegisterFormData) => {
-    const { confirmPassword, ...credentials } = data;
-    registerUser(credentials);
+  const onSubmit = async (data: RegisterFormData) => {
+    setIsSubmitting(true);
+    try {
+      const { confirmPassword, ...credentials } = data;
+      await registerUser(credentials);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -36,7 +42,7 @@ export function RegisterForm() {
           type="text"
           placeholder="John Doe"
           {...register('name')}
-          disabled={isRegistering}
+          disabled={isSubmitting}
         />
         {errors.name && (
           <p className="text-sm text-red-500">{errors.name.message}</p>
@@ -50,7 +56,7 @@ export function RegisterForm() {
           type="email"
           placeholder="you@example.com"
           {...register('email')}
-          disabled={isRegistering}
+          disabled={isSubmitting}
         />
         {errors.email && (
           <p className="text-sm text-red-500">{errors.email.message}</p>
@@ -64,7 +70,7 @@ export function RegisterForm() {
           type="password"
           placeholder="••••••••"
           {...register('password')}
-          disabled={isRegistering}
+          disabled={isSubmitting}
         />
         {errors.password && (
           <p className="text-sm text-red-500">{errors.password.message}</p>
@@ -78,7 +84,7 @@ export function RegisterForm() {
           type="password"
           placeholder="••••••••"
           {...register('confirmPassword')}
-          disabled={isRegistering}
+          disabled={isSubmitting}
         />
         {errors.confirmPassword && (
           <p className="text-sm text-red-500">{errors.confirmPassword.message}</p>
@@ -88,9 +94,9 @@ export function RegisterForm() {
       <Button
         type="submit"
         className="w-full"
-        disabled={isRegistering}
+        disabled={isSubmitting}
       >
-        {isRegistering ? (
+        {isSubmitting ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             Creating account...

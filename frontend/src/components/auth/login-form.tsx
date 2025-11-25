@@ -1,9 +1,9 @@
-// src/components/auth/login-form.tsx
 'use client';
 
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
+import { useState } from 'react';
 import { loginSchema, LoginFormData } from '@/lib/validations/auth.schema';
 import { useAuth } from '@/lib/hooks/use-auth';
 import { Button } from '@/components/ui/button';
@@ -12,7 +12,8 @@ import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
 
 export function LoginForm() {
-  const { login, isLoggingIn } = useAuth();
+  const { login } = useAuth();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const {
     register,
@@ -22,8 +23,13 @@ export function LoginForm() {
     resolver: zodResolver(loginSchema),
   });
 
-  const onSubmit = (data: LoginFormData) => {
-    login(data);
+  const onSubmit = async (data: LoginFormData) => {
+    setIsSubmitting(true);
+    try {
+      await login(data);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -35,7 +41,7 @@ export function LoginForm() {
           type="email"
           placeholder="you@example.com"
           {...register('email')}
-          disabled={isLoggingIn}
+          disabled={isSubmitting}
         />
         {errors.email && (
           <p className="text-sm text-red-500">{errors.email.message}</p>
@@ -49,7 +55,7 @@ export function LoginForm() {
           type="password"
           placeholder="••••••••"
           {...register('password')}
-          disabled={isLoggingIn}
+          disabled={isSubmitting}
         />
         {errors.password && (
           <p className="text-sm text-red-500">{errors.password.message}</p>
@@ -59,9 +65,9 @@ export function LoginForm() {
       <Button
         type="submit"
         className="w-full"
-        disabled={isLoggingIn}
+        disabled={isSubmitting}
       >
-        {isLoggingIn ? (
+        {isSubmitting ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             Logging in...
