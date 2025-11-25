@@ -1,0 +1,455 @@
+// prisma/schema.prisma
+
+// =====================================================
+// GENERATOR & DATASOURCE
+// =====================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// =====================================================
+// ENUMS
+// =====================================================
+
+enum UserRole {
+  PLATFORM_ADMIN
+  INSTITUTE_ADMIN
+  USER
+}
+
+enum DifficultyLevel {
+  EASY
+  MEDIUM
+  HARD
+}
+
+enum QuestionType {
+  QUANTITATIVE
+  VERBAL
+  LOGICAL
+}
+
+enum TestCaseType {
+  SAMPLE
+  HIDDEN
+}
+
+enum SubmissionStatus {
+  PENDING
+  ACCEPTED
+  WRONG_ANSWER
+  TIME_LIMIT_EXCEEDED
+  MEMORY_LIMIT_EXCEEDED
+  RUNTIME_ERROR
+  COMPILATION_ERROR
+}
+
+enum AiInterviewSessionStatus {
+  STARTED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum AiInterviewQuestionCategory {
+  INTRODUCTORY
+  TECHNICAL
+  BEHAVIORAL
+  SITUATIONAL
+  CLOSING
+}
+
+// =====================================================
+// USER & INSTITUTE
+// =====================================================
+
+model User {
+  id          String   @id @default(cuid())
+  email       String   @unique
+  password    String
+  name        String?
+  role        UserRole @default(USER)
+  isActive    Boolean  @default(true)
+  instituteId String?
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  lastLoginAt DateTime?
+
+  institute            Institute?              @relation(fields: [instituteId], references: [id])
+  aptitudeSessions     AptitudePracticeSession[]
+  machineSessions      MachinePracticeSession[]
+  resumes              Resume[]
+  aiInterviewSessions  AiInterviewSession[]
+  aiInterviewFeedbacks AiInterviewFeedback[]
+
+  @@index([email])
+  @@index([instituteId])
+  @@map("users")
+}
+
+model Institute {
+  id       String  @id @default(cuid())
+  name     String
+  domain   String  @unique
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users User[]
+
+  @@index([domain])
+  @@map("institutes")
+}
+
+// =====================================================
+// RESUME (File metadata only - no content storage)
+// =====================================================
+
+model Resume {
+  id        Int     @id @default(autoincrement())
+  userId    String
+  fileName  String
+  fileUrl   String
+  fileSize  Int?
+  mimeType  String?
+  isDefault Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user                User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  aiInterviewSessions AiInterviewSession[]
+
+  @@index([userId])
+  @@index([userId, isDefault])
+  @@map("resumes")
+}
+
+// =====================================================
+// APTITUDE TEST - QUESTION BANK
+// =====================================================
+
+model AptitudeQuestion {
+  id              String          @id @default(cuid())
+  questionText    String          @db.Text
+  questionType    QuestionType
+  difficulty      DifficultyLevel
+  explanation     String?         @db.Text
+  correctOptionId String
+  isActive        Boolean         @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  options          AptitudeOption[]
+  sessionQuestions AptitudeSessionQuestion[]
+
+  @@index([difficulty])
+  @@index([questionType])
+  @@index([isActive, difficulty, questionType])
+  @@map("aptitude_questions")
+}
+
+model AptitudeOption {
+  id         String @id @default(cuid())
+  text       String
+  questionId String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  question AptitudeQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@index([questionId])
+  @@map("aptitude_options")
+}
+
+// =====================================================
+// APTITUDE TEST - PRACTICE SESSION
+// =====================================================
+
+model AptitudePracticeSession {
+  id                String          @id @default(cuid())
+  userId            String
+  difficulty        DifficultyLevel
+  questionTypes     QuestionType[]
+  numberOfQuestions Int
+  timeLimit         Int
+
+  startedAt   DateTime  @default(now())
+  completedAt DateTime?
+  expiresAt   DateTime
+
+  totalScore      Int?
+  totalCorrect    Int?
+  totalWrong      Int?
+  totalUnanswered Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user             User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sessionQuestions AptitudeSessionQuestion[]
+
+  @@index([userId])
+  @@index([userId, completedAt])
+  @@index([expiresAt])
+  @@map("aptitude_practice_sessions")
+}
+
+model AptitudeSessionQuestion {
+  id               String    @id @default(cuid())
+  sessionId        String
+  questionId       String
+  order            Int       @default(0)
+  selectedOptionId String?
+  isCorrect        Boolean?
+  answeredAt       DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  session  AptitudePracticeSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  question AptitudeQuestion        @relation(fields: [questionId], references: [id])
+
+  @@unique([sessionId, questionId])
+  @@index([sessionId])
+  @@map("aptitude_session_questions")
+}
+
+// =====================================================
+// MACHINE TEST - QUESTION BANK
+// =====================================================
+
+model MachineQuestion {
+  id           String          @id @default(cuid())
+  title        String
+  description  String          @db.Text
+  difficulty   DifficultyLevel @default(MEDIUM)
+  inputFormat  String          @db.Text
+  outputFormat String          @db.Text
+  constraints  String[]
+  tags         String[]
+  isActive     Boolean         @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  testCases        TestCase[]
+  sessionQuestions MachineSessionQuestion[]
+
+  @@index([difficulty])
+  @@index([isActive, difficulty])
+  @@index([tags])
+  @@map("machine_questions")
+}
+
+model TestCase {
+  id             String       @id @default(cuid())
+  type           TestCaseType @default(HIDDEN)
+  input          String       @db.Text
+  expectedOutput String       @db.Text
+  order          Int          @default(0)
+  questionId     String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  question MachineQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@index([questionId, type])
+  @@map("test_cases")
+}
+
+// =====================================================
+// MACHINE TEST - PRACTICE SESSION
+// =====================================================
+
+model MachinePracticeSession {
+  id                String          @id @default(cuid())
+  userId            String
+  difficulty        DifficultyLevel
+  numberOfQuestions Int
+  timeLimit         Int
+
+  startedAt   DateTime  @default(now())
+  completedAt DateTime?
+  expiresAt   DateTime
+
+  totalScore  Int?
+  totalSolved Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user             User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sessionQuestions MachineSessionQuestion[]
+
+  @@index([userId])
+  @@index([userId, completedAt])
+  @@index([expiresAt])
+  @@map("machine_practice_sessions")
+}
+
+model MachineSessionQuestion {
+  id         String  @id @default(cuid())
+  sessionId  String
+  questionId String
+  order      Int     @default(0)
+  isSolved   Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  session     MachinePracticeSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  question    MachineQuestion        @relation(fields: [questionId], references: [id])
+  submissions Submission[]
+
+  @@unique([sessionId, questionId])
+  @@index([sessionId])
+  @@map("machine_session_questions")
+}
+
+// =====================================================
+// SUBMISSIONS
+// =====================================================
+
+model Submission {
+  id                String           @id @default(cuid())
+  sessionQuestionId String
+  code              String           @db.Text
+  languageId        Int
+  status            SubmissionStatus @default(PENDING)
+
+  stdout       String? @db.Text
+  stderr       String? @db.Text
+  compileError String? @db.Text
+
+  executionTime Float?
+  memoryUsed    Int?
+
+  testCasesPassed Int @default(0)
+  testCasesTotal  Int @default(0)
+
+  submittedAt DateTime  @default(now())
+  judgedAt    DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sessionQuestion MachineSessionQuestion @relation(fields: [sessionQuestionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionQuestionId])
+  @@index([status])
+  @@map("submissions")
+}
+
+// =====================================================
+// PROGRAMMING LANGUAGES
+// =====================================================
+
+model ProgrammingLanguage {
+  id       String  @id @default(cuid())
+  name     String  @unique
+  monacoId String  @unique
+  judge0Id Int     @unique
+  template String  @db.Text
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("programming_languages")
+}
+
+// =====================================================
+// AI INTERVIEW - SESSION
+// =====================================================
+
+model AiInterviewSession {
+  id                   String                   @id @default(uuid())
+  userId               String
+  resumeId             Int?
+  jobTitle             String?
+  companyName          String?
+  questions            Json
+  totalQuestions       Int                      @default(10)
+  currentQuestionIndex Int                      @default(0)
+  status               AiInterviewSessionStatus @default(STARTED)
+
+  startedAt   DateTime  @default(now())
+  completedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  resume    Resume?               @relation(fields: [resumeId], references: [id], onDelete: SetNull)
+  responses AiInterviewResponse[]
+  feedback  AiInterviewFeedback?
+
+  @@index([userId])
+  @@index([userId, status])
+  @@index([userId, createdAt])
+  @@index([status])
+  @@map("ai_interview_sessions")
+}
+
+// =====================================================
+// AI INTERVIEW - RESPONSE
+// =====================================================
+
+model AiInterviewResponse {
+  id               String                      @id @default(uuid())
+  sessionId        String
+  category         AiInterviewQuestionCategory
+  question         String                      @db.Text
+  answer           String                      @db.Text
+  isFollowup       Boolean                     @default(false)
+  scoresJson       Json?
+  feedbackText     String?                     @db.Text
+  timeTakenSeconds Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  session AiInterviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@index([sessionId, category])
+  @@map("ai_interview_responses")
+}
+
+// =====================================================
+// AI INTERVIEW - FEEDBACK
+// =====================================================
+
+model AiInterviewFeedback {
+  id                  String   @id @default(uuid())
+  sessionId           String   @unique
+  userId              String
+  overallScore        Decimal  @db.Decimal(5, 2)
+  overallSummary      String   @db.Text
+  keyStrengths        String[]
+  areasForImprovement String[]
+  feedbackJson        Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  session AiInterviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user    User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@index([userId])
+  @@index([userId, createdAt])
+  @@map("ai_interview_feedbacks")
+}

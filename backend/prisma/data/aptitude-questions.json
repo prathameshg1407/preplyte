@@ -1,0 +1,1322 @@
+[
+  {
+    "questionText": "A train 150 meters long passes a man standing on the platform in 10 seconds. What is the speed of the train?",
+    "questionType": "QUANTITATIVE",
+    "difficulty": "EASY",
+    "correctAnswerId": "c",
+    "options": [
+      { "optionId": "a", "text": "15 km/h" },
+      { "optionId": "b", "text": "45 km/h" },
+      { "optionId": "c", "text": "54 km/h" },
+      { "optionId": "d", "text": "60 km/h" }
+    ]
+  },
+  {
+    "questionText": "What is the least number which when divided by 5, 6, 7 leaves remainder 3 but is divisible by 4?",
+    "questionType": "QUANTITATIVE",
+    "difficulty": "MEDIUM",
+    "correctAnswerId": "c",
+    "options": [
+      { "optionId": "a", "text": "123" },
+      { "optionId": "b", "text": "63" },
+      { "optionId": "c", "text": "183" },
+      { "optionId": "d", "text": "223" }
+    ]
+  },
+  {
+    "questionText": "What is the average of first 50 natural numbers?",
+    "questionType": "QUANTITATIVE",
+    "difficulty": "EASY",
+    "correctAnswerId": "b",
+    "options": [
+      { "optionId": "a", "text": "25" },
+      { "optionId": "b", "text": "25.5" },
+      { "optionId": "c", "text": "26" },
+      { "optionId": "d", "text": "24.5" }
+    ]
+  },
+  {
+    "questionText": "Two pipes can fill a tank in 20 minutes and 30 minutes respectively. If both are opened together, how much time will they take to fill the tank?",
+    "questionType": "QUANTITATIVE",
+    "difficulty": "MEDIUM",
+    "correctAnswerId": "a",
+    "options": [
+      { "optionId": "a", "text": "12 minutes" },
+      { "optionId": "b", "text": "15 minutes" },
+      { "optionId": "c", "text": "18 minutes" },
+      { "optionId": "d", "text": "25 minutes" }
+    ]
+  },
+  {
+    "questionText": "A and B together can complete a job in 8 days. B alone can complete it in 12 days. In how many days can A alone complete the job?",
+    "questionType": "QUANTITATIVE",
+    "difficulty": "EASY",
+    "correctAnswerId": "a",
+    "options": [
+      { "optionId": "a", "text": "24" },
+      { "optionId": "b", "text": "18" },
+      { "optionId": "c", "text": "16" },
+      { "optionId": "d", "text": "20" }
+    ]
+  },
+  {
+    "questionText": "The average age of 30 students is 12 years. If the age of their teacher is included, the average increases by 1. What is the teacher's age?",
+    "questionType": "QUANTITATIVE",
+    "difficulty": "MEDIUM",
+    "correctAnswerId": "a",
+    "options": [
+      { "optionId": "a", "text": "40" },
+      { "optionId": "b", "text": "42" },
+      { "optionId": "c", "text": "45" },
+      { "optionId": "d", "text": "43" }
+    ]
+  },
+  {
+    "questionText": "If the cost price of 15 articles is equal to the selling price of 12 articles, what is the gain percentage?",
+    "questionType": "QUANTITATIVE",
+    "difficulty": "MEDIUM",
+    "correctAnswerId": "b",
+    "options": [
+      { "optionId": "a", "text": "20%" },
+      { "optionId": "b", "text": "25%" },
+      { "optionId": "c", "text": "30%" },
+      { "optionId": "d", "text": "35%" }
+    ]
+  },
+  {
+    "questionText": "In a class, 60% of the students are boys. If the total number of students is 30, how many girls are there?",
+    "questionType": "QUANTITATIVE",
+    "difficulty": "EASY",
+    "correctAnswerId": "a",
+    "options": [
+      { "optionId": "a", "text": "12" },
+      { "optionId": "b", "text": "10" },
+      { "optionId": "c", "text": "15" },
+      { "optionId": "d", "text": "18" }
+    ]
+  },
+  {
+    "questionText": "A sum of money becomes double in 8 years at simple interest. In how many years will it triple?",
+    "questionType": "QUANTITATIVE",
+    "difficulty": "MEDIUM",
+    "correctAnswerId": "c",
+    "options": [
+      { "optionId": "a", "text": "12" },
+      { "optionId": "b", "text": "16" },
+      { "optionId": "c", "text": "20" },
+      { "optionId": "d", "text": "24" }
+    ]
+  },
+  {
+    "questionText": "A can do a work in 10 days, B in 12 days. They work together for 3 days, then B leaves. How many more days will A take to finish the work?",
+    "questionType": "QUANTITATIVE",
+    "difficulty": "HARD",
+    "correctAnswerId": "a",
+    "options": [
+      { "optionId": "a", "text": "4.5" },
+      { "optionId": "b", "text": "5" },
+      { "optionId": "c", "text": "5.5" },
+      { "optionId": "d", "text": "6" }
+    ]
+  },
+  {
+    "questionText": "Find the next number in the series: 2, 6, 12, 20, 30, ?",
+    "questionType": "LOGICAL",
+    "difficulty": "EASY",
+    "correctAnswerId": "c",
+    "options": [
+      { "optionId": "a", "text": "36" },
+      { "optionId": "b", "text": "40" },
+      { "optionId": "c", "text": "42" },
+      { "optionId": "d", "text": "56" }
+    ]
+  },
+  {
+    "questionText": "In how many different ways can the letters of the word 'MATHEMATICS' be arranged?",
+    "questionType": "QUANTITATIVE",
+    "difficulty": "HARD",
+    "correctAnswerId": "a",
+    "options": [
+      { "optionId": "a", "text": "4989600" },
+      { "optionId": "b", "text": "498960" },
+      { "optionId": "c", "text": "3991680" },
+      { "optionId": "d", "text": "399168" }
+    ]
+  },
+  {
+    "questionText": "If log 27 = 1.431, then log 9 = ?",
+    "questionType": "QUANTITATIVE",
+    "difficulty": "MEDIUM",
+    "correctAnswerId": "a",
+    "options": [
+      { "optionId": "a", "text": "0.954" },
+      { "optionId": "b", "text": "0.9542" },
+      { "optionId": "c", "text": "0.953" },
+      { "optionId": "d", "text": "0.9532" }
+    ]
+  },
+  {
+    "questionText": "A shopkeeper sells 12 pens for ₹120 and gains 20%. The cost price per pen is:",
+    "questionType": "QUANTITATIVE",
+    "difficulty": "EASY",
+    "correctAnswerId": "a",
+    "options": [
+      { "optionId": "a", "text": "₹8" },
+      { "optionId": "b", "text": "₹10" },
+      { "optionId": "c", "text": "₹12" },
+      { "optionId": "d", "text": "₹9" }
+    ]
+  },
+  {
+    "questionText": "Ravi invests ₹5000 at 5% per annum simple interest. How much will he get after 3 years?",
+    "questionType": "QUANTITATIVE",
+    "difficulty": "EASY",
+    "correctAnswerId": "a",
+    "options": [
+      { "optionId": "a", "text": "₹5750" },
+      { "optionId": "b", "text": "₹5800" },
+      { "optionId": "c", "text": "₹5500" },
+      { "optionId": "d", "text": "₹5600" }
+    ]
+  },
+  {
+    "questionText": "A sum of money amounts to ₹2420 in 2 years and to ₹2662 in 3 years at compound interest. The rate of interest is:",
+    "questionType": "QUANTITATIVE",
+    "difficulty": "MEDIUM",
+    "correctAnswerId": "a",
+    "options": [
+      { "optionId": "a", "text": "10%" },
+      { "optionId": "b", "text": "12%" },
+      { "optionId": "c", "text": "8%" },
+      { "optionId": "d", "text": "9%" }
+    ]
+  },
+  {
+    "questionText": "If 2x + 3y = 12 and 4x + 6y = 24, then what is the value of x?",
+    "questionType": "QUANTITATIVE",
+    "difficulty": "MEDIUM",
+    "correctAnswerId": "b",
+    "options": [
+      { "optionId": "a", "text": "No solution" },
+      { "optionId": "b", "text": "Any value" },
+      { "optionId": "c", "text": "2" },
+      { "optionId": "d", "text": "3" }
+    ]
+  },
+  {
+    "questionText": "A man rows to a place 48 km distant and comes back in 14 hours. He finds that he can row 4 km with the stream in the same time as 3 km against the stream. The rate of the stream is:",
+    "questionType": "QUANTITATIVE",
+    "difficulty": "HARD",
+    "correctAnswerId": "c",
+    "options": [
+      { "optionId": "a", "text": "1 km/h" },
+      { "optionId": "b", "text": "1.5 km/h" },
+      { "optionId": "c", "text": "2 km/h" },
+      { "optionId": "d", "text": "2.5 km/h" }
+    ]
+  },
+  {
+    "questionText": "The difference between simple interest and compound interest on ₹5000 for 2 years at 4% per annum is:",
+    "questionType": "QUANTITATIVE",
+    "difficulty": "MEDIUM",
+    "correctAnswerId": "a",
+    "options": [
+      { "optionId": "a", "text": "₹4" },
+      { "optionId": "b", "text": "₹5" },
+      { "optionId": "c", "text": "₹3" },
+      { "optionId": "d", "text": "₹2" }
+    ]
+  },
+  {
+    "questionText": "How many 4-letter words with or without meaning can be formed out of the letters of the word 'LOGARITHMS' without repetition?",
+    "questionType": "QUANTITATIVE",
+    "difficulty": "HARD",
+    "correctAnswerId": "a",
+    "options": [
+      { "optionId": "a", "text": "5040" },
+      { "optionId": "b", "text": "504" },
+      { "optionId": "c", "text": "720" },
+      { "optionId": "d", "text": "840" }
+    ]
+  },
+  {
+    "questionText": "The average of five consecutive odd numbers is 25. What is the largest of these numbers?",
+    "questionType": "QUANTITATIVE",
+    "difficulty": "EASY",
+    "correctAnswerId": "a",
+    "options": [
+      { "optionId": "a", "text": "29" },
+      { "optionId": "b", "text": "31" },
+      { "optionId": "c", "text": "27" },
+      { "optionId": "d", "text": "33" }
+    ]
+  },
+  {
+    "questionText": "If 12 men can complete a work in 8 days, how many men are required to complete the same work in 6 days?",
+    "questionType": "QUANTITATIVE",
+    "difficulty": "EASY",
+    "correctAnswerId": "b",
+    "options": [
+      { "optionId": "a", "text": "14" },
+      { "optionId": "b", "text": "16" },
+      { "optionId": "c", "text": "18" },
+      { "optionId": "d", "text": "10" }
+    ]
+  },
+  {
+    "questionText": "Find the HCF of 60, 72 and 120.",
+    "questionType": "QUANTITATIVE",
+    "difficulty": "EASY",
+    "correctAnswerId": "b",
+    "options": [
+      { "optionId": "a", "text": "12" },
+      { "optionId": "b", "text": "24" },
+      { "optionId": "c", "text": "6" },
+      { "optionId": "d", "text": "18" }
+    ]
+  },
+  {
+    "questionText": "What least number should be added to 1056 to make it divisible by 23?",
+    "questionType": "QUANTITATIVE",
+    "difficulty": "MEDIUM",
+    "correctAnswerId": "a",
+    "options": [
+      { "optionId": "a", "text": "2" },
+      { "optionId": "b", "text": "3" },
+      { "optionId": "c", "text": "1" },
+      { "optionId": "d", "text": "0" }
+    ]
+  },
+  {
+    "questionText": "How many 3-digit numbers can be formed using 1, 2, 3, 4, 5 without repetition?",
+    "questionType": "QUANTITATIVE",
+    "difficulty": "EASY",
+    "correctAnswerId": "a",
+    "options": [
+      { "optionId": "a", "text": "60" },
+      { "optionId": "b", "text": "80" },
+      { "optionId": "c", "text": "100" },
+      { "optionId": "d", "text": "120" }
+    ]
+  },
+  {
+    "questionText": "If selling price of 20 articles is equal to cost price of 25 articles, what is the loss percentage?",
+    "questionType": "QUANTITATIVE",
+    "difficulty": "MEDIUM",
+    "correctAnswerId": "b",
+    "options": [
+      { "optionId": "a", "text": "20%" },
+      { "optionId": "b", "text": "25%" },
+      { "optionId": "c", "text": "10%" },
+      { "optionId": "d", "text": "5%" }
+    ]
+  },
+  {
+    "questionText": "What is the remainder when 2^32 is divided by 5?",
+    "questionType": "QUANTITATIVE",
+    "difficulty": "HARD",
+    "correctAnswerId": "a",
+    "options": [
+      { "optionId": "a", "text": "1" },
+      { "optionId": "b", "text": "2" },
+      { "optionId": "c", "text": "3" },
+      { "optionId": "d", "text": "4" }
+    ]
+  },
+  {
+    "questionText": "The average age of 8 men is increased by 2 years when two of them whose ages are 21 and 23 are replaced by two new men. The average age of the new men is:",
+    "questionType": "QUANTITATIVE",
+    "difficulty": "MEDIUM",
+    "correctAnswerId": "b",
+    "options": [
+      { "optionId": "a", "text": "29" },
+      { "optionId": "b", "text": "30" },
+      { "optionId": "c", "text": "31" },
+      { "optionId": "d", "text": "32" }
+    ]
+  },
+  {
+    "questionText": "A batsman scored 120 runs which included 5 sixes and 10 fours. What percent of his total score did he make by running between the wickets?",
+    "questionType": "QUANTITATIVE",
+    "difficulty": "HARD",
+    "correctAnswerId": "a",
+    "options": [
+      { "optionId": "a", "text": "40%" },
+      { "optionId": "b", "text": "50%" },
+      { "optionId": "c", "text": "60%" },
+      { "optionId": "d", "text": "30%" }
+    ]
+  },
+  {
+    "questionText": "If 3 workers can complete a job in 8 days, how long will it take 4 workers to complete the same job?",
+    "questionType": "QUANTITATIVE",
+    "difficulty": "EASY",
+    "correctAnswerId": "a",
+    "options": [
+      { "optionId": "a", "text": "6" },
+      { "optionId": "b", "text": "5" },
+      { "optionId": "c", "text": "7" },
+      { "optionId": "d", "text": "4" }
+    ]
+  },
+  {
+    "questionText": "A train 150 meters long passes a man walking at 6 km/h in the same direction in 18 seconds. The speed of the train is:",
+    "questionType": "QUANTITATIVE",
+    "difficulty": "MEDIUM",
+    "correctAnswerId": "b",
+    "options": [
+      { "optionId": "a", "text": "30 km/h" },
+      { "optionId": "b", "text": "36 km/h" },
+      { "optionId": "c", "text": "40 km/h" },
+      { "optionId": "d", "text": "45 km/h" }
+    ]
+  },
+  {
+    "questionText": "A shopkeeper buys 80 kg of sugar at ₹13.50/kg and mixes it with 120 kg sugar at ₹16/kg. What is the average price of the mixture?",
+    "questionType": "QUANTITATIVE",
+    "difficulty": "MEDIUM",
+    "correctAnswerId": "a",
+    "options": [
+      { "optionId": "a", "text": "₹15" },
+      { "optionId": "b", "text": "₹15.25" },
+      { "optionId": "c", "text": "₹14.75" },
+      { "optionId": "d", "text": "₹14.50" }
+    ]
+  },
+  {
+    "questionText": "The angle between the hour hand and minute hand at 3:15 is:",
+    "questionType": "QUANTITATIVE",
+    "difficulty": "HARD",
+    "correctAnswerId": "a",
+    "options": [
+      { "optionId": "a", "text": "7.5 degrees" },
+      { "optionId": "b", "text": "15 degrees" },
+      { "optionId": "c", "text": "22.5 degrees" },
+      { "optionId": "d", "text": "30 degrees" }
+    ]
+  },
+  {
+    "questionText": "What is the probability of drawing a queen from a pack of 52 cards?",
+    "questionType": "QUANTITATIVE",
+    "difficulty": "EASY",
+    "correctAnswerId": "a",
+    "options": [
+      { "optionId": "a", "text": "1/13" },
+      { "optionId": "b", "text": "1/12" },
+      { "optionId": "c", "text": "1/4" },
+      { "optionId": "d", "text": "1/52" }
+    ]
+  },
+  {
+    "questionText": "If a:b = 3:4 and b:c = 5:6, then a:b:c = ?",
+    "questionType": "QUANTITATIVE",
+    "difficulty": "MEDIUM",
+    "correctAnswerId": "a",
+    "options": [
+      { "optionId": "a", "text": "15:20:24" },
+      { "optionId": "b", "text": "3:5:6" },
+      { "optionId": "c", "text": "9:20:24" },
+      { "optionId": "d", "text": "15:24:20" }
+    ]
+  },
+  {
+    "questionText": "What is the value of √2025?",
+    "questionType": "QUANTITATIVE",
+    "difficulty": "EASY",
+    "correctAnswerId": "a",
+    "options": [
+      { "optionId": "a", "text": "45" },
+      { "optionId": "b", "text": "40" },
+      { "optionId": "c", "text": "50" },
+      { "optionId": "d", "text": "55" }
+    ]
+  },
+  {
+    "questionText": "If a + b = 12 and ab = 35, what is a² + b²?",
+    "questionType": "QUANTITATIVE",
+    "difficulty": "MEDIUM",
+    "correctAnswerId": "a",
+    "options": [
+      { "optionId": "a", "text": "74" },
+      { "optionId": "b", "text": "79" },
+      { "optionId": "c", "text": "69" },
+      { "optionId": "d", "text": "64" }
+    ]
+  },
+  {
+    "questionText": "What is the compound interest on ₹10,000 at 10% p.a. for 2 years?",
+    "questionType": "QUANTITATIVE",
+    "difficulty": "MEDIUM",
+    "correctAnswerId": "a",
+    "options": [
+      { "optionId": "a", "text": "₹2,100" },
+      { "optionId": "b", "text": "₹2,000" },
+      { "optionId": "c", "text": "₹2,200" },
+      { "optionId": "d", "text": "₹2,050" }
+    ]
+  },
+  {
+    "questionText": "What is the area of a circle with diameter 14 cm?",
+    "questionType": "QUANTITATIVE",
+    "difficulty": "EASY",
+    "correctAnswerId": "a",
+    "options": [
+      { "optionId": "a", "text": "154 cm²" },
+      { "optionId": "b", "text": "144 cm²" },
+      { "optionId": "c", "text": "132 cm²" },
+      { "optionId": "d", "text": "120 cm²" }
+    ]
+  },
+  {
+    "questionText": "What is the simple interest on ₹1200 at 5% p.a. in 3 years?",
+    "questionType": "QUANTITATIVE",
+    "difficulty": "EASY",
+    "correctAnswerId": "a",
+    "options": [
+      { "optionId": "a", "text": "₹180" },
+      { "optionId": "b", "text": "₹150" },
+      { "optionId": "c", "text": "₹200" },
+      { "optionId": "d", "text": "₹160" }
+    ]
+  },
+  {
+    "questionText": "The average of 5, 7, 9, 11, 13 is:",
+    "questionType": "QUANTITATIVE",
+    "difficulty": "EASY",
+    "correctAnswerId": "a",
+    "options": [
+      { "optionId": "a", "text": "9" },
+      { "optionId": "b", "text": "7" },
+      { "optionId": "c", "text": "11" },
+      { "optionId": "d", "text": "10" }
+    ]
+  },
+  {
+    "questionText": "If 5x - 2 = 3, what is x?",
+    "questionType": "QUANTITATIVE",
+    "difficulty": "EASY",
+    "correctAnswerId": "a",
+    "options": [
+      { "optionId": "a", "text": "1" },
+      { "optionId": "b", "text": "2" },
+      { "optionId": "c", "text": "3" },
+      { "optionId": "d", "text": "4" }
+    ]
+  },
+  {
+    "questionText": "How many prime numbers are there between 10 and 20?",
+    "questionType": "QUANTITATIVE",
+    "difficulty": "EASY",
+    "correctAnswerId": "c",
+    "options": [
+      { "optionId": "a", "text": "4" },
+      { "optionId": "b", "text": "2" },
+      { "optionId": "c", "text": "3" },
+      { "optionId": "d", "text": "5" }
+    ]
+  },
+  {
+    "questionText": "What is the value of 3³ × 3²?",
+    "questionType": "QUANTITATIVE",
+    "difficulty": "EASY",
+    "correctAnswerId": "c",
+    "options": [
+      { "optionId": "a", "text": "243" },
+      { "optionId": "b", "text": "27" },
+      { "optionId": "c", "text": "81" },
+      { "optionId": "d", "text": "125" }
+    ]
+  },
+  {
+    "questionText": "Find the least common multiple (LCM) of 12, 15 and 20.",
+    "questionType": "QUANTITATIVE",
+    "difficulty": "MEDIUM",
+    "correctAnswerId": "b",
+    "options": [
+      { "optionId": "a", "text": "60" },
+      { "optionId": "b", "text": "120" },
+      { "optionId": "c", "text": "180" },
+      { "optionId": "d", "text": "240" }
+    ]
+  },
+  {
+    "questionText": "A can do a work in 15 days and B in 20 days. In how many days will they complete the work together?",
+    "questionType": "QUANTITATIVE",
+    "difficulty": "MEDIUM",
+    "correctAnswerId": "a",
+    "options": [
+      { "optionId": "a", "text": "8.57" },
+      { "optionId": "b", "text": "10" },
+      { "optionId": "c", "text": "12" },
+      { "optionId": "d", "text": "17.5" }
+    ]
+  },
+  {
+    "questionText": "If 4 pencils cost ₹20, what is the cost of 10 pencils?",
+    "questionType": "QUANTITATIVE",
+    "difficulty": "EASY",
+    "correctAnswerId": "a",
+    "options": [
+      { "optionId": "a", "text": "₹50" },
+      { "optionId": "b", "text": "₹45" },
+      { "optionId": "c", "text": "₹40" },
+      { "optionId": "d", "text": "₹55" }
+    ]
+  },
+  {
+    "questionText": "What is the sum of first 10 natural numbers?",
+    "questionType": "QUANTITATIVE",
+    "difficulty": "EASY",
+    "correctAnswerId": "a",
+    "options": [
+      { "optionId": "a", "text": "55" },
+      { "optionId": "b", "text": "50" },
+      { "optionId": "c", "text": "45" },
+      { "optionId": "d", "text": "60" }
+    ]
+  },
+  {
+    "questionText": "If the perimeter of a square is 24 cm, what is its area?",
+    "questionType": "QUANTITATIVE",
+    "difficulty": "EASY",
+    "correctAnswerId": "a",
+    "options": [
+      { "optionId": "a", "text": "36 cm²" },
+      { "optionId": "b", "text": "24 cm²" },
+      { "optionId": "c", "text": "30 cm²" },
+      { "optionId": "d", "text": "16 cm²" }
+    ]
+  },
+  {
+    "questionText": "What is the largest 3-digit number divisible by 9?",
+    "questionType": "QUANTITATIVE",
+    "difficulty": "MEDIUM",
+    "correctAnswerId": "a",
+    "options": [
+      { "optionId": "a", "text": "999" },
+      { "optionId": "b", "text": "990" },
+      { "optionId": "c", "text": "981" },
+      { "optionId": "d", "text": "972" }
+    ]
+  },
+  {
+    "questionText": "A man walks 20 km towards the north, then turns east and walks 10 km. How far is he from the starting point?",
+    "questionType": "QUANTITATIVE",
+    "difficulty": "MEDIUM",
+    "correctAnswerId": "b",
+    "options": [
+      { "optionId": "a", "text": "10 km" },
+      { "optionId": "b", "text": "22.36 km" },
+      { "optionId": "c", "text": "30 km" },
+      { "optionId": "d", "text": "15 km" }
+    ]
+  },
+  {
+    "questionText": "If the average of 4 numbers is 25, what is their total sum?",
+    "questionType": "QUANTITATIVE",
+    "difficulty": "EASY",
+    "correctAnswerId": "a",
+    "options": [
+      { "optionId": "a", "text": "100" },
+      { "optionId": "b", "text": "50" },
+      { "optionId": "c", "text": "75" },
+      { "optionId": "d", "text": "150" }
+    ]
+  },
+  {
+    "questionText": "Find the missing number: 2, 4, 8, 16, ?",
+    "questionType": "LOGICAL",
+    "difficulty": "EASY",
+    "correctAnswerId": "b",
+    "options": [
+      { "optionId": "a", "text": "24" },
+      { "optionId": "b", "text": "32" },
+      { "optionId": "c", "text": "64" },
+      { "optionId": "d", "text": "48" }
+    ]
+  },
+  {
+    "questionText": "What is the output of the following code?\n\n```python\nx = [1, 2, 3]\nprint(x[::-1])\n```",
+    "questionType": "LOGICAL",
+    "difficulty": "MEDIUM",
+    "correctAnswerId": "b",
+    "options": [
+      { "optionId": "a", "text": "[1, 2, 3]" },
+      { "optionId": "b", "text": "[3, 2, 1]" },
+      { "optionId": "c", "text": "[1, 3, 2]" },
+      { "optionId": "d", "text": "Error" }
+    ]
+  },
+  {
+    "questionText": "If A is the brother of B, and B is the sister of C, how is C related to A?",
+    "questionType": "LOGICAL",
+    "difficulty": "EASY",
+    "correctAnswerId": "c",
+    "options": [
+      { "optionId": "a", "text": "Brother" },
+      { "optionId": "b", "text": "Sister" },
+      { "optionId": "c", "text": "Cannot be determined" },
+      { "optionId": "d", "text": "Father" }
+    ]
+  },
+  {
+    "questionText": "If a shopkeeper gives a discount of 10% on an item marked ₹500, what is the selling price?",
+    "questionType": "QUANTITATIVE",
+    "difficulty": "EASY",
+    "correctAnswerId": "a",
+    "options": [
+      { "optionId": "a", "text": "₹450" },
+      { "optionId": "b", "text": "₹400" },
+      { "optionId": "c", "text": "₹475" },
+      { "optionId": "d", "text": "₹425" }
+    ]
+  },
+  {
+    "questionText": "What will be the output of the following JavaScript code?\n\n```javascript\nconsole.log(typeof null);\n```",
+    "questionType": "LOGICAL",
+    "difficulty": "MEDIUM",
+    "correctAnswerId": "a",
+    "options": [
+      { "optionId": "a", "text": "'object'" },
+      { "optionId": "b", "text": "'null'" },
+      { "optionId": "c", "text": "'undefined'" },
+      { "optionId": "d", "text": "'number'" }
+    ]
+  },
+  {
+    "questionText": "In a class, 60% are boys and 40% are girls. If there are 30 boys, what is the total number of students?",
+    "questionType": "QUANTITATIVE",
+    "difficulty": "MEDIUM",
+    "correctAnswerId": "b",
+    "options": [
+      { "optionId": "a", "text": "50" },
+      { "optionId": "b", "text": "60" },
+      { "optionId": "c", "text": "75" },
+      { "optionId": "d", "text": "80" }
+    ]
+  },
+  {
+    "questionText": "What is the output?\n\n```java\nSystem.out.println(10 + 20 + \"30\");\n```",
+    "questionType": "LOGICAL",
+    "difficulty": "MEDIUM",
+    "correctAnswerId": "a",
+    "options": [
+      { "optionId": "a", "text": "102030" },
+      { "optionId": "b", "text": "60" },
+      { "optionId": "c", "text": "30" },
+      { "optionId": "d", "text": "100" }
+    ]
+  },
+  {
+    "questionText": "Simplify: (3x + 4) - (2x - 5)",
+    "questionType": "QUANTITATIVE",
+    "difficulty": "EASY",
+    "correctAnswerId": "a",
+    "options": [
+      { "optionId": "a", "text": "x + 9" },
+      { "optionId": "b", "text": "x - 1" },
+      { "optionId": "c", "text": "x + 1" },
+      { "optionId": "d", "text": "5x - 1" }
+    ]
+  },
+  {
+    "questionText": "What will this C code print?\n\n```c\nprintf(\"%d\", 5 + 2 * 3);\n```",
+    "questionType": "LOGICAL",
+    "difficulty": "MEDIUM",
+    "correctAnswerId": "b",
+    "options": [
+      { "optionId": "a", "text": "21" },
+      { "optionId": "b", "text": "11" },
+      { "optionId": "c", "text": "16" },
+      { "optionId": "d", "text": "Error" }
+    ]
+  },
+  {
+    "questionText": "A bag contains 4 red, 5 green, and 6 blue balls. What is the probability of picking a green ball?",
+    "questionType": "QUANTITATIVE",
+    "difficulty": "MEDIUM",
+    "correctAnswerId": "a",
+    "options": [
+      { "optionId": "a", "text": "1/3" },
+      { "optionId": "b", "text": "5/15" },
+      { "optionId": "c", "text": "5/12" },
+      { "optionId": "d", "text": "5/14" }
+    ]
+  },
+  {
+    "questionText": "What will be printed?\n\n```python\nx = [i**2 for i in range(3)]\nprint(x)\n```",
+    "questionType": "LOGICAL",
+    "difficulty": "MEDIUM",
+    "correctAnswerId": "b",
+    "options": [
+      { "optionId": "a", "text": "[1, 4, 9]" },
+      { "optionId": "b", "text": "[0, 1, 4]" },
+      { "optionId": "c", "text": "[0, 1, 4, 9]" },
+      { "optionId": "d", "text": "[0, 1, 2]" }
+    ]
+  },
+  {
+    "questionText": "If the sum of two numbers is 45 and their difference is 5, what is the larger number?",
+    "questionType": "QUANTITATIVE",
+    "difficulty": "EASY",
+    "correctAnswerId": "a",
+    "options": [
+      { "optionId": "a", "text": "25" },
+      { "optionId": "b", "text": "20" },
+      { "optionId": "c", "text": "30" },
+      { "optionId": "d", "text": "35" }
+    ]
+  },
+  {
+    "questionText": "What is the output?\n\n```javascript\nconsole.log(3 + 2 + '5');\n```",
+    "questionType": "LOGICAL",
+    "difficulty": "MEDIUM",
+    "correctAnswerId": "a",
+    "options": [
+      { "optionId": "a", "text": "'55'" },
+      { "optionId": "b", "text": "'35'" },
+      { "optionId": "c", "text": "'75'" },
+      { "optionId": "d", "text": "'55'" }
+    ]
+  },
+  {
+    "questionText": "The angle between the minute hand and the hour hand at 3:15 is?",
+    "questionType": "QUANTITATIVE",
+    "difficulty": "MEDIUM",
+    "correctAnswerId": "a",
+    "options": [
+      { "optionId": "a", "text": "7.5 degrees" },
+      { "optionId": "b", "text": "15 degrees" },
+      { "optionId": "c", "text": "22.5 degrees" },
+      { "optionId": "d", "text": "30 degrees" }
+    ]
+  },
+  {
+    "questionText": "What will this C code output?\n\n```c\nprintf(\"%d\", 4/3);\n```",
+    "questionType": "LOGICAL",
+    "difficulty": "MEDIUM",
+    "correctAnswerId": "a",
+    "options": [
+      { "optionId": "a", "text": "1" },
+      { "optionId": "b", "text": "1.33" },
+      { "optionId": "c", "text": "Error" },
+      { "optionId": "d", "text": "0" }
+    ]
+  },
+  {
+    "questionText": "If 3 pencils cost ₹15, what is the cost of 10 pencils?",
+    "questionType": "QUANTITATIVE",
+    "difficulty": "EASY",
+    "correctAnswerId": "d",
+    "options": [
+      { "optionId": "a", "text": "₹50" },
+      { "optionId": "b", "text": "₹45" },
+      { "optionId": "c", "text": "₹55" },
+      { "optionId": "d", "text": "₹60" }
+    ]
+  },
+  {
+    "questionText": "What will be printed?\n\n```python\nprint('Hello' * 2)\n```",
+    "questionType": "LOGICAL",
+    "difficulty": "EASY",
+    "correctAnswerId": "a",
+    "options": [
+      { "optionId": "a", "text": "HelloHello" },
+      { "optionId": "b", "text": "Hello2" },
+      { "optionId": "c", "text": "2Hello" },
+      { "optionId": "d", "text": "Error" }
+    ]
+  },
+  {
+    "questionText": "A train 150 m long passes a pole in 15 seconds. Its speed is?",
+    "questionType": "QUANTITATIVE",
+    "difficulty": "MEDIUM",
+    "correctAnswerId": "a",
+    "options": [
+      { "optionId": "a", "text": "10 m/s" },
+      { "optionId": "b", "text": "12 m/s" },
+      { "optionId": "c", "text": "15 m/s" },
+      { "optionId": "d", "text": "8 m/s" }
+    ]
+  },
+  {
+    "questionText": "Identify the output:\n\n```javascript\nconsole.log(0.1 + 0.2 === 0.3);\n```",
+    "questionType": "LOGICAL",
+    "difficulty": "HARD",
+    "correctAnswerId": "b",
+    "options": [
+      { "optionId": "a", "text": "true" },
+      { "optionId": "b", "text": "false" },
+      { "optionId": "c", "text": "undefined" },
+      { "optionId": "d", "text": "NaN" }
+    ]
+  },
+  {
+    "questionText": "Simplify: 5 + 3 * 2",
+    "questionType": "QUANTITATIVE",
+    "difficulty": "EASY",
+    "correctAnswerId": "a",
+    "options": [
+      { "optionId": "a", "text": "11" },
+      { "optionId": "b", "text": "16" },
+      { "optionId": "c", "text": "10" },
+      { "optionId": "d", "text": "13" }
+    ]
+  },
+  {
+    "questionText": "If the perimeter of a square is 36 cm, what is its area?",
+    "questionType": "QUANTITATIVE",
+    "difficulty": "EASY",
+    "correctAnswerId": "a",
+    "options": [
+      { "optionId": "a", "text": "81 sq cm" },
+      { "optionId": "b", "text": "64 sq cm" },
+      { "optionId": "c", "text": "49 sq cm" },
+      { "optionId": "d", "text": "81 sq cm" }
+    ]
+  },
+  {
+    "questionText": "What is the output?\n\n```java\nSystem.out.println(4 + 3 + \"2\");\n```",
+    "questionType": "LOGICAL",
+    "difficulty": "MEDIUM",
+    "correctAnswerId": "a",
+    "options": [
+      { "optionId": "a", "text": "72" },
+      { "optionId": "b", "text": "43" },
+      { "optionId": "c", "text": "32" },
+      { "optionId": "d", "text": "9" }
+    ]
+  },
+  {
+    "questionText": "What will this Python code print?\n\n```python\nprint(bool(0), bool(1))\n```",
+    "questionType": "LOGICAL",
+    "difficulty": "EASY",
+    "correctAnswerId": "a",
+    "options": [
+      { "optionId": "a", "text": "False True" },
+      { "optionId": "b", "text": "True False" },
+      { "optionId": "c", "text": "True True" },
+      { "optionId": "d", "text": "False False" }
+    ]
+  },
+  {
+    "questionText": "In what year will the next leap year occur after 2024?",
+    "questionType": "QUANTITATIVE",
+    "difficulty": "EASY",
+    "correctAnswerId": "b",
+    "options": [
+      { "optionId": "a", "text": "2026" },
+      { "optionId": "b", "text": "2028" },
+      { "optionId": "c", "text": "2030" },
+      { "optionId": "d", "text": "2027" }
+    ]
+  },
+  {
+    "questionText": "A number when divided by 6 leaves a remainder 3. What will be the remainder if the same number is divided by 3?",
+    "questionType": "QUANTITATIVE",
+    "difficulty": "MEDIUM",
+    "correctAnswerId": "c",
+    "options": [
+      { "optionId": "a", "text": "0" },
+      { "optionId": "b", "text": "1" },
+      { "optionId": "c", "text": "2" },
+      { "optionId": "d", "text": "3" }
+    ]
+  },
+  {
+    "questionText": "Find the output:\n\n```python\nx = [1, 2, 3]\nprint(x[::-1])\n```",
+    "questionType": "LOGICAL",
+    "difficulty": "EASY",
+    "correctAnswerId": "a",
+    "options": [
+      { "optionId": "a", "text": "[3, 2, 1]" },
+      { "optionId": "b", "text": "[1, 2, 3]" },
+      { "optionId": "c", "text": "[2, 1, 3]" },
+      { "optionId": "d", "text": "[1, 3, 2]" }
+    ]
+  },
+  {
+    "questionText": "A man can row 8 km/h in still water. If the river runs at 2 km/h, how long will he take to row 30 km downstream?",
+    "questionType": "QUANTITATIVE",
+    "difficulty": "MEDIUM",
+    "correctAnswerId": "a",
+    "options": [
+      { "optionId": "a", "text": "3 hours" },
+      { "optionId": "b", "text": "4 hours" },
+      { "optionId": "c", "text": "3.5 hours" },
+      { "optionId": "d", "text": "2.5 hours" }
+    ]
+  },
+  {
+    "questionText": "What will this print?\n\n```java\nSystem.out.println(10 + 20 + \"30\" + 40);\n```",
+    "questionType": "LOGICAL",
+    "difficulty": "MEDIUM",
+    "correctAnswerId": "c",
+    "options": [
+      { "optionId": "a", "text": "303040" },
+      { "optionId": "b", "text": "3030" },
+      { "optionId": "c", "text": "303040" },
+      { "optionId": "d", "text": "303040" }
+    ]
+  },
+  {
+    "questionText": "A can do a work in 12 days, B in 16 days. How long will they take to finish the work together?",
+    "questionType": "QUANTITATIVE",
+    "difficulty": "MEDIUM",
+    "correctAnswerId": "c",
+    "options": [
+      { "optionId": "a", "text": "6.85 days" },
+      { "optionId": "b", "text": "6.86 days" },
+      { "optionId": "c", "text": "6.857 days" },
+      { "optionId": "d", "text": "7 days" }
+    ]
+  },
+  {
+    "questionText": "What will be printed?\n\n```javascript\nconsole.log(typeof NaN);\n```",
+    "questionType": "LOGICAL",
+    "difficulty": "MEDIUM",
+    "correctAnswerId": "a",
+    "options": [
+      { "optionId": "a", "text": "number" },
+      { "optionId": "b", "text": "NaN" },
+      { "optionId": "c", "text": "undefined" },
+      { "optionId": "d", "text": "object" }
+    ]
+  },
+  {
+    "questionText": "If the selling price of 20 articles is equal to the cost price of 25 articles, what is the profit percent?",
+    "questionType": "QUANTITATIVE",
+    "difficulty": "MEDIUM",
+    "correctAnswerId": "b",
+    "options": [
+      { "optionId": "a", "text": "20%" },
+      { "optionId": "b", "text": "25%" },
+      { "optionId": "c", "text": "30%" },
+      { "optionId": "d", "text": "50%" }
+    ]
+  },
+  {
+    "questionText": "Identify the output:\n\n```python\nprint(5//2)\n```",
+    "questionType": "LOGICAL",
+    "difficulty": "EASY",
+    "correctAnswerId": "b",
+    "options": [
+      { "optionId": "a", "text": "2.5" },
+      { "optionId": "b", "text": "2" },
+      { "optionId": "c", "text": "3" },
+      { "optionId": "d", "text": "Error" }
+    ]
+  },
+  {
+    "questionText": "A sum doubles in 8 years at simple interest. What is the rate of interest?",
+    "questionType": "QUANTITATIVE",
+    "difficulty": "MEDIUM",
+    "correctAnswerId": "a",
+    "options": [
+      { "optionId": "a", "text": "12.5%" },
+      { "optionId": "b", "text": "10%" },
+      { "optionId": "c", "text": "15%" },
+      { "optionId": "d", "text": "11%" }
+    ]
+  },
+  {
+    "questionText": "What is the value of (2^3 * 2^4)?",
+    "questionType": "QUANTITATIVE",
+    "difficulty": "EASY",
+    "correctAnswerId": "a",
+    "options": [
+      { "optionId": "a", "text": "128" },
+      { "optionId": "b", "text": "32" },
+      { "optionId": "c", "text": "16" },
+      { "optionId": "d", "text": "64" }
+    ]
+  },
+  {
+    "questionText": "Find the output:\n\n```python\nprint('5' + '5')\n```",
+    "questionType": "LOGICAL",
+    "difficulty": "EASY",
+    "correctAnswerId": "a",
+    "options": [
+      { "optionId": "a", "text": "55" },
+      { "optionId": "b", "text": "10" },
+      { "optionId": "c", "text": "Error" },
+      { "optionId": "d", "text": "5 5" }
+    ]
+  },
+  {
+    "questionText": "A cube has volume 27 cubic cm. What is the length of its side?",
+    "questionType": "QUANTITATIVE",
+    "difficulty": "EASY",
+    "correctAnswerId": "b",
+    "options": [
+      { "optionId": "a", "text": "2 cm" },
+      { "optionId": "b", "text": "3 cm" },
+      { "optionId": "c", "text": "4 cm" },
+      { "optionId": "d", "text": "5 cm" }
+    ]
+  },
+  {
+    "questionText": "Find the output:\n\n```javascript\nconsole.log(2 == '2');\n```",
+    "questionType": "LOGICAL",
+    "difficulty": "EASY",
+    "correctAnswerId": "a",
+    "options": [
+      { "optionId": "a", "text": "true" },
+      { "optionId": "b", "text": "false" },
+      { "optionId": "c", "text": "undefined" },
+      { "optionId": "d", "text": "NaN" }
+    ]
+  },
+  {
+    "questionText": "A and B together can complete a work in 10 days. B alone can complete it in 15 days. How many days will A take alone?",
+    "questionType": "QUANTITATIVE",
+    "difficulty": "MEDIUM",
+    "correctAnswerId": "b",
+    "options": [
+      { "optionId": "a", "text": "30" },
+      { "optionId": "b", "text": "20" },
+      { "optionId": "c", "text": "25" },
+      { "optionId": "d", "text": "15" }
+    ]
+  },
+  {
+    "questionText": "What will this Java code print?\n\n```java\nSystem.out.println(5 + \"5\" + 5);\n```",
+    "questionType": "LOGICAL",
+    "difficulty": "MEDIUM",
+    "correctAnswerId": "a",
+    "options": [
+      { "optionId": "a", "text": "555" },
+      { "optionId": "b", "text": "105" },
+      { "optionId": "c", "text": "55" },
+      { "optionId": "d", "text": "Error" }
+    ]
+  },
+  {
+    "questionText": "If a car travels 150 km in 3 hours, what is its average speed?",
+    "questionType": "QUANTITATIVE",
+    "difficulty": "EASY",
+    "correctAnswerId": "a",
+    "options": [
+      { "optionId": "a", "text": "50 km/h" },
+      { "optionId": "b", "text": "45 km/h" },
+      { "optionId": "c", "text": "55 km/h" },
+      { "optionId": "d", "text": "60 km/h" }
+    ]
+  },
+  {
+    "questionText": "Which data type is the result of 5 / 2 in Java?",
+    "questionType": "LOGICAL",
+    "difficulty": "MEDIUM",
+    "correctAnswerId": "a",
+    "options": [
+      { "optionId": "a", "text": "int" },
+      { "optionId": "b", "text": "float" },
+      { "optionId": "c", "text": "double" },
+      { "optionId": "d", "text": "long" }
+    ]
+  },
+  {
+    "questionText": "Find the output:\n\n```python\nprint(2 ** 3)\n```",
+    "questionType": "LOGICAL",
+    "difficulty": "EASY",
+    "correctAnswerId": "b",
+    "options": [
+      { "optionId": "a", "text": "6" },
+      { "optionId": "b", "text": "8" },
+      { "optionId": "c", "text": "9" },
+      { "optionId": "d", "text": "4" }
+    ]
+  },
+  {
+    "questionText": "How many diagonals does a hexagon have?",
+    "questionType": "QUANTITATIVE",
+    "difficulty": "MEDIUM",
+    "correctAnswerId": "c",
+    "options": [
+      { "optionId": "a", "text": "6" },
+      { "optionId": "b", "text": "9" },
+      { "optionId": "c", "text": "12" },
+      { "optionId": "d", "text": "15" }
+    ]
+  },
+  {
+    "questionText": "What will be printed?\n\n```javascript\nconsole.log(1 + '1' + 1);\n```",
+    "questionType": "LOGICAL",
+    "difficulty": "MEDIUM",
+    "correctAnswerId": "a",
+    "options": [
+      { "optionId": "a", "text": "111" },
+      { "optionId": "b", "text": "21" },
+      { "optionId": "c", "text": "3" },
+      { "optionId": "d", "text": "12" }
+    ]
+  },
+  {
+    "questionText": "The LCM of 12 and 18 is?",
+    "questionType": "QUANTITATIVE",
+    "difficulty": "EASY",
+    "correctAnswerId": "a",
+    "options": [
+      { "optionId": "a", "text": "72" },
+      { "optionId": "b", "text": "36" },
+      { "optionId": "c", "text": "24" },
+      { "optionId": "d", "text": "48" }
+    ]
+  },
+  {
+    "questionText": "If a:b = 3:4 and b:c = 2:5, what is a:c?",
+    "questionType": "QUANTITATIVE",
+    "difficulty": "MEDIUM",
+    "correctAnswerId": "a",
+    "options": [
+      { "optionId": "a", "text": "3:10" },
+      { "optionId": "b", "text": "3:5" },
+      { "optionId": "c", "text": "6:5" },
+      { "optionId": "d", "text": "2:5" }
+    ]
+  },
+  {
+    "questionText": "Find the output:\n\n```python\nprint(7 % 3)\n```",
+    "questionType": "LOGICAL",
+    "difficulty": "EASY",
+    "correctAnswerId": "b",
+    "options": [
+      { "optionId": "a", "text": "1" },
+      { "optionId": "b", "text": "2" },
+      { "optionId": "c", "text": "0" },
+      { "optionId": "d", "text": "3" }
+    ]
+  },
+  {
+    "questionText": "What is the next prime number after 7?",
+    "questionType": "QUANTITATIVE",
+    "difficulty": "EASY",
+    "correctAnswerId": "a",
+    "options": [
+      { "optionId": "a", "text": "11" },
+      { "optionId": "b", "text": "9" },
+      { "optionId": "c", "text": "13" },
+      { "optionId": "d", "text": "17" }
+    ]
+  },
+  {
+    "questionText": "Identify the output:\n\n```javascript\nconsole.log(2 + 3 * 4);\n```",
+    "questionType": "LOGICAL",
+    "difficulty": "EASY",
+    "correctAnswerId": "b",
+    "options": [
+      { "optionId": "a", "text": "20" },
+      { "optionId": "b", "text": "14" },
+      { "optionId": "c", "text": "24" },
+      { "optionId": "d", "text": "10" }
+    ]
+  },
+  {
+    "questionText": "The average age of a man and his son is 28 years. The ratio of their ages is 3:1 respectively. What is the man's age?",
+    "questionType": "QUANTITATIVE",
+    "difficulty": "MEDIUM",
+    "correctAnswerId": "d",
+    "options": [
+      { "optionId": "a", "text": "30 years" },
+      { "optionId": "b", "text": "38 years" },
+      { "optionId": "c", "text": "44 years" },
+      { "optionId": "d", "text": "42 years" }
+    ]
+  },
+  {
+    "questionText": "A cyclic quadrilateral ABCD is such that AB = BC, AD = DC, AC is perpendicular to BD and ∠CAD = θ, then find ∠ABC.",
+    "questionType": "QUANTITATIVE",
+    "difficulty": "HARD",
+    "correctAnswerId": "c",
+    "options": [
+      { "optionId": "a", "text": "θ" },
+      { "optionId": "b", "text": "θ/2" },
+      { "optionId": "c", "text": "2θ" },
+      { "optionId": "d", "text": "3θ" }
+    ]
+  },
+  {
+    "questionText": "If tan θ + cot θ = 2, then the value of tan²θ + cot²θ is",
+    "questionType": "QUANTITATIVE",
+    "difficulty": "MEDIUM",
+    "correctAnswerId": "a",
+    "options": [
+      { "optionId": "a", "text": "2" },
+      { "optionId": "b", "text": "1" },
+      { "optionId": "c", "text": "√2" },
+      { "optionId": "d", "text": "0" }
+    ]
+  },
+  {
+    "questionText": "How many integers are there between 300 and 600 that are divisible by 9?",
+    "questionType": "QUANTITATIVE",
+    "difficulty": "EASY",
+    "correctAnswerId": "a",
+    "options": [
+      { "optionId": "a", "text": "33" },
+      { "optionId": "b", "text": "31" },
+      { "optionId": "c", "text": "28" },
+      { "optionId": "d", "text": "25" }
+    ]
+  },
+  {
+    "questionText": "What will be the ratio of petrol and kerosene in the final solution formed by mixing petrol and kerosene that are present in three identical vessels in the ratio 4:1, 5:2 and 6:1 respectively?",
+    "questionType": "QUANTITATIVE",
+    "difficulty": "MEDIUM",
+    "correctAnswerId": "b",
+    "options": [
+      { "optionId": "a", "text": "166:22" },
+      { "optionId": "b", "text": "83:22" },
+      { "optionId": "c", "text": "83:44" },
+      { "optionId": "d", "text": "78:55" }
+    ]
+  },
+  {
+    "questionText": "A train crosses a platform in 36 seconds at a speed of 90 km/h. If the length of the train is 200 meters, what is the length of the platform?",
+    "questionType": "QUANTITATIVE",
+    "difficulty": "MEDIUM",
+    "correctAnswerId": "c",
+    "options": [
+      { "optionId": "a", "text": "600 m" },
+      { "optionId": "b", "text": "700 m" },
+      { "optionId": "c", "text": "800 m" },
+      { "optionId": "d", "text": "900 m" }
+    ]
+  },
+  {
+    "questionText": "What will come in place of the question mark (?) in the following number series? 8, 17, 40, 85, 176, ?",
+    "questionType": "LOGICAL",
+    "difficulty": "MEDIUM",
+    "correctAnswerId": "c",
+    "options": [
+      { "optionId": "a", "text": "355" },
+      { "optionId": "b", "text": "360" },
+      { "optionId": "c", "text": "365" },
+      { "optionId": "d", "text": "370" }
+    ]
+  },
+  {
+    "questionText": "What is the least number which when divided by 6, 7, 8, 9 and 12 leaves the remainder 1 in each case?",
+    "questionType": "QUANTITATIVE",
+    "difficulty": "MEDIUM",
+    "correctAnswerId": "b",
+    "options": [
+      { "optionId": "a", "text": "504" },
+      { "optionId": "b", "text": "505" },
+      { "optionId": "c", "text": "606" },
+      { "optionId": "d", "text": "609" }
+    ]
+  },
+  {
+    "questionText": "A man can row 30 km downstream in 3 hours and upstream in 5 hours. What is the speed of the man in still water?",
+    "questionType": "QUANTITATIVE",
+    "difficulty": "MEDIUM",
+    "correctAnswerId": "c",
+    "options": [
+      { "optionId": "a", "text": "6 km/h" },
+      { "optionId": "b", "text": "8 km/h" },
+      { "optionId": "c", "text": "10 km/h" },
+      { "optionId": "d", "text": "12 km/h" }
+    ]
+  }
+]

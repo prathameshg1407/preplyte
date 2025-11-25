@@ -1,0 +1,34 @@
+[
+  {
+    "email": "admin@platform.com",
+    "password": "PlatformAdmin123",
+    "name": "Platform Admin",
+    "role": "PLATFORM_ADMIN",
+    "instituteDomain": null,
+    "isActive": true
+  },
+  {
+    "email": "admin@pvppcoe.ac.in",
+    "password": "InstituteAdmin123",
+    "name": "Institute Admin",
+    "role": "INSTITUTE_ADMIN",
+    "instituteDomain": "pvppcoe.ac.in",
+    "isActive": true
+  },
+  {
+    "email": "student1@pvppcoe.ac.in",
+    "password": "StudentUser1",
+    "name": "Student One",
+    "role": "USER",
+    "instituteDomain": "pvppcoe.ac.in",
+    "isActive": true
+  },
+  {
+    "email": "user1@gmail.com",
+    "password": "UserOne123",
+    "name": "Platform User",
+    "role": "USER",
+    "instituteDomain": null,
+    "isActive": true
+  }
+]
