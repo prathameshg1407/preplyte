@@ -11,7 +11,9 @@
     "build": "rimraf dist && tsc",
 
     "start": "node dist/src/index.js",
-    "start:prod": "node dist/src/index.js",
+"main": "dist/index.js",
+"start:prod": "node dist/index.js"
+
 
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
