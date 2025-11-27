@@ -3,20 +3,19 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { Badge } from '../../ui/badge';
-import { Progress } from '../../ui/progress';
-import { Clock, AlertCircle } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Clock, AlertTriangle } from 'lucide-react';
 import { cn } from '../../../lib/utils';
 import { formatTime } from '../../../lib/constants/aptitude.constants';
 
 interface TestTimerProps {
   expiresAt: string | null;
-  timeLimit: number; // in minutes
+  timeLimit: number;
   onExpire: () => void;
   onTimeUpdate?: (secondsRemaining: number) => void;
   showProgress?: boolean;
-  warningThreshold?: number; // seconds
-  criticalThreshold?: number; // seconds
+  warningThreshold?: number;
+  criticalThreshold?: number;
 }
 
 export function TestTimer({
@@ -24,9 +23,9 @@ export function TestTimer({
   timeLimit,
   onExpire,
   onTimeUpdate,
-  showProgress = false,
-  warningThreshold = 300, // 5 minutes
-  criticalThreshold = 60, // 1 minute
+  showProgress = true,
+  warningThreshold = 300,
+  criticalThreshold = 60,
 }: TestTimerProps) {
   const [timeRemaining, setTimeRemaining] = useState<number>(() => {
     if (!expiresAt) return timeLimit * 60;
@@ -45,7 +44,6 @@ export function TestTimer({
   const totalSeconds = timeLimit * 60;
   const percentage = totalSeconds > 0 ? (timeRemaining / totalSeconds) * 100 : 0;
 
-  // Calculate time remaining
   const calculateTimeRemaining = useCallback(() => {
     if (!expiresAt) return 0;
     const expiry = new Date(expiresAt).getTime();
@@ -53,7 +51,6 @@ export function TestTimer({
     return Math.max(0, Math.floor((expiry - now) / 1000));
   }, [expiresAt]);
 
-  // Timer effect
   useEffect(() => {
     if (!expiresAt || isExpired) return;
 
@@ -72,10 +69,7 @@ export function TestTimer({
       }
     };
 
-    // Initial tick
     tick();
-
-    // Set up interval
     intervalRef.current = setInterval(tick, 1000);
 
     return () => {
@@ -85,57 +79,81 @@ export function TestTimer({
     };
   }, [expiresAt, calculateTimeRemaining, onExpire, onTimeUpdate, isExpired]);
 
-  const getTimerStyles = () => {
-    if (isExpired) {
-      return 'bg-foreground text-background border-foreground';
-    }
-    if (isCritical) {
-      return 'border-foreground bg-secondary animate-pulse';
-    }
-    if (isWarning) {
-      return 'border-foreground/50 bg-secondary';
-    }
-    return 'bg-secondary';
-  };
-
-  const getIcon = () => {
-    if (isExpired || isCritical || isWarning) {
-      return <AlertCircle className="h-4 w-4" />;
-    }
-    return <Clock className="h-4 w-4" />;
-  };
-
   return (
     <div className="space-y-2">
-      <Badge
-        variant="outline"
+      {/* Timer Display */}
+      <motion.div
+        animate={isCritical ? { scale: [1, 1.02, 1] } : {}}
+        transition={{ repeat: isCritical ? Infinity : 0, duration: 1 }}
         className={cn(
-          'px-4 py-2 font-mono text-base transition-all duration-300',
-          getTimerStyles()
+          'inline-flex items-center gap-2 rounded-xl px-4 py-2.5 font-mono text-lg font-semibold transition-all duration-300',
+          // Normal state
+          !isWarning && !isCritical && !isExpired && 'bg-muted',
+          // Warning state
+          isWarning && 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
+          // Critical state
+          isCritical && 'bg-rose-500/10 text-rose-600 dark:text-rose-400',
+          // Expired state
+          isExpired && 'bg-rose-500 text-white'
         )}
       >
-        {getIcon()}
-        <span className="ml-2">
+        <AnimatePresence mode="wait">
+          {(isCritical || isExpired) ? (
+            <motion.div
+              key="alert"
+              initial={{ rotate: -10 }}
+              animate={{ rotate: [10, -10, 10] }}
+              transition={{ repeat: Infinity, duration: 0.5 }}
+            >
+              <AlertTriangle className="h-5 w-5" />
+            </motion.div>
+          ) : (
+            <motion.div key="clock">
+              <Clock className="h-5 w-5" />
+            </motion.div>
+          )}
+        </AnimatePresence>
+        
+        <span>
           {isExpired ? "Time's Up!" : formatTime(timeRemaining)}
         </span>
-      </Badge>
+      </motion.div>
 
+      {/* Progress Bar */}
       {showProgress && !isExpired && (
-        <div className="space-y-1">
-          <Progress
-            value={percentage}
-            className={cn(
-              'h-1.5',
-              isCritical && '[&>div]:animate-pulse'
+        <div className="space-y-1.5">
+          <div className="relative h-1.5 w-full overflow-hidden rounded-full bg-muted">
+            <motion.div
+              className={cn(
+                'absolute inset-y-0 left-0 rounded-full transition-colors duration-300',
+                !isWarning && !isCritical && 'bg-primary',
+                isWarning && 'bg-amber-500',
+                isCritical && 'bg-rose-500'
+              )}
+              initial={{ width: '100%' }}
+              animate={{ width: `${percentage}%` }}
+              transition={{ duration: 0.5 }}
+            />
+          </div>
+
+          <AnimatePresence>
+            {(isWarning || isCritical) && (
+              <motion.p
+                initial={{ opacity: 0, y: -5 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -5 }}
+                className={cn(
+                  'text-xs font-medium',
+                  isWarning && 'text-amber-600 dark:text-amber-400',
+                  isCritical && 'text-rose-600 dark:text-rose-400'
+                )}
+              >
+                {isCritical
+                  ? 'Less than 1 minute remaining!'
+                  : `${Math.ceil(timeRemaining / 60)} minutes left`}
+              </motion.p>
             )}
-          />
-          {(isWarning || isCritical) && (
-            <p className="text-xs font-medium text-muted-foreground">
-              {isCritical
-                ? `Less than ${criticalThreshold} seconds remaining!`
-                : `Less than ${Math.ceil(warningThreshold / 60)} minutes remaining`}
-            </p>
-          )}
+          </AnimatePresence>
         </div>
       )}
     </div>

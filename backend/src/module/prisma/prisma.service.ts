@@ -1,44 +1,43 @@
 import { PrismaClient, Prisma } from '@prisma/client';
 import { prisma } from '../../lib/db';
+import { logger } from '../../utils/logger';
 
 // ============================================
 // Types
 // ============================================
 
-type TransactionClient = Omit<
-  PrismaClient,
-  '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
->;
+/**
+ * Prisma.TransactionClient is the correct type for interactive transactions.
+ */
+export type TransactionClient = Prisma.TransactionClient;
 
-type TransactionOptions = {
+export type TransactionOptions = {
   maxWait?: number;
   timeout?: number;
   isolationLevel?: Prisma.TransactionIsolationLevel;
 };
 
 // ============================================
-// Prisma Service Class
+// Prisma Service
 // ============================================
 
 export class PrismaService {
   private readonly _client: PrismaClient;
 
-  constructor() {
-    this._client = prisma;
+  constructor(client?: PrismaClient) {
+    this._client = client ?? prisma;
   }
 
-  // ============================================
-  // Client Accessors
-  // ============================================
-
+  // -----------------------------
+  // Raw Prisma client access
+  // -----------------------------
   get client(): PrismaClient {
     return this._client;
   }
 
-  // ============================================
-  // Model Accessors
-  // ============================================
-
+  // -----------------------------
+  // Convenience model accessors
+  // -----------------------------
   get user() {
     return this._client.user;
   }
@@ -68,98 +67,173 @@ export class PrismaService {
   }
 
   // ============================================
-  // Transaction Methods - Simplified
+  // Connection Lifecycle
   // ============================================
 
+  async connect(): Promise<void> {
+    try {
+      await this._client.$connect();
+    } catch (err) {
+      logger.error('[PrismaService] connect failed', { error: err });
+      throw err;
+    }
+  }
+
+  async disconnect(): Promise<void> {
+    try {
+      await this._client.$disconnect();
+    } catch (err) {
+      logger.warn('[PrismaService] disconnect failed', { error: err });
+    }
+  }
+
   /**
-   * Execute interactive transaction
+   * Health check with timeout to prevent hanging connections
    */
+  async healthCheck(timeoutMs = 2000): Promise<boolean> {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+      await Promise.race([
+        this._client.$queryRaw`SELECT 1`,
+        new Promise((_, reject) => {
+          controller.signal.addEventListener('abort', () =>
+            reject(new Error('timeout'))
+          );
+        }),
+      ]);
+      return true;
+    } catch (err: any) {
+      logger.warn('[PrismaService] healthCheck failed', {
+        error: err.message,
+      });
+      return false;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  // ============================================
+  // Transactions
+  // ============================================
+
+  // Overload signature to enforce callback transaction form
+  async transaction<T>(
+    fn: (tx: TransactionClient) => Promise<T>,
+    options?: TransactionOptions
+  ): Promise<T>;
+
+  // Implementation
   async transaction<T>(
     fn: (tx: TransactionClient) => Promise<T>,
     options?: TransactionOptions
   ): Promise<T> {
-    return this._client.$transaction(fn, options);
+    try {
+      return await (this._client as any).$transaction(fn, options);
+    } catch (err: any) {
+      logger.error('[PrismaService] transaction failed', {
+        error: err.message,
+      });
+      throw err;
+    }
   }
 
   /**
-   * Execute batch transaction with array of queries
-   * Using 'any' here because Prisma's internal types are complex
+   * Batch transaction (parallel query execution)
    */
-  async transactionBatch(queries: Prisma.PrismaPromise<any>[]): Promise<any[]> {
-    return this._client.$transaction(queries);
-  }
-
-  // ============================================
-  // Utility Methods
-  // ============================================
-
-  async disconnect(): Promise<void> {
-    await this._client.$disconnect();
-  }
-
-  async connect(): Promise<void> {
-    await this._client.$connect();
-  }
-
-  async healthCheck(): Promise<boolean> {
+  async transactionBatch<T = unknown>(
+    queries: Prisma.PrismaPromise<T>[]
+  ): Promise<T[]> {
     try {
-      await this._client.$queryRaw`SELECT 1`;
-      return true;
-    } catch {
-      return false;
+      return await this._client.$transaction(queries);
+    } catch (err: any) {
+      logger.error('[PrismaService] transactionBatch failed', {
+        error: err.message,
+      });
+      throw err;
     }
   }
 
   // ============================================
-  // Query Helpers
+  // Raw Queries
   // ============================================
 
-  /**
-   * Execute a raw query safely
-   */
   async executeRaw(query: string, ...values: unknown[]): Promise<number> {
-    return this._client.$executeRawUnsafe(query, ...values);
+    try {
+      return await this._client.$executeRawUnsafe(query, ...values);
+    } catch (err: any) {
+      logger.error('[PrismaService] executeRaw failed', {
+        query,
+        error: err.message,
+      });
+      throw err;
+    }
   }
 
-  /**
-   * Query with raw SQL safely
-   */
-  async queryRaw<T = unknown>(query: string, ...values: unknown[]): Promise<T[]> {
-    return this._client.$queryRawUnsafe<T[]>(query, ...values);
+  async queryRaw<T = unknown>(
+    query: string,
+    ...values: unknown[]
+  ): Promise<T[]> {
+    try {
+      return await this._client.$queryRawUnsafe<T[]>(query, ...values);
+    } catch (err: any) {
+      logger.error('[PrismaService] queryRaw failed', {
+        query,
+        error: err.message,
+      });
+      throw err;
+    }
   }
 
-  /**
-   * Soft delete helper - updates deletedAt field
-   */
-  async softDelete<T extends keyof PrismaClient>(
-    modelName: T,
+  // ============================================
+  // Soft Delete Helpers
+  // ============================================
+
+  async softDelete<Model extends keyof PrismaClient>(
+    modelName: Model,
     where: Record<string, unknown>
   ): Promise<unknown> {
-    const model = this._client[modelName] as any;
-    if (model?.update) {
-      return model.update({
+    const model: any = this._client[modelName];
+    if (!model?.update) {
+      throw new Error(`Model ${String(modelName)} does not support update()`);
+    }
+
+    try {
+      return await model.update({
         where,
         data: { deletedAt: new Date() },
       });
+    } catch (err: any) {
+      logger.error('[PrismaService] softDelete failed', {
+        model: String(modelName),
+        error: err.message,
+      });
+      throw err;
     }
-    throw new Error(`Model ${String(modelName)} does not support update`);
   }
 
-  /**
-   * Restore soft deleted record
-   */
-  async restore<T extends keyof PrismaClient>(
-    modelName: T,
+  async restore<Model extends keyof PrismaClient>(
+    modelName: Model,
     where: Record<string, unknown>
   ): Promise<unknown> {
-    const model = this._client[modelName] as any;
-    if (model?.update) {
-      return model.update({
+    const model: any = this._client[modelName];
+    if (!model?.update) {
+      throw new Error(`Model ${String(modelName)} does not support update()`);
+    }
+
+    try {
+      return await model.update({
         where,
         data: { deletedAt: null },
       });
+    } catch (err: any) {
+      logger.error('[PrismaService] restore failed', {
+        model: String(modelName),
+        error: err.message,
+      });
+      throw err;
     }
-    throw new Error(`Model ${String(modelName)} does not support update`);
   }
 }
 
@@ -168,3 +242,4 @@ export class PrismaService {
 // ============================================
 
 export const prismaService = new PrismaService();
+export default prismaService;

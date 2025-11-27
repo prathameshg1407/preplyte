@@ -1,115 +1,462 @@
 // src/lib/api/endpoints.ts
 
+// ============================================
+// API Base Configuration
+// ============================================
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
+
+// ============================================
+// API Endpoints
+// ============================================
+
 export const API_ENDPOINTS = {
+  // ============================================
+  // Authentication
+  // ============================================
   AUTH: {
     REGISTER: '/api/auth/register',
     LOGIN: '/api/auth/login',
     LOGOUT: '/api/auth/logout',
     ME: '/api/auth/me',
     REFRESH: '/api/auth/refresh',
+    FORGOT_PASSWORD: '/api/auth/forgot-password',
+    RESET_PASSWORD: '/api/auth/reset-password',
+    VERIFY_EMAIL: '/api/auth/verify-email',
   },
+
+  // ============================================
+  // User
+  // ============================================
   USER: {
     PROFILE: '/api/user/profile',
     UPDATE: '/api/user/update',
+    CHANGE_PASSWORD: '/api/user/change-password',
+    DELETE_ACCOUNT: '/api/user/delete',
   },
+
+  // ============================================
+  // Profile Management
+  // ============================================
+  PROFILE: {
+    COMPLETE: '/api/profile',
+    USER: '/api/profile/user',
+    STUDENT: '/api/profile/student',
+    STUDENT_SKILLS: '/api/profile/student/skills',
+    STUDENT_ACADEMICS: '/api/profile/student/academics',
+    RESUMES: '/api/profile/resumes',
+    RESUMES_DEFAULT: '/api/profile/resumes/default',
+    RESUME: (id: number) => `/api/profile/resumes/${id}` as const,
+    RESUME_DEFAULT: (id: number) => `/api/profile/resumes/${id}/default` as const,
+    RESUME_TEXT: (id: number) => `/api/profile/resumes/${id}/text` as const,
+    RESUME_LINK: (id: number) => `/api/profile/resumes/${id}/link` as const,
+  },
+
+  // ============================================
+  // Aptitude Practice
+  // ============================================
   APTITUDE: {
     SESSIONS: '/api/aptitude/sessions',
-    SESSION: (id: string) => `/api/aptitude/sessions/${id}`,
-    QUESTIONS: (id: string) => `/api/aptitude/sessions/${id}/questions`,
+    SESSION: (id: string) => `/api/aptitude/sessions/${id}` as const,
+    QUESTIONS: (id: string) => `/api/aptitude/sessions/${id}/questions` as const,
     QUESTION: (sessionId: string, questionId: string) =>
-      `/api/aptitude/sessions/${sessionId}/questions/${questionId}`,
-    ANSWER: (id: string) => `/api/aptitude/sessions/${id}/answer`,
-    SUBMIT: (id: string) => `/api/aptitude/sessions/${id}/submit`,
-    STATUS: (id: string) => `/api/aptitude/sessions/${id}/status`,
-    RESULTS: (id: string) => `/api/aptitude/sessions/${id}/results`,
-    SOLUTIONS: (id: string) => `/api/aptitude/sessions/${id}/solutions`,
+      `/api/aptitude/sessions/${sessionId}/questions/${questionId}` as const,
+    ANSWER: (id: string) => `/api/aptitude/sessions/${id}/answer` as const,
+    SUBMIT: (id: string) => `/api/aptitude/sessions/${id}/submit` as const,
+    STATUS: (id: string) => `/api/aptitude/sessions/${id}/status` as const,
+    RESULTS: (id: string) => `/api/aptitude/sessions/${id}/results` as const,
+    SOLUTIONS: (id: string) => `/api/aptitude/sessions/${id}/solutions` as const,
   },
+
+  // ============================================
+  // Machine Coding Practice
+  // ============================================
   MACHINE: {
     SESSIONS: '/api/machine/sessions',
-    SESSION: (id: string) => `/api/machine/sessions/${id}`,
-    QUESTIONS: (id: string) => `/api/machine/sessions/${id}/questions`,
+    SESSION: (id: string) => `/api/machine/sessions/${id}` as const,
+    QUESTIONS: (id: string) => `/api/machine/sessions/${id}/questions` as const,
     QUESTION: (sessionId: string, questionId: string) =>
-      `/api/machine/sessions/${sessionId}/questions/${questionId}`,
-    RUN: (sid: string, qid: string) =>
-      `/api/machine/sessions/${sid}/questions/${qid}/run`,
-    SUBMIT: (sid: string, qid: string) =>
-      `/api/machine/sessions/${sid}/questions/${qid}/submit`,
-    COMPLETE: (id: string) => `/api/machine/sessions/${id}/complete`,
-    RESULTS: (id: string) => `/api/machine/sessions/${id}/results`,
+      `/api/machine/sessions/${sessionId}/questions/${questionId}` as const,
+    RUN: (sessionId: string, questionId: string) =>
+      `/api/machine/sessions/${sessionId}/questions/${questionId}/run` as const,
+    SUBMIT: (sessionId: string, questionId: string) =>
+      `/api/machine/sessions/${sessionId}/questions/${questionId}/submit` as const,
+    COMPLETE: (id: string) => `/api/machine/sessions/${id}/complete` as const,
+    RESULTS: (id: string) => `/api/machine/sessions/${id}/results` as const,
   },
+
+  // ============================================
+  // AI Interview Practice
+  // ============================================
   INTERVIEW: {
-    // Session management
     START: '/api/ai-interview/start',
     SESSIONS: '/api/ai-interview/sessions',
     STATS: '/api/ai-interview/stats',
-    
-    // Session operations
-    SESSION: (id: string) => `/api/ai-interview/${id}`,
-    RESPOND: (id: string) => `/api/ai-interview/${id}/respond`,
-    END: (id: string) => `/api/ai-interview/${id}/end`,
-    FEEDBACK: (id: string) => `/api/ai-interview/${id}/feedback`,
-    DELETE: (id: string) => `/api/ai-interview/${id}`,
-    
-    // Deprecated - kept for backwards compatibility
-    /** @deprecated Use RESPOND instead */
-    ANSWER: (id: string) => `/api/ai-interview/${id}/respond`,
-    /** @deprecated No longer used */
-    NEXT: (id: string) => `/api/ai-interview/${id}`,
-    /** @deprecated Use END instead */
-    CANCEL: (id: string) => `/api/ai-interview/${id}/end`,
+    SESSION: (id: string) => `/api/ai-interview/${id}` as const,
+    RESPOND: (id: string) => `/api/ai-interview/${id}/respond` as const,
+    END: (id: string) => `/api/ai-interview/${id}/end` as const,
+    FEEDBACK: (id: string) => `/api/ai-interview/${id}/feedback` as const,
+    DELETE: (id: string) => `/api/ai-interview/${id}` as const,
   },
- ADMIN: {
-    ANALYTICS: '/api/admin/analytics',
-    INSTITUTES: '/api/admin/institutes',
-    INSTITUTE: (id: string) => `/api/admin/institutes/${id}`,
-    INSTITUTE_TOGGLE: (id: string) => `/api/admin/institutes/${id}/toggle-status`,
-    
-    // Add these missing specific endpoints:
-    INSTITUTE_STATS: (id: string) => `/api/admin/institutes/${id}/stats`,
-    INSTITUTE_STUDENTS: (id: string) => `/api/admin/institutes/${id}/students`,
-    INSTITUTE_ADMINS: (id: string) => `/api/admin/institutes/${id}/admins`,
 
+  // ============================================
+  // Platform Admin
+  // ============================================
+  ADMIN: {
+    ANALYTICS: '/api/admin/analytics',
+
+    // Institutes
+    INSTITUTES: '/api/admin/institutes',
+    INSTITUTE: (id: string) => `/api/admin/institutes/${id}` as const,
+    INSTITUTE_TOGGLE: (id: string) => `/api/admin/institutes/${id}/toggle-status` as const,
+    INSTITUTE_STATS: (id: string) => `/api/admin/institutes/${id}/stats` as const,
+    INSTITUTE_STUDENTS: (id: string) => `/api/admin/institutes/${id}/students` as const,
+    INSTITUTE_ADMINS: (id: string) => `/api/admin/institutes/${id}/admins` as const,
+
+    // Users
     USERS: '/api/admin/users',
-    USER: (id: string) => `/api/admin/users/${id}`,
-    USER_TOGGLE: (id: string) => `/api/admin/users/${id}/toggle-status`,
-    
-    // Add this one too for getUserStats:
-    USER_STATS: (id: string) => `/api/admin/users/${id}/stats`,
-    // Add this missing section
+    USER: (id: string) => `/api/admin/users/${id}` as const,
+    USER_TOGGLE: (id: string) => `/api/admin/users/${id}/toggle-status` as const,
+    USER_STATS: (id: string) => `/api/admin/users/${id}/stats` as const,
+
+    // Reports
     REPORTS: {
       INSTITUTES: '/api/admin/reports/institutes',
       USERS: '/api/admin/reports/users',
       ACTIVITY: '/api/admin/reports/activity',
     },
   },
+
+  // ============================================
+  // Institute Admin - Mock Drive Management
+  // ============================================
+  INSTITUTE: {
+    // Base Mock Drive CRUD
+    MOCK_DRIVES: '/api/institute/mock-drive',
+    MOCK_DRIVE: (id: string) => `/api/institute/mock-drive/${id}` as const,
+    MOCK_DRIVE_PUBLISH: (id: string) => `/api/institute/mock-drive/${id}/publish` as const,
+    MOCK_DRIVE_CANCEL: (id: string) => `/api/institute/mock-drive/${id}/cancel` as const,
+    MOCK_DRIVE_DUPLICATE: (id: string) => `/api/institute/mock-drive/${id}/duplicate` as const,
+    MOCK_DRIVE_STATS: (id: string) => `/api/institute/mock-drive/${id}/stats` as const,
+
+    // Eligibility
+    MOCK_DRIVE_ELIGIBILITY: (id: string) =>
+      `/api/institute/mock-drive/${id}/eligibility` as const,
+
+    // Modules
+    MOCK_DRIVE_MODULES: (id: string) => `/api/institute/mock-drive/${id}/modules` as const,
+    MOCK_DRIVE_MODULE: (driveId: string, moduleId: string) =>
+      `/api/institute/mock-drive/${driveId}/modules/${moduleId}` as const,
+    MOCK_DRIVE_MODULES_REORDER: (id: string) =>
+      `/api/institute/mock-drive/${id}/modules/reorder` as const,
+
+    // Registrations
+    MOCK_DRIVE_REGISTRATIONS: (id: string) =>
+      `/api/institute/mock-drive/${id}/registrations` as const,
+    MOCK_DRIVE_REGISTRATION: (driveId: string, regId: string) =>
+      `/api/institute/mock-drive/${driveId}/registrations/${regId}` as const,
+    MOCK_DRIVE_REGISTRATIONS_BULK: (id: string) =>
+      `/api/institute/mock-drive/${id}/registrations/bulk` as const,
+
+    // Batches
+    MOCK_DRIVE_BATCHES: (id: string) => `/api/institute/mock-drive/${id}/batches` as const,
+    MOCK_DRIVE_BATCH: (driveId: string, batchId: string) =>
+      `/api/institute/mock-drive/${driveId}/batches/${batchId}` as const,
+    MOCK_DRIVE_BATCHES_AUTO_CREATE: (id: string) =>
+      `/api/institute/mock-drive/${id}/batches/auto-create` as const,
+    MOCK_DRIVE_BATCH_ASSIGN: (driveId: string, batchId: string) =>
+      `/api/institute/mock-drive/${driveId}/batches/${batchId}/assign-students` as const,
+
+    // Analytics
+    MOCK_DRIVE_ANALYTICS: (id: string) =>
+      `/api/institute/mock-drive/${id}/analytics` as const,
+    MOCK_DRIVE_ANALYTICS_BATCHES: (id: string) =>
+      `/api/institute/mock-drive/${id}/analytics/batches` as const,
+
+    // Results
+    MOCK_DRIVE_RESULTS: (id: string) => `/api/institute/mock-drive/${id}/results` as const,
+    MOCK_DRIVE_RESULTS_EXPORT: (id: string) =>
+      `/api/institute/mock-drive/${id}/results/export` as const,
+    MOCK_DRIVE_RESULT_DETAIL: (driveId: string, attemptId: string) =>
+      `/api/institute/mock-drive/${driveId}/results/${attemptId}` as const,
+    MOCK_DRIVE_LEADERBOARD: (id: string) =>
+      `/api/institute/mock-drive/${id}/leaderboard` as const,
+  },
+
+  // ============================================
+  // Student - Mock Drive Discovery & Attempt
+  // ============================================
+  MOCK_DRIVES: {
+    // Discovery & Registration
+    LIST: '/api/mock-drives',
+    MY_REGISTRATIONS: '/api/mock-drives/my-registrations',
+    DETAIL: (id: string) => `/api/mock-drives/${id}` as const,
+    ELIGIBILITY: (id: string) => `/api/mock-drives/${id}/eligibility` as const,
+    REGISTER: (id: string) => `/api/mock-drives/${id}/register` as const,
+
+    // Attempt Management
+    ATTEMPT: (id: string) => `/api/mock-drives/${id}/attempt` as const,
+    START: (id: string) => `/api/mock-drives/${id}/attempt/start` as const,
+
+    // Module Operations
+    MODULE: (driveId: string, moduleId: string) =>
+      `/api/mock-drives/${driveId}/modules/${moduleId}` as const,
+    MODULE_START: (driveId: string, moduleId: string) =>
+      `/api/mock-drives/${driveId}/modules/${moduleId}/start` as const,
+    MODULE_SUBMIT: (driveId: string, moduleId: string) =>
+      `/api/mock-drives/${driveId}/modules/${moduleId}/submit` as const,
+
+    // Aptitude Module Actions
+    APTITUDE_ANSWER: (driveId: string, moduleId: string) =>
+      `/api/mock-drives/${driveId}/modules/${moduleId}/aptitude/answer` as const,
+    APTITUDE_CLEAR: (driveId: string, moduleId: string) =>
+      `/api/mock-drives/${driveId}/modules/${moduleId}/aptitude/clear` as const,
+    APTITUDE_MARK_REVIEW: (driveId: string, moduleId: string) =>
+      `/api/mock-drives/${driveId}/modules/${moduleId}/aptitude/mark-review` as const,
+
+    // Machine Coding Module Actions
+    MACHINE_RUN: (driveId: string, moduleId: string) =>
+      `/api/mock-drives/${driveId}/modules/${moduleId}/machine/run` as const,
+    MACHINE_SUBMIT: (driveId: string, moduleId: string) =>
+      `/api/mock-drives/${driveId}/modules/${moduleId}/machine/submit` as const,
+
+    // AI Interview Module Actions
+    INTERVIEW_RESPOND: (driveId: string, moduleId: string) =>
+      `/api/mock-drives/${driveId}/modules/${moduleId}/interview/respond` as const,
+    INTERVIEW_SKIP: (driveId: string, moduleId: string) =>
+      `/api/mock-drives/${driveId}/modules/${moduleId}/interview/skip` as const,
+    INTERVIEW_NEXT: (driveId: string, moduleId: string) =>
+      `/api/mock-drives/${driveId}/modules/${moduleId}/interview/next` as const,
+    INTERVIEW_VOICE_START: (driveId: string, moduleId: string) =>
+      `/api/mock-drives/${driveId}/modules/${moduleId}/interview/voice/start` as const,
+    INTERVIEW_AUDIO_QUESTION: (driveId: string, moduleId: string) =>
+      `/api/mock-drives/${driveId}/modules/${moduleId}/interview/audio-question` as const,
+
+    // Results
+    RESULT: (id: string) => `/api/mock-drives/${id}/result` as const,
+    REPORT: (id: string) => `/api/mock-drives/${id}/report` as const,
+
+    // Leaderboard
+    LEADERBOARD: (id: string) => `/api/mock-drives/${id}/leaderboard` as const,
+    MY_RANK: (id: string) => `/api/mock-drives/${id}/leaderboard/my-rank` as const,
+  },
+
+  // ============================================
+  // Common / Config
+  // ============================================
   COMMON: {
     LANGUAGES: '/api/languages',
     TIME_LIMITS: '/api/config/time-limits',
     DIFFICULTY_LEVELS: '/api/enums/difficulty-levels',
     QUESTION_TYPES: '/api/enums/question-types',
-  },
-  PROFILE: {
-    // Complete profile
-    COMPLETE: '/api/profile',
-    
-    // User profile
-    USER: '/api/profile/user',
-    
-    // Student profile
-    STUDENT: '/api/profile/student',
-    STUDENT_SKILLS: '/api/profile/student/skills',
-    STUDENT_ACADEMICS: '/api/profile/student/academics',
-    
-    // Resumes
-    RESUMES: '/api/profile/resumes',
-    RESUMES_DEFAULT: '/api/profile/resumes/default',
-    RESUME: (id: number) => `/api/profile/resumes/${id}`,
-    RESUME_DEFAULT: (id: number) => `/api/profile/resumes/${id}/default`,
-    RESUME_TEXT: (id: number) => `/api/profile/resumes/${id}/text`,
-    RESUME_LINK: (id: number) => `/api/profile/resumes/${id}/link`,
+    AI_INTERVIEW_DIFFICULTIES: '/api/enums/ai-interview-difficulties',
+    MODULE_TYPES: '/api/enums/module-types',
+    MOCK_DRIVE_STATUSES: '/api/enums/mock-drive-statuses',
   },
 } as const;
 
-// Type helper for endpoint functions
-export type EndpointFunction = (id: string) => string;
-export type EndpointFunctionTwo = (id1: string, id2: string) => string;
+// ============================================
+// Type Helpers
+// ============================================
+
+export type ApiEndpoints = typeof API_ENDPOINTS;
+
+// ============================================
+// URL Builder Utilities
+// ============================================
+
+/**
+ * Build full URL with base
+ */
+export function buildUrl(endpoint: string): string {
+  return `${API_BASE_URL}${endpoint}`;
+}
+
+/**
+ * Build URL with query parameters
+ */
+export function buildUrlWithParams(
+  endpoint: string,
+  params: Record<string, string | number | boolean | string[] | undefined | null>
+): string {
+  const url = new URL(endpoint, API_BASE_URL || 'http://localhost');
+
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== '') {
+      if (Array.isArray(value)) {
+        value.forEach((v) => url.searchParams.append(key, String(v)));
+      } else {
+        url.searchParams.set(key, String(value));
+      }
+    }
+  });
+
+  return API_BASE_URL ? url.toString() : `${url.pathname}${url.search}`;
+}
+
+/**
+ * Replace path parameters in endpoint
+ */
+export function replacePathParams(
+  endpoint: string,
+  params: Record<string, string | number>
+): string {
+  let result = endpoint;
+  Object.entries(params).forEach(([key, value]) => {
+    result = result.replace(`:${key}`, String(value));
+    result = result.replace(`{${key}}`, String(value));
+  });
+  return result;
+}
+
+// ============================================
+// Endpoint Builders (Organized by Domain)
+// ============================================
+
+export const EndpointBuilders = {
+  /**
+   * Institute Admin Mock Drive Endpoints
+   */
+  instituteMockDrive: {
+    list: () => buildUrl(API_ENDPOINTS.INSTITUTE.MOCK_DRIVES),
+    create: () => buildUrl(API_ENDPOINTS.INSTITUTE.MOCK_DRIVES),
+    get: (id: string) => buildUrl(API_ENDPOINTS.INSTITUTE.MOCK_DRIVE(id)),
+    update: (id: string) => buildUrl(API_ENDPOINTS.INSTITUTE.MOCK_DRIVE(id)),
+    delete: (id: string) => buildUrl(API_ENDPOINTS.INSTITUTE.MOCK_DRIVE(id)),
+    publish: (id: string) => buildUrl(API_ENDPOINTS.INSTITUTE.MOCK_DRIVE_PUBLISH(id)),
+    cancel: (id: string) => buildUrl(API_ENDPOINTS.INSTITUTE.MOCK_DRIVE_CANCEL(id)),
+    duplicate: (id: string) => buildUrl(API_ENDPOINTS.INSTITUTE.MOCK_DRIVE_DUPLICATE(id)),
+    stats: (id: string) => buildUrl(API_ENDPOINTS.INSTITUTE.MOCK_DRIVE_STATS(id)),
+    eligibility: (id: string) => buildUrl(API_ENDPOINTS.INSTITUTE.MOCK_DRIVE_ELIGIBILITY(id)),
+    modules: (id: string) => buildUrl(API_ENDPOINTS.INSTITUTE.MOCK_DRIVE_MODULES(id)),
+    module: (driveId: string, moduleId: string) =>
+      buildUrl(API_ENDPOINTS.INSTITUTE.MOCK_DRIVE_MODULE(driveId, moduleId)),
+    registrations: (id: string) => buildUrl(API_ENDPOINTS.INSTITUTE.MOCK_DRIVE_REGISTRATIONS(id)),
+    batches: (id: string) => buildUrl(API_ENDPOINTS.INSTITUTE.MOCK_DRIVE_BATCHES(id)),
+    analytics: (id: string) => buildUrl(API_ENDPOINTS.INSTITUTE.MOCK_DRIVE_ANALYTICS(id)),
+    results: (id: string) => buildUrl(API_ENDPOINTS.INSTITUTE.MOCK_DRIVE_RESULTS(id)),
+    leaderboard: (id: string) => buildUrl(API_ENDPOINTS.INSTITUTE.MOCK_DRIVE_LEADERBOARD(id)),
+  },
+
+  /**
+   * Student Mock Drive Endpoints
+   */
+  mockDrives: {
+    // Discovery
+    list: () => buildUrl(API_ENDPOINTS.MOCK_DRIVES.LIST),
+    listWithParams: (params: {
+      page?: number;
+      limit?: number;
+      status?: string[];
+      search?: string;
+      registrationOpen?: boolean;
+    }) => buildUrlWithParams(API_ENDPOINTS.MOCK_DRIVES.LIST, params),
+    detail: (id: string) => buildUrl(API_ENDPOINTS.MOCK_DRIVES.DETAIL(id)),
+    myRegistrations: () => buildUrl(API_ENDPOINTS.MOCK_DRIVES.MY_REGISTRATIONS),
+
+    // Eligibility & Registration
+    eligibility: (id: string) => buildUrl(API_ENDPOINTS.MOCK_DRIVES.ELIGIBILITY(id)),
+    register: (id: string) => buildUrl(API_ENDPOINTS.MOCK_DRIVES.REGISTER(id)),
+    withdraw: (id: string) => buildUrl(API_ENDPOINTS.MOCK_DRIVES.REGISTER(id)),
+
+    // Attempt
+    attempt: (id: string) => buildUrl(API_ENDPOINTS.MOCK_DRIVES.ATTEMPT(id)),
+    start: (id: string) => buildUrl(API_ENDPOINTS.MOCK_DRIVES.START(id)),
+
+    // Module Operations
+    module: (driveId: string, moduleId: string) =>
+      buildUrl(API_ENDPOINTS.MOCK_DRIVES.MODULE(driveId, moduleId)),
+    moduleStart: (driveId: string, moduleId: string) =>
+      buildUrl(API_ENDPOINTS.MOCK_DRIVES.MODULE_START(driveId, moduleId)),
+    moduleSubmit: (driveId: string, moduleId: string) =>
+      buildUrl(API_ENDPOINTS.MOCK_DRIVES.MODULE_SUBMIT(driveId, moduleId)),
+
+    // Aptitude
+    aptitudeAnswer: (driveId: string, moduleId: string) =>
+      buildUrl(API_ENDPOINTS.MOCK_DRIVES.APTITUDE_ANSWER(driveId, moduleId)),
+    aptitudeClear: (driveId: string, moduleId: string) =>
+      buildUrl(API_ENDPOINTS.MOCK_DRIVES.APTITUDE_CLEAR(driveId, moduleId)),
+    aptitudeMarkReview: (driveId: string, moduleId: string) =>
+      buildUrl(API_ENDPOINTS.MOCK_DRIVES.APTITUDE_MARK_REVIEW(driveId, moduleId)),
+
+    // Machine Coding
+    machineRun: (driveId: string, moduleId: string) =>
+      buildUrl(API_ENDPOINTS.MOCK_DRIVES.MACHINE_RUN(driveId, moduleId)),
+    machineSubmit: (driveId: string, moduleId: string) =>
+      buildUrl(API_ENDPOINTS.MOCK_DRIVES.MACHINE_SUBMIT(driveId, moduleId)),
+
+    // Interview
+    interviewRespond: (driveId: string, moduleId: string) =>
+      buildUrl(API_ENDPOINTS.MOCK_DRIVES.INTERVIEW_RESPOND(driveId, moduleId)),
+    interviewSkip: (driveId: string, moduleId: string) =>
+      buildUrl(API_ENDPOINTS.MOCK_DRIVES.INTERVIEW_SKIP(driveId, moduleId)),
+    interviewNext: (driveId: string, moduleId: string) =>
+      buildUrl(API_ENDPOINTS.MOCK_DRIVES.INTERVIEW_NEXT(driveId, moduleId)),
+    interviewVoiceStart: (driveId: string, moduleId: string) =>
+      buildUrl(API_ENDPOINTS.MOCK_DRIVES.INTERVIEW_VOICE_START(driveId, moduleId)),
+    interviewAudioQuestion: (driveId: string, moduleId: string) =>
+      buildUrl(API_ENDPOINTS.MOCK_DRIVES.INTERVIEW_AUDIO_QUESTION(driveId, moduleId)),
+
+    // Results
+    result: (id: string) => buildUrl(API_ENDPOINTS.MOCK_DRIVES.RESULT(id)),
+    report: (id: string) => buildUrl(API_ENDPOINTS.MOCK_DRIVES.REPORT(id)),
+
+    // Leaderboard
+    leaderboard: (id: string) => buildUrl(API_ENDPOINTS.MOCK_DRIVES.LEADERBOARD(id)),
+    leaderboardWithParams: (
+      id: string,
+      params: { page?: number; limit?: number; batchId?: string; department?: string }
+    ) => buildUrlWithParams(API_ENDPOINTS.MOCK_DRIVES.LEADERBOARD(id), params),
+    myRank: (id: string) => buildUrl(API_ENDPOINTS.MOCK_DRIVES.MY_RANK(id)),
+    myRankWithParams: (id: string, params: { batchId?: string }) =>
+      buildUrlWithParams(API_ENDPOINTS.MOCK_DRIVES.MY_RANK(id), params),
+  },
+
+  // ... rest of the endpoint builders remain the same
+  auth: {
+    login: () => buildUrl(API_ENDPOINTS.AUTH.LOGIN),
+    register: () => buildUrl(API_ENDPOINTS.AUTH.REGISTER),
+    logout: () => buildUrl(API_ENDPOINTS.AUTH.LOGOUT),
+    me: () => buildUrl(API_ENDPOINTS.AUTH.ME),
+    refresh: () => buildUrl(API_ENDPOINTS.AUTH.REFRESH),
+  },
+
+  profile: {
+    complete: () => buildUrl(API_ENDPOINTS.PROFILE.COMPLETE),
+    user: () => buildUrl(API_ENDPOINTS.PROFILE.USER),
+    student: () => buildUrl(API_ENDPOINTS.PROFILE.STUDENT),
+    resumes: () => buildUrl(API_ENDPOINTS.PROFILE.RESUMES),
+    resume: (id: number) => buildUrl(API_ENDPOINTS.PROFILE.RESUME(id)),
+  },
+
+  aptitude: {
+    sessions: () => buildUrl(API_ENDPOINTS.APTITUDE.SESSIONS),
+    session: (id: string) => buildUrl(API_ENDPOINTS.APTITUDE.SESSION(id)),
+    questions: (id: string) => buildUrl(API_ENDPOINTS.APTITUDE.QUESTIONS(id)),
+    answer: (id: string) => buildUrl(API_ENDPOINTS.APTITUDE.ANSWER(id)),
+    submit: (id: string) => buildUrl(API_ENDPOINTS.APTITUDE.SUBMIT(id)),
+    results: (id: string) => buildUrl(API_ENDPOINTS.APTITUDE.RESULTS(id)),
+  },
+
+  machine: {
+    sessions: () => buildUrl(API_ENDPOINTS.MACHINE.SESSIONS),
+    session: (id: string) => buildUrl(API_ENDPOINTS.MACHINE.SESSION(id)),
+    questions: (id: string) => buildUrl(API_ENDPOINTS.MACHINE.QUESTIONS(id)),
+    run: (sessionId: string, questionId: string) =>
+      buildUrl(API_ENDPOINTS.MACHINE.RUN(sessionId, questionId)),
+    submit: (sessionId: string, questionId: string) =>
+      buildUrl(API_ENDPOINTS.MACHINE.SUBMIT(sessionId, questionId)),
+    complete: (id: string) => buildUrl(API_ENDPOINTS.MACHINE.COMPLETE(id)),
+    results: (id: string) => buildUrl(API_ENDPOINTS.MACHINE.RESULTS(id)),
+  },
+
+  interview: {
+    start: () => buildUrl(API_ENDPOINTS.INTERVIEW.START),
+    sessions: () => buildUrl(API_ENDPOINTS.INTERVIEW.SESSIONS),
+    stats: () => buildUrl(API_ENDPOINTS.INTERVIEW.STATS),
+    session: (id: string) => buildUrl(API_ENDPOINTS.INTERVIEW.SESSION(id)),
+    respond: (id: string) => buildUrl(API_ENDPOINTS.INTERVIEW.RESPOND(id)),
+    end: (id: string) => buildUrl(API_ENDPOINTS.INTERVIEW.END(id)),
+    feedback: (id: string) => buildUrl(API_ENDPOINTS.INTERVIEW.FEEDBACK(id)),
+  },
+} as const;

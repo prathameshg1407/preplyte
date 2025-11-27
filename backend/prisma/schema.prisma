@@ -14,7 +14,7 @@ datasource db {
 }
 
 // =====================================================
-// ENUMS
+// ENUMS - CORE
 // =====================================================
 
 enum UserRole {
@@ -50,6 +50,10 @@ enum SubmissionStatus {
   COMPILATION_ERROR
 }
 
+// =====================================================
+// ENUMS - AI INTERVIEW
+// =====================================================
+
 enum AiInterviewSessionStatus {
   CREATED
   STARTED
@@ -59,23 +63,75 @@ enum AiInterviewSessionStatus {
   FAILED
 }
 
-enum AiInterviewSessionType {
-  TEXT
-  VOICE
-}
-
 enum AiInterviewQuestionCategory {
   INTRODUCTORY
   TECHNICAL
   BEHAVIORAL
   SITUATIONAL
-  PROJECT_BASED
-  SKILL_BASED
   CLOSING
 }
 
+enum AiInterviewDifficulty {
+  ENTRY
+  MID
+  SENIOR
+  LEAD
+}
+
 // =====================================================
-// USER & INSTITUTE
+// ENUMS - MOCKDRIVE
+// =====================================================
+
+enum MockDriveStatus {
+  DRAFT
+  PUBLISHED
+  REGISTRATION_OPEN
+  REGISTRATION_CLOSED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum MockDriveModuleType {
+  APTITUDE
+  MACHINE_CODING
+  AI_INTERVIEW
+}
+
+enum MockDriveRegistrationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  WITHDRAWN
+}
+
+enum MockDriveBatchStatus {
+  CREATED
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum MockDriveAttemptStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+  TIMED_OUT
+  ABANDONED
+}
+
+enum MockDriveModuleAttemptStatus {
+  LOCKED
+  AVAILABLE
+  IN_PROGRESS
+  COMPLETED
+  TIMED_OUT
+  SKIPPED
+}
+
+// =====================================================
+// USER & AUTHENTICATION
 // =====================================================
 
 model User {
@@ -87,23 +143,33 @@ model User {
   isActive    Boolean  @default(true)
   instituteId String?
 
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  lastLoginAt DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  lastLoginAt  DateTime?
+  tokenVersion Int       @default(0)
 
-  tokenVersion  Int            @default(0)
+  // Relations
+  institute        Institute?                @relation(fields: [instituteId], references: [id], onDelete: SetNull)
+  refreshTokens    RefreshToken[]
+  profile          StudentProfile?
+  resumes          Resume[]
+  
+  // Practice Sessions
+  aptitudeSessions AptitudePracticeSession[]
+  machineSessions  MachinePracticeSession[]
 
-  institute            Institute?              @relation(fields: [instituteId], references: [id])
-  refreshTokens        RefreshToken[]
-  aptitudeSessions     AptitudePracticeSession[]
-  machineSessions      MachinePracticeSession[]
-  resumes              Resume[]
+  // AI Interview
   aiInterviewSessions  AiInterviewSession[]
   aiInterviewFeedbacks AiInterviewFeedback[]
-  profile              StudentProfile?
+
+  // MockDrive
+  mockDriveRegistrations MockDriveRegistration[]
+  mockDriveAttempts      MockDriveAttempt[]
+  mockDriveLeaderboard   MockDriveLeaderboard[]
 
   @@index([email])
   @@index([instituteId])
+  @@index([role, isActive])
   @@map("users")
 }
 
@@ -121,10 +187,13 @@ model RefreshToken {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
-  @@index([token])
   @@index([expiresAt])
   @@map("refresh_tokens")
 }
+
+// =====================================================
+// INSTITUTE
+// =====================================================
 
 model Institute {
   id       String  @id @default(cuid())
@@ -135,50 +204,15 @@ model Institute {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  users   User[]
-  profile InstituteProfile?
+  // Relations
+  users      User[]
+  profile    InstituteProfile?
+  mockDrives MockDrive[]
 
   @@index([domain])
+  @@index([isActive])
   @@map("institutes")
 }
-
-// =====================================================
-// STUDENT PROFILE
-// =====================================================
-
-model StudentProfile {
-  id         String   @id @default(cuid())
-  userId     String   @unique
-  fullName   String
-  studentId  String   @unique
-
-  resumeUrl  String?
-  resumeName String?
-
-  skills     String[]
-
-  department String
-  courseYear String
-
-  marks10       Float?
-  marks12       Float?
-  cgpaSemesters Float[]
-
-  averageCgpa Float?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([studentId])
-  @@map("student_profiles")
-}
-
-// =====================================================
-// INSTITUTE PROFILE
-// =====================================================
 
 model InstituteProfile {
   id          String @id @default(cuid())
@@ -193,16 +227,51 @@ model InstituteProfile {
 
   institute Institute @relation(fields: [instituteId], references: [id], onDelete: Cascade)
 
-  @@index([instituteId])
   @@map("institute_profiles")
 }
 
 // =====================================================
-// RESUME (File metadata + optional cached parsed text)
+// STUDENT PROFILE
+// =====================================================
+
+model StudentProfile {
+  id        String @id @default(cuid())
+  userId    String @unique
+  fullName  String
+  studentId String @unique
+
+  resumeUrl  String?
+  resumeName String?
+
+  skills String[]
+
+  department String
+  courseYear String
+
+  marks10       Float?
+  marks12       Float?
+  cgpaSemesters Float[]
+  averageCgpa   Float?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([studentId])
+  @@index([department])
+  @@index([courseYear])
+  @@index([averageCgpa])
+  @@index([department, courseYear])
+  @@map("student_profiles")
+}
+
+// =====================================================
+// RESUME
 // =====================================================
 
 model Resume {
-  id        Int     @id @default(autoincrement())
+  id        String  @id @default(cuid())
   userId    String
   fileName  String
   fileUrl   String
@@ -210,9 +279,7 @@ model Resume {
   mimeType  String?
   isDefault Boolean @default(false)
 
-  // Optional: Cache parsed text to avoid re-parsing
-  // This is NOT the full resume content, just extracted text for processing
-  parsedTextHash String?   // Hash to detect if re-parsing needed
+  parsedTextHash String?
   lastParsedAt   DateTime?
 
   createdAt DateTime @default(now())
@@ -227,7 +294,7 @@ model Resume {
 }
 
 // =====================================================
-// APTITUDE TEST - QUESTION BANK
+// APTITUDE - QUESTION BANK
 // =====================================================
 
 model AptitudeQuestion {
@@ -242,11 +309,13 @@ model AptitudeQuestion {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  options          AptitudeOption[]
-  sessionQuestions AptitudeSessionQuestion[]
+  options                  AptitudeOption[]
+  sessionQuestions         AptitudeSessionQuestion[]
+  mockDriveModuleQuestions MockDriveModuleQuestion[]
 
   @@index([difficulty])
   @@index([questionType])
+  @@index([isActive])
   @@index([isActive, difficulty, questionType])
   @@map("aptitude_questions")
 }
@@ -266,7 +335,7 @@ model AptitudeOption {
 }
 
 // =====================================================
-// APTITUDE TEST - PRACTICE SESSION
+// APTITUDE - PRACTICE SESSION
 // =====================================================
 
 model AptitudePracticeSession {
@@ -311,15 +380,16 @@ model AptitudeSessionQuestion {
   updatedAt DateTime @updatedAt
 
   session  AptitudePracticeSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  question AptitudeQuestion        @relation(fields: [questionId], references: [id])
+  question AptitudeQuestion        @relation(fields: [questionId], references: [id], onDelete: Restrict)
 
   @@unique([sessionId, questionId])
   @@index([sessionId])
+  @@index([sessionId, order])
   @@map("aptitude_session_questions")
 }
 
 // =====================================================
-// MACHINE TEST - QUESTION BANK
+// MACHINE CODING - QUESTION BANK
 // =====================================================
 
 model MachineQuestion {
@@ -336,12 +406,13 @@ model MachineQuestion {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  testCases        TestCase[]
-  sessionQuestions MachineSessionQuestion[]
+  testCases                TestCase[]
+  sessionQuestions         MachineSessionQuestion[]
+  mockDriveModuleQuestions MockDriveModuleQuestion[]
 
   @@index([difficulty])
+  @@index([isActive])
   @@index([isActive, difficulty])
-  @@index([tags])
   @@map("machine_questions")
 }
 
@@ -358,12 +429,13 @@ model TestCase {
 
   question MachineQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
 
+  @@index([questionId])
   @@index([questionId, type])
   @@map("test_cases")
 }
 
 // =====================================================
-// MACHINE TEST - PRACTICE SESSION
+// MACHINE CODING - PRACTICE SESSION
 // =====================================================
 
 model MachinePracticeSession {
@@ -403,11 +475,12 @@ model MachineSessionQuestion {
   updatedAt DateTime @updatedAt
 
   session     MachinePracticeSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  question    MachineQuestion        @relation(fields: [questionId], references: [id])
+  question    MachineQuestion        @relation(fields: [questionId], references: [id], onDelete: Restrict)
   submissions Submission[]
 
   @@unique([sessionId, questionId])
   @@index([sessionId])
+  @@index([sessionId, order])
   @@map("machine_session_questions")
 }
 
@@ -442,6 +515,7 @@ model Submission {
 
   @@index([sessionQuestionId])
   @@index([status])
+  @@index([sessionQuestionId, status])
   @@map("submissions")
 }
 
@@ -460,52 +534,39 @@ model ProgrammingLanguage {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@index([isActive])
   @@map("programming_languages")
 }
 
 // =====================================================
-// AI INTERVIEW - SESSION (Updated for Vapi Voice)
+// AI INTERVIEW - SESSION
 // =====================================================
 
 model AiInterviewSession {
-  id          String                   @id @default(uuid())
-  userId      String
-  resumeId    Int?
-  
-  // Session configuration
-  sessionType AiInterviewSessionType   @default(TEXT)
+  id       String @id @default(cuid())
+  userId   String
+  resumeId String?
+
+  // Configuration
   jobTitle    String?
   companyName String?
-  difficulty  DifficultyLevel          @default(MEDIUM)
-  
-  // Resume context - compact summary passed to Vapi, NOT full resume
-  // Example: "Name: John; Skills: React, Node; Projects: E-commerce app..."
-  resumeContext String?                @db.Text
-  
-  // Session state
-  status      AiInterviewSessionStatus @default(CREATED)
-  
-  // For TEXT type: stores pre-generated questions (legacy support)
-  // For VOICE type: NULL (questions generated live by Vapi assistant)
-  questions   Json?
-  
-  // For TEXT type only
-  totalQuestions       Int             @default(10)
-  currentQuestionIndex Int             @default(0)
-  
-  // Vapi-specific fields (for VOICE type)
-  vapiCallId    String?   @unique      // Vapi's call ID for webhook matching
-  vapiAssistantId String?              // Which assistant was used
-  
-  // Call data (populated from Vapi webhook)
-  transcript    String?   @db.Text     // Full conversation transcript
-  recordingUrl  String?                // Audio recording URL if enabled
-  callDuration  Int?                   // Duration in seconds
-  
+  difficulty  AiInterviewDifficulty @default(MID)
+  focusAreas  String[]
+
+  // State
+  status AiInterviewSessionStatus @default(CREATED)
+
+  // Questions (JSON array)
+  questions Json?
+
+  // Progress
+  totalQuestions       Int @default(10)
+  currentQuestionIndex Int @default(0)
+
   // Timestamps
   startedAt   DateTime?
   completedAt DateTime?
-  
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -514,45 +575,33 @@ model AiInterviewSession {
   resume    Resume?               @relation(fields: [resumeId], references: [id], onDelete: SetNull)
   responses AiInterviewResponse[]
   feedback  AiInterviewFeedback?
-  vapiLogs  VapiCallLog[]
 
   @@index([userId])
   @@index([userId, status])
   @@index([userId, createdAt])
-  @@index([userId, sessionType])
   @@index([status])
-  @@index([vapiCallId])
-  @@index([sessionType, status])
   @@map("ai_interview_sessions")
 }
 
 // =====================================================
-// AI INTERVIEW - RESPONSE (For TEXT type or parsed from VOICE)
+// AI INTERVIEW - RESPONSE
 // =====================================================
 
 model AiInterviewResponse {
-  id               String                      @id @default(uuid())
-  sessionId        String
-  
-  // Question details
-  category         AiInterviewQuestionCategory
-  question         String                      @db.Text
-  answer           String                      @db.Text
-  
-  // Metadata
-  questionOrder    Int                         @default(0)
-  isFollowup       Boolean                     @default(false)
-  
-  // Scoring (can be populated by LLM analysis post-interview)
-  scoresJson       Json?
-  feedbackText     String?                     @db.Text
-  
-  // Timing
+  id        String @id @default(cuid())
+  sessionId String
+
+  category AiInterviewQuestionCategory
+  question String                      @db.Text
+  answer   String                      @db.Text
+
+  questionOrder    Int     @default(0)
+  isFollowup       Boolean @default(false)
   timeTakenSeconds Int?
-  
-  // For VOICE type: timestamps of when Q&A occurred in call
-  startTimestamp   Float?                      // Seconds into call
-  endTimestamp     Float?                      // Seconds into call
+
+  // Scoring (JSON for flexibility)
+  scoresJson   Json?
+  feedbackText String? @db.Text
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -560,7 +609,6 @@ model AiInterviewResponse {
   session AiInterviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
   @@index([sessionId])
-  @@index([sessionId, category])
   @@index([sessionId, questionOrder])
   @@map("ai_interview_responses")
 }
@@ -570,32 +618,18 @@ model AiInterviewResponse {
 // =====================================================
 
 model AiInterviewFeedback {
-  id                  String   @id @default(uuid())
-  sessionId           String   @unique
-  userId              String
-  
-  // Overall assessment
-  overallScore        Decimal  @db.Decimal(5, 2)
-  overallSummary      String   @db.Text
-  
-  // Detailed feedback
+  id        String @id @default(cuid())
+  sessionId String @unique
+  userId    String
+
+  overallScore   Decimal @db.Decimal(5, 2)
+  overallSummary String  @db.Text
+
   keyStrengths        String[]
   areasForImprovement String[]
-  
-  // Category-wise scores (optional detailed breakdown)
-  technicalScore      Decimal? @db.Decimal(5, 2)
-  communicationScore  Decimal? @db.Decimal(5, 2)
-  problemSolvingScore Decimal? @db.Decimal(5, 2)
-  behavioralScore     Decimal? @db.Decimal(5, 2)
-  
-  // Raw feedback data
-  feedbackJson        Json?
-  
-  // Actionable recommendations
-  recommendations     String[] @default([])
-  
-  // Source of feedback
-  generatedBy         String   @default("ai") // "ai" or "manual"
+
+  feedbackJson Json?
+  generatedBy  String @default("ai")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -603,40 +637,575 @@ model AiInterviewFeedback {
   session AiInterviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   user    User               @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([sessionId])
   @@index([userId])
   @@index([userId, createdAt])
   @@map("ai_interview_feedbacks")
 }
 
 // =====================================================
-// VAPI CALL LOG (Raw webhook data storage)
+// MOCKDRIVE - MAIN CONFIGURATION
 // =====================================================
 
-model VapiCallLog {
-  id        String @id @default(uuid())
-  sessionId String
-  
-  // Vapi identifiers
-  vapiCallId    String
-  vapiEventType String    // "call.started", "call.ended", "transcript", etc.
-  
-  // Raw webhook payload
-  payload   Json
-  
-  // Processing status
-  processed Boolean @default(false)
-  processedAt DateTime?
-  processingError String?
+model MockDrive {
+  id          String @id @default(cuid())
+  instituteId String
+
+  // Basic Info
+  title        String
+  description  String? @db.Text
+  instructions String? @db.Text
+
+  // Status
+  status MockDriveStatus @default(DRAFT)
+
+  // Registration
+  registrationStartDate DateTime?
+  registrationEndDate   DateTime?
+  maxRegistrations      Int?
+
+  // Drive Timing
+  driveStartDate DateTime?
+  driveEndDate   DateTime?
+
+  // Settings
+  allowLateSubmission    Boolean @default(false)
+  showLeaderboard        Boolean @default(true)
+  showResultsImmediately Boolean @default(false)
+  resultsReleaseDate     DateTime?
+  shuffleQuestions       Boolean @default(true)
+
+  // Proctoring
+  enableProctoring   Boolean @default(false)
+  proctoringSettings Json?
+
+  // Question Generation Flag
+  questionsGenerated   Boolean   @default(false)
+  questionsGeneratedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  institute           Institute                @relation(fields: [instituteId], references: [id], onDelete: Cascade)
+  eligibilityCriteria MockDriveEligibility?
+  modules             MockDriveModule[]
+  registrations       MockDriveRegistration[]
+  batches             MockDriveBatch[]
+  attempts            MockDriveAttempt[]
+  leaderboard         MockDriveLeaderboard[]
+
+  @@index([instituteId])
+  @@index([instituteId, status])
+  @@index([status])
+  @@index([registrationStartDate, registrationEndDate])
+  @@index([driveStartDate, driveEndDate])
+  @@map("mock_drives")
+}
+
+// =====================================================
+// MOCKDRIVE - ELIGIBILITY CRITERIA
+// =====================================================
+
+model MockDriveEligibility {
+  id          String @id @default(cuid())
+  mockDriveId String @unique
+
+  // CGPA
+  minCgpa Float?
+  maxCgpa Float?
+
+  // Academic Marks
+  minMarks10 Float?
+  minMarks12 Float?
+
+  // Filters (empty = all allowed)
+  allowedDepartments String[]
+  allowedCourseYears String[]
+  requiredSkills     String[] // Student must have at least one
+
+  // Backlogs
+  maxBacklogs Int?
+
+  // Custom Rules (JSON for flexibility)
+  // Structure: { rules: Array<{ field: string, operator: string, value: any }> }
+  customRules Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  mockDrive MockDrive @relation(fields: [mockDriveId], references: [id], onDelete: Cascade)
+
+  @@map("mock_drive_eligibility")
+}
+
+// =====================================================
+// MOCKDRIVE - MODULE CONFIGURATION
+// =====================================================
+
+model MockDriveModule {
+  id          String              @id @default(cuid())
+  mockDriveId String
+  moduleType  MockDriveModuleType
+  order       Int
+  name        String?
+  timeLimit   Int                 // in minutes
+  weightage   Float               @default(100)
+
+  // Module-specific configuration (JSON)
+  // ═══════════════════════════════════════════════════
+  // APTITUDE:
+  // {
+  //   difficulty: DifficultyLevel,
+  //   questionTypes: QuestionType[],
+  //   numberOfQuestions: number,
+  //   marksPerQuestion: number,
+  //   negativeMarking: number
+  // }
+  // ═══════════════════════════════════════════════════
+  // MACHINE_CODING:
+  // {
+  //   difficulty: DifficultyLevel,
+  //   numberOfQuestions: number,
+  //   allowedLanguages: string[],
+  //   partialScoring: boolean,
+  //   maxScorePerQuestion: number
+  // }
+  // ═══════════════════════════════════════════════════
+  // AI_INTERVIEW:
+  // {
+  //   difficulty: AiInterviewDifficulty,
+  //   jobTitle: string,
+  //   companyName?: string,
+  //   focusAreas: string[],
+  //   targetQuestions: number
+  // }
+  // ═══════════════════════════════════════════════════
+  config Json
+
+  passingScore Float?
+  instructions String? @db.Text
+  isActive     Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  mockDrive       MockDrive                  @relation(fields: [mockDriveId], references: [id], onDelete: Cascade)
+  moduleQuestions MockDriveModuleQuestion[]
+  moduleAttempts  MockDriveModuleAttempt[]
+
+  @@unique([mockDriveId, order])
+  @@index([mockDriveId])
+  @@index([mockDriveId, moduleType])
+  @@index([mockDriveId, isActive])
+  @@map("mock_drive_modules")
+}
+
+// =====================================================
+// MOCKDRIVE - PRE-SELECTED QUESTIONS
+// (Generated when MockDrive is published)
+// =====================================================
+
+model MockDriveModuleQuestion {
+  id       String @id @default(cuid())
+  moduleId String
+
+  // Polymorphic reference (only one will be set based on module type)
+  aptitudeQuestionId String?
+  machineQuestionId  String?
+
+  // Order for consistent display
+  order Int
 
   createdAt DateTime @default(now())
 
-  session AiInterviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  module           MockDriveModule   @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  aptitudeQuestion AptitudeQuestion? @relation(fields: [aptitudeQuestionId], references: [id], onDelete: Cascade)
+  machineQuestion  MachineQuestion?  @relation(fields: [machineQuestionId], references: [id], onDelete: Cascade)
 
-  @@index([sessionId])
-  @@index([vapiCallId])
-  @@index([vapiEventType])
-  @@index([processed])
-  @@index([createdAt])
-  @@map("vapi_call_logs")
+  @@unique([moduleId, order])
+  @@unique([moduleId, aptitudeQuestionId])
+  @@unique([moduleId, machineQuestionId])
+  @@index([moduleId])
+  @@map("mock_drive_module_questions")
+}
+
+// =====================================================
+// MOCKDRIVE - REGISTRATION
+// =====================================================
+
+model MockDriveRegistration {
+  id          String                      @id @default(cuid())
+  mockDriveId String
+  userId      String
+  status      MockDriveRegistrationStatus @default(PENDING)
+
+  // Eligibility check result (stored for audit)
+  // Structure: {
+  //   isEligible: boolean,
+  //   checks: Array<{ criterion: string, passed: boolean, details: string }>
+  // }
+  eligibilityCheckResult Json?
+
+  adminNotes String?
+  batchId    String?
+
+  registeredAt DateTime  @default(now())
+  reviewedAt   DateTime?
+  reviewedBy   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  mockDrive MockDrive       @relation(fields: [mockDriveId], references: [id], onDelete: Cascade)
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  batch     MockDriveBatch? @relation(fields: [batchId], references: [id], onDelete: SetNull)
+
+  @@unique([mockDriveId, userId])
+  @@index([mockDriveId])
+  @@index([mockDriveId, status])
+  @@index([userId])
+  @@index([batchId])
+  @@map("mock_drive_registrations")
+}
+
+// =====================================================
+// MOCKDRIVE - BATCH MANAGEMENT
+// =====================================================
+
+model MockDriveBatch {
+  id          String @id @default(cuid())
+  mockDriveId String
+
+  name        String
+  batchNumber Int
+
+  scheduledStartTime DateTime
+  scheduledEndTime   DateTime
+
+  status MockDriveBatchStatus @default(CREATED)
+
+  maxCapacity     Int?
+  isAutoGenerated Boolean @default(false)
+  notes           String?
+
+  actualStartTime DateTime?
+  actualEndTime   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  mockDrive     MockDrive               @relation(fields: [mockDriveId], references: [id], onDelete: Cascade)
+  registrations MockDriveRegistration[]
+  attempts      MockDriveAttempt[]
+  leaderboard   MockDriveLeaderboard[]
+
+  @@unique([mockDriveId, batchNumber])
+  @@index([mockDriveId])
+  @@index([mockDriveId, status])
+  @@index([scheduledStartTime])
+  @@index([status, scheduledStartTime])
+  @@map("mock_drive_batches")
+}
+
+// =====================================================
+// MOCKDRIVE - STUDENT ATTEMPT
+// =====================================================
+
+model MockDriveAttempt {
+  id          String                 @id @default(cuid())
+  mockDriveId String
+  batchId     String
+  userId      String
+  status      MockDriveAttemptStatus @default(NOT_STARTED)
+
+  currentModuleOrder Int @default(0)
+
+  startedAt   DateTime?
+  completedAt DateTime?
+
+  // Scores (calculated after completion)
+  totalScore      Float?
+  percentageScore Float?
+  rank            Int?
+  isPassed        Boolean?
+
+  // Module-wise summary (denormalized)
+  // Structure: Array<{ moduleId, moduleType, score, maxScore, percentage, passed }>
+  moduleScoresSummary Json?
+
+  // Proctoring
+  browserInfo        String?
+  ipAddress          String?
+  deviceInfo         Json?
+  tabSwitchCount     Int     @default(0)
+  suspiciousActivity Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  mockDrive      MockDrive                @relation(fields: [mockDriveId], references: [id], onDelete: Cascade)
+  batch          MockDriveBatch           @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  user           User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  moduleAttempts MockDriveModuleAttempt[]
+  report         MockDriveReport?
+
+  @@unique([batchId, userId])
+  @@index([mockDriveId])
+  @@index([batchId])
+  @@index([userId])
+  @@index([mockDriveId, status])
+  @@index([mockDriveId, rank])
+  @@index([batchId, status])
+  @@map("mock_drive_attempts")
+}
+
+// =====================================================
+// MOCKDRIVE - MODULE ATTEMPT
+// =====================================================
+
+model MockDriveModuleAttempt {
+  id        String                       @id @default(cuid())
+  attemptId String
+  moduleId  String
+  status    MockDriveModuleAttemptStatus @default(LOCKED)
+
+  startedAt   DateTime?
+  completedAt DateTime?
+  expiresAt   DateTime?
+
+  timeSpentSeconds Int @default(0)
+
+  score      Float?
+  maxScore   Float?
+  percentage Float?
+  isPassed   Boolean?
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // MODULE DATA (JSON) - Stores all attempt data
+  // ═══════════════════════════════════════════════════════════════════════
+  //
+  // APTITUDE:
+  // {
+  //   questions: Array<{
+  //     questionId: string,           // MockDriveModuleQuestion.id
+  //     aptitudeQuestionId: string,   // AptitudeQuestion.id
+  //     displayOrder: number,         // Shuffled order for this student
+  //     selectedOptionId: string | null,
+  //     isCorrect: boolean | null,
+  //     timeSpentSeconds: number,
+  //     answeredAt: string | null     // ISO datetime
+  //   }>,
+  //   summary: {
+  //     totalQuestions: number,
+  //     totalCorrect: number,
+  //     totalWrong: number,
+  //     totalUnanswered: number,
+  //     marksObtained: number,
+  //     negativeMarks: number,
+  //     finalScore: number,
+  //     maxScore: number
+  //   }
+  // }
+  //
+  // ═══════════════════════════════════════════════════════════════════════
+  //
+  // MACHINE_CODING:
+  // {
+  //   questions: Array<{
+  //     questionId: string,           // MockDriveModuleQuestion.id
+  //     machineQuestionId: string,    // MachineQuestion.id
+  //     displayOrder: number,
+  //     submissions: Array<{
+  //       id: string,
+  //       code: string,
+  //       languageId: number,
+  //       languageName: string,
+  //       status: SubmissionStatus,
+  //       testCasesPassed: number,
+  //       testCasesTotal: number,
+  //       executionTime: number | null,
+  //       memoryUsed: number | null,
+  //       stdout: string | null,
+  //       stderr: string | null,
+  //       compileError: string | null,
+  //       submittedAt: string         // ISO datetime
+  //     }>,
+  //     bestSubmissionId: string | null,
+  //     bestScore: number,
+  //     isSolved: boolean
+  //   }>,
+  //   summary: {
+  //     totalQuestions: number,
+  //     totalSolved: number,
+  //     totalPartial: number,
+  //     totalUnattempted: number,
+  //     totalScore: number,
+  //     maxScore: number
+  //   }
+  // }
+  //
+  // ═══════════════════════════════════════════════════════════════════════
+  //
+  // AI_INTERVIEW:
+  // {
+  //   config: {
+  //     resumeId: string,
+  //     resumeUrl: string,
+  //     jobTitle: string,
+  //     companyName: string | null,
+  //     difficulty: AiInterviewDifficulty,
+  //     focusAreas: string[],
+  //     targetQuestions: number
+  //   },
+  //   conversation: Array<{
+  //     id: string,
+  //     role: 'assistant' | 'user',
+  //     content: string,
+  //     timestamp: string             // ISO datetime
+  //   }>,
+  //   responses: Array<{
+  //     id: string,
+  //     questionIndex: number,
+  //     category: AiInterviewQuestionCategory,
+  //     question: string,
+  //     answer: string,
+  //     isFollowup: boolean,
+  //     scores: {
+  //       relevance: number,
+  //       clarity: number,
+  //       depth: number,
+  //       technicalAccuracy: number | null,
+  //       overall: number
+  //     },
+  //     feedback: string,
+  //     timeTakenSeconds: number,
+  //     answeredAt: string            // ISO datetime
+  //   }>,
+  //   summary: {
+  //     totalQuestions: number,
+  //     questionsAnswered: number,
+  //     overallScore: number,
+  //     maxScore: number,
+  //     categoryScores: {
+  //       INTRODUCTORY: { score: number, count: number },
+  //       TECHNICAL: { score: number, count: number },
+  //       BEHAVIORAL: { score: number, count: number },
+  //       SITUATIONAL: { score: number, count: number },
+  //       CLOSING: { score: number, count: number }
+  //     },
+  //     keyStrengths: string[],
+  //     areasForImprovement: string[],
+  //     overallFeedback: string
+  //   }
+  // }
+  //
+  // ═══════════════════════════════════════════════════════════════════════
+  moduleData Json?
+
+  isAutoSubmitted Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  attempt MockDriveAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  module  MockDriveModule  @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+
+  @@unique([attemptId, moduleId])
+  @@index([attemptId])
+  @@index([moduleId])
+  @@index([attemptId, status])
+  @@map("mock_drive_module_attempts")
+}
+
+// =====================================================
+// MOCKDRIVE - DETAILED REPORT
+// =====================================================
+
+model MockDriveReport {
+  id        String @id @default(cuid())
+  attemptId String @unique
+
+  overallScore      Float
+  overallPercentage Float
+  overallRank       Int?
+  totalParticipants Int?
+
+  performanceSummary String @db.Text
+
+  strengths  String[]
+  weaknesses String[]
+
+  // Module-wise detailed feedback (JSON)
+  // Structure: Array<{
+  //   moduleId: string,
+  //   moduleName: string,
+  //   moduleType: MockDriveModuleType,
+  //   score: number,
+  //   maxScore: number,
+  //   percentage: number,
+  //   rank?: number,
+  //   feedback: string,
+  //   detailedAnalysis: {
+  //     // APTITUDE: questionTypeWiseAnalysis, difficultyWiseAnalysis
+  //     // MACHINE_CODING: problemWiseAnalysis, languageUsed
+  //     // AI_INTERVIEW: categoryWiseScores, communicationScore
+  //   },
+  //   recommendations: string[]
+  // }>
+  moduleFeedback Json
+
+  percentile        Float?
+  comparedToAverage Float?
+
+  recommendations String[]
+  aiInsights      String? @db.Text
+
+  generatedAt DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  attempt MockDriveAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+
+  @@map("mock_drive_reports")
+}
+
+// =====================================================
+// MOCKDRIVE - LEADERBOARD (Cached/Materialized)
+// =====================================================
+
+model MockDriveLeaderboard {
+  id          String  @id @default(cuid())
+  mockDriveId String
+  batchId     String? // Null = overall mockdrive leaderboard
+  userId      String
+
+  // Denormalized student info
+  studentName String
+  studentId   String?
+  department  String?
+
+  totalScore      Float
+  percentageScore Float
+  rank            Int
+
+  // Module-wise scores (JSON)
+  // Structure: Array<{ moduleId, moduleType, moduleName, score, maxScore, percentage }>
+  moduleScores Json
+
+  totalTimeTaken Int? // seconds
+  completedAt    DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  mockDrive MockDrive       @relation(fields: [mockDriveId], references: [id], onDelete: Cascade)
+  batch     MockDriveBatch? @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([mockDriveId, batchId, userId])
+  @@index([mockDriveId])
+  @@index([mockDriveId, batchId])
+  @@index([mockDriveId, rank])
+  @@index([mockDriveId, batchId, rank])
+  @@index([userId])
+  @@map("mock_drive_leaderboard")
 }

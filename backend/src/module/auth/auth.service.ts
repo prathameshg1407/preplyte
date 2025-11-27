@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs';
 import { SignJWT, jwtVerify } from 'jose';
 import crypto from 'crypto';
+import { Prisma } from '@prisma/client';
 import { RegisterDto, LoginDto } from './auth.controller';
 import { prisma } from '../../lib/db';
 import {
@@ -28,6 +29,9 @@ const ACCESS_TOKEN_EXPIRY = process.env.ACCESS_TOKEN_EXPIRY || '15m';
 const REFRESH_TOKEN_EXPIRY = process.env.REFRESH_TOKEN_EXPIRY || '7d';
 const BCRYPT_ROUNDS = 12;
 
+const JWT_ISSUER = 'preplyte-api';
+const JWT_AUDIENCE = 'preplyte-client';
+
 // ============================================
 // Types
 // ============================================
@@ -50,6 +54,13 @@ const USER_SELECT = {
   },
 } as const;
 
+interface TokenPayload {
+  id: string;
+  role: string;
+  instituteId: string | null;
+  tokenVersion: number;
+}
+
 // ============================================
 // Auth Service
 // ============================================
@@ -57,15 +68,6 @@ const USER_SELECT = {
 class AuthService {
   async register(data: RegisterDto) {
     const { email, password, name } = data;
-
-    const existingUser = await prisma.user.findUnique({
-      where: { email },
-      select: { id: true },
-    });
-
-    if (existingUser) {
-      throw new ConflictError('User with this email already exists');
-    }
 
     const domain = email.split('@')[1];
     if (!domain) {
@@ -83,21 +85,30 @@ class AuthService {
 
     const hashedPassword = await bcrypt.hash(password, BCRYPT_ROUNDS);
 
-    const user = await prisma.user.create({
-      data: {
-        email,
-        password: hashedPassword,
-        name: name || null,
-        role: 'USER',
-        instituteId: institute?.id || null,
-        tokenVersion: 0,
-      },
-      select: USER_SELECT,
-    });
+    try {
+      const user = await prisma.user.create({
+        data: {
+          email,
+          password: hashedPassword,
+          name: name || null,
+          role: 'USER',
+          instituteId: institute?.id || null,
+          tokenVersion: 0,
+        },
+        select: USER_SELECT,
+      });
 
-    logger.info(`User registered: ${user.email}`, { userId: user.id });
+      logger.info('User registered', { userId: user.id, email: user.email });
 
-    return user;
+      return user;
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        if (error.code === 'P2002') {
+          throw new ConflictError('User with this email already exists');
+        }
+      }
+      throw error;
+    }
   }
 
   async login(data: LoginDto) {
@@ -124,7 +135,12 @@ class AuthService {
       throw new InstituteInactiveError(user.institute.name);
     }
 
-    const { accessToken, refreshToken } = await this.generateTokens(user);
+    const { accessToken, refreshToken } = await this.generateTokens({
+      id: user.id,
+      role: user.role,
+      instituteId: user.instituteId,
+      tokenVersion: user.tokenVersion,
+    });
 
     await Promise.all([
       prisma.refreshToken.create({
@@ -140,7 +156,7 @@ class AuthService {
       }),
     ]);
 
-    logger.info(`User logged in: ${user.email}`, { userId: user.id });
+    logger.info('User logged in', { userId: user.id });
 
     const { password: _, tokenVersion: __, ...safeUser } = user;
 
@@ -155,39 +171,61 @@ class AuthService {
   async refreshToken(token: string) {
     try {
       const { payload } = await jwtVerify(token, REFRESH_SECRET, {
-        issuer: 'preplyte-api',
-        audience: 'preplyte-client',
+        issuer: JWT_ISSUER,
+        audience: JWT_AUDIENCE,
       });
 
       const userId = payload.sub as string;
       const tokenVersion = (payload.tokenVersion as number) || 0;
       const tokenHash = this.hashToken(token);
 
-      const [storedToken, user] = await Promise.all([
-        prisma.refreshToken.findFirst({
-          where: {
-            token: tokenHash,
-            userId,
-            expiresAt: { gt: new Date() },
-            revokedAt: null,
-          },
-        }),
-        prisma.user.findUnique({
-          where: { id: userId },
-          include: {
-            institute: {
-              select: { id: true, name: true, domain: true, isActive: true },
-            },
-          },
-        }),
-      ]);
+      const storedToken = await prisma.refreshToken.findFirst({
+        where: {
+          token: tokenHash,
+          userId,
+        },
+      });
 
-      if (!storedToken || !user?.isActive || user.tokenVersion !== tokenVersion) {
-        throw new UnauthorizedError('Invalid refresh token');
+      // Token reuse detection
+      if (storedToken?.revokedAt) {
+        await this.logoutAll(userId);
+        logger.warn('Refresh token reuse detected', { userId });
+        throw new UnauthorizedError('Token reuse detected. All sessions revoked.');
       }
 
-      const { accessToken, refreshToken: newRefreshToken } = await this.generateTokens(user);
+      if (!storedToken || storedToken.expiresAt < new Date()) {
+        throw new UnauthorizedError('Invalid or expired refresh token');
+      }
 
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        include: {
+          institute: {
+            select: { id: true, name: true, domain: true, isActive: true },
+          },
+        },
+      });
+
+      if (!user?.isActive) {
+        throw new UnauthorizedError('Account is inactive');
+      }
+
+      if (user.tokenVersion !== tokenVersion) {
+        throw new UnauthorizedError('Session has been revoked');
+      }
+
+      if (user.institute && !user.institute.isActive) {
+        throw new InstituteInactiveError(user.institute.name);
+      }
+
+      const { accessToken, refreshToken: newRefreshToken } = await this.generateTokens({
+        id: user.id,
+        role: user.role,
+        instituteId: user.instituteId,
+        tokenVersion: user.tokenVersion,
+      });
+
+      // Rotate refresh token
       await Promise.all([
         prisma.refreshToken.update({
           where: { id: storedToken.id },
@@ -211,18 +249,24 @@ class AuthService {
         expiresIn: ACCESS_TOKEN_EXPIRY,
       };
     } catch (error) {
-      if (error instanceof UnauthorizedError) throw error;
-      logger.error('Refresh token error', error);
+      if (error instanceof UnauthorizedError || error instanceof InstituteInactiveError) {
+        throw error;
+      }
+      logger.error('Refresh token error', { error });
       throw new UnauthorizedError('Invalid refresh token');
     }
   }
 
   async logout(userId: string, refreshToken: string) {
     await prisma.refreshToken.updateMany({
-      where: { token: this.hashToken(refreshToken), userId },
+      where: {
+        token: this.hashToken(refreshToken),
+        userId,
+        revokedAt: null,
+      },
       data: { revokedAt: new Date() },
     });
-    logger.info(`User logged out: ${userId}`);
+    logger.info('User logged out', { userId });
   }
 
   async logoutAll(userId: string) {
@@ -236,7 +280,7 @@ class AuthService {
         data: { revokedAt: new Date() },
       }),
     ]);
-    logger.info(`User logged out from all devices: ${userId}`);
+    logger.info('User logged out from all devices', { userId });
   }
 
   async getUser(userId: string) {
@@ -252,42 +296,49 @@ class AuthService {
     return user;
   }
 
+  async cleanupExpiredTokens(): Promise<number> {
+    const result = await prisma.refreshToken.deleteMany({
+      where: {
+        OR: [
+          { expiresAt: { lt: new Date() } },
+          {
+            revokedAt: {
+              lt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+            },
+          },
+        ],
+      },
+    });
+    logger.info('Cleaned up expired tokens', { count: result.count });
+    return result.count;
+  }
+
   // ============================================
   // Private Helpers
   // ============================================
 
-  private async generateTokens(user: {
-    id: string;
-    role: string;
-    instituteId: string | null;
-    tokenVersion?: number;
-  }) {
-    const commonOptions = {
-      issuer: 'preplyte-api',
-      audience: 'preplyte-client',
-    };
-
+  private async generateTokens(payload: TokenPayload) {
     const [accessToken, refreshToken] = await Promise.all([
       new SignJWT({
-        role: user.role,
-        instituteId: user.instituteId,
-        tokenVersion: user.tokenVersion || 0,
+        role: payload.role,
+        instituteId: payload.instituteId,
+        tokenVersion: payload.tokenVersion,
       })
         .setProtectedHeader({ alg: 'HS256' })
-        .setSubject(user.id)
+        .setSubject(payload.id)
         .setIssuedAt()
         .setExpirationTime(ACCESS_TOKEN_EXPIRY)
-        .setIssuer(commonOptions.issuer)
-        .setAudience(commonOptions.audience)
+        .setIssuer(JWT_ISSUER)
+        .setAudience(JWT_AUDIENCE)
         .sign(JWT_SECRET),
 
-      new SignJWT({ tokenVersion: user.tokenVersion || 0 })
+      new SignJWT({ tokenVersion: payload.tokenVersion })
         .setProtectedHeader({ alg: 'HS256' })
-        .setSubject(user.id)
+        .setSubject(payload.id)
         .setIssuedAt()
         .setExpirationTime(REFRESH_TOKEN_EXPIRY)
-        .setIssuer(commonOptions.issuer)
-        .setAudience(commonOptions.audience)
+        .setIssuer(JWT_ISSUER)
+        .setAudience(JWT_AUDIENCE)
         .sign(REFRESH_SECRET),
     ]);
 
@@ -300,7 +351,7 @@ class AuthService {
 
   private parseExpiry(expiry: string): number {
     const match = expiry.match(/^(\d+)([smhd])$/);
-    if (!match) return 7 * 24 * 60 * 60 * 1000;
+    if (!match) return 7 * 24 * 60 * 60 * 1000; // Default 7 days
 
     const value = parseInt(match[1], 10);
     const multipliers: Record<string, number> = {

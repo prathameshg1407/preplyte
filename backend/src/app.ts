@@ -12,19 +12,29 @@ import { rateLimit, RateLimitRequestHandler } from 'express-rate-limit';
 import { authRoutes } from './module/auth/auth.routes';
 import practiceRoutes from './module/practice/practice.routes';
 import adminRoutes from './module/admin/admin.routes';
-import { profileRoutes } from './module/profile'; // Add this import
+import { profileRoutes } from './module/profile';
+import { mockDriveRoutes } from './module/instituteadmin/mock-drive';
+import { createMockDriveRoutes } from './module/mock-drive';
 
 // Middleware & Utils
 import { errorHandler, notFoundHandler } from './middleware/error.middleware';
 import { requestIdMiddleware } from './middleware/request-id.middleware';
 import { logger } from './utils/logger';
 import { AppError } from './utils/errors';
+import { prisma } from './lib/db';
+import { dashboardRoutes } from './module/dashboard';
+
+
+import { interviewGateway } from './module/practice/interview';
+import { createServer } from 'http';
 
 // =====================================================
 // APP INITIALIZATION
 // =====================================================
 
 const app: Application = express();
+const httpServer = createServer(app);
+
 
 // =====================================================
 // CONFIGURATION
@@ -60,6 +70,10 @@ const config = {
     upload: {
       windowMs: 60 * 60 * 1000, // 1 hour
       max: parseInt(process.env.RATE_LIMIT_UPLOAD || '10', 10),
+    },
+    mockDrive: {
+      windowMs: 15 * 60 * 1000, // 15 minutes
+      max: parseInt(process.env.RATE_LIMIT_MOCK_DRIVE || '100', 10),
     },
   },
 };
@@ -168,9 +182,11 @@ const createRateLimiter = (
     legacyHeaders: false,
     skip: () => config.isTest,
     keyGenerator: (req) => {
-      return (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || 
-             req.ip || 
-             'unknown';
+      return (
+        (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ||
+        req.ip ||
+        'unknown'
+      );
     },
     handler: (req, res) => {
       logger.warn('Rate limit exceeded', {
@@ -225,6 +241,12 @@ const uploadLimiter = createRateLimiter(
   'Too many file uploads. Please try again later.'
 );
 
+const mockDriveLimiter = createRateLimiter(
+  config.rateLimits.mockDrive.windowMs,
+  config.rateLimits.mockDrive.max,
+  'Too many mock drive requests. Please try again later.'
+);
+
 // Apply general limiter to all API routes
 app.use('/api', generalLimiter);
 
@@ -245,9 +267,8 @@ app.get('/health', (_req: Request, res: Response) => {
 
 app.get('/ready', async (_req: Request, res: Response) => {
   try {
-    const { prisma } = await import('./lib/db');
     await prisma.$queryRaw`SELECT 1`;
-    
+
     res.status(200).json({
       success: true,
       status: 'ready',
@@ -291,6 +312,12 @@ app.use('/api/auth', authRoutes);
 app.use('/api/profile/resumes', uploadLimiter); // Upload rate limit for resume endpoints
 app.use('/api/profile', profileLimiter, profileRoutes);
 
+// Institute admin mock drive routes
+app.use('/api/institute/mock-drive', mockDriveRoutes);
+
+// Student mock drive routes (discovery, attempt, results, leaderboard)
+app.use('/api/mock-drives', mockDriveLimiter, createMockDriveRoutes(prisma));
+
 // Practice routes
 app.use('/api', practiceRoutes);
 
@@ -304,8 +331,16 @@ app.use(
   codeExecutionLimiter
 );
 
+// Mock drive code execution rate limiting
+app.use(
+  '/api/mock-drives/:driveId/modules/:moduleId/machine/submit',
+  codeExecutionLimiter
+);
+
 // Admin routes with specific rate limiter
 app.use('/api/admin', adminLimiter, adminRoutes);
+app.use('/api/dashboard', dashboardRoutes);
+
 
 // =====================================================
 // 8. ERROR HANDLING
@@ -313,6 +348,7 @@ app.use('/api/admin', adminLimiter, adminRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);
+interviewGateway.initialize(httpServer);
 
 // =====================================================
 // EXPORT

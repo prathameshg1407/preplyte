@@ -1,40 +1,64 @@
-// src/providers/AuthProvider.tsx
 'use client';
 
 import { useEffect, type ReactNode, useCallback } from 'react';
 import { useAuthStore } from '@/lib/store/auth-store';
-import { AUTH_STORAGE_KEYS } from '@/lib/utils/storage';
+import { AUTH_STORAGE_KEYS, storage } from '@/lib/utils/storage';
+import { logger } from '@/lib/utils/logger';
 
 interface AuthProviderProps {
   children: ReactNode;
 }
 
+const HYDRATION_TIMEOUT_MS = 500;
+
 export function AuthProvider({ children }: AuthProviderProps) {
   const isHydrated = useAuthStore((s) => s.isHydrated);
-  const token = useAuthStore((s) => s.token);
+  const accessToken = useAuthStore((s) => s.accessToken);
+  const refreshToken = useAuthStore((s) => s.refreshToken);
   const setHydrated = useAuthStore((s) => s.setHydrated);
 
-  // Sync token to direct storage whenever it changes
-  const syncToken = useCallback(() => {
+  // Sync tokens to direct storage for axios interceptor
+  const syncTokens = useCallback(() => {
     if (typeof window === 'undefined') return;
 
     try {
-      if (token) {
-        localStorage.setItem(AUTH_STORAGE_KEYS.TOKEN, token);
+      if (accessToken) {
+        storage.set(AUTH_STORAGE_KEYS.ACCESS_TOKEN, accessToken);
       } else {
-        localStorage.removeItem(AUTH_STORAGE_KEYS.TOKEN);
+        storage.remove(AUTH_STORAGE_KEYS.ACCESS_TOKEN);
+      }
+
+      if (refreshToken) {
+        storage.set(AUTH_STORAGE_KEYS.REFRESH_TOKEN, refreshToken);
+      } else {
+        storage.remove(AUTH_STORAGE_KEYS.REFRESH_TOKEN);
       }
     } catch (error) {
-      console.warn('[AuthProvider] Failed to sync token:', error);
+      logger.warn('[AuthProvider] Failed to sync tokens:', error);
     }
-  }, [token]);
+  }, [accessToken, refreshToken]);
 
-  // Sync token on changes
+  // Sync tokens when they change (after hydration)
   useEffect(() => {
     if (isHydrated) {
-      syncToken();
+      syncTokens();
     }
-  }, [isHydrated, syncToken]);
+  }, [isHydrated, syncTokens]);
+
+  // Set session cookie for middleware
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    try {
+      if (accessToken) {
+        document.cookie = 'has_session=true; path=/; SameSite=Strict';
+      } else {
+        document.cookie = 'has_session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+      }
+    } catch (error) {
+      logger.warn('[AuthProvider] Failed to set session cookie:', error);
+    }
+  }, [accessToken]);
 
   // Fallback hydration timeout
   useEffect(() => {
@@ -42,26 +66,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     const timeout = setTimeout(() => {
       if (!useAuthStore.getState().isHydrated) {
-        console.warn('[AuthProvider] Forcing hydration after timeout');
+        logger.warn('[AuthProvider] Forcing hydration after timeout');
         setHydrated(true);
       }
-    }, 500);
+    }, HYDRATION_TIMEOUT_MS);
 
     return () => clearTimeout(timeout);
   }, [isHydrated, setHydrated]);
-
-  // Debug logging in development
-  useEffect(() => {
-    if (process.env.NODE_ENV === 'development') {
-      console.log('[AuthProvider] State:', {
-        isHydrated,
-        hasToken: !!token,
-        directToken: typeof window !== 'undefined' 
-          ? !!localStorage.getItem(AUTH_STORAGE_KEYS.TOKEN)
-          : false,
-      });
-    }
-  }, [isHydrated, token]);
 
   return <>{children}</>;
 }

@@ -3,19 +3,9 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '../../ui/card';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '../../ui/button';
-import { Checkbox } from '../../ui/checkbox';
-import { Label } from '../../ui/label';
-import { Slider } from '../../ui/slider';
 import { Badge } from '../../ui/badge';
-import { Separator } from '../../ui/separator';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,13 +16,18 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '../../ui/alert-dialog';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '../../ui/tooltip';
 import { useAptitude } from '../../../lib/hooks/use-aptitude';
 import {
   QUESTION_TYPE_CONFIG,
   DIFFICULTY_CONFIG,
   QUESTION_LIMITS,
   TIME_LIMITS,
-  RECOMMENDED_TIME_LIMITS,
   formatDuration,
   calculateRecommendedTime,
 } from '../../../lib/constants/aptitude.constants';
@@ -53,10 +48,14 @@ import {
   Zap,
   Target,
   TrendingUp,
-  Info,
   Play,
   AlertCircle,
-  Check,
+  Sparkles,
+  Timer,
+  ChevronRight,
+  Flame,
+  Trophy,
+  ArrowRight,
 } from 'lucide-react';
 import { cn } from '../../../lib/utils';
 
@@ -71,7 +70,37 @@ const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   puzzle: Puzzle,
 };
 
-// Helper type for normalized question type option
+// Difficulty colors and icons
+const DIFFICULTY_STYLES: Record<DifficultyLevel, { 
+  color: string; 
+  bgColor: string; 
+  borderColor: string;
+  icon: React.ComponentType<{ className?: string }>;
+  gradient: string;
+}> = {
+  EASY: {
+    color: 'text-emerald-600 dark:text-emerald-400',
+    bgColor: 'bg-emerald-500/10',
+    borderColor: 'border-emerald-500/30',
+    icon: Zap,
+    gradient: 'from-emerald-500/20 to-emerald-500/5',
+  },
+  MEDIUM: {
+    color: 'text-amber-600 dark:text-amber-400',
+    bgColor: 'bg-amber-500/10',
+    borderColor: 'border-amber-500/30',
+    icon: Flame,
+    gradient: 'from-amber-500/20 to-amber-500/5',
+  },
+  HARD: {
+    color: 'text-rose-600 dark:text-rose-400',
+    bgColor: 'bg-rose-500/10',
+    borderColor: 'border-rose-500/30',
+    icon: Trophy,
+    gradient: 'from-rose-500/20 to-rose-500/5',
+  },
+};
+
 interface NormalizedQuestionType {
   value: QuestionType;
   label: string;
@@ -79,7 +108,6 @@ interface NormalizedQuestionType {
   icon: string;
 }
 
-// Helper type for normalized difficulty option
 interface NormalizedDifficulty {
   value: DifficultyLevel;
   label: string;
@@ -110,10 +138,9 @@ export function PracticeConfigForm() {
   const [showResumeDialog, setShowResumeDialog] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
 
-  // Ref to prevent double initialization
   const hasInitialized = useRef(false);
 
-  // Initialize: fetch config and check for active sessions
+  // Initialize
   useEffect(() => {
     if (hasInitialized.current) return;
     hasInitialized.current = true;
@@ -122,7 +149,6 @@ export function PracticeConfigForm() {
       setIsInitializing(true);
       try {
         await fetchConfig();
-
         const sessionsData = await listSessions({
           status: 'in_progress',
           limit: 1,
@@ -144,7 +170,7 @@ export function PracticeConfigForm() {
     initialize();
   }, [fetchConfig, listSessions]);
 
-  // Update time limit when difficulty or question count changes
+  // Update time limit
   useEffect(() => {
     if (useRecommendedTime) {
       const recommended = calculateRecommendedTime(numberOfQuestions, difficulty);
@@ -152,7 +178,7 @@ export function PracticeConfigForm() {
     }
   }, [numberOfQuestions, difficulty, useRecommendedTime]);
 
-  // Normalize question type options
+  // Normalize options
   const normalizedQuestionTypes: NormalizedQuestionType[] =
     questionTypeOptions.length > 0
       ? questionTypeOptions.map((opt: AptitudeQuestionTypeInfo) => ({
@@ -168,7 +194,6 @@ export function PracticeConfigForm() {
           icon: config.icon,
         }));
 
-  // Normalize difficulty options
   const normalizedDifficulties: NormalizedDifficulty[] =
     difficultyLevels.length > 0
       ? difficultyLevels.map((opt: DifficultyLevelInfo) => ({
@@ -182,17 +207,7 @@ export function PracticeConfigForm() {
           description: `${config.timePerQuestion}s / question`,
         }));
 
-  // Get time limit bounds
-  const getTimeLimitBounds = () => {
-    if (timeLimitConfig && timeLimitConfig[difficulty]) {
-      return timeLimitConfig[difficulty];
-    }
-    return RECOMMENDED_TIME_LIMITS[difficulty];
-  };
-
-  const timeBounds = getTimeLimitBounds();
-
-  // Handle question type toggle
+  // Handlers
   const handleTypeToggle = (type: QuestionType) => {
     setSelectedTypes((prev) => {
       if (prev.includes(type)) {
@@ -204,7 +219,6 @@ export function PracticeConfigForm() {
     });
   };
 
-  // Handle form submission
   const handleStart = async () => {
     try {
       await createSession({
@@ -218,7 +232,6 @@ export function PracticeConfigForm() {
     }
   };
 
-  // Handle resume session
   const handleResumeSession = async () => {
     if (activeSession) {
       try {
@@ -229,48 +242,59 @@ export function PracticeConfigForm() {
     }
   };
 
-  // Handle start new
   const handleStartNew = () => {
     setActiveSession(null);
     setShowResumeDialog(false);
   };
 
-  // Get icon component
   const getIconComponent = (iconName: string): React.ComponentType<{ className?: string }> => {
     return ICONS[iconName] || ICONS[iconName.toLowerCase()] || Brain;
   };
 
+  const currentDifficultyStyle = DIFFICULTY_STYLES[difficulty];
+  const DifficultyIcon = currentDifficultyStyle.icon;
+
   if (isInitializing) {
     return (
-      <div className="flex min-h-[400px] items-center justify-center">
-        <div className="space-y-4 text-center">
-          <Loader2 className="mx-auto h-8 w-8 animate-spin text-muted-foreground" />
-          <p className="text-sm text-muted-foreground">Loading configuration...</p>
-        </div>
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="space-y-4 text-center"
+        >
+          <div className="relative mx-auto h-16 w-16">
+            <div className="absolute inset-0 animate-ping rounded-full bg-primary/20" />
+            <div className="relative flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+              <Brain className="h-8 w-8 text-primary" />
+            </div>
+          </div>
+          <p className="text-sm text-muted-foreground">Preparing your practice session...</p>
+        </motion.div>
       </div>
     );
   }
 
   return (
-    <>
+    <TooltipProvider>
       {/* Resume Session Dialog */}
       <AlertDialog open={showResumeDialog} onOpenChange={setShowResumeDialog}>
-        <AlertDialogContent>
+        <AlertDialogContent className="sm:max-w-md">
           <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
-              <AlertCircle className="h-5 w-5" />
-              Active Session Found
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-amber-500/10">
+              <AlertCircle className="h-6 w-6 text-amber-500" />
+            </div>
+            <AlertDialogTitle className="text-center">
+              Continue where you left off?
             </AlertDialogTitle>
-            <AlertDialogDescription>
-              You have an active practice session in progress. Would you like to
-              continue where you left off or start a new session?
+            <AlertDialogDescription className="text-center">
+              You have an active practice session in progress.
             </AlertDialogDescription>
           </AlertDialogHeader>
           {activeSession && (
-            <div className="space-y-3 py-4">
-              <div className="flex flex-wrap gap-2">
+            <div className="my-4 rounded-lg bg-muted/50 p-4">
+              <div className="flex flex-wrap justify-center gap-2">
                 <Badge variant="secondary">
-                  {DIFFICULTY_CONFIG[activeSession.difficulty]?.label || activeSession.difficulty}
+                  {DIFFICULTY_CONFIG[activeSession.difficulty]?.label}
                 </Badge>
                 <Badge variant="secondary">
                   {activeSession.numberOfQuestions} questions
@@ -279,288 +303,329 @@ export function PracticeConfigForm() {
                   {activeSession.timeLimit} min
                 </Badge>
               </div>
-              <p className="text-sm text-muted-foreground">
-                Question types:{' '}
-                {activeSession.questionTypes
-                  .map((t) => QUESTION_TYPE_CONFIG[t]?.label || t)
-                  .join(', ')}
-              </p>
             </div>
           )}
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={handleStartNew}>
-              Start New
-            </AlertDialogCancel>
-            <AlertDialogAction onClick={handleResumeSession}>
+          <AlertDialogFooter className="flex-col gap-2 sm:flex-col">
+            <AlertDialogAction
+              onClick={handleResumeSession}
+              className="w-full"
+            >
               <Play className="mr-2 h-4 w-4" />
               Resume Session
             </AlertDialogAction>
+            <AlertDialogCancel
+              onClick={handleStartNew}
+              className="w-full"
+            >
+              Start Fresh
+            </AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
-      <div className="mx-auto max-w-2xl space-y-6">
-        {/* Question Types */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <Target className="h-4 w-4" />
-              Question Types
-            </CardTitle>
-            <CardDescription>
-              Select 1-3 question types to practice
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {normalizedQuestionTypes.map((config) => {
-              const IconComponent = getIconComponent(config.icon);
-              const isSelected = selectedTypes.includes(config.value);
+      <div className="mx-auto max-w-3xl px-4">
+        {/* Hero Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-12 text-center"
+        >
+          <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-1.5 text-sm font-medium text-primary">
+            <Sparkles className="h-4 w-4" />
+            Practice Mode
+          </div>
+          <h1 className="mb-3 text-3xl font-bold tracking-tight sm:text-4xl">
+            Ready to challenge yourself?
+          </h1>
+          <p className="mx-auto max-w-md text-muted-foreground">
+            Customize your practice session and sharpen your aptitude skills
+          </p>
+        </motion.div>
 
-              return (
-                <div
-                  key={config.value}
-                  className={cn(
-                    'flex cursor-pointer items-center gap-4 rounded-lg border p-4 transition-colors',
-                    isSelected
-                      ? 'border-foreground bg-secondary'
-                      : 'border-border hover:bg-secondary/50'
-                  )}
-                  onClick={() => handleTypeToggle(config.value)}
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      handleTypeToggle(config.value);
-                    }
-                  }}
-                >
-                  <Checkbox
-                    id={config.value}
-                    checked={isSelected}
-                    onCheckedChange={() => handleTypeToggle(config.value)}
-                  />
-                  <div
+        {/* Main Configuration */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="space-y-8"
+        >
+          {/* Question Types - Visual Cards */}
+          <section>
+            <div className="mb-4 flex items-center gap-2">
+              <Target className="h-5 w-5 text-muted-foreground" />
+              <h2 className="font-semibold">What do you want to practice?</h2>
+              <Badge variant="outline" className="ml-auto">
+                {selectedTypes.length}/3
+              </Badge>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-3">
+              {normalizedQuestionTypes.map((config, index) => {
+                const IconComponent = getIconComponent(config.icon);
+                const isSelected = selectedTypes.includes(config.value);
+
+                return (
+                  <motion.button
+                    key={config.value}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 + index * 0.05 }}
+                    type="button"
+                    onClick={() => handleTypeToggle(config.value)}
                     className={cn(
-                      'rounded-md p-2 transition-colors',
-                      isSelected ? 'bg-foreground text-background' : 'bg-secondary'
+                      'group relative overflow-hidden rounded-xl border-2 p-5 text-left transition-all duration-200',
+                      isSelected
+                        ? 'border-primary bg-primary/5 shadow-lg shadow-primary/10'
+                        : 'border-transparent bg-muted/50 hover:border-muted-foreground/20 hover:bg-muted'
                     )}
                   >
-                    <IconComponent className="h-4 w-4" />
-                  </div>
-                  <div className="flex-1">
-                    <Label
-                      htmlFor={config.value}
-                      className="cursor-pointer font-medium"
+                    {/* Selection indicator */}
+                    <AnimatePresence>
+                      {isSelected && (
+                        <motion.div
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          exit={{ scale: 0 }}
+                          className="absolute right-3 top-3 flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground"
+                        >
+                          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+
+                    <div
+                      className={cn(
+                        'mb-3 inline-flex rounded-lg p-2.5 transition-colors',
+                        isSelected
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-muted-foreground/10 text-muted-foreground group-hover:bg-muted-foreground/20'
+                      )}
                     >
-                      {config.label}
-                    </Label>
-                    <p className="text-sm text-muted-foreground">
+                      <IconComponent className="h-5 w-5" />
+                    </div>
+
+                    <h3 className="mb-1 font-semibold">{config.label}</h3>
+                    <p className="text-sm text-muted-foreground line-clamp-2">
                       {config.description}
                     </p>
-                  </div>
-                  {isSelected && (
-                    <Check className="h-4 w-4 text-foreground" />
-                  )}
-                </div>
-              );
-            })}
-          </CardContent>
-        </Card>
-
-        {/* Difficulty Level */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <TrendingUp className="h-4 w-4" />
-              Difficulty Level
-            </CardTitle>
-            <CardDescription>
-              Choose your challenge level
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-3 gap-3">
-              {normalizedDifficulties.map((config) => (
-                <button
-                  key={config.value}
-                  type="button"
-                  className={cn(
-                    'relative rounded-lg border p-4 text-center transition-colors',
-                    difficulty === config.value
-                      ? 'border-foreground bg-secondary'
-                      : 'border-border hover:bg-secondary/50'
-                  )}
-                  onClick={() => setDifficulty(config.value)}
-                >
-                  <div className="font-medium">{config.label}</div>
-                  <div className="mt-1 text-xs text-muted-foreground">
-                    {config.description}
-                  </div>
-                  {difficulty === config.value && (
-                    <div className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-foreground">
-                      <Check className="h-3 w-3 text-background" />
-                    </div>
-                  )}
-                </button>
-              ))}
+                  </motion.button>
+                );
+              })}
             </div>
-          </CardContent>
-        </Card>
+          </section>
 
-        {/* Number of Questions */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <Zap className="h-4 w-4" />
-              Number of Questions
-            </CardTitle>
-            <CardDescription>
-              Select between {QUESTION_LIMITS.MIN} and {QUESTION_LIMITS.MAX} questions
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="flex items-baseline gap-2">
-              <span className="text-4xl font-semibold">{numberOfQuestions}</span>
-              <span className="text-muted-foreground">questions</span>
+          {/* Difficulty - Segmented Control */}
+          <section>
+            <div className="mb-4 flex items-center gap-2">
+              <TrendingUp className="h-5 w-5 text-muted-foreground" />
+              <h2 className="font-semibold">Choose your challenge</h2>
             </div>
 
-            <Slider
-              value={[numberOfQuestions]}
-              onValueChange={([value]) => setNumberOfQuestions(value)}
-              min={QUESTION_LIMITS.MIN}
-              max={QUESTION_LIMITS.MAX}
-              step={QUESTION_LIMITS.STEP}
-              className="w-full"
-            />
+            <div className="relative flex rounded-xl bg-muted/50 p-1.5">
+              {/* Animated background */}
+              <motion.div
+                className={cn(
+                  'absolute inset-y-1.5 rounded-lg bg-gradient-to-r',
+                  currentDifficultyStyle.gradient,
+                  'border',
+                  currentDifficultyStyle.borderColor
+                )}
+                layoutId="difficulty-bg"
+                style={{
+                  left: `calc(${normalizedDifficulties.findIndex((d) => d.value === difficulty) * 33.333}% + 6px)`,
+                  width: 'calc(33.333% - 8px)',
+                }}
+                transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+              />
 
-            <div className="flex justify-between px-1 text-xs text-muted-foreground">
-              <span>{QUESTION_LIMITS.MIN}</span>
-              <span>{Math.round(QUESTION_LIMITS.MAX / 2)}</span>
-              <span>{QUESTION_LIMITS.MAX}</span>
+              {normalizedDifficulties.map((config) => {
+                const isSelected = difficulty === config.value;
+                const style = DIFFICULTY_STYLES[config.value];
+                const Icon = style.icon;
+
+                return (
+                  <button
+                    key={config.value}
+                    type="button"
+                    onClick={() => setDifficulty(config.value)}
+                    className={cn(
+                      'relative z-10 flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-3 font-medium transition-colors',
+                      isSelected ? style.color : 'text-muted-foreground hover:text-foreground'
+                    )}
+                  >
+                    <Icon className="h-4 w-4" />
+                    <span>{config.label}</span>
+                  </button>
+                );
+              })}
             </div>
 
-            {/* Quick Select */}
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-sm text-muted-foreground">Quick:</span>
-              {QUESTION_LIMITS.RECOMMENDED.map((num) => (
-                <Button
-                  key={num}
-                  variant={numberOfQuestions === num ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setNumberOfQuestions(num)}
-                  className="h-8 min-w-[3rem]"
-                >
-                  {num}
-                </Button>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+            <p className="mt-2 text-center text-sm text-muted-foreground">
+              {DIFFICULTY_CONFIG[difficulty]?.timePerQuestion}s per question • Perfect for{' '}
+              {difficulty === 'EASY' ? 'warming up' : difficulty === 'MEDIUM' ? 'steady practice' : 'intense training'}
+            </p>
+          </section>
 
-        {/* Time Limit */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <Clock className="h-4 w-4" />
-              Time Limit
-            </CardTitle>
-            <CardDescription>
-              Set a time limit for your session
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Checkbox
-                  id="useRecommended"
-                  checked={useRecommendedTime}
-                  onCheckedChange={(checked) => setUseRecommendedTime(!!checked)}
-                />
-                <Label htmlFor="useRecommended" className="cursor-pointer text-sm">
-                  Use recommended time
-                </Label>
+          {/* Questions & Time - Compact Row */}
+          <section className="grid gap-4 sm:grid-cols-2">
+            {/* Number of Questions */}
+            <div className="rounded-xl bg-muted/50 p-5">
+              <div className="mb-4 flex items-center gap-2">
+                <Zap className="h-5 w-5 text-muted-foreground" />
+                <h3 className="font-semibold">Questions</h3>
               </div>
-              <Badge variant="secondary" className="px-3 py-1.5 text-sm font-medium">
-                {formatDuration(timeLimit)}
-              </Badge>
-            </div>
 
-            {!useRecommendedTime && (
-              <>
-                <Slider
-                  value={[timeLimit]}
-                  onValueChange={([value]) => setTimeLimit(value)}
-                  min={timeBounds.min}
-                  max={timeBounds.max}
-                  step={5}
-                  className="w-full"
-                />
-
-                <div className="flex justify-between px-1 text-xs text-muted-foreground">
-                  <span>{timeBounds.min} min</span>
-                  <span>Recommended: {timeBounds.recommended} min</span>
-                  <span>{timeBounds.max} min</span>
-                </div>
-              </>
-            )}
-
-            {useRecommendedTime && (
-              <div className="flex items-center gap-2 rounded-lg bg-secondary p-3 text-sm text-muted-foreground">
-                <Info className="h-4 w-4 shrink-0" />
-                <span>
-                  Based on {numberOfQuestions} questions at{' '}
-                  {DIFFICULTY_CONFIG[difficulty]?.label || difficulty} difficulty
-                </span>
+              <div className="mb-4">
+                <span className="text-4xl font-bold">{numberOfQuestions}</span>
               </div>
-            )}
-          </CardContent>
-        </Card>
 
-        {/* Summary & Start */}
-        <Card className="border-foreground/20">
-          <CardContent className="pt-6">
-            <div className="mb-4 flex items-center gap-2 text-sm text-muted-foreground">
-              <Info className="h-4 w-4" />
-              <span>Review your configuration</span>
+              <div className="flex flex-wrap gap-2">
+                {QUESTION_LIMITS.RECOMMENDED.map((num) => (
+                  <button
+                    key={num}
+                    type="button"
+                    onClick={() => setNumberOfQuestions(num)}
+                    className={cn(
+                      'rounded-lg px-4 py-2 text-sm font-medium transition-all',
+                      numberOfQuestions === num
+                        ? 'bg-primary text-primary-foreground shadow-md'
+                        : 'bg-background hover:bg-muted'
+                    )}
+                  >
+                    {num}
+                  </button>
+                ))}
+              </div>
             </div>
 
-            <div className="mb-6 flex flex-wrap gap-2">
+            {/* Time Limit */}
+            <div className="rounded-xl bg-muted/50 p-5">
+              <div className="mb-4 flex items-center gap-2">
+                <Timer className="h-5 w-5 text-muted-foreground" />
+                <h3 className="font-semibold">Time Limit</h3>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Badge
+                      variant="outline"
+                      className={cn(
+                        'ml-auto cursor-pointer transition-colors',
+                        useRecommendedTime && 'border-primary/50 bg-primary/10 text-primary'
+                      )}
+                      onClick={() => setUseRecommendedTime(!useRecommendedTime)}
+                    >
+                      {useRecommendedTime ? 'Auto' : 'Custom'}
+                    </Badge>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    Click to {useRecommendedTime ? 'set custom time' : 'use recommended time'}
+                  </TooltipContent>
+                </Tooltip>
+              </div>
+
+              <div className="mb-4 flex items-baseline gap-2">
+                <span className="text-4xl font-bold">{formatDuration(timeLimit)}</span>
+              </div>
+
+              <AnimatePresence mode="wait">
+                {useRecommendedTime ? (
+                  <motion.p
+                    key="auto"
+                    initial={{ opacity: 0, y: 5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -5 }}
+                    className="text-sm text-muted-foreground"
+                  >
+                    Optimized for {numberOfQuestions} questions at {DIFFICULTY_CONFIG[difficulty]?.label} level
+                  </motion.p>
+                ) : (
+                  <motion.div
+                    key="custom"
+                    initial={{ opacity: 0, y: 5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -5 }}
+                    className="flex flex-wrap gap-2"
+                  >
+                    {[15, 30, 45, 60, 90].map((mins) => (
+                      <button
+                        key={mins}
+                        type="button"
+                        onClick={() => setTimeLimit(mins)}
+                        className={cn(
+                          'rounded-lg px-3 py-1.5 text-sm font-medium transition-all',
+                          timeLimit === mins
+                            ? 'bg-primary text-primary-foreground'
+                            : 'bg-background hover:bg-muted'
+                        )}
+                      >
+                        {mins}m
+                      </button>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </section>
+
+          {/* Start Button - Prominent CTA */}
+          <motion.section
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="pt-4"
+          >
+            {/* Summary Pills */}
+            <div className="mb-6 flex flex-wrap items-center justify-center gap-2">
               {selectedTypes.map((type) => (
-                <Badge key={type} variant="outline">
-                  {QUESTION_TYPE_CONFIG[type]?.label || type}
+                <Badge key={type} variant="secondary" className="py-1.5">
+                  {QUESTION_TYPE_CONFIG[type]?.label}
                 </Badge>
               ))}
-              <Badge variant="outline">
-                {DIFFICULTY_CONFIG[difficulty]?.label || difficulty}
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              <Badge
+                variant="secondary"
+                className={cn('py-1.5', currentDifficultyStyle.color, currentDifficultyStyle.bgColor)}
+              >
+                <DifficultyIcon className="mr-1 h-3 w-3" />
+                {DIFFICULTY_CONFIG[difficulty]?.label}
               </Badge>
-              <Badge variant="outline">{numberOfQuestions} questions</Badge>
-              <Badge variant="outline">{formatDuration(timeLimit)}</Badge>
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              <Badge variant="secondary" className="py-1.5">
+                {numberOfQuestions}Q • {formatDuration(timeLimit)}
+              </Badge>
             </div>
 
-            <Separator className="my-4" />
-
             <Button
-              className="h-12 w-full text-base font-medium"
               size="lg"
               onClick={handleStart}
               disabled={isLoading || selectedTypes.length === 0}
+              className="group relative h-14 w-full overflow-hidden text-lg font-semibold"
             >
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Starting...
-                </>
-              ) : (
-                <>
-                  <Play className="mr-2 h-4 w-4" />
-                  Start Practice Session
-                </>
-              )}
+              <span className="relative z-10 flex items-center gap-2">
+                {isLoading ? (
+                  <>
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                    Starting...
+                  </>
+                ) : (
+                  <>
+                    Start Practice
+                    <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
+                  </>
+                )}
+              </span>
+              
+              {/* Animated gradient background */}
+              <div className="absolute inset-0 -z-0 bg-gradient-to-r from-primary via-primary/80 to-primary opacity-0 transition-opacity group-hover:opacity-100" />
             </Button>
-          </CardContent>
-        </Card>
+
+            <p className="mt-4 text-center text-sm text-muted-foreground">
+              Press Enter or click to begin • Good luck! 🎯
+            </p>
+          </motion.section>
+        </motion.div>
       </div>
-    </>
+    </TooltipProvider>
   );
 }

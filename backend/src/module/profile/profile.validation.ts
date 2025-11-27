@@ -8,6 +8,7 @@ import {
   COURSE_YEARS,
   DEPARTMENTS,
 } from './profile.constants';
+import { BadRequestError } from '../../utils/errors';
 
 // =====================================================
 // RESUME VALIDATION SCHEMAS
@@ -193,13 +194,16 @@ export const validateResumeFile = (
 // HELPER PARSERS
 // =====================================================
 
-export const parseResumeId = (resumeId: string): number => {
-  const result = resumeIdParamSchema.safeParse({ resumeId });
-  if (!result.success) {
-    throw new Error('Invalid resume ID');
+// In profile.validation.ts
+export function parseResumeId(value: unknown): string {
+  if (typeof value === 'string' && value.trim().length > 0) {
+    return value.trim();
   }
-  return result.data.resumeId;
-};
+  if (typeof value === 'number') {
+    return String(value);
+  }
+  throw new BadRequestError('Invalid resume ID');
+}
 
 export const parseCreateStudentProfile = (data: unknown): CreateStudentProfileInput => {
   return createStudentProfileSchema.parse(data);

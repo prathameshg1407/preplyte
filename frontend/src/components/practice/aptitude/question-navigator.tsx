@@ -2,7 +2,7 @@
 
 'use client';
 
-import { Button } from '../../ui/button';
+import { motion } from 'framer-motion';
 import { ScrollArea } from '../../ui/scroll-area';
 import { cn } from '../../../lib/utils';
 import type { SessionQuestion, SelectedAnswers } from '../../../types/aptitude.types';
@@ -23,13 +23,10 @@ export function QuestionNavigator({
   onNavigate,
   disabled = false,
 }: QuestionNavigatorProps) {
-  const getAnsweredCount = () => {
-    return questions.filter(
-      (q) => selectedAnswers[q.id] || q.selectedOptionId
-    ).length;
-  };
+  const answeredCount = questions.filter(
+    (q) => selectedAnswers[q.id] || q.selectedOptionId
+  ).length;
 
-  const answeredCount = getAnsweredCount();
   const progressPercentage =
     questions.length > 0 ? Math.round((answeredCount / questions.length) * 100) : 0;
 
@@ -39,74 +36,89 @@ export function QuestionNavigator({
 
   return (
     <div className="space-y-6">
-      {/* Progress Header */}
+      {/* Progress */}
       <div className="space-y-3">
-        <div className="flex items-center justify-between text-sm">
-          <span className="font-medium">Progress</span>
-          <span className="text-muted-foreground">
-            {answeredCount} / {questions.length}
-          </span>
+        <div className="flex items-baseline justify-between">
+          <span className="text-sm font-medium">Progress</span>
+          <span className="text-2xl font-bold">{progressPercentage}%</span>
         </div>
 
-        {/* Progress Bar */}
-        <div className="h-1.5 w-full overflow-hidden rounded-full bg-secondary">
-          <div
-            className="h-full bg-foreground transition-all duration-300"
-            style={{ width: `${progressPercentage}%` }}
+        {/* Custom Progress Bar */}
+        <div className="relative h-2 w-full overflow-hidden rounded-full bg-muted">
+          <motion.div
+            className="absolute inset-y-0 left-0 bg-primary"
+            initial={{ width: 0 }}
+            animate={{ width: `${progressPercentage}%` }}
+            transition={{ duration: 0.5, ease: 'easeOut' }}
           />
         </div>
-        <p className="text-xs text-muted-foreground">
-          {progressPercentage}% complete
+
+        <p className="text-sm text-muted-foreground">
+          {answeredCount} of {questions.length} answered
         </p>
       </div>
 
       {/* Question Grid */}
-      <ScrollArea className="h-[260px]">
-        <div className="grid grid-cols-5 gap-1.5 pr-3">
-          {questions.map((question, index) => {
-            const isAnswered = isQuestionAnswered(question);
-            const isCurrent = index === currentIndex;
+      <div className="space-y-3">
+        <span className="text-sm font-medium">Questions</span>
+        <ScrollArea className="h-[280px]">
+          <div className="grid grid-cols-5 gap-2 pr-4">
+            {questions.map((question, index) => {
+              const isAnswered = isQuestionAnswered(question);
+              const isCurrent = index === currentIndex;
 
-            return (
-              <button
-                key={question.id}
-                disabled={disabled}
-                className={cn(
-                  'relative flex h-9 w-9 items-center justify-center rounded-md text-sm font-medium transition-colors',
-                  isCurrent && 'ring-2 ring-foreground ring-offset-2 ring-offset-background',
-                  isAnswered && !isCurrent && 'bg-foreground text-background',
-                  !isAnswered && !isCurrent && 'bg-secondary hover:bg-secondary/80',
-                  disabled && 'opacity-50 cursor-not-allowed'
-                )}
-                onClick={() => !disabled && onNavigate(index)}
-                title={`Question ${index + 1}${isAnswered ? ' (Answered)' : ''}`}
-              >
-                {index + 1}
-              </button>
-            );
-          })}
-        </div>
-      </ScrollArea>
+              return (
+                <motion.button
+                  key={question.id}
+                  disabled={disabled}
+                  onClick={() => !disabled && onNavigate(index)}
+                  whileHover={!disabled ? { scale: 1.1 } : {}}
+                  whileTap={!disabled ? { scale: 0.95 } : {}}
+                  className={cn(
+                    'relative flex h-10 w-10 items-center justify-center rounded-lg text-sm font-medium transition-all duration-200',
+                    // Current question
+                    isCurrent && 'ring-2 ring-primary ring-offset-2 ring-offset-background',
+                    // Answered
+                    isAnswered && !isCurrent && 'bg-primary text-primary-foreground',
+                    // Unanswered
+                    !isAnswered && !isCurrent && 'bg-muted hover:bg-muted/80',
+                    // Current + Answered
+                    isCurrent && isAnswered && 'bg-primary text-primary-foreground',
+                    // Current + Unanswered
+                    isCurrent && !isAnswered && 'bg-muted',
+                    // Disabled
+                    disabled && 'opacity-50 cursor-not-allowed'
+                  )}
+                >
+                  {isAnswered ? (
+                    <Check className="h-4 w-4" />
+                  ) : (
+                    index + 1
+                  )}
+                </motion.button>
+              );
+            })}
+          </div>
+        </ScrollArea>
+      </div>
 
       {/* Legend */}
       <div className="space-y-3 border-t border-border pt-4">
-        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
           Legend
-        </p>
-        <div className="space-y-2 text-xs">
+        </span>
+        <div className="grid grid-cols-2 gap-3 text-xs">
           <div className="flex items-center gap-2">
-            <div className="flex h-5 w-5 items-center justify-center rounded bg-foreground text-background">
+            <div className="flex h-6 w-6 items-center justify-center rounded bg-primary text-primary-foreground">
               <Check className="h-3 w-3" />
             </div>
             <span className="text-muted-foreground">Answered</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="h-5 w-5 rounded bg-secondary" />
+            <div className="flex h-6 w-6 items-center justify-center rounded bg-muted text-xs font-medium">
+              1
+            </div>
             <span className="text-muted-foreground">Unanswered</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="h-5 w-5 rounded ring-2 ring-foreground ring-offset-1 ring-offset-background" />
-            <span className="text-muted-foreground">Current</span>
           </div>
         </div>
       </div>

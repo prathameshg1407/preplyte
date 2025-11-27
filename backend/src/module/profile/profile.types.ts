@@ -7,7 +7,7 @@ import { Resume, StudentProfile, User } from '@prisma/client';
 // =====================================================
 
 export interface ResumeResponse {
-  id: number;
+  id: string;  // Changed from number to string
   fileName: string;
   fileUrl: string;
   fileSize: number | null;
@@ -122,7 +122,7 @@ export interface ProfileCompletionStatus {
 // =====================================================
 
 export const mapResumeToResponse = (resume: Resume): ResumeResponse => ({
-  id: resume.id,
+  id: resume.id,  // Now correctly expects string
   fileName: resume.fileName,
   fileUrl: resume.fileUrl,
   fileSize: resume.fileSize,

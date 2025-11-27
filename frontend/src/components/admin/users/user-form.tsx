@@ -204,7 +204,7 @@ export function UserForm({ user, onSubmit, loading, onCancel }: UserFormProps) {
               <SelectValue placeholder="Select institute" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">No Institute</SelectItem>
+        <SelectItem value="none">No Institute</SelectItem>  {/* ← Use "none" instead of "" */}
               {institutes.map((inst) => (
                 <SelectItem key={inst.id} value={inst.id}>
                   {inst.name}

@@ -3,16 +3,9 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "../../ui/card";
+import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "../../ui/button";
-import { Label } from "../../ui/label";
-import { RadioGroup, RadioGroupItem } from "../../ui/radio-group";
+import { Badge } from "../../ui/badge";
 import {
   Select,
   SelectContent,
@@ -20,7 +13,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../../ui/select";
-import { Slider } from "../../ui/slider";
 import { useMachine, useMachineConfigInit } from "../../../lib/hooks/use-machine";
 import { useMachineStore } from "../../../lib/store/machine-store";
 import type { DifficultyLevel } from "../../../types/machine.types";
@@ -28,28 +20,54 @@ import {
   Code2,
   Clock,
   Loader2,
-  Info,
   ArrowRight,
   Gauge,
   Hash,
   Timer,
   Terminal,
+  Zap,
+  Flame,
+  Trophy,
+  Brain,
+  Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "../../../lib/utils";
 
-const DIFFICULTY_INFO: Record<DifficultyLevel, { label: string; description: string }> = {
+const DIFFICULTY_CONFIG: Record<
+  DifficultyLevel,
+  {
+    label: string;
+    description: string;
+    icon: React.ElementType;
+    color: string;
+    bg: string;
+    gradient: string;
+  }
+> = {
   EASY: {
     label: "Easy",
-    description: "Basic problems focusing on fundamental concepts",
+    description: "Fundamental concepts",
+    icon: Zap,
+    color: "text-emerald-600 dark:text-emerald-400",
+    bg: "bg-emerald-500/10",
+    gradient: "from-emerald-500/20 to-emerald-500/5",
   },
   MEDIUM: {
     label: "Medium",
-    description: "Intermediate challenges requiring problem-solving skills",
+    description: "Problem-solving skills",
+    icon: Flame,
+    color: "text-amber-600 dark:text-amber-400",
+    bg: "bg-amber-500/10",
+    gradient: "from-amber-500/20 to-amber-500/5",
   },
   HARD: {
     label: "Hard",
-    description: "Advanced problems with complex algorithms",
+    description: "Complex algorithms",
+    icon: Trophy,
+    color: "text-rose-600 dark:text-rose-400",
+    bg: "bg-rose-500/10",
+    gradient: "from-rose-500/20 to-rose-500/5",
   },
 };
 
@@ -60,7 +78,6 @@ export function TestSelector() {
     languages,
     selectedLanguageId,
     config,
-    difficultyLevels,
     isLoading,
   } = useMachineStore();
 
@@ -104,7 +121,6 @@ export function TestSelector() {
     checkSession();
   }, [isReady, checkActiveSession]);
 
-  // Update time limit when config loads
   useEffect(() => {
     if (config?.machine) {
       const recommended =
@@ -162,17 +178,28 @@ export function TestSelector() {
   };
 
   const selectedLanguage = languages.find((l) => l.judge0Id === selectedLanguageId);
+  const difficultyConfig = DIFFICULTY_CONFIG[selectedDifficulty];
+  const DifficultyIcon = difficultyConfig.icon;
 
   // Loading state
   if (!hasHydrated || configLoading || (isReady && checkingSession)) {
     return (
-      <div className="flex min-h-[400px] items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="mx-auto mb-4 h-6 w-6 animate-spin text-muted-foreground" />
-          <p className="text-sm text-muted-foreground">
-            {!hasHydrated ? "Initializing..." : configLoading ? "Loading configuration..." : "Checking session..."}
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="text-center"
+        >
+          <div className="relative mx-auto h-16 w-16">
+            <div className="absolute inset-0 animate-ping rounded-full bg-primary/20" />
+            <div className="relative flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+              <Brain className="h-8 w-8 text-primary" />
+            </div>
+          </div>
+          <p className="mt-4 text-sm text-muted-foreground">
+            {!hasHydrated ? "Initializing..." : configLoading ? "Loading..." : "Checking session..."}
           </p>
-        </div>
+        </motion.div>
       </div>
     );
   }
@@ -192,221 +219,228 @@ export function TestSelector() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
-      {/* Step 1: Difficulty */}
-      <ConfigCard
-        step={1}
-        icon={Gauge}
-        title="Select Difficulty"
-        description="Choose the difficulty level for your practice session"
+    <div className="mx-auto max-w-3xl px-4">
+      {/* Header */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="mb-12 text-center"
       >
-        <RadioGroup
-          value={selectedDifficulty}
-          onValueChange={(v) => setSelectedDifficulty(v as DifficultyLevel)}
-          className="grid gap-3 sm:grid-cols-3"
-        >
-          {(["EASY", "MEDIUM", "HARD"] as DifficultyLevel[]).map((level) => {
-            const info = difficultyLevels.find((d) => d.value === level) || DIFFICULTY_INFO[level];
-            const isSelected = selectedDifficulty === level;
+        <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-1.5 text-sm font-medium text-primary">
+          <Sparkles className="h-4 w-4" />
+          Coding Challenge
+        </div>
+        <h1 className="mb-3 text-3xl font-bold tracking-tight sm:text-4xl">
+          Ready to code?
+        </h1>
+        <p className="mx-auto max-w-md text-muted-foreground">
+          Configure your coding session and sharpen your programming skills
+        </p>
+      </motion.div>
 
-            return (
-              <div key={level}>
-                <RadioGroupItem value={level} id={`difficulty-${level}`} className="peer sr-only" />
-                <Label
-                  htmlFor={`difficulty-${level}`}
+      {/* Configuration */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+        className="space-y-10"
+      >
+        {/* Difficulty */}
+        <section>
+          <h2 className="mb-4 font-semibold">Choose your challenge</h2>
+
+          <div className="relative flex rounded-xl bg-muted/50 p-1.5">
+            <motion.div
+              className={cn(
+                "absolute inset-y-1.5 rounded-lg bg-gradient-to-r border",
+                difficultyConfig.gradient,
+                `border-${selectedDifficulty === 'EASY' ? 'emerald' : selectedDifficulty === 'MEDIUM' ? 'amber' : 'rose'}-500/30`
+              )}
+              layoutId="difficulty-bg"
+              style={{
+                left: `calc(${['EASY', 'MEDIUM', 'HARD'].indexOf(selectedDifficulty) * 33.333}% + 6px)`,
+                width: 'calc(33.333% - 8px)',
+              }}
+              transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+            />
+
+            {(['EASY', 'MEDIUM', 'HARD'] as DifficultyLevel[]).map((level) => {
+              const config = DIFFICULTY_CONFIG[level];
+              const Icon = config.icon;
+              const isSelected = selectedDifficulty === level;
+
+              return (
+                <button
+                  key={level}
+                  type="button"
+                  onClick={() => setSelectedDifficulty(level)}
                   className={cn(
-                    "flex h-full cursor-pointer flex-col rounded-lg border p-4 transition-colors",
-                    isSelected
-                      ? "border-foreground bg-secondary"
-                      : "border-border hover:bg-secondary/50"
+                    'relative z-10 flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-3 font-medium transition-colors',
+                    isSelected ? config.color : 'text-muted-foreground hover:text-foreground'
                   )}
                 >
-                  <span className="mb-1 text-sm font-medium">
-                    {info.label || level}
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    {info.description || DIFFICULTY_INFO[level].description}
-                  </span>
-                </Label>
-              </div>
-            );
-          })}
-        </RadioGroup>
-      </ConfigCard>
-
-      {/* Step 2: Number of Questions */}
-      <ConfigCard
-        step={2}
-        icon={Hash}
-        title="Number of Questions"
-        description={`Choose how many questions (${questionLimits.min}-${questionLimits.max})`}
-      >
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">Questions</span>
-            <span className="text-2xl font-semibold">{numberOfQuestions}</span>
-          </div>
-          <Slider
-            value={[numberOfQuestions]}
-            onValueChange={([value]) => setNumberOfQuestions(value)}
-            min={questionLimits.min}
-            max={questionLimits.max}
-            step={1}
-          />
-          <div className="flex justify-between text-xs text-muted-foreground">
-            <span>{questionLimits.min}</span>
-            <span>{questionLimits.max}</span>
-          </div>
-        </div>
-      </ConfigCard>
-
-      {/* Step 3: Time Limit */}
-      <ConfigCard
-        step={3}
-        icon={Timer}
-        title="Time Limit"
-        description={`Set session duration (${timeLimitConfig.minTimeLimit}-${timeLimitConfig.maxTimeLimit} min)`}
-      >
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">Minutes</span>
-            <span className="text-2xl font-semibold">{timeLimit}</span>
-          </div>
-          <Slider
-            value={[timeLimit]}
-            onValueChange={([value]) => setTimeLimit(value)}
-            min={timeLimitConfig.minTimeLimit}
-            max={timeLimitConfig.maxTimeLimit}
-            step={5}
-          />
-          <div className="flex justify-between text-xs text-muted-foreground">
-            <span>{timeLimitConfig.minTimeLimit} min</span>
-            <span>{timeLimitConfig.maxTimeLimit} min</span>
+                  <Icon className="h-4 w-4" />
+                  <span>{config.label}</span>
+                </button>
+              );
+            })}
           </div>
 
-          <div className="flex items-center gap-2 rounded-lg border border-border bg-secondary/50 p-3">
-            <Clock className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm">
-              Duration: <span className="font-medium">{estimatedDuration}</span>
-            </span>
-          </div>
-        </div>
-      </ConfigCard>
+          <p className="mt-3 text-center text-sm text-muted-foreground">
+            {difficultyConfig.description}
+          </p>
+        </section>
 
-      {/* Step 4: Language */}
-      <ConfigCard
-        step={4}
-        icon={Terminal}
-        title="Select Language"
-        description="Choose your preferred programming language"
-      >
-        <Select
-          value={selectedLanguageId.toString()}
-          onValueChange={(v) => setSelectedLanguageId(parseInt(v))}
-        >
-          <SelectTrigger className="w-full sm:w-[280px]">
-            <SelectValue placeholder="Select language" />
-          </SelectTrigger>
-          <SelectContent>
-            {languages
-              .filter((l) => l.isActive)
-              .map((lang) => (
-                <SelectItem key={lang.id} value={lang.judge0Id.toString()}>
-                  {lang.name}
-                </SelectItem>
+        {/* Questions & Time */}
+        <section className="grid gap-4 sm:grid-cols-2">
+          {/* Number of Questions */}
+          <div className="rounded-xl bg-muted/50 p-6">
+            <div className="mb-4 flex items-center gap-2">
+              <Hash className="h-5 w-5 text-muted-foreground" />
+              <h3 className="font-semibold">Questions</h3>
+            </div>
+
+            <div className="mb-5">
+              <span className="text-4xl font-bold">{numberOfQuestions}</span>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              {Array.from(
+                { length: questionLimits.max - questionLimits.min + 1 },
+                (_, i) => questionLimits.min + i
+              )
+                .filter((n) => n <= 5)
+                .map((num) => (
+                  <button
+                    key={num}
+                    type="button"
+                    onClick={() => setNumberOfQuestions(num)}
+                    className={cn(
+                      'rounded-lg px-4 py-2 text-sm font-medium transition-all',
+                      numberOfQuestions === num
+                        ? 'bg-primary text-primary-foreground shadow-md'
+                        : 'bg-background hover:bg-muted'
+                    )}
+                  >
+                    {num}
+                  </button>
+                ))}
+            </div>
+          </div>
+
+          {/* Time Limit */}
+          <div className="rounded-xl bg-muted/50 p-6">
+            <div className="mb-4 flex items-center gap-2">
+              <Timer className="h-5 w-5 text-muted-foreground" />
+              <h3 className="font-semibold">Time Limit</h3>
+            </div>
+
+            <div className="mb-5">
+              <span className="text-4xl font-bold">{estimatedDuration}</span>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              {[30, 60, 90, 120].map((mins) => (
+                <button
+                  key={mins}
+                  type="button"
+                  onClick={() => setTimeLimit(mins)}
+                  className={cn(
+                    'rounded-lg px-4 py-2 text-sm font-medium transition-all',
+                    timeLimit === mins
+                      ? 'bg-primary text-primary-foreground shadow-md'
+                      : 'bg-background hover:bg-muted'
+                  )}
+                >
+                  {mins}m
+                </button>
               ))}
-          </SelectContent>
-        </Select>
-      </ConfigCard>
+            </div>
+          </div>
+        </section>
 
-      {/* Summary & Start */}
-      <Card className="border-border">
-        <CardHeader className="pb-4">
-          <CardTitle className="flex items-center gap-2 text-base font-medium">
-            <Code2 className="h-4 w-4 text-muted-foreground" />
-            Session Summary
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Summary Grid */}
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <SummaryItem label="Difficulty" value={DIFFICULTY_INFO[selectedDifficulty].label} />
-            <SummaryItem label="Questions" value={numberOfQuestions.toString()} />
-            <SummaryItem label="Duration" value={estimatedDuration} />
-            <SummaryItem label="Language" value={selectedLanguage?.name || "Not selected"} />
+        {/* Language */}
+        <section>
+          <div className="mb-4 flex items-center gap-2">
+            <Terminal className="h-5 w-5 text-muted-foreground" />
+            <h2 className="font-semibold">Programming Language</h2>
           </div>
 
-          {/* Info */}
-          <div className="flex items-start gap-2 rounded-lg border border-border bg-secondary/30 p-3">
-            <Info className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
-            <p className="text-xs text-muted-foreground">
-              Once you start, the timer will begin. Make sure you have a stable
-              internet connection and enough time to complete the session.
-            </p>
+          <Select
+            value={selectedLanguageId.toString()}
+            onValueChange={(v) => setSelectedLanguageId(parseInt(v))}
+          >
+            <SelectTrigger className="w-full sm:w-[280px]">
+              <SelectValue placeholder="Select language" />
+            </SelectTrigger>
+            <SelectContent>
+              {languages
+                .filter((l) => l.isActive)
+                .map((lang) => (
+                  <SelectItem key={lang.id} value={lang.judge0Id.toString()}>
+                    {lang.name}
+                  </SelectItem>
+                ))}
+            </SelectContent>
+          </Select>
+        </section>
+
+        {/* Start Button */}
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="pt-2"
+        >
+          {/* Summary */}
+          <div className="mb-6 flex flex-wrap items-center justify-center gap-2">
+            <Badge
+              variant="secondary"
+              className={cn('py-1.5', difficultyConfig.color, difficultyConfig.bg)}
+            >
+              <DifficultyIcon className="mr-1.5 h-3 w-3" />
+              {difficultyConfig.label}
+            </Badge>
+            <Badge variant="secondary" className="py-1.5">
+              {numberOfQuestions} questions
+            </Badge>
+            <Badge variant="secondary" className="py-1.5">
+              <Clock className="mr-1.5 h-3 w-3" />
+              {estimatedDuration}
+            </Badge>
+            {selectedLanguage && (
+              <Badge variant="secondary" className="py-1.5">
+                {selectedLanguage.name}
+              </Badge>
+            )}
           </div>
 
-          {/* Start Button */}
           <Button
-            className="w-full gap-2"
             size="lg"
             onClick={handleStartTest}
             disabled={!canStart || isStarting || isLoading}
+            className="group relative h-14 w-full overflow-hidden text-lg font-semibold"
           >
-            {isStarting ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Starting Session...
-              </>
-            ) : (
-              <>
-                Start Coding Session
-                <ArrowRight className="h-4 w-4" />
-              </>
-            )}
+            <span className="relative z-10 flex items-center gap-2">
+              {isStarting ? (
+                <>
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  Starting...
+                </>
+              ) : (
+                <>
+                  Start Coding
+                  <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
+                </>
+              )}
+            </span>
           </Button>
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
 
-// Config Card Component
-function ConfigCard({
-  step,
-  icon: Icon,
-  title,
-  description,
-  children,
-}: {
-  step: number;
-  icon: React.ElementType;
-  title: string;
-  description: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <Card className="border-border">
-      <CardHeader className="pb-4">
-        <CardTitle className="flex items-center gap-3 text-base font-medium">
-          <span className="flex h-6 w-6 items-center justify-center rounded-full border border-border bg-secondary text-xs font-semibold">
-            {step}
-          </span>
-          <Icon className="h-4 w-4 text-muted-foreground" />
-          {title}
-        </CardTitle>
-        <CardDescription>{description}</CardDescription>
-      </CardHeader>
-      <CardContent>{children}</CardContent>
-    </Card>
-  );
-}
-
-// Summary Item Component
-function SummaryItem({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-lg border border-border bg-secondary/50 p-3">
-      <div className="mb-1 text-xs text-muted-foreground">{label}</div>
-      <div className="truncate text-sm font-medium">{value}</div>
+          <p className="mt-4 text-center text-sm text-muted-foreground">
+            Good luck! 🚀
+          </p>
+        </motion.section>
+      </motion.div>
     </div>
   );
 }

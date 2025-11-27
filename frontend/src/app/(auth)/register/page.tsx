@@ -1,11 +1,11 @@
-// src/app/(auth)/register/page.tsx
 import { Suspense } from 'react';
 import Link from 'next/link';
-import { RegisterForm } from '../../../components/auth/register-form';
+import type { Metadata } from 'next';
+import { RegisterForm } from '@/components/auth/register-form';
 
-export const metadata = {
+export const metadata: Metadata = {
   title: 'Register | Preplyte',
-  description: 'Create a new account',
+  description: 'Create a new Preplyte account',
 };
 
 export default function RegisterPage() {
@@ -28,50 +28,23 @@ export default function RegisterPage() {
         </div>
 
         {/* Form */}
-        <Suspense fallback={<FormSkeleton />}>
+        <Suspense fallback={<FormSkeleton rows={5} />}>
           <RegisterForm />
         </Suspense>
-
-        {/* Terms */}
-        <p className="mt-6 text-center text-xs text-muted-foreground">
-          By creating an account, you agree to our{' '}
-          <Link
-            href="/terms"
-            className="underline underline-offset-4 hover:text-foreground"
-          >
-            Terms of Service
-          </Link>{' '}
-          and{' '}
-          <Link
-            href="/privacy"
-            className="underline underline-offset-4 hover:text-foreground"
-          >
-            Privacy Policy
-          </Link>
-        </p>
-
-        {/* Footer */}
-        <p className="mt-6 text-center text-sm text-muted-foreground">
-          Already have an account?{' '}
-          <Link
-            href="/login"
-            className="font-medium text-foreground underline-offset-4 hover:underline"
-          >
-            Sign in
-          </Link>
-        </p>
       </div>
     </div>
   );
 }
 
-function FormSkeleton() {
+function FormSkeleton({ rows }: { rows: number }) {
   return (
     <div className="space-y-4">
-      <div className="h-10 w-full animate-pulse rounded-md bg-secondary" />
-      <div className="h-10 w-full animate-pulse rounded-md bg-secondary" />
-      <div className="h-10 w-full animate-pulse rounded-md bg-secondary" />
-      <div className="h-10 w-full animate-pulse rounded-md bg-secondary" />
+      {Array.from({ length: rows }).map((_, i) => (
+        <div
+          key={i}
+          className="h-11 w-full animate-pulse rounded-md bg-secondary"
+        />
+      ))}
     </div>
   );
 }

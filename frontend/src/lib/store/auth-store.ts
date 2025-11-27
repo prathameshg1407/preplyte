@@ -1,11 +1,16 @@
-// src/lib/store/auth-store.ts
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { AUTH_STORAGE_KEYS } from '@/lib/utils/storage';
+import { AUTH_STORAGE_KEYS, clearAuthStorage, storage } from '@/lib/utils/storage';
+import { logger } from '@/lib/utils/logger';
 import type { User, AuthContext, AuthState } from '@/types/auth.types';
 
 interface AuthActions {
-  setAuth: (user: User, token: string, context: AuthContext) => void;
+  setAuth: (
+    user: User,
+    accessToken: string,
+    refreshToken: string,
+    context: AuthContext
+  ) => void;
   logout: () => void;
   updateUser: (data: Partial<User>) => void;
   setLoading: (loading: boolean) => void;
@@ -16,7 +21,7 @@ type AuthStore = AuthState & AuthActions;
 
 const initialState: AuthState = {
   user: null,
-  token: null,
+  accessToken: null,
   refreshToken: null,
   context: null,
   isAuthenticated: false,
@@ -24,17 +29,14 @@ const initialState: AuthState = {
   isHydrated: false,
 };
 
-const syncTokenToStorage = (token: string | null): void => {
+const syncTokensToStorage = (accessToken: string | null, refreshToken: string | null): void => {
   if (typeof window === 'undefined') return;
 
-  try {
-    if (token) {
-      localStorage.setItem(AUTH_STORAGE_KEYS.TOKEN, token);
-    } else {
-      localStorage.removeItem(AUTH_STORAGE_KEYS.TOKEN);
-    }
-  } catch (error) {
-    console.warn('[AuthStore] Token sync failed:', error);
+  if (accessToken && refreshToken) {
+    storage.set(AUTH_STORAGE_KEYS.ACCESS_TOKEN, accessToken);
+    storage.set(AUTH_STORAGE_KEYS.REFRESH_TOKEN, refreshToken);
+  } else {
+    clearAuthStorage();
   }
 };
 
@@ -43,15 +45,14 @@ export const useAuthStore = create<AuthStore>()(
     (set) => ({
       ...initialState,
 
-      setAuth: (user, token, context) => {
-        console.log('[AuthStore] setAuth called with token:', token?.substring(0, 20) + '...');
-        
-        // Sync to direct storage
-        syncTokenToStorage(token);
+      setAuth: (user, accessToken, refreshToken, context) => {
+        logger.debug('[AuthStore] setAuth called');
+        syncTokensToStorage(accessToken, refreshToken);
 
         set({
           user,
-          token,
+          accessToken,
+          refreshToken,
           context,
           isAuthenticated: true,
           isLoading: false,
@@ -59,8 +60,8 @@ export const useAuthStore = create<AuthStore>()(
       },
 
       logout: () => {
-        console.log('[AuthStore] logout called');
-        syncTokenToStorage(null);
+        logger.debug('[AuthStore] logout called');
+        syncTokensToStorage(null, null);
 
         set({
           ...initialState,
@@ -83,24 +84,26 @@ export const useAuthStore = create<AuthStore>()(
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         user: state.user,
-        token: state.token,
+        accessToken: state.accessToken,
+        refreshToken: state.refreshToken,
         context: state.context,
         isAuthenticated: state.isAuthenticated,
       }),
       onRehydrateStorage: () => (state, error) => {
         if (error) {
-          console.error('[AuthStore] Hydration error:', error);
+          logger.error('[AuthStore] Hydration error:', error);
           return;
         }
 
         if (state) {
-          console.log('[AuthStore] Hydrated:', {
+          logger.debug('[AuthStore] Hydrated', {
             hasUser: !!state.user,
-            hasToken: !!state.token,
+            hasToken: !!state.accessToken,
           });
 
-          if (state.token) {
-            syncTokenToStorage(state.token);
+          // Sync tokens from store to direct storage
+          if (state.accessToken && state.refreshToken) {
+            syncTokensToStorage(state.accessToken, state.refreshToken);
           }
 
           state.setHydrated(true);
@@ -110,9 +113,12 @@ export const useAuthStore = create<AuthStore>()(
   )
 );
 
+// ============================================
 // Selectors
+// ============================================
+
 export const useUser = () => useAuthStore((s) => s.user);
-export const useToken = () => useAuthStore((s) => s.token);
+export const useAccessToken = () => useAuthStore((s) => s.accessToken);
 export const useIsAuthenticated = () => useAuthStore((s) => s.isAuthenticated);
 export const useAuthLoading = () => useAuthStore((s) => s.isLoading);
 export const useAuthContext = () => useAuthStore((s) => s.context);

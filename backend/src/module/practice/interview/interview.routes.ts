@@ -1,34 +1,65 @@
-// interview.router.ts
+// src/module/practice/interview/interview.routes.ts
 
 import { Router } from 'express';
-import { InterviewController } from './interview.controller';
-import { InterviewService } from './interview.service';
+import { interviewController } from './interview.controller';
 import { authenticate } from '../../../middleware/auth.middleware';
-import { PrismaService } from '../../prisma/prisma.service';
-import { ProfileService } from '../../profile/profile.service';
 
-export function createInterviewRouter(
-  prisma: PrismaService,
-  profileService: ProfileService
-): Router {
-  const router = Router();
-  const service = new InterviewService(prisma, profileService);
-  const controller = new InterviewController(service);
+const router = Router();
 
-  // All routes require authentication
-  router.use(authenticate);
+// =====================================================
+// ALL ROUTES REQUIRE AUTHENTICATION
+// =====================================================
 
-  // Session management
-  router.post('/start', controller.startSession);
-  router.get('/sessions', controller.getSessions);
-  router.get('/stats', controller.getStats);
+router.use(authenticate);
 
-  // Active session operations
-  router.get('/:sessionId', controller.getSession);
-  router.post('/:sessionId/respond', controller.submitResponse);
-  router.post('/:sessionId/end', controller.endSession);
-  router.get('/:sessionId/feedback', controller.getFeedback);
-  router.delete('/:sessionId', controller.deleteSession);
+// =====================================================
+// SESSION ROUTES
+// =====================================================
 
-  return router;
-}
+// POST /interview/sessions - Create new session
+router.post('/sessions', interviewController.createSession);
+
+// GET /interview/sessions - List user's sessions
+router.get('/sessions', interviewController.listSessions);
+
+// GET /interview/sessions/:sessionId - Get session
+router.get('/sessions/:sessionId', interviewController.getSession);
+
+// GET /interview/sessions/:sessionId/detail - Get session with details
+router.get('/sessions/:sessionId/detail', interviewController.getSessionDetail);
+
+// POST /interview/sessions/:sessionId/start - Start session
+router.post('/sessions/:sessionId/start', interviewController.startSession);
+
+// POST /interview/sessions/:sessionId/cancel - Cancel session
+router.post('/sessions/:sessionId/cancel', interviewController.cancelSession);
+
+// POST /interview/sessions/:sessionId/end - End session
+router.post('/sessions/:sessionId/end', interviewController.endSession);
+
+// =====================================================
+// RESPONSE ROUTES
+// =====================================================
+
+// POST /interview/sessions/:sessionId/respond - Submit response
+router.post('/sessions/:sessionId/respond', interviewController.submitResponse);
+
+// =====================================================
+// FEEDBACK ROUTES
+// =====================================================
+
+// GET /interview/sessions/:sessionId/feedback - Get feedback
+router.get('/sessions/:sessionId/feedback', interviewController.getFeedback);
+
+// POST /interview/sessions/:sessionId/feedback/regenerate - Regenerate feedback
+router.post(
+  '/sessions/:sessionId/feedback/regenerate',
+  interviewController.regenerateFeedback
+);
+
+// =====================================================
+// EXPORT
+// =====================================================
+
+export { router as interviewRoutes };
+export default router;

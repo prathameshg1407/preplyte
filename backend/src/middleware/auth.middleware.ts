@@ -12,7 +12,10 @@ const jwtSecret = process.env.JWT_SECRET;
 if (!jwtSecret) {
   throw new Error('JWT_SECRET must be defined in environment variables');
 }
+
 const JWT_SECRET = new TextEncoder().encode(jwtSecret);
+const JWT_ISSUER = 'preplyte-api';
+const JWT_AUDIENCE = 'preplyte-client';
 
 // ============================================
 // Types
@@ -30,8 +33,14 @@ export interface AuthenticatedRequest extends Request {
   user?: AuthUser;
 }
 
-// User select fields for consistent queries
-const userSelectFields = {
+interface JWTPayload extends jose.JWTPayload {
+  sub: string;
+  role: string;
+  instituteId: string | null;
+  tokenVersion: number;
+}
+
+const USER_SELECT = {
   id: true,
   email: true,
   role: true,
@@ -39,6 +48,116 @@ const userSelectFields = {
   isActive: true,
   tokenVersion: true,
 } as const;
+
+type UserSelectResult = {
+  id: string;
+  email: string;
+  role: string;
+  instituteId: string | null;
+  isActive: boolean;
+  tokenVersion: number;
+};
+
+// ============================================
+// Helper Functions
+// ============================================
+
+function extractBearerToken(authHeader: string | undefined): string | null {
+  if (!authHeader?.startsWith('Bearer ')) {
+    return null;
+  }
+  const token = authHeader.slice(7).trim();
+  return token || null;
+}
+
+function isValidJWTPayload(payload: jose.JWTPayload): payload is JWTPayload {
+  return (
+    typeof payload.sub === 'string' &&
+    payload.sub.length > 0 &&
+    typeof payload.tokenVersion === 'number'
+  );
+}
+
+function mapUserToAuthUser(user: UserSelectResult): AuthUser {
+  return {
+    id: user.id,
+    email: user.email,
+    role: user.role,
+    instituteId: user.instituteId,
+    tokenVersion: user.tokenVersion,
+  };
+}
+
+interface VerifyResult {
+  user?: AuthUser;
+  error?: {
+    code: string;
+    message: string;
+    status: number;
+  };
+}
+
+async function verifyTokenAndGetUser(token: string): Promise<VerifyResult> {
+  try {
+    const { payload } = await jose.jwtVerify(token, JWT_SECRET, {
+      issuer: JWT_ISSUER,
+      audience: JWT_AUDIENCE,
+    });
+
+    if (!isValidJWTPayload(payload)) {
+      return {
+        error: { code: 'UNAUTHORIZED', message: 'Invalid token payload', status: 401 },
+      };
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: payload.sub },
+      select: USER_SELECT,
+    });
+
+    if (!user) {
+      return {
+        error: { code: 'UNAUTHORIZED', message: 'User not found', status: 401 },
+      };
+    }
+
+    if (!user.isActive) {
+      return {
+        error: { code: 'UNAUTHORIZED', message: 'Account is inactive', status: 401 },
+      };
+    }
+
+    if (user.tokenVersion !== payload.tokenVersion) {
+      return {
+        error: {
+          code: 'TOKEN_REVOKED',
+          message: 'Session has been revoked. Please login again.',
+          status: 401,
+        },
+      };
+    }
+
+    return { user: mapUserToAuthUser(user) };
+  } catch (error) {
+    if (error instanceof jose.errors.JWTExpired) {
+      return {
+        error: {
+          code: 'TOKEN_EXPIRED',
+          message: 'Your session has expired. Please login again.',
+          status: 401,
+        },
+      };
+    }
+    if (error instanceof jose.errors.JWTClaimValidationFailed) {
+      return {
+        error: { code: 'UNAUTHORIZED', message: 'Invalid token claims', status: 401 },
+      };
+    }
+    return {
+      error: { code: 'UNAUTHORIZED', message: 'Invalid token', status: 401 },
+    };
+  }
+}
 
 // ============================================
 // Authentication Middleware
@@ -50,81 +169,25 @@ export const authenticate = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const authHeader = req.headers.authorization;
-
-    if (!authHeader?.startsWith('Bearer ')) {
-      sendError(
-        res,
-        'UNAUTHORIZED',
-        'Authentication required. Please provide a valid token.',
-        401
-      );
-      return;
-    }
-
-    const token = authHeader.substring(7);
+    const token = extractBearerToken(req.headers.authorization);
 
     if (!token) {
-      sendError(res, 'UNAUTHORIZED', 'Token is required', 401);
+      sendError(res, 'UNAUTHORIZED', 'Authentication required', 401);
       return;
     }
 
-    try {
-      const { payload } = await jose.jwtVerify(token, JWT_SECRET, {
-        issuer: 'preplyte-api',
-        audience: 'preplyte-client',
-      });
+    const result = await verifyTokenAndGetUser(token);
 
-      const userId = payload.sub as string;
-      const tokenVersion = (payload.tokenVersion as number) || 0;
-
-      // Fetch user from database
-      const user = await prisma.user.findUnique({
-        where: { id: userId },
-        select: userSelectFields,
-      });
-
-      if (!user) {
-        sendError(res, 'UNAUTHORIZED', 'User not found', 401);
-        return;
-      }
-
-      if (!user.isActive) {
-        sendError(res, 'UNAUTHORIZED', 'Account is inactive', 401);
-        return;
-      }
-
-      // Check token version for logout-all functionality
-      if (user.tokenVersion !== tokenVersion) {
-        sendError(res, 'UNAUTHORIZED', 'Session has been revoked. Please login again.', 401);
-        return;
-      }
-
-      req.user = {
-        id: user.id,
-        email: user.email,
-        role: user.role,
-        instituteId: user.instituteId,
-        tokenVersion: user.tokenVersion,
-      };
-
-      next();
-    } catch (jwtError) {
-      if (jwtError instanceof jose.errors.JWTExpired) {
-        sendError(res, 'TOKEN_EXPIRED', 'Your session has expired. Please login again.', 401);
-        return;
-      }
-      if (jwtError instanceof jose.errors.JWTClaimValidationFailed) {
-        sendError(res, 'UNAUTHORIZED', 'Invalid token claims', 401);
-        return;
-      }
-      sendError(res, 'UNAUTHORIZED', 'Invalid token', 401);
+    if (result.error) {
+      sendError(res, result.error.code, result.error.message, result.error.status);
       return;
     }
+
+    req.user = result.user;
+    next();
   } catch (error) {
-    logger.error('Authentication error', error);
+    logger.error('Authentication error', { error });
     sendError(res, 'UNAUTHORIZED', 'Authentication failed', 401);
-    return;
   }
 };
 
@@ -137,46 +200,17 @@ export const optionalAuth = async (
   _res: Response,
   next: NextFunction
 ): Promise<void> => {
-  const authHeader = req.headers.authorization;
-
-  if (!authHeader?.startsWith('Bearer ')) {
-    next();
-    return;
-  }
-
   try {
-    const token = authHeader.substring(7);
-    
-    if (!token) {
-      next();
-      return;
+    const token = extractBearerToken(req.headers.authorization);
+
+    if (token) {
+      const result = await verifyTokenAndGetUser(token);
+      if (result.user) {
+        req.user = result.user;
+      }
     }
-
-    const { payload } = await jose.jwtVerify(token, JWT_SECRET, {
-      issuer: 'preplyte-api',
-      audience: 'preplyte-client',
-    });
-
-    const userId = payload.sub as string;
-    const tokenVersion = (payload.tokenVersion as number) || 0;
-
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: userSelectFields,
-    });
-
-    if (user?.isActive && user.tokenVersion === tokenVersion) {
-      req.user = {
-        id: user.id,
-        email: user.email,
-        role: user.role,
-        instituteId: user.instituteId,
-        tokenVersion: user.tokenVersion,
-      };
-    }
-  } catch (error) {
-    // Silently continue without user - auth is optional
-    logger.debug('Optional auth failed, continuing without user');
+  } catch {
+    // Continue without user for optional auth
   }
 
   next();
@@ -186,14 +220,16 @@ export const optionalAuth = async (
 // Authorization Middleware
 // ============================================
 
-export const authorize = (...allowedRoles: string[]) => {
+type AllowedRole = 'PLATFORM_ADMIN' | 'INSTITUTE_ADMIN' | 'USER';
+
+export const authorize = (...allowedRoles: AllowedRole[]) => {
   return (req: AuthenticatedRequest, res: Response, next: NextFunction): void => {
     if (!req.user) {
       sendError(res, 'UNAUTHORIZED', 'Authentication required', 401);
       return;
     }
 
-    if (!allowedRoles.includes(req.user.role)) {
+    if (!allowedRoles.includes(req.user.role as AllowedRole)) {
       sendError(res, 'FORBIDDEN', 'You do not have permission to perform this action', 403);
       return;
     }
@@ -228,6 +264,8 @@ export const authorizeInstitute = (
 // Institute Admin Authorization Middleware
 // ============================================
 
+const INSTITUTE_ADMIN_ROLES: AllowedRole[] = ['PLATFORM_ADMIN', 'INSTITUTE_ADMIN'];
+
 export const authorizeInstituteAdmin = (
   req: AuthenticatedRequest,
   res: Response,
@@ -243,7 +281,7 @@ export const authorizeInstituteAdmin = (
     return;
   }
 
-  if (!['ADMIN', 'INSTITUTE_ADMIN'].includes(req.user.role)) {
+  if (!INSTITUTE_ADMIN_ROLES.includes(req.user.role as AllowedRole)) {
     sendError(res, 'FORBIDDEN', 'This action requires admin privileges', 403);
     return;
   }
@@ -264,8 +302,15 @@ export const authorizeOwnerOrAdmin = (userIdParam: string = 'userId') => {
 
     const resourceUserId = req.params[userIdParam];
 
-    // Allow if user is admin or owner of the resource
-    if (req.user.role === 'ADMIN' || req.user.id === resourceUserId) {
+    if (!resourceUserId) {
+      sendError(res, 'BAD_REQUEST', `Missing parameter: ${userIdParam}`, 400);
+      return;
+    }
+
+    const isAdmin = req.user.role === 'PLATFORM_ADMIN';
+    const isOwner = req.user.id === resourceUserId;
+
+    if (isAdmin || isOwner) {
       next();
       return;
     }

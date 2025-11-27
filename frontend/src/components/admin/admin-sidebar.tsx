@@ -1,111 +1,142 @@
-// src/components/admin/admin-sidebar.tsx
-
 'use client';
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { cn } from '../../lib/utils';
+import { cn } from '@/lib/utils';
+import { useAuth } from '@/lib/hooks/use-auth';
+import { Button } from '@/components/ui/button';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import {
   LayoutDashboard,
   Building2,
   Users,
   FileBarChart,
   Settings,
-  ChevronLeft,
-  PanelLeftClose,
-  PanelLeft,
+  GraduationCap,
+  LogOut,
+  User,
+  ChevronDown,
 } from 'lucide-react';
-import { Button } from '../ui/button';
-import { useState } from 'react';
 
-const navigation = [
+const NAVIGATION = [
   { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
   { name: 'Institutes', href: '/admin/institutes', icon: Building2 },
   { name: 'Users', href: '/admin/users', icon: Users },
   { name: 'Reports', href: '/admin/reports', icon: FileBarChart },
   { name: 'Settings', href: '/admin/settings', icon: Settings },
-];
+] as const;
 
 export function AdminSidebar() {
   const pathname = usePathname();
-  const [collapsed, setCollapsed] = useState(false);
+  const { user, logout } = useAuth();
+
+  const getInitials = (name?: string | null): string => {
+    if (!name) return 'PA';
+    return name
+      .split(' ')
+      .map((n) => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
 
   return (
-    <aside
-      className={cn(
-        'relative flex flex-col border-r border-border bg-card transition-all duration-200',
-        collapsed ? 'w-14' : 'w-56'
-      )}
-    >
-      {/* Header */}
-      <div className="flex h-14 items-center justify-between px-3 border-b border-border">
-        {!collapsed && (
-          <Link href="/admin" className="flex items-center gap-2">
-            <div className="h-7 w-7 rounded-md border border-border flex items-center justify-center">
-              <span className="text-sm font-semibold">P</span>
-            </div>
-            <span className="font-medium text-sm">Admin</span>
-          </Link>
-        )}
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setCollapsed(!collapsed)}
-          className={cn("h-8 w-8", collapsed && "mx-auto")}
-        >
-          {collapsed ? (
-            <PanelLeft className="h-4 w-4" />
-          ) : (
-            <PanelLeftClose className="h-4 w-4" />
-          )}
-        </Button>
+    <div className="flex h-screen w-64 flex-col border-r bg-background">
+      {/* Logo */}
+      <div className="flex h-16 items-center gap-2 border-b px-6">
+        <GraduationCap className="h-8 w-8 text-primary" />
+        <span className="text-xl font-bold">Preplyte</span>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 py-2 px-2">
-        <ul className="space-y-0.5">
-          {navigation.map((item) => {
-            const isActive =
-              pathname === item.href ||
-              (item.href !== '/admin' && pathname.startsWith(item.href));
+      <nav className="flex-1 space-y-1 p-4">
+        {NAVIGATION.map((item) => {
+          const isActive =
+            item.href === '/admin'
+              ? pathname === '/admin'
+              : pathname.startsWith(item.href);
 
-            return (
-              <li key={item.name}>
-                <Link
-                  href={item.href}
-                  className={cn(
-                    'flex items-center gap-3 rounded-md px-2.5 py-2 text-sm transition-colors',
-                    isActive
-                      ? 'bg-secondary font-medium text-foreground'
-                      : 'text-muted-foreground hover:bg-secondary/50 hover:text-foreground',
-                    collapsed && 'justify-center px-2'
-                  )}
-                  title={collapsed ? item.name : undefined}
-                >
-                  <item.icon className="h-4 w-4 shrink-0" />
-                  {!collapsed && <span>{item.name}</span>}
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
+          return (
+            <Link
+              key={item.name}
+              href={item.href}
+              className={cn(
+                'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+                isActive
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+              )}
+            >
+              <item.icon className="h-5 w-5" />
+              {item.name}
+            </Link>
+          );
+        })}
       </nav>
 
-      {/* Footer */}
-      <div className="border-t border-border p-2">
-        <Link
-          href="/dashboard"
-          className={cn(
-            'flex items-center gap-3 rounded-md px-2.5 py-2 text-sm',
-            'text-muted-foreground hover:bg-secondary/50 hover:text-foreground transition-colors',
-            collapsed && 'justify-center px-2'
-          )}
-          title={collapsed ? 'Back to App' : undefined}
-        >
-          <ChevronLeft className="h-4 w-4 shrink-0" />
-          {!collapsed && <span>Back to App</span>}
-        </Link>
+      {/* User Profile Section */}
+      <div className="border-t p-4">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              className="w-full justify-start gap-3 px-2 h-auto py-2"
+            >
+              <Avatar className="h-8 w-8">
+                <AvatarFallback className="bg-primary/10 text-primary">
+                  {getInitials(user?.name)}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex flex-1 flex-col items-start text-left">
+                <span className="text-sm font-medium truncate max-w-[120px]">
+                  {user?.name || 'Platform Admin'}
+                </span>
+                <span className="text-xs text-muted-foreground truncate max-w-[120px]">
+                  {user?.email || ''}
+                </span>
+              </div>
+              <ChevronDown className="h-4 w-4 text-muted-foreground" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuLabel className="font-normal">
+              <div className="flex flex-col space-y-1">
+                <p className="text-sm font-medium">{user?.name || 'Admin'}</p>
+                <p className="text-xs text-muted-foreground">{user?.email}</p>
+              </div>
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem asChild>
+              <Link href="/admin/profile">
+                <User className="mr-2 h-4 w-4" />
+                Profile
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link href="/admin/settings">
+                <Settings className="mr-2 h-4 w-4" />
+                Settings
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              className="text-red-600 cursor-pointer"
+              onClick={() => logout()}
+            >
+              <LogOut className="mr-2 h-4 w-4" />
+              Log out
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
-    </aside>
+    </div>
   );
 }

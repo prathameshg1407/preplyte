@@ -14,51 +14,55 @@ import { authenticate } from '../../middleware/auth.middleware';
 const router = Router();
 
 // ============================================
+// Rate Limiter Factory
+// ============================================
+
+const createRateLimiter = (
+  windowMs: number,
+  max: number,
+  message: string
+) =>
+  rateLimit({
+    windowMs,
+    max,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: {
+      success: false,
+      error: {
+        code: 'RATE_LIMITED',
+        message,
+      },
+    },
+  });
+
+// ============================================
 // Rate Limiters
 // ============================================
 
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: {
-    success: false,
-    error: {
-      code: 'RATE_LIMITED',
-      message: 'Too many attempts. Please try again later.',
-    },
-  },
-  skipSuccessfulRequests: true,
-});
+const authLimiter = createRateLimiter(
+  15 * 60 * 1000, // 15 minutes
+  10,
+  'Too many login attempts. Please try again later.'
+);
 
-const registerLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000, // 1 hour
-  max: 10,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: {
-    success: false,
-    error: {
-      code: 'RATE_LIMITED',
-      message: 'Too many registration attempts. Please try again later.',
-    },
-  },
-});
+const registerLimiter = createRateLimiter(
+  60 * 60 * 1000, // 1 hour
+  5,
+  'Too many registration attempts. Please try again later.'
+);
 
-const refreshLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 30,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: {
-    success: false,
-    error: {
-      code: 'RATE_LIMITED',
-      message: 'Too many token refresh attempts.',
-    },
-  },
-});
+const refreshLimiter = createRateLimiter(
+  15 * 60 * 1000, // 15 minutes
+  30,
+  'Too many token refresh attempts.'
+);
+
+const generalLimiter = createRateLimiter(
+  60 * 1000, // 1 minute
+  60,
+  'Too many requests. Please slow down.'
+);
 
 // ============================================
 // Public Routes
@@ -72,9 +76,9 @@ router.post('/refresh', refreshLimiter, refreshToken);
 // Protected Routes
 // ============================================
 
-router.post('/logout', authenticate, logout);
-router.post('/logout-all', authenticate, logoutAll);
-router.get('/me', authenticate, me);
-router.get('/verify', authenticate, verifyToken);
+router.post('/logout', authenticate, generalLimiter, logout);
+router.post('/logout-all', authenticate, generalLimiter, logoutAll);
+router.get('/me', authenticate, generalLimiter, me);
+router.get('/verify', authenticate, generalLimiter, verifyToken);
 
 export { router as authRoutes };

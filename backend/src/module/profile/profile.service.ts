@@ -420,7 +420,7 @@ class ProfileService {
   /**
    * Get a specific resume
    */
-  async getResume(userId: string, resumeId: number): Promise<ResumeResponse> {
+  async getResume(userId: string, resumeId: string): Promise<ResumeResponse> {
     const resume = await this.findResumeOrThrow(userId, resumeId);
     return mapResumeToResponse(resume);
   }
@@ -439,7 +439,7 @@ class ProfileService {
   /**
    * Delete a resume
    */
-  async deleteResume(userId: string, resumeId: number): Promise<void> {
+  async deleteResume(userId: string, resumeId: string): Promise<void> {
     logger.info('[ProfileService] Deleting resume', { resumeId, userId });
 
     const resume = await this.findResumeOrThrow(userId, resumeId);
@@ -476,7 +476,7 @@ class ProfileService {
    */
   async setDefaultResume(
     userId: string,
-    resumeId: number
+    resumeId: string
   ): Promise<ResumeResponse> {
     await this.findResumeOrThrow(userId, resumeId);
 
@@ -503,7 +503,7 @@ class ProfileService {
    */
   async extractResumeText(
     userId: string,
-    resumeId: number
+    resumeId: string
   ): Promise<ExtractedResumeData> {
     logger.debug('[ProfileService] Extracting resume text', { resumeId, userId });
 
@@ -555,7 +555,7 @@ class ProfileService {
   /**
    * Link resume to student profile
    */
-  async linkResumeToProfile(userId: string, resumeId: number): Promise<void> {
+  async linkResumeToProfile(userId: string, resumeId: string): Promise<void> {
     const resume = await this.findResumeOrThrow(userId, resumeId);
     const profile = await prisma.studentProfile.findUnique({
       where: { userId },
@@ -580,7 +580,7 @@ class ProfileService {
   // PRIVATE HELPER METHODS
   // =================================================
 
-  private async findResumeOrThrow(userId: string, resumeId: number) {
+  private async findResumeOrThrow(userId: string, resumeId: string) {
     const resume = await prisma.resume.findFirst({
       where: { id: resumeId, userId },
     });
@@ -613,7 +613,7 @@ class ProfileService {
       marks12: number | null;
       cgpaSemesters: number[];
     } | null;
-    resumes: { id: number }[];
+    resumes: { id: string }[];
   }): ProfileCompletionStatus {
     const missingFields: string[] = [];
     let totalFields = 0;

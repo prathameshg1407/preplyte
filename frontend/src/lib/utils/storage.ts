@@ -1,5 +1,3 @@
-// src/lib/utils/storage.ts
-
 const isClient = typeof window !== 'undefined';
 
 /**
@@ -12,7 +10,6 @@ export const storage = {
       const item = localStorage.getItem(key);
       if (!item) return null;
 
-      // Try to parse as JSON, fallback to raw string
       try {
         return JSON.parse(item) as T;
       } catch {
@@ -37,8 +34,7 @@ export const storage = {
   set(key: string, value: unknown): boolean {
     if (!isClient) return false;
     try {
-      const serialized =
-        typeof value === 'string' ? value : JSON.stringify(value);
+      const serialized = typeof value === 'string' ? value : JSON.stringify(value);
       localStorage.setItem(key, serialized);
       return true;
     } catch (error) {
@@ -74,6 +70,16 @@ export const storage = {
 
 // Auth-specific storage keys
 export const AUTH_STORAGE_KEYS = {
-  TOKEN: 'auth_token',
+  ACCESS_TOKEN: 'auth_access_token',
+  REFRESH_TOKEN: 'auth_refresh_token',
   STORE: 'auth-storage',
 } as const;
+
+// Clear all auth-related storage
+export const clearAuthStorage = (): void => {
+  storage.clear([
+    AUTH_STORAGE_KEYS.ACCESS_TOKEN,
+    AUTH_STORAGE_KEYS.REFRESH_TOKEN,
+    AUTH_STORAGE_KEYS.STORE,
+  ]);
+};

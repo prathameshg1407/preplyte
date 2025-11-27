@@ -2,6 +2,7 @@
 
 'use client';
 
+import { motion } from 'framer-motion';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,9 +14,9 @@ import {
   AlertDialogTitle,
 } from '../../ui/alert-dialog';
 import { Badge } from '../../ui/badge';
-import { Progress } from '../../ui/progress';
-import { AlertCircle, Check, Loader2, Send, Clock } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Loader2, Send, Clock } from 'lucide-react';
 import { formatTime } from '../../../lib/constants/aptitude.constants';
+import { cn } from '../../../lib/utils';
 
 interface SubmitDialogProps {
   open: boolean;
@@ -38,95 +39,126 @@ export function SubmitDialog({
 }: SubmitDialogProps) {
   const unanswered = totalQuestions - answeredCount;
   const allAnswered = unanswered === 0;
-  const progressPercentage =
-    totalQuestions > 0 ? Math.round((answeredCount / totalQuestions) * 100) : 0;
+  const progressPercentage = totalQuestions > 0 
+    ? Math.round((answeredCount / totalQuestions) * 100) 
+    : 0;
 
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent className="max-w-md">
-        <AlertDialogHeader>
-          <AlertDialogTitle className="flex items-center gap-3">
-            {allAnswered ? (
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-foreground">
-                <Check className="h-5 w-5 text-background" />
-              </div>
-            ) : (
-              <div className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-foreground">
-                <AlertCircle className="h-5 w-5" />
-              </div>
+      <AlertDialogContent className="max-w-md overflow-hidden p-0">
+        {/* Header with Icon */}
+        <div className={cn(
+          'flex flex-col items-center px-6 pb-4 pt-8',
+          allAnswered ? 'bg-emerald-500/10' : 'bg-amber-500/10'
+        )}>
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ type: 'spring', stiffness: 200, damping: 15 }}
+            className={cn(
+              'mb-4 flex h-16 w-16 items-center justify-center rounded-full',
+              allAnswered ? 'bg-emerald-500' : 'bg-amber-500'
             )}
-            <span>Submit Test</span>
-          </AlertDialogTitle>
-          <AlertDialogDescription className="pt-2">
-            {allAnswered
-              ? 'You have answered all questions. Ready to submit?'
-              : `You have ${unanswered} unanswered question${
-                  unanswered > 1 ? 's' : ''
-                }. Are you sure you want to submit?`}
-          </AlertDialogDescription>
-        </AlertDialogHeader>
+          >
+            {allAnswered ? (
+              <CheckCircle2 className="h-8 w-8 text-white" />
+            ) : (
+              <AlertTriangle className="h-8 w-8 text-white" />
+            )}
+          </motion.div>
 
-        <div className="space-y-6 py-4">
+          <AlertDialogHeader className="text-center">
+            <AlertDialogTitle className="text-xl">
+              {allAnswered ? 'Ready to Submit?' : 'Submit Incomplete Test?'}
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-center">
+              {allAnswered
+                ? "You've answered all questions. Let's see how you did!"
+                : `You still have ${unanswered} unanswered question${unanswered > 1 ? 's' : ''}.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+        </div>
+
+        {/* Content */}
+        <div className="space-y-4 p-6">
           {/* Time Remaining */}
           {timeRemaining !== undefined && timeRemaining > 0 && (
-            <div className="flex items-center justify-between rounded-lg bg-secondary p-3">
+            <div className="flex items-center justify-between rounded-xl bg-muted/50 p-4">
               <div className="flex items-center gap-2 text-sm">
                 <Clock className="h-4 w-4 text-muted-foreground" />
                 <span>Time Remaining</span>
               </div>
-              <Badge variant="outline" className="font-mono">
+              <Badge variant="outline" className="font-mono text-base">
                 {formatTime(timeRemaining)}
               </Badge>
             </div>
           )}
 
-          {/* Progress Summary */}
+          {/* Progress Bar */}
           <div className="space-y-3">
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted-foreground">Questions Answered</span>
-              <span className="font-medium">
+              <span className="font-semibold">
                 {answeredCount} / {totalQuestions}
               </span>
             </div>
-            <Progress value={progressPercentage} className="h-1.5" />
-            <div className="flex justify-between text-xs text-muted-foreground">
-              <span>{progressPercentage}% complete</span>
-              {unanswered > 0 && (
-                <span>{unanswered} unanswered</span>
-              )}
+
+            <div className="relative h-3 w-full overflow-hidden rounded-full bg-muted">
+              <motion.div
+                className={cn(
+                  'absolute inset-y-0 left-0 rounded-full',
+                  allAnswered ? 'bg-emerald-500' : 'bg-amber-500'
+                )}
+                initial={{ width: 0 }}
+                animate={{ width: `${progressPercentage}%` }}
+                transition={{ duration: 0.5, ease: 'easeOut' }}
+              />
             </div>
           </div>
 
           {/* Warning for unanswered */}
           {!allAnswered && (
-            <div className="flex items-start gap-3 rounded-lg border border-border bg-secondary/50 p-4">
-              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-              <div className="space-y-1 text-sm">
-                <p className="font-medium">
-                  Unanswered questions will be marked as incorrect.
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex items-start gap-3 rounded-xl border border-amber-500/30 bg-amber-500/5 p-4"
+            >
+              <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-500" />
+              <div className="text-sm">
+                <p className="font-medium text-amber-700 dark:text-amber-300">
+                  Unanswered questions count as incorrect
                 </p>
-                <p className="text-muted-foreground">
-                  You can go back and answer them before submitting.
+                <p className="mt-1 text-muted-foreground">
+                  You can go back to answer the remaining questions.
                 </p>
               </div>
-            </div>
+            </motion.div>
           )}
         </div>
 
-        <AlertDialogFooter>
-          <AlertDialogCancel disabled={isSubmitting}>Go Back</AlertDialogCancel>
+        {/* Footer */}
+        <AlertDialogFooter className="border-t border-border bg-muted/30 px-6 py-4">
+          <AlertDialogCancel disabled={isSubmitting} className="flex-1">
+            Go Back
+          </AlertDialogCancel>
           <AlertDialogAction
             onClick={onConfirm}
             disabled={isSubmitting}
+            className={cn(
+              'flex-1 gap-2',
+              allAnswered 
+                ? 'bg-emerald-500 hover:bg-emerald-600' 
+                : 'bg-amber-500 hover:bg-amber-600'
+            )}
           >
             {isSubmitting ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Loader2 className="h-4 w-4 animate-spin" />
                 Submitting...
               </>
             ) : (
               <>
-                <Send className="mr-2 h-4 w-4" />
+                <Send className="h-4 w-4" />
                 Submit Test
               </>
             )}

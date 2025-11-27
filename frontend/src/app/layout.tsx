@@ -1,3 +1,5 @@
+// src/app/layout.tsx
+
 import type { Metadata } from 'next';
 import { Outfit } from 'next/font/google';
 import { GeistMono } from 'geist/font/mono';
@@ -15,9 +17,14 @@ const outfit = Outfit({
 const geistMono = GeistMono;
 
 export const metadata: Metadata = {
-  title: 'Preplyte - Campus Placement Platform',
-  description: 'Comprehensive campus placement preparation platform',
-  keywords: ['campus placement', 'job preparation', 'interview prep', 'coding practice'],
+  title: {
+    default: 'Preplyte - Campus Placement Platform',
+    template: '%s | Preplyte',
+  },
+  description: 'Comprehensive campus placement preparation platform with aptitude tests, coding challenges, and mock interviews.',
+  keywords: ['campus placement', 'job preparation', 'interview prep', 'coding practice', 'aptitude test'],
+  authors: [{ name: 'Preplyte' }],
+  creator: 'Preplyte',
 };
 
 export default function RootLayout({
@@ -31,8 +38,10 @@ export default function RootLayout({
         className={`${outfit.variable} ${geistMono.variable} font-sans antialiased`}
       >
         <Providers>
-          <AppHeader />
-          <main>{children}</main>
+          <div className="relative flex min-h-screen flex-col">
+            <AppHeader />
+            <main className="flex-1">{children}</main>
+          </div>
         </Providers>
       </body>
     </html>

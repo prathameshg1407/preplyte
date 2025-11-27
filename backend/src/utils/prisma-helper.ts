@@ -1,43 +1,88 @@
 // src/utils/prisma-helper.ts
-
 import { Prisma } from '@prisma/client';
 
+// =====================================================
+// TYPES
+// =====================================================
+type JsonValue = Prisma.JsonValue;
+type InputJsonValue = Prisma.InputJsonValue;
+type JsonObject = Prisma.JsonObject;
+type JsonArray = Prisma.JsonArray;
+// Type for nullable JSON input (for update/create operations)
+type NullableJsonInput = InputJsonValue | typeof Prisma.JsonNull | typeof Prisma.DbNull;
+
+// =====================================================
+// PRISMA JSON HELPER
+// =====================================================
 export class PrismaJsonHelper {
   /**
    * Convert any data to Prisma JSON input
-   * Handles undefined by returning null (use Prisma.DbNull for explicit DB null)
+   * Returns empty object for null/undefined - use toJsonNullable for explicit null
    */
-  static toJson<T>(data: T): Prisma.InputJsonValue {
+  static toJson<T>(data: T): InputJsonValue {
     if (data === undefined || data === null) {
-      // Return null as a valid JSON value
-      // If you need to set the DB field to NULL, use Prisma.DbNull in the query directly
-      return null as unknown as Prisma.InputJsonValue;
+      // Return empty object as a safe default
+      // Use toJsonNullable if you need to set the field to null
+      return {};
     }
-    
-    // Deep clone and convert to JSON-safe value
-    return JSON.parse(JSON.stringify(data)) as Prisma.InputJsonValue;
+    try {
+      // Deep clone and convert to JSON-safe value
+      return JSON.parse(JSON.stringify(data)) as InputJsonValue;
+    } catch {
+      return {};
+    }
   }
 
   /**
-   * Convert any data to Prisma JSON input, with explicit null handling
+   * Convert data to Prisma JSON, with null values becoming Prisma.JsonNull
    * Use this when you want to explicitly set a JSON field to null in the database
    */
-  static toJsonOrNull<T>(data: T | null | undefined): Prisma.InputJsonValue | typeof Prisma.JsonNull {
+  static toJsonNullable<T>(data: T | null | undefined): NullableJsonInput {
     if (data === undefined || data === null) {
       return Prisma.JsonNull;
     }
-    return JSON.parse(JSON.stringify(data)) as Prisma.InputJsonValue;
+    try {
+      return JSON.parse(JSON.stringify(data)) as InputJsonValue;
+    } catch {
+      return Prisma.JsonNull;
+    }
   }
 
   /**
-   * Convert Prisma JSON to typed object
+   * Convert data to Prisma JSON, with explicit handling for undefined vs null
+   * - undefined: returns undefined (field not updated in Prisma)
+   * - null: returns Prisma.JsonNull (explicitly set to null)
+   * - value: returns the JSON value
    */
-  static fromJson<T>(json: Prisma.JsonValue, defaultValue?: T): T {
+  static toJsonOptional<T>(
+    data: T | null | undefined
+  ): NullableJsonInput | undefined {
+    if (data === undefined) {
+      return undefined; // Don't update the field
+    }
+    if (data === null) {
+      return Prisma.JsonNull; // Explicitly set to null
+    }
+    return this.toJson(data);
+  }
+
+  /**
+   * Convert Prisma JSON to typed object with required default
+   */
+  static fromJson<T>(json: JsonValue, defaultValue: T): T {
     if (json === null || json === undefined) {
-      if (defaultValue !== undefined) {
-        return defaultValue;
-      }
-      return null as unknown as T;
+      return defaultValue;
+    }
+    // Safer cast with optional chaining for nested access
+    return (json as unknown as T) ?? defaultValue;
+  }
+
+  /**
+   * Convert Prisma JSON to typed object, returning null if not present
+   */
+  static fromJsonNullable<T>(json: JsonValue): T | null {
+    if (json === null || json === undefined) {
+      return null;
     }
     return json as unknown as T;
   }
@@ -46,54 +91,142 @@ export class PrismaJsonHelper {
    * Safely get a nested property from JSON
    */
   static getNestedValue<T>(
-    json: Prisma.JsonValue,
+    json: JsonValue,
     path: string,
-    defaultValue?: T
-  ): T | undefined {
+    defaultValue: T
+  ): T {
     if (!json || typeof json !== 'object') {
       return defaultValue;
     }
-
     const keys = path.split('.');
-    let current: unknown = json;
-
+    let current: JsonValue = json;
     for (const key of keys) {
-      if (current === null || current === undefined || typeof current !== 'object') {
+      if (current === null || current === undefined) {
         return defaultValue;
       }
-      current = (current as Record<string, unknown>)[key];
+      if (typeof current !== 'object' || Array.isArray(current)) {
+        return defaultValue;
+      }
+      current = (current as JsonObject)[key] as JsonValue;
     }
-
-    return current !== undefined ? (current as T) : defaultValue;
+    if (current === undefined || current === null) {
+      return defaultValue;
+    }
+    return current as unknown as T;
   }
 
   /**
    * Check if a JSON value is empty (null, undefined, empty object, or empty array)
    */
-  static isEmpty(json: Prisma.JsonValue): boolean {
+  static isEmpty(json: JsonValue): boolean {
     if (json === null || json === undefined) {
       return true;
     }
-    
     if (Array.isArray(json)) {
       return json.length === 0;
     }
-    
     if (typeof json === 'object') {
       return Object.keys(json).length === 0;
     }
-    
     return false;
+  }
+
+  /**
+   * Check if a JSON value is a non-empty array
+   */
+  static isNonEmptyArray(json: JsonValue): json is JsonArray & { length: number } {
+    return Array.isArray(json) && json.length > 0;
+  }
+
+  /**
+   * Check if a JSON value is a non-empty object
+   */
+  static isNonEmptyObject(json: JsonValue): json is JsonObject {
+    return (
+      json !== null &&
+      typeof json === 'object' &&
+      !Array.isArray(json) &&
+      Object.keys(json).length > 0
+    );
+  }
+
+  /**
+   * Safely get an array from JSON value
+   */
+  static toArray<T>(json: JsonValue, defaultValue: T[] = []): T[] {
+    if (!Array.isArray(json)) {
+      return defaultValue;
+    }
+    return json as unknown as T[];
+  }
+
+  /**
+   * Safely get an object from JSON value
+   */
+  static toObject<T extends Record<string, unknown>>(
+    json: JsonValue,
+    defaultValue: T
+  ): T {
+    if (json === null || typeof json !== 'object' || Array.isArray(json)) {
+      return defaultValue;
+    }
+    return json as unknown as T;
   }
 
   /**
    * Merge two JSON objects (shallow merge)
    */
   static merge<T extends Record<string, unknown>>(
-    base: Prisma.JsonValue,
+    base: JsonValue,
     updates: Partial<T>
-  ): Prisma.InputJsonValue {
-    const baseObj = this.fromJson<Record<string, unknown>>(base, {});
+  ): InputJsonValue {
+    const baseObj = this.toObject(base, {} as Record<string, unknown>);
     return this.toJson({ ...baseObj, ...updates });
+  }
+
+  /**
+   * Deep merge two JSON objects
+   */
+  static deepMerge<T extends Record<string, unknown>>(
+    base: JsonValue,
+    updates: Partial<T>
+  ): InputJsonValue {
+    const baseObj = this.toObject(base, {} as Record<string, unknown>);
+    return this.toJson(this.deepMergeObjects(baseObj, updates as Record<string, unknown>));
+  }
+
+  private static deepMergeObjects(
+    target: Record<string, unknown>,
+    source: Record<string, unknown>
+  ): Record<string, unknown> {
+    const result = { ...target };
+    for (const key of Object.keys(source)) {
+      const sourceValue = source[key];
+      const targetValue = result[key];
+      if (
+        this.isPlainObject(sourceValue) &&
+        this.isPlainObject(targetValue)
+      ) {
+        result[key] = this.deepMergeObjects(
+          targetValue as Record<string, unknown>,
+          sourceValue as Record<string, unknown>
+        );
+      } else if (Array.isArray(sourceValue) && Array.isArray(targetValue)) {
+        // For arrays, replace with source (or implement deep array merge if needed)
+        result[key] = sourceValue;
+      } else {
+        result[key] = sourceValue;
+      }
+    }
+    return result;
+  }
+
+  private static isPlainObject(value: unknown): value is Record<string, unknown> {
+    return (
+      value !== null &&
+      typeof value === 'object' &&
+      !Array.isArray(value) &&
+      Object.prototype.toString.call(value) === '[object Object]'
+    );
   }
 }

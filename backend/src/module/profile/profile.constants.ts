@@ -34,7 +34,7 @@ export const ALLOWED_IMAGE_MIME_TYPES = [
 // VALIDATION CONSTANTS
 // =====================================================
 
-export const STUDENT_ID_PATTERN = /^[A-Z0-9]{6,20}$/;
+export const STUDENT_ID_PATTERN = /^[a-zA-Z0-9][a-zA-Z0-9_\-\/]{1,28}[a-zA-Z0-9]$/;
 
 export const COURSE_YEARS = [
   '1st Year',

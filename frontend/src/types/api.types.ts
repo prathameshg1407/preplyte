@@ -1,5 +1,3 @@
-// src/types/api.types.ts
-
 /**
  * Standard API Response wrapper - matches backend format
  */

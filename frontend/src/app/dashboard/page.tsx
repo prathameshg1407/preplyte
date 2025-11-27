@@ -2,38 +2,41 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuthStore } from '../../lib/store/auth-store';
-import { StudentDashboard } from '../../components/dashboard/student-dashboard';
-
+import { useAuthStore } from '@/lib/store/auth-store';
+import { StudentDashboard } from '@/components/dashboard/student-dashboard';
+import { Loader2 } from 'lucide-react';
 
 export default function DashboardPage() {
-  const { user, isAuthenticated } = useAuthStore();
+  const { user, isAuthenticated, isHydrated } = useAuthStore();
   const router = useRouter();
 
   useEffect(() => {
-    // Redirect admins to admin dashboard
-    if (user?.role === 'PLATFORM_ADMIN' || user?.role === 'INSTITUTE_ADMIN') {
-      router.push('/admin/dashboard');
+    if (!isHydrated) return;
+
+    if (!isAuthenticated) {
+      router.push('/login');
       return;
     }
 
-    // Redirect unauthenticated users to login
-    if (!isAuthenticated) {
-      router.push('/login');
+    if (user?.role === 'PLATFORM_ADMIN') {
+      router.push('/admin');
+      return;
     }
-  }, [user, isAuthenticated, router]);
+
+    if (user?.role === 'INSTITUTE_ADMIN') {
+      router.push('/institute-admin');
+      return;
+    }
+  }, [user, isAuthenticated, isHydrated, router]);
 
   // Show loading while checking auth or redirecting
-  if (!isAuthenticated || user?.role !== 'USER') {
+  if (!isHydrated || !isAuthenticated || user?.role !== 'USER') {
     return (
-     
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
-        </div>
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
     );
   }
 
-  return (
-      <StudentDashboard />
-  );
+  return <StudentDashboard />;
 }

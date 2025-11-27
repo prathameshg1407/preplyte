@@ -1,0 +1,2765 @@
+{
+  "mockDrives": [
+    {
+      "id": "md_001_completed_full",
+      "instituteId": "c1d2e3f4g5h6i7j8k9l0",
+      "title": "TCS NQT Mock Drive 2024",
+      "description": "Complete mock placement drive simulating TCS National Qualifier Test. Includes aptitude, coding, and AI interview rounds.",
+      "instructions": "1. Ensure stable internet connection\n2. Keep your camera on throughout\n3. No tab switching allowed\n4. Complete all modules in sequence",
+      "status": "COMPLETED",
+      "registrationStartDate": "2024-01-01T00:00:00.000Z",
+      "registrationEndDate": "2024-01-10T23:59:59.000Z",
+      "maxRegistrations": 100,
+      "driveStartDate": "2024-01-15T09:00:00.000Z",
+      "driveEndDate": "2024-01-15T17:00:00.000Z",
+      "allowLateSubmission": false,
+      "showLeaderboard": true,
+      "showResultsImmediately": true,
+      "resultsReleaseDate": "2024-01-15T18:00:00.000Z",
+      "shuffleQuestions": true,
+      "enableProctoring": true,
+      "proctoringSettings": {
+        "detectTabSwitch": true,
+        "detectFaceAbsence": true,
+        "maxWarnings": 3,
+        "autoSubmitOnViolation": true
+      },
+      "questionsGenerated": true,
+      "questionsGeneratedAt": "2024-01-10T10:00:00.000Z"
+    },
+    {
+      "id": "md_002_in_progress",
+      "instituteId": "c1d2e3f4g5h6i7j8k9l0",
+      "title": "Infosys InfyTQ Mock Assessment",
+      "description": "Practice assessment for Infosys recruitment pattern. Focus on logical reasoning and programming skills.",
+      "instructions": "1. Read all questions carefully\n2. Manage your time wisely\n3. You can navigate between questions in aptitude section",
+      "status": "IN_PROGRESS",
+      "registrationStartDate": "2024-02-01T00:00:00.000Z",
+      "registrationEndDate": "2024-02-10T23:59:59.000Z",
+      "maxRegistrations": 150,
+      "driveStartDate": "2024-02-15T09:00:00.000Z",
+      "driveEndDate": "2024-02-15T18:00:00.000Z",
+      "allowLateSubmission": true,
+      "showLeaderboard": true,
+      "showResultsImmediately": false,
+      "resultsReleaseDate": "2024-02-16T10:00:00.000Z",
+      "shuffleQuestions": true,
+      "enableProctoring": true,
+      "proctoringSettings": {
+        "detectTabSwitch": true,
+        "detectFaceAbsence": false,
+        "maxWarnings": 5,
+        "autoSubmitOnViolation": false
+      },
+      "questionsGenerated": true,
+      "questionsGeneratedAt": "2024-02-10T12:00:00.000Z"
+    },
+    {
+      "id": "md_003_registration_open",
+      "instituteId": "c1d2e3f4g5h6i7j8k9l0",
+      "title": "Wipro Elite NLTH Mock Drive",
+      "description": "Comprehensive mock drive for Wipro Elite National Level Talent Hunt. Covers all three rounds of assessment.",
+      "instructions": "1. Complete profile before registration\n2. Upload latest resume\n3. Ensure all academic details are updated",
+      "status": "REGISTRATION_OPEN",
+      "registrationStartDate": "2024-03-01T00:00:00.000Z",
+      "registrationEndDate": "2024-03-20T23:59:59.000Z",
+      "maxRegistrations": 200,
+      "driveStartDate": "2024-03-25T09:00:00.000Z",
+      "driveEndDate": "2024-03-25T17:00:00.000Z",
+      "allowLateSubmission": false,
+      "showLeaderboard": true,
+      "showResultsImmediately": true,
+      "resultsReleaseDate": null,
+      "shuffleQuestions": true,
+      "enableProctoring": true,
+      "proctoringSettings": {
+        "detectTabSwitch": true,
+        "detectFaceAbsence": true,
+        "maxWarnings": 3,
+        "autoSubmitOnViolation": true
+      },
+      "questionsGenerated": false,
+      "questionsGeneratedAt": null
+    },
+    {
+      "id": "md_004_published",
+      "instituteId": "c1d2e3f4g5h6i7j8k9l0",
+      "title": "Cognizant GenC Mock Assessment",
+      "description": "Mock assessment following Cognizant GenC hiring pattern. Tests aptitude, coding ability, and communication skills.",
+      "instructions": "1. This is a practice assessment\n2. Results will help identify areas of improvement\n3. Take it seriously as if it's a real placement",
+      "status": "PUBLISHED",
+      "registrationStartDate": "2024-04-01T00:00:00.000Z",
+      "registrationEndDate": "2024-04-15T23:59:59.000Z",
+      "maxRegistrations": 120,
+      "driveStartDate": "2024-04-20T10:00:00.000Z",
+      "driveEndDate": "2024-04-20T16:00:00.000Z",
+      "allowLateSubmission": false,
+      "showLeaderboard": true,
+      "showResultsImmediately": false,
+      "resultsReleaseDate": "2024-04-21T10:00:00.000Z",
+      "shuffleQuestions": true,
+      "enableProctoring": false,
+      "proctoringSettings": null,
+      "questionsGenerated": true,
+      "questionsGeneratedAt": "2024-03-25T14:00:00.000Z"
+    },
+    {
+      "id": "md_005_draft",
+      "instituteId": "c1d2e3f4g5h6i7j8k9l0",
+      "title": "Accenture Mock Placement Drive",
+      "description": "Draft mock drive for Accenture pattern - includes cognitive assessment and coding round.",
+      "instructions": "Instructions to be added",
+      "status": "DRAFT",
+      "registrationStartDate": null,
+      "registrationEndDate": null,
+      "maxRegistrations": null,
+      "driveStartDate": null,
+      "driveEndDate": null,
+      "allowLateSubmission": false,
+      "showLeaderboard": true,
+      "showResultsImmediately": false,
+      "resultsReleaseDate": null,
+      "shuffleQuestions": true,
+      "enableProctoring": true,
+      "proctoringSettings": null,
+      "questionsGenerated": false,
+      "questionsGeneratedAt": null
+    },
+    {
+      "id": "md_006_cancelled",
+      "instituteId": "c1d2e3f4g5h6i7j8k9l0",
+      "title": "Tech Mahindra Mock Drive (Cancelled)",
+      "description": "This mock drive was cancelled due to scheduling conflicts.",
+      "instructions": "N/A",
+      "status": "CANCELLED",
+      "registrationStartDate": "2024-01-20T00:00:00.000Z",
+      "registrationEndDate": "2024-01-25T23:59:59.000Z",
+      "maxRegistrations": 80,
+      "driveStartDate": "2024-01-30T09:00:00.000Z",
+      "driveEndDate": "2024-01-30T15:00:00.000Z",
+      "allowLateSubmission": false,
+      "showLeaderboard": false,
+      "showResultsImmediately": false,
+      "resultsReleaseDate": null,
+      "shuffleQuestions": true,
+      "enableProctoring": false,
+      "proctoringSettings": null,
+      "questionsGenerated": false,
+      "questionsGeneratedAt": null
+    },
+    {
+      "id": "md_007_registration_closed",
+      "instituteId": "c1d2e3f4g5h6i7j8k9l0",
+      "title": "Amazon SDE Mock Assessment",
+      "description": "High-difficulty mock assessment simulating Amazon SDE hiring bar. Focus on DSA and problem-solving.",
+      "instructions": "1. This is a challenging assessment\n2. Focus on optimal solutions\n3. Time complexity matters",
+      "status": "REGISTRATION_CLOSED",
+      "registrationStartDate": "2024-02-20T00:00:00.000Z",
+      "registrationEndDate": "2024-02-28T23:59:59.000Z",
+      "maxRegistrations": 50,
+      "driveStartDate": "2024-03-05T09:00:00.000Z",
+      "driveEndDate": "2024-03-05T14:00:00.000Z",
+      "allowLateSubmission": false,
+      "showLeaderboard": true,
+      "showResultsImmediately": true,
+      "resultsReleaseDate": null,
+      "shuffleQuestions": false,
+      "enableProctoring": true,
+      "proctoringSettings": {
+        "detectTabSwitch": true,
+        "detectFaceAbsence": true,
+        "maxWarnings": 2,
+        "autoSubmitOnViolation": true
+      },
+      "questionsGenerated": true,
+      "questionsGeneratedAt": "2024-02-28T20:00:00.000Z"
+    },
+    {
+      "id": "md_008_aptitude_only",
+      "instituteId": "c1d2e3f4g5h6i7j8k9l0",
+      "title": "Aptitude Mastery Mock Test",
+      "description": "Focused aptitude-only mock test covering quantitative, verbal, and logical reasoning.",
+      "instructions": "1. 60 questions in 60 minutes\n2. No negative marking\n3. All questions are mandatory",
+      "status": "COMPLETED",
+      "registrationStartDate": "2024-01-05T00:00:00.000Z",
+      "registrationEndDate": "2024-01-08T23:59:59.000Z",
+      "maxRegistrations": 200,
+      "driveStartDate": "2024-01-10T10:00:00.000Z",
+      "driveEndDate": "2024-01-10T12:00:00.000Z",
+      "allowLateSubmission": false,
+      "showLeaderboard": true,
+      "showResultsImmediately": true,
+      "resultsReleaseDate": null,
+      "shuffleQuestions": true,
+      "enableProctoring": false,
+      "proctoringSettings": null,
+      "questionsGenerated": true,
+      "questionsGeneratedAt": "2024-01-08T15:00:00.000Z"
+    },
+    {
+      "id": "md_009_coding_only",
+      "instituteId": "c1d2e3f4g5h6i7j8k9l0",
+      "title": "DSA Coding Challenge",
+      "description": "Pure coding assessment focusing on data structures and algorithms. Multiple difficulty levels.",
+      "instructions": "1. 5 coding problems\n2. Partial marking enabled\n3. Multiple languages supported",
+      "status": "COMPLETED",
+      "registrationStartDate": "2024-01-12T00:00:00.000Z",
+      "registrationEndDate": "2024-01-18T23:59:59.000Z",
+      "maxRegistrations": 100,
+      "driveStartDate": "2024-01-20T14:00:00.000Z",
+      "driveEndDate": "2024-01-20T17:00:00.000Z",
+      "allowLateSubmission": true,
+      "showLeaderboard": true,
+      "showResultsImmediately": true,
+      "resultsReleaseDate": null,
+      "shuffleQuestions": false,
+      "enableProctoring": true,
+      "proctoringSettings": {
+        "detectTabSwitch": false,
+        "detectFaceAbsence": false,
+        "maxWarnings": 10,
+        "autoSubmitOnViolation": false
+      },
+      "questionsGenerated": true,
+      "questionsGeneratedAt": "2024-01-18T20:00:00.000Z"
+    },
+    {
+      "id": "md_010_interview_only",
+      "instituteId": "c1d2e3f4g5h6i7j8k9l0",
+      "title": "AI Interview Practice Session",
+      "description": "AI-powered mock interview session for interview preparation. Covers HR and technical questions.",
+      "instructions": "1. Keep camera and microphone on\n2. Speak clearly\n3. Take your time to answer",
+      "status": "REGISTRATION_OPEN",
+      "registrationStartDate": "2024-03-10T00:00:00.000Z",
+      "registrationEndDate": "2024-03-25T23:59:59.000Z",
+      "maxRegistrations": 50,
+      "driveStartDate": "2024-03-28T09:00:00.000Z",
+      "driveEndDate": "2024-03-28T18:00:00.000Z",
+      "allowLateSubmission": false,
+      "showLeaderboard": false,
+      "showResultsImmediately": true,
+      "resultsReleaseDate": null,
+      "shuffleQuestions": false,
+      "enableProctoring": false,
+      "proctoringSettings": null,
+      "questionsGenerated": false,
+      "questionsGeneratedAt": null
+    }
+  ],
+  "eligibilityCriteria": [
+    {
+      "id": "elig_001",
+      "mockDriveId": "md_001_completed_full",
+      "minCgpa": 6.0,
+      "maxCgpa": null,
+      "minMarks10": 60.0,
+      "minMarks12": 60.0,
+      "allowedDepartments": ["Computer Engineering", "Information Technology", "Electronics and Telecommunication"],
+      "allowedCourseYears": ["Third Year", "Final Year"],
+      "requiredSkills": [],
+      "maxBacklogs": 0,
+      "customRules": null
+    },
+    {
+      "id": "elig_002",
+      "mockDriveId": "md_002_in_progress",
+      "minCgpa": 5.5,
+      "maxCgpa": null,
+      "minMarks10": 55.0,
+      "minMarks12": 55.0,
+      "allowedDepartments": [],
+      "allowedCourseYears": ["Final Year"],
+      "requiredSkills": ["Java", "Python"],
+      "maxBacklogs": 1,
+      "customRules": null
+    },
+    {
+      "id": "elig_003",
+      "mockDriveId": "md_003_registration_open",
+      "minCgpa": 6.5,
+      "maxCgpa": null,
+      "minMarks10": 65.0,
+      "minMarks12": 60.0,
+      "allowedDepartments": ["Computer Engineering", "Information Technology"],
+      "allowedCourseYears": ["Third Year", "Final Year"],
+      "requiredSkills": [],
+      "maxBacklogs": 0,
+      "customRules": {
+        "rules": [
+          {
+            "field": "averageCgpa",
+            "operator": ">=",
+            "value": 6.5
+          }
+        ]
+      }
+    },
+    {
+      "id": "elig_004",
+      "mockDriveId": "md_004_published",
+      "minCgpa": 5.0,
+      "maxCgpa": null,
+      "minMarks10": 50.0,
+      "minMarks12": 50.0,
+      "allowedDepartments": [],
+      "allowedCourseYears": [],
+      "requiredSkills": [],
+      "maxBacklogs": 2,
+      "customRules": null
+    },
+    {
+      "id": "elig_007",
+      "mockDriveId": "md_007_registration_closed",
+      "minCgpa": 7.5,
+      "maxCgpa": null,
+      "minMarks10": 75.0,
+      "minMarks12": 75.0,
+      "allowedDepartments": ["Computer Engineering"],
+      "allowedCourseYears": ["Final Year"],
+      "requiredSkills": ["Data Structures", "Algorithms", "System Design"],
+      "maxBacklogs": 0,
+      "customRules": null
+    },
+    {
+      "id": "elig_008",
+      "mockDriveId": "md_008_aptitude_only",
+      "minCgpa": null,
+      "maxCgpa": null,
+      "minMarks10": null,
+      "minMarks12": null,
+      "allowedDepartments": [],
+      "allowedCourseYears": [],
+      "requiredSkills": [],
+      "maxBacklogs": null,
+      "customRules": null
+    },
+    {
+      "id": "elig_009",
+      "mockDriveId": "md_009_coding_only",
+      "minCgpa": 6.0,
+      "maxCgpa": null,
+      "minMarks10": null,
+      "minMarks12": null,
+      "allowedDepartments": ["Computer Engineering", "Information Technology"],
+      "allowedCourseYears": [],
+      "requiredSkills": [],
+      "maxBacklogs": 1,
+      "customRules": null
+    },
+    {
+      "id": "elig_010",
+      "mockDriveId": "md_010_interview_only",
+      "minCgpa": null,
+      "maxCgpa": null,
+      "minMarks10": null,
+      "minMarks12": null,
+      "allowedDepartments": [],
+      "allowedCourseYears": ["Third Year", "Final Year"],
+      "requiredSkills": [],
+      "maxBacklogs": null,
+      "customRules": null
+    }
+  ],
+  "modules": [
+    {
+      "id": "mod_001_apt",
+      "mockDriveId": "md_001_completed_full",
+      "moduleType": "APTITUDE",
+      "order": 1,
+      "name": "Aptitude Assessment",
+      "timeLimit": 60,
+      "weightage": 30,
+      "config": {
+        "difficulty": "MEDIUM",
+        "questionTypes": ["QUANTITATIVE", "VERBAL", "LOGICAL"],
+        "numberOfQuestions": 30,
+        "marksPerQuestion": 1,
+        "negativeMarking": 0.25
+      },
+      "passingScore": 40,
+      "instructions": "Answer all 30 questions. Each correct answer: +1 mark. Each wrong answer: -0.25 marks.",
+      "isActive": true
+    },
+    {
+      "id": "mod_001_code",
+      "mockDriveId": "md_001_completed_full",
+      "moduleType": "MACHINE_CODING",
+      "order": 2,
+      "name": "Coding Round",
+      "timeLimit": 90,
+      "weightage": 40,
+      "config": {
+        "difficulty": "MEDIUM",
+        "numberOfQuestions": 3,
+        "allowedLanguages": ["javascript", "python", "java", "cpp"],
+        "partialScoring": true,
+        "maxScorePerQuestion": 100
+      },
+      "passingScore": 50,
+      "instructions": "Solve 3 coding problems. Partial marks for passing test cases. Optimize for time and space complexity.",
+      "isActive": true
+    },
+    {
+      "id": "mod_001_int",
+      "mockDriveId": "md_001_completed_full",
+      "moduleType": "AI_INTERVIEW",
+      "order": 3,
+      "name": "AI Interview",
+      "timeLimit": 30,
+      "weightage": 30,
+      "config": {
+        "difficulty": "MID",
+        "jobTitle": "Software Developer",
+        "companyName": "TCS",
+        "focusAreas": ["Problem Solving", "Communication", "Technical Knowledge"],
+        "targetQuestions": 8
+      },
+      "passingScore": 60,
+      "instructions": "Answer questions clearly and concisely. Maintain eye contact with the camera.",
+      "isActive": true
+    },
+    {
+      "id": "mod_002_apt",
+      "mockDriveId": "md_002_in_progress",
+      "moduleType": "APTITUDE",
+      "order": 1,
+      "name": "Logical & Quantitative Assessment",
+      "timeLimit": 45,
+      "weightage": 35,
+      "config": {
+        "difficulty": "MEDIUM",
+        "questionTypes": ["QUANTITATIVE", "LOGICAL"],
+        "numberOfQuestions": 25,
+        "marksPerQuestion": 1,
+        "negativeMarking": 0
+      },
+      "passingScore": 50,
+      "instructions": "25 questions in 45 minutes. No negative marking.",
+      "isActive": true
+    },
+    {
+      "id": "mod_002_code",
+      "mockDriveId": "md_002_in_progress",
+      "moduleType": "MACHINE_CODING",
+      "order": 2,
+      "name": "Programming Assessment",
+      "timeLimit": 120,
+      "weightage": 65,
+      "config": {
+        "difficulty": "MEDIUM",
+        "numberOfQuestions": 4,
+        "allowedLanguages": ["python", "java"],
+        "partialScoring": true,
+        "maxScorePerQuestion": 100
+      },
+      "passingScore": 40,
+      "instructions": "4 programming problems. Focus on correctness and efficiency.",
+      "isActive": true
+    },
+    {
+      "id": "mod_003_apt",
+      "mockDriveId": "md_003_registration_open",
+      "moduleType": "APTITUDE",
+      "order": 1,
+      "name": "Written Assessment",
+      "timeLimit": 50,
+      "weightage": 25,
+      "config": {
+        "difficulty": "EASY",
+        "questionTypes": ["QUANTITATIVE", "VERBAL", "LOGICAL"],
+        "numberOfQuestions": 40,
+        "marksPerQuestion": 1,
+        "negativeMarking": 0
+      },
+      "passingScore": 60,
+      "instructions": "40 questions covering all aptitude areas.",
+      "isActive": true
+    },
+    {
+      "id": "mod_003_code",
+      "mockDriveId": "md_003_registration_open",
+      "moduleType": "MACHINE_CODING",
+      "order": 2,
+      "name": "Coding Assessment",
+      "timeLimit": 60,
+      "weightage": 35,
+      "config": {
+        "difficulty": "EASY",
+        "numberOfQuestions": 2,
+        "allowedLanguages": ["javascript", "python", "java", "cpp"],
+        "partialScoring": true,
+        "maxScorePerQuestion": 100
+      },
+      "passingScore": 50,
+      "instructions": "2 coding problems of easy to medium difficulty.",
+      "isActive": true
+    },
+    {
+      "id": "mod_003_int",
+      "mockDriveId": "md_003_registration_open",
+      "moduleType": "AI_INTERVIEW",
+      "order": 3,
+      "name": "HR Interview",
+      "timeLimit": 20,
+      "weightage": 40,
+      "config": {
+        "difficulty": "ENTRY",
+        "jobTitle": "Associate Software Engineer",
+        "companyName": "Wipro",
+        "focusAreas": ["Communication", "Teamwork", "Adaptability"],
+        "targetQuestions": 6
+      },
+      "passingScore": 50,
+      "instructions": "Focus on behavioral and situational questions.",
+      "isActive": true
+    },
+    {
+      "id": "mod_004_apt",
+      "mockDriveId": "md_004_published",
+      "moduleType": "APTITUDE",
+      "order": 1,
+      "name": "Cognitive Assessment",
+      "timeLimit": 55,
+      "weightage": 40,
+      "config": {
+        "difficulty": "MEDIUM",
+        "questionTypes": ["QUANTITATIVE", "LOGICAL"],
+        "numberOfQuestions": 35,
+        "marksPerQuestion": 1,
+        "negativeMarking": 0.33
+      },
+      "passingScore": 45,
+      "instructions": "35 cognitive ability questions.",
+      "isActive": true
+    },
+    {
+      "id": "mod_004_code",
+      "mockDriveId": "md_004_published",
+      "moduleType": "MACHINE_CODING",
+      "order": 2,
+      "name": "Programming Test",
+      "timeLimit": 75,
+      "weightage": 60,
+      "config": {
+        "difficulty": "MEDIUM",
+        "numberOfQuestions": 3,
+        "allowedLanguages": ["python", "java", "cpp"],
+        "partialScoring": true,
+        "maxScorePerQuestion": 100
+      },
+      "passingScore": 50,
+      "instructions": "3 programming challenges.",
+      "isActive": true
+    },
+    {
+      "id": "mod_007_code",
+      "mockDriveId": "md_007_registration_closed",
+      "moduleType": "MACHINE_CODING",
+      "order": 1,
+      "name": "Online Assessment",
+      "timeLimit": 120,
+      "weightage": 60,
+      "config": {
+        "difficulty": "HARD",
+        "numberOfQuestions": 3,
+        "allowedLanguages": ["javascript", "python", "java", "cpp"],
+        "partialScoring": true,
+        "maxScorePerQuestion": 100
+      },
+      "passingScore": 60,
+      "instructions": "3 hard DSA problems. Focus on optimal solutions.",
+      "isActive": true
+    },
+    {
+      "id": "mod_007_int",
+      "mockDriveId": "md_007_registration_closed",
+      "moduleType": "AI_INTERVIEW",
+      "order": 2,
+      "name": "Technical Interview",
+      "timeLimit": 45,
+      "weightage": 40,
+      "config": {
+        "difficulty": "SENIOR",
+        "jobTitle": "Software Development Engineer",
+        "companyName": "Amazon",
+        "focusAreas": ["Data Structures", "Algorithms", "System Design", "Leadership Principles"],
+        "targetQuestions": 10
+      },
+      "passingScore": 70,
+      "instructions": "Deep technical interview covering DSA and system design.",
+      "isActive": true
+    },
+    {
+      "id": "mod_008_apt",
+      "mockDriveId": "md_008_aptitude_only",
+      "moduleType": "APTITUDE",
+      "order": 1,
+      "name": "Complete Aptitude Test",
+      "timeLimit": 60,
+      "weightage": 100,
+      "config": {
+        "difficulty": "MEDIUM",
+        "questionTypes": ["QUANTITATIVE", "VERBAL", "LOGICAL"],
+        "numberOfQuestions": 60,
+        "marksPerQuestion": 1,
+        "negativeMarking": 0
+      },
+      "passingScore": 50,
+      "instructions": "60 questions covering all aptitude categories.",
+      "isActive": true
+    },
+    {
+      "id": "mod_009_code",
+      "mockDriveId": "md_009_coding_only",
+      "moduleType": "MACHINE_CODING",
+      "order": 1,
+      "name": "DSA Challenge",
+      "timeLimit": 180,
+      "weightage": 100,
+      "config": {
+        "difficulty": "HARD",
+        "numberOfQuestions": 5,
+        "allowedLanguages": ["javascript", "python", "java", "cpp", "csharp"],
+        "partialScoring": true,
+        "maxScorePerQuestion": 100
+      },
+      "passingScore": 40,
+      "instructions": "5 problems ranging from easy to hard. Partial scoring enabled.",
+      "isActive": true
+    },
+    {
+      "id": "mod_010_int",
+      "mockDriveId": "md_010_interview_only",
+      "moduleType": "AI_INTERVIEW",
+      "order": 1,
+      "name": "Mock Interview Session",
+      "timeLimit": 45,
+      "weightage": 100,
+      "config": {
+        "difficulty": "MID",
+        "jobTitle": "Software Engineer",
+        "companyName": null,
+        "focusAreas": ["Technical Skills", "Problem Solving", "Communication", "Behavioral"],
+        "targetQuestions": 12
+      },
+      "passingScore": 50,
+      "instructions": "Comprehensive interview covering technical and behavioral aspects.",
+      "isActive": true
+    }
+  ],
+  "batches": [
+    {
+      "id": "batch_001_a",
+      "mockDriveId": "md_001_completed_full",
+      "name": "Batch A - Morning",
+      "batchNumber": 1,
+      "scheduledStartTime": "2024-01-15T09:00:00.000Z",
+      "scheduledEndTime": "2024-01-15T13:00:00.000Z",
+      "status": "COMPLETED",
+      "maxCapacity": 50,
+      "isAutoGenerated": false,
+      "notes": "Morning batch for CS department",
+      "actualStartTime": "2024-01-15T09:00:00.000Z",
+      "actualEndTime": "2024-01-15T13:05:00.000Z"
+    },
+    {
+      "id": "batch_001_b",
+      "mockDriveId": "md_001_completed_full",
+      "name": "Batch B - Afternoon",
+      "batchNumber": 2,
+      "scheduledStartTime": "2024-01-15T14:00:00.000Z",
+      "scheduledEndTime": "2024-01-15T18:00:00.000Z",
+      "status": "COMPLETED",
+      "maxCapacity": 50,
+      "isAutoGenerated": false,
+      "notes": "Afternoon batch for IT department",
+      "actualStartTime": "2024-01-15T14:00:00.000Z",
+      "actualEndTime": "2024-01-15T18:00:00.000Z"
+    },
+    {
+      "id": "batch_002_a",
+      "mockDriveId": "md_002_in_progress",
+      "name": "Batch 1",
+      "batchNumber": 1,
+      "scheduledStartTime": "2024-02-15T09:00:00.000Z",
+      "scheduledEndTime": "2024-02-15T13:00:00.000Z",
+      "status": "IN_PROGRESS",
+      "maxCapacity": 75,
+      "isAutoGenerated": true,
+      "notes": null,
+      "actualStartTime": "2024-02-15T09:00:00.000Z",
+      "actualEndTime": null
+    },
+    {
+      "id": "batch_002_b",
+      "mockDriveId": "md_002_in_progress",
+      "name": "Batch 2",
+      "batchNumber": 2,
+      "scheduledStartTime": "2024-02-15T14:00:00.000Z",
+      "scheduledEndTime": "2024-02-15T18:00:00.000Z",
+      "status": "SCHEDULED",
+      "maxCapacity": 75,
+      "isAutoGenerated": true,
+      "notes": null,
+      "actualStartTime": null,
+      "actualEndTime": null
+    },
+    {
+      "id": "batch_003_a",
+      "mockDriveId": "md_003_registration_open",
+      "name": "Main Batch",
+      "batchNumber": 1,
+      "scheduledStartTime": "2024-03-25T09:00:00.000Z",
+      "scheduledEndTime": "2024-03-25T17:00:00.000Z",
+      "status": "CREATED",
+      "maxCapacity": 200,
+      "isAutoGenerated": false,
+      "notes": "Single batch for all registered students",
+      "actualStartTime": null,
+      "actualEndTime": null
+    },
+    {
+      "id": "batch_007_a",
+      "mockDriveId": "md_007_registration_closed",
+      "name": "Elite Batch",
+      "batchNumber": 1,
+      "scheduledStartTime": "2024-03-05T09:00:00.000Z",
+      "scheduledEndTime": "2024-03-05T14:00:00.000Z",
+      "status": "SCHEDULED",
+      "maxCapacity": 50,
+      "isAutoGenerated": false,
+      "notes": "High performers only",
+      "actualStartTime": null,
+      "actualEndTime": null
+    },
+    {
+      "id": "batch_008_a",
+      "mockDriveId": "md_008_aptitude_only",
+      "name": "All Students",
+      "batchNumber": 1,
+      "scheduledStartTime": "2024-01-10T10:00:00.000Z",
+      "scheduledEndTime": "2024-01-10T12:00:00.000Z",
+      "status": "COMPLETED",
+      "maxCapacity": 200,
+      "isAutoGenerated": false,
+      "notes": null,
+      "actualStartTime": "2024-01-10T10:00:00.000Z",
+      "actualEndTime": "2024-01-10T11:55:00.000Z"
+    },
+    {
+      "id": "batch_009_a",
+      "mockDriveId": "md_009_coding_only",
+      "name": "Coding Batch 1",
+      "batchNumber": 1,
+      "scheduledStartTime": "2024-01-20T14:00:00.000Z",
+      "scheduledEndTime": "2024-01-20T17:00:00.000Z",
+      "status": "COMPLETED",
+      "maxCapacity": 100,
+      "isAutoGenerated": false,
+      "notes": null,
+      "actualStartTime": "2024-01-20T14:00:00.000Z",
+      "actualEndTime": "2024-01-20T17:00:00.000Z"
+    },
+    {
+      "id": "batch_010_a",
+      "mockDriveId": "md_010_interview_only",
+      "name": "Interview Slot A",
+      "batchNumber": 1,
+      "scheduledStartTime": "2024-03-28T09:00:00.000Z",
+      "scheduledEndTime": "2024-03-28T13:00:00.000Z",
+      "status": "CREATED",
+      "maxCapacity": 25,
+      "isAutoGenerated": false,
+      "notes": "Morning interview slots",
+      "actualStartTime": null,
+      "actualEndTime": null
+    },
+    {
+      "id": "batch_010_b",
+      "mockDriveId": "md_010_interview_only",
+      "name": "Interview Slot B",
+      "batchNumber": 2,
+      "scheduledStartTime": "2024-03-28T14:00:00.000Z",
+      "scheduledEndTime": "2024-03-28T18:00:00.000Z",
+      "status": "CREATED",
+      "maxCapacity": 25,
+      "isAutoGenerated": false,
+      "notes": "Afternoon interview slots",
+      "actualStartTime": null,
+      "actualEndTime": null
+    }
+  ],
+  "registrations": [
+    {
+      "id": "reg_001_001",
+      "mockDriveId": "md_001_completed_full",
+      "userEmail": "vu1f2223001@pvppcoe.ac.in",
+      "status": "APPROVED",
+      "eligibilityCheckResult": {
+        "isEligible": true,
+        "checks": [
+          {"criterion": "minCgpa", "passed": true, "details": "CGPA 7.5 >= 6.0"},
+          {"criterion": "minMarks10", "passed": true, "details": "10th: 85% >= 60%"},
+          {"criterion": "minMarks12", "passed": true, "details": "12th: 80% >= 60%"},
+          {"criterion": "department", "passed": true, "details": "Computer Engineering is allowed"},
+          {"criterion": "courseYear", "passed": true, "details": "Final Year is allowed"},
+          {"criterion": "backlogs", "passed": true, "details": "0 backlogs <= 0 allowed"}
+        ]
+      },
+      "adminNotes": null,
+      "batchId": "batch_001_a",
+      "registeredAt": "2024-01-02T10:30:00.000Z",
+      "reviewedAt": "2024-01-03T09:00:00.000Z",
+      "reviewedBy": "admin@pvppcoe.ac.in"
+    },
+    {
+      "id": "reg_001_002",
+      "mockDriveId": "md_001_completed_full",
+      "userEmail": "vu1f2223002@pvppcoe.ac.in",
+      "status": "APPROVED",
+      "eligibilityCheckResult": {
+        "isEligible": true,
+        "checks": [
+          {"criterion": "minCgpa", "passed": true, "details": "CGPA 7.2 >= 6.0"},
+          {"criterion": "minMarks10", "passed": true, "details": "10th: 78% >= 60%"},
+          {"criterion": "minMarks12", "passed": true, "details": "12th: 75% >= 60%"},
+          {"criterion": "department", "passed": true, "details": "Computer Engineering is allowed"},
+          {"criterion": "courseYear", "passed": true, "details": "Final Year is allowed"},
+          {"criterion": "backlogs", "passed": true, "details": "0 backlogs <= 0 allowed"}
+        ]
+      },
+      "adminNotes": null,
+      "batchId": "batch_001_a",
+      "registeredAt": "2024-01-02T11:00:00.000Z",
+      "reviewedAt": "2024-01-03T09:00:00.000Z",
+      "reviewedBy": "admin@pvppcoe.ac.in"
+    },
+    {
+      "id": "reg_001_003",
+      "mockDriveId": "md_001_completed_full",
+      "userEmail": "vu1f2223003@pvppcoe.ac.in",
+      "status": "APPROVED",
+      "eligibilityCheckResult": {
+        "isEligible": true,
+        "checks": [
+          {"criterion": "minCgpa", "passed": true, "details": "CGPA 6.8 >= 6.0"},
+          {"criterion": "minMarks10", "passed": true, "details": "10th: 72% >= 60%"},
+          {"criterion": "minMarks12", "passed": true, "details": "12th: 68% >= 60%"},
+          {"criterion": "department", "passed": true, "details": "Information Technology is allowed"},
+          {"criterion": "courseYear", "passed": true, "details": "Final Year is allowed"},
+          {"criterion": "backlogs", "passed": true, "details": "0 backlogs <= 0 allowed"}
+        ]
+      },
+      "adminNotes": null,
+      "batchId": "batch_001_b",
+      "registeredAt": "2024-01-02T14:00:00.000Z",
+      "reviewedAt": "2024-01-03T09:00:00.000Z",
+      "reviewedBy": "admin@pvppcoe.ac.in"
+    },
+    {
+      "id": "reg_001_004",
+      "mockDriveId": "md_001_completed_full",
+      "userEmail": "vu1f2223004@pvppcoe.ac.in",
+      "status": "REJECTED",
+      "eligibilityCheckResult": {
+        "isEligible": false,
+        "checks": [
+          {"criterion": "minCgpa", "passed": false, "details": "CGPA 5.5 < 6.0"},
+          {"criterion": "minMarks10", "passed": true, "details": "10th: 65% >= 60%"},
+          {"criterion": "minMarks12", "passed": true, "details": "12th: 62% >= 60%"},
+          {"criterion": "department", "passed": true, "details": "Computer Engineering is allowed"},
+          {"criterion": "courseYear", "passed": true, "details": "Final Year is allowed"},
+          {"criterion": "backlogs", "passed": true, "details": "0 backlogs <= 0 allowed"}
+        ]
+      },
+      "adminNotes": "CGPA below minimum requirement",
+      "batchId": null,
+      "registeredAt": "2024-01-03T10:00:00.000Z",
+      "reviewedAt": "2024-01-04T09:00:00.000Z",
+      "reviewedBy": "admin@pvppcoe.ac.in"
+    },
+    {
+      "id": "reg_001_005",
+      "mockDriveId": "md_001_completed_full",
+      "userEmail": "vu1f2223005@pvppcoe.ac.in",
+      "status": "APPROVED",
+      "eligibilityCheckResult": {
+        "isEligible": true,
+        "checks": [
+          {"criterion": "minCgpa", "passed": true, "details": "CGPA 8.2 >= 6.0"},
+          {"criterion": "minMarks10", "passed": true, "details": "10th: 92% >= 60%"},
+          {"criterion": "minMarks12", "passed": true, "details": "12th: 88% >= 60%"},
+          {"criterion": "department", "passed": true, "details": "Computer Engineering is allowed"},
+          {"criterion": "courseYear", "passed": true, "details": "Final Year is allowed"},
+          {"criterion": "backlogs", "passed": true, "details": "0 backlogs <= 0 allowed"}
+        ]
+      },
+      "adminNotes": null,
+      "batchId": "batch_001_a",
+      "registeredAt": "2024-01-04T08:00:00.000Z",
+      "reviewedAt": "2024-01-05T09:00:00.000Z",
+      "reviewedBy": "admin@pvppcoe.ac.in"
+    },
+    {
+      "id": "reg_001_006",
+      "mockDriveId": "md_001_completed_full",
+      "userEmail": "vu1f2223006@pvppcoe.ac.in",
+      "status": "WITHDRAWN",
+      "eligibilityCheckResult": {
+        "isEligible": true,
+        "checks": [
+          {"criterion": "minCgpa", "passed": true, "details": "CGPA 7.0 >= 6.0"},
+          {"criterion": "minMarks10", "passed": true, "details": "10th: 75% >= 60%"},
+          {"criterion": "minMarks12", "passed": true, "details": "12th: 70% >= 60%"},
+          {"criterion": "department", "passed": true, "details": "Electronics and Telecommunication is allowed"},
+          {"criterion": "courseYear", "passed": true, "details": "Final Year is allowed"},
+          {"criterion": "backlogs", "passed": true, "details": "0 backlogs <= 0 allowed"}
+        ]
+      },
+      "adminNotes": "Student withdrew due to personal reasons",
+      "batchId": null,
+      "registeredAt": "2024-01-05T10:00:00.000Z",
+      "reviewedAt": "2024-01-06T09:00:00.000Z",
+      "reviewedBy": "admin@pvppcoe.ac.in"
+    },
+    {
+      "id": "reg_002_001",
+      "mockDriveId": "md_002_in_progress",
+      "userEmail": "vu1f2223001@pvppcoe.ac.in",
+      "status": "APPROVED",
+      "eligibilityCheckResult": {
+        "isEligible": true,
+        "checks": [
+          {"criterion": "minCgpa", "passed": true, "details": "CGPA 7.5 >= 5.5"},
+          {"criterion": "skills", "passed": true, "details": "Has required skill: Python"}
+        ]
+      },
+      "adminNotes": null,
+      "batchId": "batch_002_a",
+      "registeredAt": "2024-02-02T10:00:00.000Z",
+      "reviewedAt": "2024-02-03T09:00:00.000Z",
+      "reviewedBy": "admin@pvppcoe.ac.in"
+    },
+    {
+      "id": "reg_002_002",
+      "mockDriveId": "md_002_in_progress",
+      "userEmail": "vu1f2223007@pvppcoe.ac.in",
+      "status": "APPROVED",
+      "eligibilityCheckResult": {
+        "isEligible": true,
+        "checks": [
+          {"criterion": "minCgpa", "passed": true, "details": "CGPA 6.5 >= 5.5"},
+          {"criterion": "skills", "passed": true, "details": "Has required skill: Java"}
+        ]
+      },
+      "adminNotes": null,
+      "batchId": "batch_002_a",
+      "registeredAt": "2024-02-02T11:00:00.000Z",
+      "reviewedAt": "2024-02-03T09:00:00.000Z",
+      "reviewedBy": "admin@pvppcoe.ac.in"
+    },
+    {
+      "id": "reg_002_003",
+      "mockDriveId": "md_002_in_progress",
+      "userEmail": "vu1f2223008@pvppcoe.ac.in",
+      "status": "APPROVED",
+      "eligibilityCheckResult": {
+        "isEligible": true,
+        "checks": [
+          {"criterion": "minCgpa", "passed": true, "details": "CGPA 7.0 >= 5.5"},
+          {"criterion": "skills", "passed": true, "details": "Has required skill: Python"}
+        ]
+      },
+      "adminNotes": null,
+      "batchId": "batch_002_b",
+      "registeredAt": "2024-02-03T09:00:00.000Z",
+      "reviewedAt": "2024-02-04T09:00:00.000Z",
+      "reviewedBy": "admin@pvppcoe.ac.in"
+    },
+    {
+      "id": "reg_003_001",
+      "mockDriveId": "md_003_registration_open",
+      "userEmail": "vu1f2223001@pvppcoe.ac.in",
+      "status": "APPROVED",
+      "eligibilityCheckResult": {
+        "isEligible": true,
+        "checks": [
+          {"criterion": "minCgpa", "passed": true, "details": "CGPA 7.5 >= 6.5"},
+          {"criterion": "department", "passed": true, "details": "Computer Engineering is allowed"}
+        ]
+      },
+      "adminNotes": null,
+      "batchId": "batch_003_a",
+      "registeredAt": "2024-03-02T10:00:00.000Z",
+      "reviewedAt": "2024-03-03T09:00:00.000Z",
+      "reviewedBy": "admin@pvppcoe.ac.in"
+    },
+    {
+      "id": "reg_003_002",
+      "mockDriveId": "md_003_registration_open",
+      "userEmail": "vu1f2223009@pvppcoe.ac.in",
+      "status": "PENDING",
+      "eligibilityCheckResult": null,
+      "adminNotes": null,
+      "batchId": null,
+      "registeredAt": "2024-03-10T14:00:00.000Z",
+      "reviewedAt": null,
+      "reviewedBy": null
+    },
+    {
+      "id": "reg_003_003",
+      "mockDriveId": "md_003_registration_open",
+      "userEmail": "vu1f2223010@pvppcoe.ac.in",
+      "status": "PENDING",
+      "eligibilityCheckResult": null,
+      "adminNotes": null,
+      "batchId": null,
+      "registeredAt": "2024-03-11T09:00:00.000Z",
+      "reviewedAt": null,
+      "reviewedBy": null
+    },
+    {
+      "id": "reg_008_001",
+      "mockDriveId": "md_008_aptitude_only",
+      "userEmail": "vu1f2223001@pvppcoe.ac.in",
+      "status": "APPROVED",
+      "eligibilityCheckResult": {"isEligible": true, "checks": []},
+      "adminNotes": null,
+      "batchId": "batch_008_a",
+      "registeredAt": "2024-01-06T10:00:00.000Z",
+      "reviewedAt": "2024-01-07T09:00:00.000Z",
+      "reviewedBy": "admin@pvppcoe.ac.in"
+    },
+    {
+      "id": "reg_008_002",
+      "mockDriveId": "md_008_aptitude_only",
+      "userEmail": "vu1f2223011@pvppcoe.ac.in",
+      "status": "APPROVED",
+      "eligibilityCheckResult": {"isEligible": true, "checks": []},
+      "adminNotes": null,
+      "batchId": "batch_008_a",
+      "registeredAt": "2024-01-06T11:00:00.000Z",
+      "reviewedAt": "2024-01-07T09:00:00.000Z",
+      "reviewedBy": "admin@pvppcoe.ac.in"
+    },
+    {
+      "id": "reg_008_003",
+      "mockDriveId": "md_008_aptitude_only",
+      "userEmail": "vu1f2223012@pvppcoe.ac.in",
+      "status": "APPROVED",
+      "eligibilityCheckResult": {"isEligible": true, "checks": []},
+      "adminNotes": null,
+      "batchId": "batch_008_a",
+      "registeredAt": "2024-01-06T12:00:00.000Z",
+      "reviewedAt": "2024-01-07T09:00:00.000Z",
+      "reviewedBy": "admin@pvppcoe.ac.in"
+    },
+    {
+      "id": "reg_009_001",
+      "mockDriveId": "md_009_coding_only",
+      "userEmail": "vu1f2223001@pvppcoe.ac.in",
+      "status": "APPROVED",
+      "eligibilityCheckResult": {"isEligible": true, "checks": [{"criterion": "minCgpa", "passed": true, "details": "CGPA 7.5 >= 6.0"}]},
+      "adminNotes": null,
+      "batchId": "batch_009_a",
+      "registeredAt": "2024-01-13T10:00:00.000Z",
+      "reviewedAt": "2024-01-14T09:00:00.000Z",
+      "reviewedBy": "admin@pvppcoe.ac.in"
+    },
+    {
+      "id": "reg_009_002",
+      "mockDriveId": "md_009_coding_only",
+      "userEmail": "vu1f2223013@pvppcoe.ac.in",
+      "status": "APPROVED",
+      "eligibilityCheckResult": {"isEligible": true, "checks": [{"criterion": "minCgpa", "passed": true, "details": "CGPA 7.8 >= 6.0"}]},
+      "adminNotes": null,
+      "batchId": "batch_009_a",
+      "registeredAt": "2024-01-13T11:00:00.000Z",
+      "reviewedAt": "2024-01-14T09:00:00.000Z",
+      "reviewedBy": "admin@pvppcoe.ac.in"
+    },
+    {
+      "id": "reg_010_001",
+      "mockDriveId": "md_010_interview_only",
+      "userEmail": "vu1f2223001@pvppcoe.ac.in",
+      "status": "APPROVED",
+      "eligibilityCheckResult": {"isEligible": true, "checks": [{"criterion": "courseYear", "passed": true, "details": "Final Year is allowed"}]},
+      "adminNotes": null,
+      "batchId": "batch_010_a",
+      "registeredAt": "2024-03-11T10:00:00.000Z",
+      "reviewedAt": "2024-03-12T09:00:00.000Z",
+      "reviewedBy": "admin@pvppcoe.ac.in"
+    },
+    {
+      "id": "reg_010_002",
+      "mockDriveId": "md_010_interview_only",
+      "userEmail": "vu1f2223014@pvppcoe.ac.in",
+      "status": "PENDING",
+      "eligibilityCheckResult": null,
+      "adminNotes": null,
+      "batchId": null,
+      "registeredAt": "2024-03-12T14:00:00.000Z",
+      "reviewedAt": null,
+      "reviewedBy": null
+    }
+  ],
+  "attempts": [
+    {
+      "id": "att_001_001",
+      "mockDriveId": "md_001_completed_full",
+      "batchId": "batch_001_a",
+      "userEmail": "vu1f2223001@pvppcoe.ac.in",
+      "status": "COMPLETED",
+      "currentModuleOrder": 3,
+      "startedAt": "2024-01-15T09:00:00.000Z",
+      "completedAt": "2024-01-15T12:30:00.000Z",
+      "totalScore": 245.5,
+      "percentageScore": 81.83,
+      "rank": 1,
+      "isPassed": true,
+      "moduleScoresSummary": [
+        {"moduleId": "mod_001_apt", "moduleType": "APTITUDE", "score": 24, "maxScore": 30, "percentage": 80, "passed": true},
+        {"moduleId": "mod_001_code", "moduleType": "MACHINE_CODING", "score": 250, "maxScore": 300, "percentage": 83.33, "passed": true},
+        {"moduleId": "mod_001_int", "moduleType": "AI_INTERVIEW", "score": 78, "maxScore": 100, "percentage": 78, "passed": true}
+      ],
+      "browserInfo": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0",
+      "ipAddress": "192.168.1.100",
+      "deviceInfo": {"os": "Windows 10", "browser": "Chrome", "screenResolution": "1920x1080"},
+      "tabSwitchCount": 0,
+      "suspiciousActivity": null
+    },
+    {
+      "id": "att_001_002",
+      "mockDriveId": "md_001_completed_full",
+      "batchId": "batch_001_a",
+      "userEmail": "vu1f2223002@pvppcoe.ac.in",
+      "status": "COMPLETED",
+      "currentModuleOrder": 3,
+      "startedAt": "2024-01-15T09:00:00.000Z",
+      "completedAt": "2024-01-15T12:45:00.000Z",
+      "totalScore": 220.0,
+      "percentageScore": 73.33,
+      "rank": 2,
+      "isPassed": true,
+      "moduleScoresSummary": [
+        {"moduleId": "mod_001_apt", "moduleType": "APTITUDE", "score": 22, "maxScore": 30, "percentage": 73.33, "passed": true},
+        {"moduleId": "mod_001_code", "moduleType": "MACHINE_CODING", "score": 200, "maxScore": 300, "percentage": 66.67, "passed": true},
+        {"moduleId": "mod_001_int", "moduleType": "AI_INTERVIEW", "score": 72, "maxScore": 100, "percentage": 72, "passed": true}
+      ],
+      "browserInfo": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0",
+      "ipAddress": "192.168.1.101",
+      "deviceInfo": {"os": "Windows 10", "browser": "Chrome", "screenResolution": "1366x768"},
+      "tabSwitchCount": 1,
+      "suspiciousActivity": null
+    },
+    {
+      "id": "att_001_003",
+      "mockDriveId": "md_001_completed_full",
+      "batchId": "batch_001_a",
+      "userEmail": "vu1f2223005@pvppcoe.ac.in",
+      "status": "COMPLETED",
+      "currentModuleOrder": 3,
+      "startedAt": "2024-01-15T09:05:00.000Z",
+      "completedAt": "2024-01-15T12:50:00.000Z",
+      "totalScore": 195.5,
+      "percentageScore": 65.17,
+      "rank": 3,
+      "isPassed": true,
+      "moduleScoresSummary": [
+        {"moduleId": "mod_001_apt", "moduleType": "APTITUDE", "score": 18, "maxScore": 30, "percentage": 60, "passed": true},
+        {"moduleId": "mod_001_code", "moduleType": "MACHINE_CODING", "score": 180, "maxScore": 300, "percentage": 60, "passed": true},
+        {"moduleId": "mod_001_int", "moduleType": "AI_INTERVIEW", "score": 65, "maxScore": 100, "percentage": 65, "passed": true}
+      ],
+      "browserInfo": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) Safari/605.1.15",
+      "ipAddress": "192.168.1.102",
+      "deviceInfo": {"os": "macOS", "browser": "Safari", "screenResolution": "2560x1440"},
+      "tabSwitchCount": 0,
+      "suspiciousActivity": null
+    },
+    {
+      "id": "att_001_004",
+      "mockDriveId": "md_001_completed_full",
+      "batchId": "batch_001_b",
+      "userEmail": "vu1f2223003@pvppcoe.ac.in",
+      "status": "COMPLETED",
+      "currentModuleOrder": 3,
+      "startedAt": "2024-01-15T14:00:00.000Z",
+      "completedAt": "2024-01-15T17:30:00.000Z",
+      "totalScore": 150.0,
+      "percentageScore": 50.0,
+      "rank": 4,
+      "isPassed": false,
+      "moduleScoresSummary": [
+        {"moduleId": "mod_001_apt", "moduleType": "APTITUDE", "score": 15, "maxScore": 30, "percentage": 50, "passed": true},
+        {"moduleId": "mod_001_code", "moduleType": "MACHINE_CODING", "score": 120, "maxScore": 300, "percentage": 40, "passed": false},
+        {"moduleId": "mod_001_int", "moduleType": "AI_INTERVIEW", "score": 55, "maxScore": 100, "percentage": 55, "passed": false}
+      ],
+      "browserInfo": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Firefox/121.0",
+      "ipAddress": "192.168.1.103",
+      "deviceInfo": {"os": "Windows 10", "browser": "Firefox", "screenResolution": "1920x1080"},
+      "tabSwitchCount": 2,
+      "suspiciousActivity": [{"type": "tab_switch", "timestamp": "2024-01-15T15:30:00.000Z", "details": "Tab switched during coding round"}]
+    },
+    {
+      "id": "att_002_001",
+      "mockDriveId": "md_002_in_progress",
+      "batchId": "batch_002_a",
+      "userEmail": "vu1f2223001@pvppcoe.ac.in",
+      "status": "IN_PROGRESS",
+      "currentModuleOrder": 2,
+      "startedAt": "2024-02-15T09:00:00.000Z",
+      "completedAt": null,
+      "totalScore": null,
+      "percentageScore": null,
+      "rank": null,
+      "isPassed": null,
+      "moduleScoresSummary": null,
+      "browserInfo": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/121.0.0.0",
+      "ipAddress": "192.168.1.100",
+      "deviceInfo": {"os": "Windows 10", "browser": "Chrome", "screenResolution": "1920x1080"},
+      "tabSwitchCount": 0,
+      "suspiciousActivity": null
+    },
+    {
+      "id": "att_002_002",
+      "mockDriveId": "md_002_in_progress",
+      "batchId": "batch_002_a",
+      "userEmail": "vu1f2223007@pvppcoe.ac.in",
+      "status": "IN_PROGRESS",
+      "currentModuleOrder": 1,
+      "startedAt": "2024-02-15T09:05:00.000Z",
+      "completedAt": null,
+      "totalScore": null,
+      "percentageScore": null,
+      "rank": null,
+      "isPassed": null,
+      "moduleScoresSummary": null,
+      "browserInfo": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/121.0.0.0",
+      "ipAddress": "192.168.1.105",
+      "deviceInfo": {"os": "Windows 10", "browser": "Chrome", "screenResolution": "1366x768"},
+      "tabSwitchCount": 0,
+      "suspiciousActivity": null
+    },
+    {
+      "id": "att_008_001",
+      "mockDriveId": "md_008_aptitude_only",
+      "batchId": "batch_008_a",
+      "userEmail": "vu1f2223001@pvppcoe.ac.in",
+      "status": "COMPLETED",
+      "currentModuleOrder": 1,
+      "startedAt": "2024-01-10T10:00:00.000Z",
+      "completedAt": "2024-01-10T10:55:00.000Z",
+      "totalScore": 48,
+      "percentageScore": 80.0,
+      "rank": 1,
+      "isPassed": true,
+      "moduleScoresSummary": [
+        {"moduleId": "mod_008_apt", "moduleType": "APTITUDE", "score": 48, "maxScore": 60, "percentage": 80, "passed": true}
+      ],
+      "browserInfo": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0",
+      "ipAddress": "192.168.1.100",
+      "deviceInfo": {"os": "Windows 10", "browser": "Chrome", "screenResolution": "1920x1080"},
+      "tabSwitchCount": 0,
+      "suspiciousActivity": null
+    },
+    {
+      "id": "att_008_002",
+      "mockDriveId": "md_008_aptitude_only",
+      "batchId": "batch_008_a",
+      "userEmail": "vu1f2223011@pvppcoe.ac.in",
+      "status": "COMPLETED",
+      "currentModuleOrder": 1,
+      "startedAt": "2024-01-10T10:00:00.000Z",
+      "completedAt": "2024-01-10T10:58:00.000Z",
+      "totalScore": 42,
+      "percentageScore": 70.0,
+      "rank": 2,
+      "isPassed": true,
+      "moduleScoresSummary": [
+        {"moduleId": "mod_008_apt", "moduleType": "APTITUDE", "score": 42, "maxScore": 60, "percentage": 70, "passed": true}
+      ],
+      "browserInfo": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0",
+      "ipAddress": "192.168.1.110",
+      "deviceInfo": {"os": "Windows 10", "browser": "Chrome", "screenResolution": "1920x1080"},
+      "tabSwitchCount": 0,
+      "suspiciousActivity": null
+    },
+    {
+      "id": "att_008_003",
+      "mockDriveId": "md_008_aptitude_only",
+      "batchId": "batch_008_a",
+      "userEmail": "vu1f2223012@pvppcoe.ac.in",
+      "status": "TIMED_OUT",
+      "currentModuleOrder": 1,
+      "startedAt": "2024-01-10T10:00:00.000Z",
+      "completedAt": "2024-01-10T11:00:00.000Z",
+      "totalScore": 25,
+      "percentageScore": 41.67,
+      "rank": 3,
+      "isPassed": false,
+      "moduleScoresSummary": [
+        {"moduleId": "mod_008_apt", "moduleType": "APTITUDE", "score": 25, "maxScore": 60, "percentage": 41.67, "passed": false}
+      ],
+      "browserInfo": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0",
+      "ipAddress": "192.168.1.111",
+      "deviceInfo": {"os": "Windows 10", "browser": "Chrome", "screenResolution": "1366x768"},
+      "tabSwitchCount": 0,
+      "suspiciousActivity": null
+    },
+    {
+      "id": "att_009_001",
+      "mockDriveId": "md_009_coding_only",
+      "batchId": "batch_009_a",
+      "userEmail": "vu1f2223001@pvppcoe.ac.in",
+      "status": "COMPLETED",
+      "currentModuleOrder": 1,
+      "startedAt": "2024-01-20T14:00:00.000Z",
+      "completedAt": "2024-01-20T16:45:00.000Z",
+      "totalScore": 380,
+      "percentageScore": 76.0,
+      "rank": 1,
+      "isPassed": true,
+      "moduleScoresSummary": [
+        {"moduleId": "mod_009_code", "moduleType": "MACHINE_CODING", "score": 380, "maxScore": 500, "percentage": 76, "passed": true}
+      ],
+      "browserInfo": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0",
+      "ipAddress": "192.168.1.100",
+      "deviceInfo": {"os": "Windows 10", "browser": "Chrome", "screenResolution": "1920x1080"},
+      "tabSwitchCount": 0,
+      "suspiciousActivity": null
+    },
+    {
+      "id": "att_009_002",
+      "mockDriveId": "md_009_coding_only",
+      "batchId": "batch_009_a",
+      "userEmail": "vu1f2223013@pvppcoe.ac.in",
+      "status": "COMPLETED",
+      "currentModuleOrder": 1,
+      "startedAt": "2024-01-20T14:00:00.000Z",
+      "completedAt": "2024-01-20T16:30:00.000Z",
+      "totalScore": 320,
+      "percentageScore": 64.0,
+      "rank": 2,
+      "isPassed": true,
+      "moduleScoresSummary": [
+        {"moduleId": "mod_009_code", "moduleType": "MACHINE_CODING", "score": 320, "maxScore": 500, "percentage": 64, "passed": true}
+      ],
+      "browserInfo": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0",
+      "ipAddress": "192.168.1.112",
+      "deviceInfo": {"os": "Windows 10", "browser": "Chrome", "screenResolution": "1920x1080"},
+      "tabSwitchCount": 0,
+      "suspiciousActivity": null
+    }
+  ],
+  "moduleAttempts": [
+    {
+      "id": "matt_001_001_apt",
+      "attemptId": "att_001_001",
+      "moduleId": "mod_001_apt",
+      "status": "COMPLETED",
+      "startedAt": "2024-01-15T09:00:00.000Z",
+      "completedAt": "2024-01-15T09:55:00.000Z",
+      "expiresAt": "2024-01-15T10:00:00.000Z",
+      "timeSpentSeconds": 3300,
+      "score": 24,
+      "maxScore": 30,
+      "percentage": 80,
+      "isPassed": true,
+      "moduleData": {
+        "questions": [
+          {"questionId": "mdq_001", "aptitudeQuestionId": "apt_q_001", "displayOrder": 1, "selectedOptionId": "opt_001_a", "isCorrect": true, "timeSpentSeconds": 60, "answeredAt": "2024-01-15T09:01:00.000Z"},
+          {"questionId": "mdq_002", "aptitudeQuestionId": "apt_q_002", "displayOrder": 2, "selectedOptionId": "opt_002_b", "isCorrect": true, "timeSpentSeconds": 90, "answeredAt": "2024-01-15T09:02:30.000Z"},
+          {"questionId": "mdq_003", "aptitudeQuestionId": "apt_q_003", "displayOrder": 3, "selectedOptionId": "opt_003_c", "isCorrect": false, "timeSpentSeconds": 120, "answeredAt": "2024-01-15T09:04:30.000Z"}
+        ],
+        "summary": {
+          "totalQuestions": 30,
+          "totalCorrect": 26,
+          "totalWrong": 4,
+          "totalUnanswered": 0,
+          "marksObtained": 26,
+          "negativeMarks": 1,
+          "finalScore": 24,
+          "maxScore": 30
+        }
+      },
+      "isAutoSubmitted": false
+    },
+    {
+      "id": "matt_001_001_code",
+      "attemptId": "att_001_001",
+      "moduleId": "mod_001_code",
+      "status": "COMPLETED",
+      "startedAt": "2024-01-15T10:00:00.000Z",
+      "completedAt": "2024-01-15T11:25:00.000Z",
+      "expiresAt": "2024-01-15T11:30:00.000Z",
+      "timeSpentSeconds": 5100,
+      "score": 250,
+      "maxScore": 300,
+      "percentage": 83.33,
+      "isPassed": true,
+      "moduleData": {
+        "questions": [
+          {
+            "questionId": "mdq_code_001",
+            "machineQuestionId": "mq_001",
+            "displayOrder": 1,
+            "submissions": [
+              {
+                "id": "sub_001",
+                "code": "function twoSum(nums, target) { const map = new Map(); for(let i = 0; i < nums.length; i++) { const complement = target - nums[i]; if(map.has(complement)) return [map.get(complement), i]; map.set(nums[i], i); } return []; }",
+                "languageId": 63,
+                "languageName": "JavaScript",
+                "status": "ACCEPTED",
+                "testCasesPassed": 10,
+                "testCasesTotal": 10,
+                "executionTime": 52,
+                "memoryUsed": 42000,
+                "stdout": null,
+                "stderr": null,
+                "compileError": null,
+                "submittedAt": "2024-01-15T10:25:00.000Z"
+              }
+            ],
+            "bestSubmissionId": "sub_001",
+            "bestScore": 100,
+            "isSolved": true
+          },
+          {
+            "questionId": "mdq_code_002",
+            "machineQuestionId": "mq_002",
+            "displayOrder": 2,
+            "submissions": [
+              {
+                "id": "sub_002",
+                "code": "def reverse_linked_list(head): prev = None; curr = head; while curr: next_temp = curr.next; curr.next = prev; prev = curr; curr = next_temp; return prev",
+                "languageId": 71,
+                "languageName": "Python",
+                "status": "ACCEPTED",
+                "testCasesPassed": 8,
+                "testCasesTotal": 8,
+                "executionTime": 45,
+                "memoryUsed": 38000,
+                "stdout": null,
+                "stderr": null,
+                "compileError": null,
+                "submittedAt": "2024-01-15T10:50:00.000Z"
+              }
+            ],
+            "bestSubmissionId": "sub_002",
+            "bestScore": 100,
+            "isSolved": true
+          },
+          {
+            "questionId": "mdq_code_003",
+            "machineQuestionId": "mq_003",
+            "displayOrder": 3,
+            "submissions": [
+              {
+                "id": "sub_003",
+                "code": "// partial solution",
+                "languageId": 63,
+                "languageName": "JavaScript",
+                "status": "WRONG_ANSWER",
+                "testCasesPassed": 5,
+                "testCasesTotal": 10,
+                "executionTime": 100,
+                "memoryUsed": 50000,
+                "stdout": null,
+                "stderr": null,
+                "compileError": null,
+                "submittedAt": "2024-01-15T11:20:00.000Z"
+              }
+            ],
+            "bestSubmissionId": "sub_003",
+            "bestScore": 50,
+            "isSolved": false
+          }
+        ],
+        "summary": {
+          "totalQuestions": 3,
+          "totalSolved": 2,
+          "totalPartial": 1,
+          "totalUnattempted": 0,
+          "totalScore": 250,
+          "maxScore": 300
+        }
+      },
+      "isAutoSubmitted": false
+    },
+   {
+      "id": "matt_001_001_int",
+      "attemptId": "att_001_001",
+      "moduleId": "mod_001_int",
+      "status": "COMPLETED",
+      "startedAt": "2024-01-15T11:30:00.000Z",
+      "completedAt": "2024-01-15T12:30:00.000Z",
+      "expiresAt": "2024-01-15T12:00:00.000Z",
+      "timeSpentSeconds": 1800,
+      "score": 78,
+      "maxScore": 100,
+      "percentage": 78,
+      "isPassed": true,
+      "moduleData": {
+        "config": {
+          "resumeId": "resume_001",
+          "resumeUrl": "https://storage.example.com/resumes/student_001.pdf",
+          "jobTitle": "Software Developer",
+          "companyName": "TCS",
+          "difficulty": "MID",
+          "focusAreas": ["Problem Solving", "Communication", "Technical Knowledge"],
+          "targetQuestions": 8
+        },
+        "conversation": [
+          {"id": "conv_001", "role": "assistant", "content": "Hello! Welcome to this interview for the Software Developer position at TCS. I'm excited to learn more about you. Let's start with a brief introduction. Can you tell me about yourself?", "timestamp": "2024-01-15T11:30:00.000Z"},
+          {"id": "conv_002", "role": "user", "content": "Thank you for having me. I'm a final year Computer Engineering student at PVPPCOE with a strong passion for software development. I have experience in full-stack development using React and Node.js, and I've worked on several projects including a placement management system for our college.", "timestamp": "2024-01-15T11:31:30.000Z"},
+          {"id": "conv_003", "role": "assistant", "content": "That's great! Your experience with full-stack development sounds valuable. Can you tell me about a challenging problem you faced during your placement management system project and how you solved it?", "timestamp": "2024-01-15T11:32:00.000Z"},
+          {"id": "conv_004", "role": "user", "content": "One major challenge was handling concurrent registrations for placement drives. Multiple students would try to register simultaneously, causing race conditions. I solved this by implementing optimistic locking in the database and adding a queue-based system using Redis to handle peak loads.", "timestamp": "2024-01-15T11:35:00.000Z"}
+        ],
+        "responses": [
+          {
+            "id": "resp_001",
+            "questionIndex": 0,
+            "category": "INTRODUCTORY",
+            "question": "Can you tell me about yourself?",
+            "answer": "Thank you for having me. I'm a final year Computer Engineering student at PVPPCOE with a strong passion for software development. I have experience in full-stack development using React and Node.js, and I've worked on several projects including a placement management system for our college.",
+            "isFollowup": false,
+            "scores": {
+              "relevance": 8,
+              "clarity": 9,
+              "depth": 7,
+              "technicalAccuracy": null,
+              "overall": 8
+            },
+            "feedback": "Good introduction covering education and technical skills. Could include more about career goals.",
+            "timeTakenSeconds": 90,
+            "answeredAt": "2024-01-15T11:31:30.000Z"
+          },
+          {
+            "id": "resp_002",
+            "questionIndex": 1,
+            "category": "TECHNICAL",
+            "question": "Can you tell me about a challenging problem you faced during your placement management system project and how you solved it?",
+            "answer": "One major challenge was handling concurrent registrations for placement drives. Multiple students would try to register simultaneously, causing race conditions. I solved this by implementing optimistic locking in the database and adding a queue-based system using Redis to handle peak loads.",
+            "isFollowup": false,
+            "scores": {
+              "relevance": 9,
+              "clarity": 8,
+              "depth": 8,
+              "technicalAccuracy": 9,
+              "overall": 8.5
+            },
+            "feedback": "Excellent technical explanation demonstrating understanding of concurrency issues and practical solutions.",
+            "timeTakenSeconds": 180,
+            "answeredAt": "2024-01-15T11:35:00.000Z"
+          },
+          {
+            "id": "resp_003",
+            "questionIndex": 2,
+            "category": "BEHAVIORAL",
+            "question": "Tell me about a time when you had to work in a team with conflicting opinions.",
+            "answer": "During our final year project, two team members had different views on the architecture - one wanted microservices, another preferred monolithic. I facilitated a discussion where each presented pros and cons. We agreed on a modular monolith as a middle ground that satisfied both scalability concerns and development speed.",
+            "isFollowup": false,
+            "scores": {
+              "relevance": 9,
+              "clarity": 8,
+              "depth": 8,
+              "technicalAccuracy": null,
+              "overall": 8.3
+            },
+            "feedback": "Great example of conflict resolution and leadership. Shows ability to find compromise solutions.",
+            "timeTakenSeconds": 150,
+            "answeredAt": "2024-01-15T11:40:00.000Z"
+          },
+          {
+            "id": "resp_004",
+            "questionIndex": 3,
+            "category": "TECHNICAL",
+            "question": "What is your understanding of RESTful APIs and how have you implemented them?",
+            "answer": "REST APIs follow principles like statelessness, uniform interface, and resource-based URLs. In my projects, I've implemented REST APIs using Express.js with proper HTTP methods - GET for retrieval, POST for creation, PUT for updates, DELETE for removal. I also implement proper status codes, pagination, and error handling.",
+            "isFollowup": false,
+            "scores": {
+              "relevance": 9,
+              "clarity": 9,
+              "depth": 8,
+              "technicalAccuracy": 9,
+              "overall": 8.8
+            },
+            "feedback": "Strong understanding of REST principles with practical implementation experience.",
+            "timeTakenSeconds": 120,
+            "answeredAt": "2024-01-15T11:45:00.000Z"
+          },
+          {
+            "id": "resp_005",
+            "questionIndex": 4,
+            "category": "SITUATIONAL",
+            "question": "If you were given a project with unclear requirements, how would you handle it?",
+            "answer": "First, I would document my understanding of the requirements and schedule a meeting with stakeholders to clarify. I'd ask specific questions and use examples to ensure alignment. I'd also propose an iterative approach with regular check-ins to validate we're on track and adjust as needed.",
+            "isFollowup": false,
+            "scores": {
+              "relevance": 8,
+              "clarity": 9,
+              "depth": 7,
+              "technicalAccuracy": null,
+              "overall": 8
+            },
+            "feedback": "Good structured approach to handling ambiguity. Shows proactive communication skills.",
+            "timeTakenSeconds": 100,
+            "answeredAt": "2024-01-15T11:50:00.000Z"
+          },
+          {
+            "id": "resp_006",
+            "questionIndex": 5,
+            "category": "TECHNICAL",
+            "question": "Explain the difference between SQL and NoSQL databases. When would you use each?",
+            "answer": "SQL databases are relational with fixed schemas, good for complex queries and transactions - like PostgreSQL for financial systems. NoSQL databases like MongoDB are schema-flexible, horizontally scalable, ideal for unstructured data or high-velocity writes. I'd use SQL for structured data with relationships, NoSQL for flexibility and scale.",
+            "isFollowup": false,
+            "scores": {
+              "relevance": 9,
+              "clarity": 9,
+              "depth": 8,
+              "technicalAccuracy": 9,
+              "overall": 8.8
+            },
+            "feedback": "Clear explanation with practical use cases. Good understanding of database selection criteria.",
+            "timeTakenSeconds": 130,
+            "answeredAt": "2024-01-15T11:55:00.000Z"
+          },
+          {
+            "id": "resp_007",
+            "questionIndex": 6,
+            "category": "BEHAVIORAL",
+            "question": "How do you stay updated with the latest technologies?",
+            "answer": "I follow tech blogs like Dev.to and Medium, subscribe to newsletters like JavaScript Weekly. I also contribute to open source projects, take online courses on Udemy and Coursera, and participate in coding communities on Discord. I dedicate at least an hour daily to learning something new.",
+            "isFollowup": false,
+            "scores": {
+              "relevance": 8,
+              "clarity": 9,
+              "depth": 7,
+              "technicalAccuracy": null,
+              "overall": 8
+            },
+            "feedback": "Shows commitment to continuous learning with diverse resources.",
+            "timeTakenSeconds": 90,
+            "answeredAt": "2024-01-15T12:00:00.000Z"
+          },
+          {
+            "id": "resp_008",
+            "questionIndex": 7,
+            "category": "CLOSING",
+            "question": "Do you have any questions for me about TCS or the role?",
+            "answer": "Yes, I'd like to know about the typical project lifecycle at TCS and how new graduates are onboarded. Also, what opportunities exist for learning and growth within the first year? And what technologies does the team primarily work with?",
+            "isFollowup": false,
+            "scores": {
+              "relevance": 8,
+              "clarity": 9,
+              "depth": 7,
+              "technicalAccuracy": null,
+              "overall": 8
+            },
+            "feedback": "Thoughtful questions showing genuine interest in the role and growth opportunities.",
+            "timeTakenSeconds": 60,
+            "answeredAt": "2024-01-15T12:05:00.000Z"
+          }
+        ],
+        "summary": {
+          "totalQuestions": 8,
+          "questionsAnswered": 8,
+          "overallScore": 78,
+          "maxScore": 100,
+          "categoryScores": {
+            "INTRODUCTORY": {"score": 8, "count": 1},
+            "TECHNICAL": {"score": 8.7, "count": 3},
+            "BEHAVIORAL": {"score": 8.15, "count": 2},
+            "SITUATIONAL": {"score": 8, "count": 1},
+            "CLOSING": {"score": 8, "count": 1}
+          },
+          "keyStrengths": ["Strong technical knowledge", "Clear communication", "Good problem-solving approach", "Commitment to learning"],
+          "areasForImprovement": ["Could provide more specific metrics/results", "Expand on leadership experiences"],
+          "overallFeedback": "Strong candidate with solid technical foundation and good communication skills. Demonstrated practical experience and ability to handle challenges effectively."
+        }
+      },
+      "isAutoSubmitted": false
+    },
+    {
+      "id": "matt_001_002_apt",
+      "attemptId": "att_001_002",
+      "moduleId": "mod_001_apt",
+      "status": "COMPLETED",
+      "startedAt": "2024-01-15T09:00:00.000Z",
+      "completedAt": "2024-01-15T09:58:00.000Z",
+      "expiresAt": "2024-01-15T10:00:00.000Z",
+      "timeSpentSeconds": 3480,
+      "score": 22,
+      "maxScore": 30,
+      "percentage": 73.33,
+      "isPassed": true,
+      "moduleData": {
+        "questions": [
+          {"questionId": "mdq_001", "aptitudeQuestionId": "apt_q_001", "displayOrder": 5, "selectedOptionId": "opt_001_a", "isCorrect": true, "timeSpentSeconds": 70, "answeredAt": "2024-01-15T09:01:10.000Z"},
+          {"questionId": "mdq_002", "aptitudeQuestionId": "apt_q_002", "displayOrder": 12, "selectedOptionId": "opt_002_c", "isCorrect": false, "timeSpentSeconds": 100, "answeredAt": "2024-01-15T09:02:50.000Z"}
+        ],
+        "summary": {
+          "totalQuestions": 30,
+          "totalCorrect": 24,
+          "totalWrong": 6,
+          "totalUnanswered": 0,
+          "marksObtained": 24,
+          "negativeMarks": 1.5,
+          "finalScore": 22,
+          "maxScore": 30
+        }
+      },
+      "isAutoSubmitted": false
+    },
+    {
+      "id": "matt_001_002_code",
+      "attemptId": "att_001_002",
+      "moduleId": "mod_001_code",
+      "status": "COMPLETED",
+      "startedAt": "2024-01-15T10:00:00.000Z",
+      "completedAt": "2024-01-15T11:28:00.000Z",
+      "expiresAt": "2024-01-15T11:30:00.000Z",
+      "timeSpentSeconds": 5280,
+      "score": 200,
+      "maxScore": 300,
+      "percentage": 66.67,
+      "isPassed": true,
+      "moduleData": {
+        "questions": [
+          {
+            "questionId": "mdq_code_001",
+            "machineQuestionId": "mq_001",
+            "displayOrder": 1,
+            "submissions": [
+              {
+                "id": "sub_004",
+                "code": "function twoSum(nums, target) { for(let i=0; i<nums.length; i++) { for(let j=i+1; j<nums.length; j++) { if(nums[i]+nums[j]===target) return [i,j]; } } }",
+                "languageId": 63,
+                "languageName": "JavaScript",
+                "status": "ACCEPTED",
+                "testCasesPassed": 10,
+                "testCasesTotal": 10,
+                "executionTime": 150,
+                "memoryUsed": 45000,
+                "stdout": null,
+                "stderr": null,
+                "compileError": null,
+                "submittedAt": "2024-01-15T10:30:00.000Z"
+              }
+            ],
+            "bestSubmissionId": "sub_004",
+            "bestScore": 100,
+            "isSolved": true
+          },
+          {
+            "questionId": "mdq_code_002",
+            "machineQuestionId": "mq_002",
+            "displayOrder": 2,
+            "submissions": [
+              {
+                "id": "sub_005",
+                "code": "class Solution { public ListNode reverseList(ListNode head) { if(head==null || head.next==null) return head; ListNode prev=null, curr=head; while(curr!=null) { ListNode next=curr.next; curr.next=prev; prev=curr; curr=next; } return prev; } }",
+                "languageId": 62,
+                "languageName": "Java",
+                "status": "ACCEPTED",
+                "testCasesPassed": 8,
+                "testCasesTotal": 8,
+                "executionTime": 60,
+                "memoryUsed": 40000,
+                "stdout": null,
+                "stderr": null,
+                "compileError": null,
+                "submittedAt": "2024-01-15T11:00:00.000Z"
+              }
+            ],
+            "bestSubmissionId": "sub_005",
+            "bestScore": 100,
+            "isSolved": true
+          },
+          {
+            "questionId": "mdq_code_003",
+            "machineQuestionId": "mq_003",
+            "displayOrder": 3,
+            "submissions": [
+              {
+                "id": "sub_006",
+                "code": "// incomplete attempt",
+                "languageId": 63,
+                "languageName": "JavaScript",
+                "status": "WRONG_ANSWER",
+                "testCasesPassed": 0,
+                "testCasesTotal": 10,
+                "executionTime": null,
+                "memoryUsed": null,
+                "stdout": null,
+                "stderr": "TypeError: Cannot read property 'length' of undefined",
+                "compileError": null,
+                "submittedAt": "2024-01-15T11:25:00.000Z"
+              }
+            ],
+            "bestSubmissionId": "sub_006",
+            "bestScore": 0,
+            "isSolved": false
+          }
+        ],
+        "summary": {
+          "totalQuestions": 3,
+          "totalSolved": 2,
+          "totalPartial": 0,
+          "totalUnattempted": 1,
+          "totalScore": 200,
+          "maxScore": 300
+        }
+      },
+      "isAutoSubmitted": false
+    },
+    {
+      "id": "matt_001_002_int",
+      "attemptId": "att_001_002",
+      "moduleId": "mod_001_int",
+      "status": "COMPLETED",
+      "startedAt": "2024-01-15T11:30:00.000Z",
+      "completedAt": "2024-01-15T12:15:00.000Z",
+      "expiresAt": "2024-01-15T12:00:00.000Z",
+      "timeSpentSeconds": 2700,
+      "score": 72,
+      "maxScore": 100,
+      "percentage": 72,
+      "isPassed": true,
+      "moduleData": {
+        "config": {
+          "resumeId": "resume_002",
+          "resumeUrl": "https://storage.example.com/resumes/student_002.pdf",
+          "jobTitle": "Software Developer",
+          "companyName": "TCS",
+          "difficulty": "MID",
+          "focusAreas": ["Problem Solving", "Communication", "Technical Knowledge"],
+          "targetQuestions": 8
+        },
+        "conversation": [],
+        "responses": [],
+        "summary": {
+          "totalQuestions": 8,
+          "questionsAnswered": 8,
+          "overallScore": 72,
+          "maxScore": 100,
+          "categoryScores": {
+            "INTRODUCTORY": {"score": 7.5, "count": 1},
+            "TECHNICAL": {"score": 7.2, "count": 3},
+            "BEHAVIORAL": {"score": 7.0, "count": 2},
+            "SITUATIONAL": {"score": 7.5, "count": 1},
+            "CLOSING": {"score": 7.0, "count": 1}
+          },
+          "keyStrengths": ["Good technical basics", "Clear responses"],
+          "areasForImprovement": ["More depth in technical answers", "Specific examples needed"],
+          "overallFeedback": "Solid performance with room for improvement in providing detailed technical explanations."
+        }
+      },
+      "isAutoSubmitted": false
+    },
+    {
+      "id": "matt_002_001_apt",
+      "attemptId": "att_002_001",
+      "moduleId": "mod_002_apt",
+      "status": "COMPLETED",
+      "startedAt": "2024-02-15T09:00:00.000Z",
+      "completedAt": "2024-02-15T09:42:00.000Z",
+      "expiresAt": "2024-02-15T09:45:00.000Z",
+      "timeSpentSeconds": 2520,
+      "score": 20,
+      "maxScore": 25,
+      "percentage": 80,
+      "isPassed": true,
+      "moduleData": {
+        "questions": [],
+        "summary": {
+          "totalQuestions": 25,
+          "totalCorrect": 20,
+          "totalWrong": 5,
+          "totalUnanswered": 0,
+          "marksObtained": 20,
+          "negativeMarks": 0,
+          "finalScore": 20,
+          "maxScore": 25
+        }
+      },
+      "isAutoSubmitted": false
+    },
+    {
+      "id": "matt_002_001_code",
+      "attemptId": "att_002_001",
+      "moduleId": "mod_002_code",
+      "status": "IN_PROGRESS",
+      "startedAt": "2024-02-15T09:45:00.000Z",
+      "completedAt": null,
+      "expiresAt": "2024-02-15T11:45:00.000Z",
+      "timeSpentSeconds": 3600,
+      "score": null,
+      "maxScore": 400,
+      "percentage": null,
+      "isPassed": null,
+      "moduleData": {
+        "questions": [
+          {
+            "questionId": "mdq_002_code_001",
+            "machineQuestionId": "mq_004",
+            "displayOrder": 1,
+            "submissions": [
+              {
+                "id": "sub_007",
+                "code": "def fibonacci(n): if n <= 1: return n; return fibonacci(n-1) + fibonacci(n-2)",
+                "languageId": 71,
+                "languageName": "Python",
+                "status": "TIME_LIMIT_EXCEEDED",
+                "testCasesPassed": 5,
+                "testCasesTotal": 10,
+                "executionTime": 5000,
+                "memoryUsed": 50000,
+                "stdout": null,
+                "stderr": null,
+                "compileError": null,
+                "submittedAt": "2024-02-15T10:15:00.000Z"
+              }
+            ],
+            "bestSubmissionId": "sub_007",
+            "bestScore": 50,
+            "isSolved": false
+          },
+          {
+            "questionId": "mdq_002_code_002",
+            "machineQuestionId": "mq_005",
+            "displayOrder": 2,
+            "submissions": [],
+            "bestSubmissionId": null,
+            "bestScore": 0,
+            "isSolved": false
+          }
+        ],
+        "summary": {
+          "totalQuestions": 4,
+          "totalSolved": 0,
+          "totalPartial": 1,
+          "totalUnattempted": 3,
+          "totalScore": 50,
+          "maxScore": 400
+        }
+      },
+      "isAutoSubmitted": false
+    },
+    {
+      "id": "matt_002_002_apt",
+      "attemptId": "att_002_002",
+      "moduleId": "mod_002_apt",
+      "status": "IN_PROGRESS",
+      "startedAt": "2024-02-15T09:05:00.000Z",
+      "completedAt": null,
+      "expiresAt": "2024-02-15T09:50:00.000Z",
+      "timeSpentSeconds": 1800,
+      "score": null,
+      "maxScore": 25,
+      "percentage": null,
+      "isPassed": null,
+      "moduleData": {
+        "questions": [
+          {"questionId": "mdq_002_apt_001", "aptitudeQuestionId": "apt_q_010", "displayOrder": 1, "selectedOptionId": "opt_010_b", "isCorrect": true, "timeSpentSeconds": 45, "answeredAt": "2024-02-15T09:05:45.000Z"},
+          {"questionId": "mdq_002_apt_002", "aptitudeQuestionId": "apt_q_011", "displayOrder": 2, "selectedOptionId": null, "isCorrect": null, "timeSpentSeconds": 0, "answeredAt": null}
+        ],
+        "summary": {
+          "totalQuestions": 25,
+          "totalCorrect": 12,
+          "totalWrong": 3,
+          "totalUnanswered": 10,
+          "marksObtained": 12,
+          "negativeMarks": 0,
+          "finalScore": 12,
+          "maxScore": 25
+        }
+      },
+      "isAutoSubmitted": false
+    },
+    {
+      "id": "matt_008_001_apt",
+      "attemptId": "att_008_001",
+      "moduleId": "mod_008_apt",
+      "status": "COMPLETED",
+      "startedAt": "2024-01-10T10:00:00.000Z",
+      "completedAt": "2024-01-10T10:55:00.000Z",
+      "expiresAt": "2024-01-10T11:00:00.000Z",
+      "timeSpentSeconds": 3300,
+      "score": 48,
+      "maxScore": 60,
+      "percentage": 80,
+      "isPassed": true,
+      "moduleData": {
+        "questions": [],
+        "summary": {
+          "totalQuestions": 60,
+          "totalCorrect": 48,
+          "totalWrong": 12,
+          "totalUnanswered": 0,
+          "marksObtained": 48,
+          "negativeMarks": 0,
+          "finalScore": 48,
+          "maxScore": 60
+        }
+      },
+      "isAutoSubmitted": false
+    },
+    {
+      "id": "matt_008_002_apt",
+      "attemptId": "att_008_002",
+      "moduleId": "mod_008_apt",
+      "status": "COMPLETED",
+      "startedAt": "2024-01-10T10:00:00.000Z",
+      "completedAt": "2024-01-10T10:58:00.000Z",
+      "expiresAt": "2024-01-10T11:00:00.000Z",
+      "timeSpentSeconds": 3480,
+      "score": 42,
+      "maxScore": 60,
+      "percentage": 70,
+      "isPassed": true,
+      "moduleData": {
+        "questions": [],
+        "summary": {
+          "totalQuestions": 60,
+          "totalCorrect": 42,
+          "totalWrong": 18,
+          "totalUnanswered": 0,
+          "marksObtained": 42,
+          "negativeMarks": 0,
+          "finalScore": 42,
+          "maxScore": 60
+        }
+      },
+      "isAutoSubmitted": false
+    },
+    {
+      "id": "matt_008_003_apt",
+      "attemptId": "att_008_003",
+      "moduleId": "mod_008_apt",
+      "status": "TIMED_OUT",
+      "startedAt": "2024-01-10T10:00:00.000Z",
+      "completedAt": "2024-01-10T11:00:00.000Z",
+      "expiresAt": "2024-01-10T11:00:00.000Z",
+      "timeSpentSeconds": 3600,
+      "score": 25,
+      "maxScore": 60,
+      "percentage": 41.67,
+      "isPassed": false,
+      "moduleData": {
+        "questions": [],
+        "summary": {
+          "totalQuestions": 60,
+          "totalCorrect": 25,
+          "totalWrong": 15,
+          "totalUnanswered": 20,
+          "marksObtained": 25,
+          "negativeMarks": 0,
+          "finalScore": 25,
+          "maxScore": 60
+        }
+      },
+      "isAutoSubmitted": true
+    },
+    {
+      "id": "matt_009_001_code",
+      "attemptId": "att_009_001",
+      "moduleId": "mod_009_code",
+      "status": "COMPLETED",
+      "startedAt": "2024-01-20T14:00:00.000Z",
+      "completedAt": "2024-01-20T16:45:00.000Z",
+      "expiresAt": "2024-01-20T17:00:00.000Z",
+      "timeSpentSeconds": 9900,
+      "score": 380,
+      "maxScore": 500,
+      "percentage": 76,
+      "isPassed": true,
+      "moduleData": {
+        "questions": [
+          {
+            "questionId": "mdq_009_code_001",
+            "machineQuestionId": "mq_010",
+            "displayOrder": 1,
+            "submissions": [
+              {
+                "id": "sub_010",
+                "code": "def valid_parentheses(s): stack = []; mapping = {')':'(', '}':'{', ']':'['}; for char in s: if char in mapping: if not stack or stack.pop() != mapping[char]: return False; else: stack.append(char); return len(stack) == 0",
+                "languageId": 71,
+                "languageName": "Python",
+                "status": "ACCEPTED",
+                "testCasesPassed": 15,
+                "testCasesTotal": 15,
+                "executionTime": 30,
+                "memoryUsed": 35000,
+                "stdout": null,
+                "stderr": null,
+                "compileError": null,
+                "submittedAt": "2024-01-20T14:25:00.000Z"
+              }
+            ],
+            "bestSubmissionId": "sub_010",
+            "bestScore": 100,
+            "isSolved": true
+          },
+          {
+            "questionId": "mdq_009_code_002",
+            "machineQuestionId": "mq_011",
+            "displayOrder": 2,
+            "submissions": [
+              {
+                "id": "sub_011",
+                "code": "def merge_intervals(intervals): intervals.sort(key=lambda x: x[0]); merged = [intervals[0]]; for start, end in intervals[1:]: if start <= merged[-1][1]: merged[-1][1] = max(merged[-1][1], end); else: merged.append([start, end]); return merged",
+                "languageId": 71,
+                "languageName": "Python",
+                "status": "ACCEPTED",
+                "testCasesPassed": 12,
+                "testCasesTotal": 12,
+                "executionTime": 45,
+                "memoryUsed": 40000,
+                "stdout": null,
+                "stderr": null,
+                "compileError": null,
+                "submittedAt": "2024-01-20T14:55:00.000Z"
+              }
+            ],
+            "bestSubmissionId": "sub_011",
+            "bestScore": 100,
+            "isSolved": true
+          },
+          {
+            "questionId": "mdq_009_code_003",
+            "machineQuestionId": "mq_012",
+            "displayOrder": 3,
+            "submissions": [
+              {
+                "id": "sub_012",
+                "code": "def lru_cache implementation...",
+                "languageId": 71,
+                "languageName": "Python",
+                "status": "ACCEPTED",
+                "testCasesPassed": 10,
+                "testCasesTotal": 10,
+                "executionTime": 80,
+                "memoryUsed": 55000,
+                "stdout": null,
+                "stderr": null,
+                "compileError": null,
+                "submittedAt": "2024-01-20T15:40:00.000Z"
+              }
+            ],
+            "bestSubmissionId": "sub_012",
+            "bestScore": 100,
+            "isSolved": true
+          },
+          {
+            "questionId": "mdq_009_code_004",
+            "machineQuestionId": "mq_013",
+            "displayOrder": 4,
+            "submissions": [
+              {
+                "id": "sub_013",
+                "code": "def word_break partial...",
+                "languageId": 71,
+                "languageName": "Python",
+                "status": "WRONG_ANSWER",
+                "testCasesPassed": 8,
+                "testCasesTotal": 15,
+                "executionTime": 200,
+                "memoryUsed": 60000,
+                "stdout": null,
+                "stderr": null,
+                "compileError": null,
+                "submittedAt": "2024-01-20T16:20:00.000Z"
+              }
+            ],
+            "bestSubmissionId": "sub_013",
+            "bestScore": 53,
+            "isSolved": false
+          },
+          {
+            "questionId": "mdq_009_code_005",
+            "machineQuestionId": "mq_014",
+            "displayOrder": 5,
+            "submissions": [
+              {
+                "id": "sub_014",
+                "code": "// Hard problem - partial attempt",
+                "languageId": 54,
+                "languageName": "C++",
+                "status": "WRONG_ANSWER",
+                "testCasesPassed": 3,
+                "testCasesTotal": 12,
+                "executionTime": 500,
+                "memoryUsed": 80000,
+                "stdout": null,
+                "stderr": null,
+                "compileError": null,
+                "submittedAt": "2024-01-20T16:40:00.000Z"
+              }
+            ],
+            "bestSubmissionId": "sub_014",
+            "bestScore": 27,
+            "isSolved": false
+          }
+        ],
+        "summary": {
+          "totalQuestions": 5,
+          "totalSolved": 3,
+          "totalPartial": 2,
+          "totalUnattempted": 0,
+          "totalScore": 380,
+          "maxScore": 500
+        }
+      },
+      "isAutoSubmitted": false
+    },
+    {
+      "id": "matt_009_002_code",
+      "attemptId": "att_009_002",
+      "moduleId": "mod_009_code",
+      "status": "COMPLETED",
+      "startedAt": "2024-01-20T14:00:00.000Z",
+      "completedAt": "2024-01-20T16:30:00.000Z",
+      "expiresAt": "2024-01-20T17:00:00.000Z",
+      "timeSpentSeconds": 9000,
+      "score": 320,
+      "maxScore": 500,
+      "percentage": 64,
+      "isPassed": true,
+      "moduleData": {
+        "questions": [],
+        "summary": {
+          "totalQuestions": 5,
+          "totalSolved": 3,
+          "totalPartial": 1,
+          "totalUnattempted": 1,
+          "totalScore": 320,
+          "maxScore": 500
+        }
+      },
+      "isAutoSubmitted": false
+    }
+  ],
+  "reports": [
+    {
+      "id": "rep_001_001",
+      "attemptId": "att_001_001",
+      "overallScore": 245.5,
+      "overallPercentage": 81.83,
+      "overallRank": 1,
+      "totalParticipants": 4,
+      "performanceSummary": "Excellent performance across all modules. Demonstrated strong aptitude skills, proficient coding abilities, and effective communication during the AI interview. Ranked 1st among all participants in this mock drive.",
+      "strengths": [
+        "Strong problem-solving skills in coding",
+        "Excellent aptitude score with minimal errors",
+        "Clear and confident communication in interview",
+        "Good time management across all modules"
+      ],
+      "weaknesses": [
+        "Partial solution on the third coding problem",
+        "Could improve depth in behavioral responses"
+      ],
+      "moduleFeedback": [
+        {
+          "moduleId": "mod_001_apt",
+          "moduleName": "Aptitude Assessment",
+          "moduleType": "APTITUDE",
+          "score": 24,
+          "maxScore": 30,
+          "percentage": 80,
+          "rank": 1,
+          "feedback": "Strong aptitude performance with 80% accuracy. Good balance across quantitative, verbal, and logical sections.",
+          "detailedAnalysis": {
+            "questionTypeWiseAnalysis": {
+              "QUANTITATIVE": {"correct": 9, "total": 10, "percentage": 90},
+              "VERBAL": {"correct": 8, "total": 10, "percentage": 80},
+              "LOGICAL": {"correct": 9, "total": 10, "percentage": 90}
+            },
+            "difficultyWiseAnalysis": {
+              "EASY": {"correct": 10, "total": 10, "percentage": 100},
+              "MEDIUM": {"correct": 10, "total": 12, "percentage": 83.33},
+              "HARD": {"correct": 6, "total": 8, "percentage": 75}
+            }
+          },
+          "recommendations": [
+            "Practice more verbal reasoning questions",
+            "Focus on hard difficulty problems"
+          ]
+        },
+        {
+          "moduleId": "mod_001_code",
+          "moduleName": "Coding Round",
+          "moduleType": "MACHINE_CODING",
+          "score": 250,
+          "maxScore": 300,
+          "percentage": 83.33,
+          "rank": 1,
+          "feedback": "Excellent coding skills demonstrated. Solved 2 out of 3 problems completely with optimal solutions.",
+          "detailedAnalysis": {
+            "problemWiseAnalysis": [
+              {"problem": "Two Sum", "score": 100, "maxScore": 100, "status": "Solved", "approach": "Optimal - Hash Map"},
+              {"problem": "Reverse Linked List", "score": 100, "maxScore": 100, "status": "Solved", "approach": "Iterative"},
+              {"problem": "Dynamic Programming Problem", "score": 50, "maxScore": 100, "status": "Partial", "approach": "Brute Force - TLE on some cases"}
+            ],
+            "languageUsed": ["JavaScript", "Python"]
+          },
+          "recommendations": [
+            "Practice dynamic programming problems",
+            "Work on optimizing time complexity",
+            "Try different approaches for complex problems"
+          ]
+        },
+        {
+          "moduleId": "mod_001_int",
+          "moduleName": "AI Interview",
+          "moduleType": "AI_INTERVIEW",
+          "score": 78,
+          "maxScore": 100,
+          "percentage": 78,
+          "rank": 1,
+          "feedback": "Strong interview performance with good communication and technical knowledge. Provided relevant examples and demonstrated problem-solving mindset.",
+          "detailedAnalysis": {
+            "categoryWiseScores": {
+              "INTRODUCTORY": 8.0,
+              "TECHNICAL": 8.7,
+              "BEHAVIORAL": 8.15,
+              "SITUATIONAL": 8.0,
+              "CLOSING": 8.0
+            },
+            "communicationScore": 8.5,
+            "confidenceScore": 8.0,
+            "technicalDepthScore": 8.7
+          },
+          "recommendations": [
+            "Provide more quantifiable achievements",
+            "Expand on leadership experiences",
+            "Practice STAR method for behavioral questions"
+          ]
+        }
+      ],
+      "percentile": 95.5,
+      "comparedToAverage": 15.3,
+      "recommendations": [
+        "Focus on dynamic programming and advanced algorithms",
+        "Practice hard difficulty aptitude questions",
+        "Prepare more specific examples for behavioral interviews",
+        "Continue building projects to showcase practical experience"
+      ],
+      "aiInsights": "Based on your performance, you are well-prepared for TCS NQT. Your coding skills are particularly strong. To improve further, focus on time optimization in complex problems and practice articulating your thought process during coding. Your interview skills are good but could benefit from more structured responses using frameworks like STAR."
+    },
+    {
+      "id": "rep_001_002",
+      "attemptId": "att_001_002",
+      "overallScore": 220.0,
+      "overallPercentage": 73.33,
+      "overallRank": 2,
+      "totalParticipants": 4,
+      "performanceSummary": "Good overall performance with consistent scores across modules. Strong in aptitude and basic coding but needs improvement in advanced problem-solving.",
+      "strengths": [
+        "Consistent performance",
+        "Good aptitude fundamentals",
+        "Completed all basic coding problems"
+      ],
+      "weaknesses": [
+        "Struggled with advanced coding problem",
+        "Interview responses lacked depth",
+        "Time management could be improved"
+      ],
+      "moduleFeedback": [
+        {
+          "moduleId": "mod_001_apt",
+          "moduleName": "Aptitude Assessment",
+          "moduleType": "APTITUDE",
+          "score": 22,
+          "maxScore": 30,
+          "percentage": 73.33,
+          "rank": 2,
+          "feedback": "Good aptitude performance. Some gaps in verbal reasoning section.",
+          "detailedAnalysis": {
+            "questionTypeWiseAnalysis": {
+              "QUANTITATIVE": {"correct": 8, "total": 10, "percentage": 80},
+              "VERBAL": {"correct": 6, "total": 10, "percentage": 60},
+              "LOGICAL": {"correct": 8, "total": 10, "percentage": 80}
+            }
+          },
+          "recommendations": ["Focus on verbal reasoning", "Practice reading comprehension"]
+        },
+        {
+          "moduleId": "mod_001_code",
+          "moduleName": "Coding Round",
+          "moduleType": "MACHINE_CODING",
+          "score": 200,
+          "maxScore": 300,
+          "percentage": 66.67,
+          "rank": 2,
+          "feedback": "Solved basic problems but struggled with the advanced one.",
+          "detailedAnalysis": {
+            "problemWiseAnalysis": [
+              {"problem": "Two Sum", "score": 100, "maxScore": 100, "status": "Solved"},
+              {"problem": "Reverse Linked List", "score": 100, "maxScore": 100, "status": "Solved"},
+              {"problem": "Advanced Problem", "score": 0, "maxScore": 100, "status": "Not Solved"}
+            ]
+          },
+          "recommendations": ["Practice medium-hard problems daily", "Learn more data structures"]
+        },
+        {
+          "moduleId": "mod_001_int",
+          "moduleName": "AI Interview",
+          "moduleType": "AI_INTERVIEW",
+          "score": 72,
+          "maxScore": 100,
+          "percentage": 72,
+          "rank": 2,
+          "feedback": "Decent interview but needs more depth in technical explanations.",
+          "detailedAnalysis": {},
+          "recommendations": ["Prepare detailed project explanations", "Practice technical concepts"]
+        }
+      ],
+      "percentile": 75.0,
+      "comparedToAverage": 6.83,
+      "recommendations": [
+        "Daily practice on coding platforms",
+        "Improve verbal aptitude skills",
+        "Work on complex problem-solving"
+      ],
+      "aiInsights": "You have a solid foundation. Focus on pushing beyond your comfort zone with harder problems. Your interview skills need more preparation around technical depth."
+    },
+    {
+      "id": "rep_008_001",
+      "attemptId": "att_008_001",
+      "overallScore": 48,
+      "overallPercentage": 80.0,
+      "overallRank": 1,
+      "totalParticipants": 3,
+      "performanceSummary": "Excellent aptitude performance. Strong across all question types with consistent accuracy.",
+      "strengths": [
+        "Strong quantitative skills",
+        "Good logical reasoning",
+        "Efficient time management"
+      ],
+      "weaknesses": [
+        "Some errors in verbal section"
+      ],
+      "moduleFeedback": [
+        {
+          "moduleId": "mod_008_apt",
+          "moduleName": "Complete Aptitude Test",
+          "moduleType": "APTITUDE",
+          "score": 48,
+          "maxScore": 60,
+          "percentage": 80,
+          "rank": 1,
+          "feedback": "Outstanding aptitude performance with 80% accuracy across 60 questions.",
+          "detailedAnalysis": {
+            "questionTypeWiseAnalysis": {
+              "QUANTITATIVE": {"correct": 18, "total": 20, "percentage": 90},
+              "VERBAL": {"correct": 14, "total": 20, "percentage": 70},
+              "LOGICAL": {"correct": 16, "total": 20, "percentage": 80}
+            }
+          },
+          "recommendations": ["Focus on verbal reasoning improvement"]
+        }
+      ],
+      "percentile": 90.0,
+      "comparedToAverage": 18.33,
+      "recommendations": [
+        "Maintain current preparation level",
+        "Work on verbal aptitude",
+        "Practice under timed conditions"
+      ],
+      "aiInsights": "Your aptitude skills are strong. You're well-prepared for aptitude rounds of placement tests."
+    },
+    {
+      "id": "rep_009_001",
+      "attemptId": "att_009_001",
+      "overallScore": 380,
+      "overallPercentage": 76.0,
+      "overallRank": 1,
+      "totalParticipants": 2,
+      "performanceSummary": "Strong coding performance. Solved 3 problems completely with efficient solutions. Good problem-solving approach.",
+      "strengths": [
+        "Excellent grasp of fundamental DSA",
+        "Clean and efficient code",
+        "Good understanding of data structures"
+      ],
+      "weaknesses": [
+        "Struggled with advanced DP problems",
+        "Time management on hard problems"
+      ],
+      "moduleFeedback": [
+        {
+          "moduleId": "mod_009_code",
+          "moduleName": "DSA Challenge",
+          "moduleType": "MACHINE_CODING",
+          "score": 380,
+          "maxScore": 500,
+          "percentage": 76,
+          "rank": 1,
+          "feedback": "Great coding performance. Showed strong understanding of stacks, arrays, and basic algorithms.",
+          "detailedAnalysis": {
+            "problemWiseAnalysis": [
+              {"problem": "Valid Parentheses", "score": 100, "difficulty": "EASY"},
+              {"problem": "Merge Intervals", "score": 100, "difficulty": "MEDIUM"},
+              {"problem": "LRU Cache", "score": 100, "difficulty": "MEDIUM"},
+              {"problem": "Word Break", "score": 53, "difficulty": "HARD"},
+              {"problem": "Hard DP Problem", "score": 27, "difficulty": "HARD"}
+            ],
+            "languageUsed": ["Python", "C++"]
+          },
+          "recommendations": [
+            "Practice dynamic programming daily",
+            "Study advanced algorithms",
+            "Work on optimization techniques"
+          ]
+        }
+      ],
+      "percentile": 85.0,
+      "comparedToAverage": 12.0,
+      "recommendations": [
+        "Focus on hard LeetCode problems",
+        "Study DP patterns thoroughly",
+        "Practice system design basics"
+      ],
+      "aiInsights": "Your coding fundamentals are solid. To crack top tech companies, focus intensively on dynamic programming and graph algorithms."
+    }
+  ],
+  "leaderboard": [
+    {
+      "id": "lb_001_001",
+      "mockDriveId": "md_001_completed_full",
+      "batchId": null,
+      "userEmail": "vu1f2223001@pvppcoe.ac.in",
+      "studentName": "Student 001",
+      "studentId": "VU1F2223001",
+      "department": "Computer Engineering",
+      "totalScore": 245.5,
+      "percentageScore": 81.83,
+      "rank": 1,
+      "moduleScores": [
+        {"moduleId": "mod_001_apt", "moduleType": "APTITUDE", "moduleName": "Aptitude Assessment", "score": 24, "maxScore": 30, "percentage": 80},
+        {"moduleId": "mod_001_code", "moduleType": "MACHINE_CODING", "moduleName": "Coding Round", "score": 250, "maxScore": 300, "percentage": 83.33},
+        {"moduleId": "mod_001_int", "moduleType": "AI_INTERVIEW", "moduleName": "AI Interview", "score": 78, "maxScore": 100, "percentage": 78}
+      ],
+      "totalTimeTaken": 12600,
+      "completedAt": "2024-01-15T12:30:00.000Z"
+    },
+    {
+      "id": "lb_001_002",
+      "mockDriveId": "md_001_completed_full",
+      "batchId": null,
+      "userEmail": "vu1f2223002@pvppcoe.ac.in",
+      "studentName": "Student 002",
+      "studentId": "VU1F2223002",
+      "department": "Computer Engineering",
+      "totalScore": 220.0,
+      "percentageScore": 73.33,
+      "rank": 2,
+      "moduleScores": [
+        {"moduleId": "mod_001_apt", "moduleType": "APTITUDE", "moduleName": "Aptitude Assessment", "score": 22, "maxScore": 30, "percentage": 73.33},
+        {"moduleId": "mod_001_code", "moduleType": "MACHINE_CODING", "moduleName": "Coding Round", "score": 200, "maxScore": 300, "percentage": 66.67},
+        {"moduleId": "mod_001_int", "moduleType": "AI_INTERVIEW", "moduleName": "AI Interview", "score": 72, "maxScore": 100, "percentage": 72}
+      ],
+      "totalTimeTaken": 13500,
+      "completedAt": "2024-01-15T12:45:00.000Z"
+    },
+    {
+      "id": "lb_001_003",
+      "mockDriveId": "md_001_completed_full",
+      "batchId": null,
+      "userEmail": "vu1f2223005@pvppcoe.ac.in",
+      "studentName": "Student 005",
+      "studentId": "VU1F2223005",
+      "department": "Computer Engineering",
+      "totalScore": 195.5,
+      "percentageScore": 65.17,
+      "rank": 3,
+      "moduleScores": [
+        {"moduleId": "mod_001_apt", "moduleType": "APTITUDE", "moduleName": "Aptitude Assessment", "score": 18, "maxScore": 30, "percentage": 60},
+        {"moduleId": "mod_001_code", "moduleType": "MACHINE_CODING", "moduleName": "Coding Round", "score": 180, "maxScore": 300, "percentage": 60},
+        {"moduleId": "mod_001_int", "moduleType": "AI_INTERVIEW", "moduleName": "AI Interview", "score": 65, "maxScore": 100, "percentage": 65}
+      ],
+      "totalTimeTaken": 13500,
+      "completedAt": "2024-01-15T12:50:00.000Z"
+    },
+    {
+      "id": "lb_001_004",
+      "mockDriveId": "md_001_completed_full",
+      "batchId": null,
+      "userEmail": "vu1f2223003@pvppcoe.ac.in",
+      "studentName": "Student 003",
+      "studentId": "VU1F2223003",
+      "department": "Information Technology",
+      "totalScore": 150.0,
+      "percentageScore": 50.0,
+      "rank": 4,
+      "moduleScores": [
+        {"moduleId": "mod_001_apt", "moduleType": "APTITUDE", "moduleName": "Aptitude Assessment", "score": 15, "maxScore": 30, "percentage": 50},
+        {"moduleId": "mod_001_code", "moduleType": "MACHINE_CODING", "moduleName": "Coding Round", "score": 120, "maxScore": 300, "percentage": 40},
+        {"moduleId": "mod_001_int", "moduleType": "AI_INTERVIEW", "moduleName": "AI Interview", "score": 55, "maxScore": 100, "percentage": 55}
+      ],
+      "totalTimeTaken": 12600,
+      "completedAt": "2024-01-15T17:30:00.000Z"
+    },
+    {
+      "id": "lb_001_b1_001",
+      "mockDriveId": "md_001_completed_full",
+      "batchId": "batch_001_a",
+      "userEmail": "vu1f2223001@pvppcoe.ac.in",
+      "studentName": "Student 001",
+      "studentId": "VU1F2223001",
+      "department": "Computer Engineering",
+      "totalScore": 245.5,
+      "percentageScore": 81.83,
+      "rank": 1,
+      "moduleScores": [
+        {"moduleId": "mod_001_apt", "moduleType": "APTITUDE", "moduleName": "Aptitude Assessment", "score": 24, "maxScore": 30, "percentage": 80},
+        {"moduleId": "mod_001_code", "moduleType": "MACHINE_CODING", "moduleName": "Coding Round", "score": 250, "maxScore": 300, "percentage": 83.33},
+        {"moduleId": "mod_001_int", "moduleType": "AI_INTERVIEW", "moduleName": "AI Interview", "score": 78, "maxScore": 100, "percentage": 78}
+      ],
+      "totalTimeTaken": 12600,
+      "completedAt": "2024-01-15T12:30:00.000Z"
+    },
+    {
+      "id": "lb_001_b1_002",
+      "mockDriveId": "md_001_completed_full",
+      "batchId": "batch_001_a",
+      "userEmail": "vu1f2223002@pvppcoe.ac.in",
+      "studentName": "Student 002",
+      "studentId": "VU1F2223002",
+      "department": "Computer Engineering",
+      "totalScore": 220.0,
+      "percentageScore": 73.33,
+      "rank": 2,
+      "moduleScores": [
+        {"moduleId": "mod_001_apt", "moduleType": "APTITUDE", "moduleName": "Aptitude Assessment", "score": 22, "maxScore": 30, "percentage": 73.33},
+        {"moduleId": "mod_001_code", "moduleType": "MACHINE_CODING", "moduleName": "Coding Round", "score": 200, "maxScore": 300, "percentage": 66.67},
+        {"moduleId": "mod_001_int", "moduleType": "AI_INTERVIEW", "moduleName": "AI Interview", "score": 72, "maxScore": 100, "percentage": 72}
+      ],
+      "totalTimeTaken": 13500,
+      "completedAt": "2024-01-15T12:45:00.000Z"
+    },
+    {
+      "id": "lb_001_b1_003",
+      "mockDriveId": "md_001_completed_full",
+      "batchId": "batch_001_a",
+      "userEmail": "vu1f2223005@pvppcoe.ac.in",
+      "studentName": "Student 005",
+      "studentId": "VU1F2223005",
+      "department": "Computer Engineering",
+      "totalScore": 195.5,
+      "percentageScore": 65.17,
+      "rank": 3,
+      "moduleScores": [
+        {"moduleId": "mod_001_apt", "moduleType": "APTITUDE", "moduleName": "Aptitude Assessment", "score": 18, "maxScore": 30, "percentage": 60},
+        {"moduleId": "mod_001_code", "moduleType": "MACHINE_CODING", "moduleName": "Coding Round", "score": 180, "maxScore": 300, "percentage": 60},
+        {"moduleId": "mod_001_int", "moduleType": "AI_INTERVIEW", "moduleName": "AI Interview", "score": 65, "maxScore": 100, "percentage": 65}
+      ],
+      "totalTimeTaken": 13500,
+      "completedAt": "2024-01-15T12:50:00.000Z"
+    },
+    {
+      "id": "lb_001_b2_001",
+      "mockDriveId": "md_001_completed_full",
+      "batchId": "batch_001_b",
+      "userEmail": "vu1f2223003@pvppcoe.ac.in",
+      "studentName": "Student 003",
+      "studentId": "VU1F2223003",
+      "department": "Information Technology",
+      "totalScore": 150.0,
+      "percentageScore": 50.0,
+      "rank": 1,
+      "moduleScores": [
+        {"moduleId": "mod_001_apt", "moduleType": "APTITUDE", "moduleName": "Aptitude Assessment", "score": 15, "maxScore": 30, "percentage": 50},
+        {"moduleId": "mod_001_code", "moduleType": "MACHINE_CODING", "moduleName": "Coding Round", "score": 120, "maxScore": 300, "percentage": 40},
+        {"moduleId": "mod_001_int", "moduleType": "AI_INTERVIEW", "moduleName": "AI Interview", "score": 55, "maxScore": 100, "percentage": 55}
+      ],
+      "totalTimeTaken": 12600,
+      "completedAt": "2024-01-15T17:30:00.000Z"
+    },
+    {
+      "id": "lb_008_001",
+      "mockDriveId": "md_008_aptitude_only",
+      "batchId": null,
+      "userEmail": "vu1f2223001@pvppcoe.ac.in",
+      "studentName": "Student 001",
+      "studentId": "VU1F2223001",
+      "department": "Computer Engineering",
+      "totalScore": 48,
+      "percentageScore": 80.0,
+      "rank": 1,
+      "moduleScores": [
+        {"moduleId": "mod_008_apt", "moduleType": "APTITUDE", "moduleName": "Complete Aptitude Test", "score": 48, "maxScore": 60, "percentage": 80}
+      ],
+      "totalTimeTaken": 3300,
+      "completedAt": "2024-01-10T10:55:00.000Z"
+    },
+    {
+      "id": "lb_008_002",
+      "mockDriveId": "md_008_aptitude_only",
+      "batchId": null,
+      "userEmail": "vu1f2223011@pvppcoe.ac.in",
+      "studentName": "Student 011",
+      "studentId": "VU1F2223011",
+      "department": "Computer Engineering",
+      "totalScore": 42,
+      "percentageScore": 70.0,
+      "rank": 2,
+      "moduleScores": [
+        {"moduleId": "mod_008_apt", "moduleType": "APTITUDE", "moduleName": "Complete Aptitude Test", "score": 42, "maxScore": 60, "percentage": 70}
+      ],
+      "totalTimeTaken": 3480,
+      "completedAt": "2024-01-10T10:58:00.000Z"
+    },
+    {
+      "id": "lb_008_003",
+      "mockDriveId": "md_008_aptitude_only",
+      "batchId": null,
+      "userEmail": "vu1f2223012@pvppcoe.ac.in",
+      "studentName": "Student 012",
+      "studentId": "VU1F2223012",
+      "department": "Computer Engineering",
+      "totalScore": 25,
+      "percentageScore": 41.67,
+      "rank": 3,
+      "moduleScores": [
+        {"moduleId": "mod_008_apt", "moduleType": "APTITUDE", "moduleName": "Complete Aptitude Test", "score": 25, "maxScore": 60, "percentage": 41.67}
+      ],
+      "totalTimeTaken": 3600,
+      "completedAt": "2024-01-10T11:00:00.000Z"
+    },
+    {
+      "id": "lb_009_001",
+      "mockDriveId": "md_009_coding_only",
+      "batchId": null,
+      "userEmail": "vu1f2223001@pvppcoe.ac.in",
+      "studentName": "Student 001",
+      "studentId": "VU1F2223001",
+      "department": "Computer Engineering",
+      "totalScore": 380,
+      "percentageScore": 76.0,
+      "rank": 1,
+      "moduleScores": [
+        {"moduleId": "mod_009_code", "moduleType": "MACHINE_CODING", "moduleName": "DSA Challenge", "score": 380, "maxScore": 500, "percentage": 76}
+      ],
+      "totalTimeTaken": 9900,
+      "completedAt": "2024-01-20T16:45:00.000Z"
+    },
+    {
+      "id": "lb_009_002",
+      "mockDriveId": "md_009_coding_only",
+      "batchId": null,
+      "userEmail": "vu1f2223013@pvppcoe.ac.in",
+      "studentName": "Student 013",
+      "studentId": "VU1F2223013",
+      "department": "Computer Engineering",
+      "totalScore": 320,
+      "percentageScore": 64.0,
+      "rank": 2,
+      "moduleScores": [
+        {"moduleId": "mod_009_code", "moduleType": "MACHINE_CODING", "moduleName": "DSA Challenge", "score": 320, "maxScore": 500, "percentage": 64}
+      ],
+      "totalTimeTaken": 9000,
+      "completedAt": "2024-01-20T16:30:00.000Z"
+    }
+  ]
+}

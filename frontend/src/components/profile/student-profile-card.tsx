@@ -2,6 +2,7 @@
 
 'use client';
 
+import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -12,125 +13,210 @@ import {
   Pencil,
   FileText,
   ExternalLink,
+  User,
+  Hash,
+  Calendar,
+  TrendingUp,
+  Sparkles,
+  ArrowRight,
 } from 'lucide-react';
 import { useProfile } from '@/lib/hooks/use-profile';
 import Link from 'next/link';
+import { cn } from '@/lib/utils';
 
 export function StudentProfileCard() {
   const { studentProfile } = useProfile();
 
   if (!studentProfile) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Student Profile</CardTitle>
-        </CardHeader>
-        <CardContent className="text-center py-8">
-          <GraduationCap className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-          <p className="text-muted-foreground mb-4">
-            No student profile created yet
-          </p>
-          <Button asChild>
-            <Link href="/profile/student/create">Create Profile</Link>
-          </Button>
+      <Card className="overflow-hidden">
+        <CardContent className="p-0">
+          {/* Empty State Hero */}
+          <div className="relative bg-gradient-to-br from-primary/10 via-primary/5 to-transparent p-8 text-center">
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ type: 'spring', stiffness: 200, damping: 15 }}
+              className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-primary/10"
+            >
+              <GraduationCap className="h-10 w-10 text-primary" />
+            </motion.div>
+            <h3 className="mb-2 text-xl font-semibold">Create Your Student Profile</h3>
+            <p className="mx-auto mb-6 max-w-sm text-muted-foreground">
+              Add your academic details to unlock personalized opportunities and recommendations
+            </p>
+            <Button asChild size="lg" className="gap-2">
+              <Link href="/profile/student/create">
+                Get Started
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </Button>
+          </div>
+
+          {/* Features */}
+          <div className="grid grid-cols-3 divide-x border-t">
+            {[
+              { icon: Award, label: 'Track Academics' },
+              { icon: Sparkles, label: 'Get Matched' },
+              { icon: TrendingUp, label: 'Grow Skills' },
+            ].map((feature, index) => (
+              <div
+                key={index}
+                className="flex flex-col items-center gap-2 p-4 text-center text-muted-foreground"
+              >
+                <feature.icon className="h-5 w-5" />
+                <span className="text-xs font-medium">{feature.label}</span>
+              </div>
+            ))}
+          </div>
         </CardContent>
       </Card>
     );
   }
 
+  const getGradeColor = (value: number | null, max: number = 100) => {
+    if (!value) return 'text-muted-foreground';
+    const percentage = (value / max) * 100;
+    if (percentage >= 80) return 'text-emerald-600 dark:text-emerald-400';
+    if (percentage >= 60) return 'text-amber-600 dark:text-amber-400';
+    return 'text-rose-600 dark:text-rose-400';
+  };
+
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="text-lg">Student Profile</CardTitle>
-        <Button variant="ghost" size="sm" asChild>
-          <Link href="/profile/student/edit">
-            <Pencil className="h-4 w-4 mr-2" />
-            Edit
-          </Link>
-        </Button>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Basic Info */}
+    <Card className="overflow-hidden">
+      {/* Header with Gradient */}
+      <div className="relative bg-gradient-to-r from-primary/10 via-primary/5 to-transparent px-6 py-5">
+        <div className="flex items-start justify-between">
+          <div className="flex items-center gap-4">
+            <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-lg">
+              <GraduationCap className="h-7 w-7" />
+            </div>
+            <div>
+              <h2 className="text-xl font-semibold">{studentProfile.fullName}</h2>
+              <div className="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
+                <Hash className="h-3.5 w-3.5" />
+                {studentProfile.studentId}
+              </div>
+            </div>
+          </div>
+          <Button variant="ghost" size="sm" asChild className="gap-1.5">
+            <Link href="/profile/student/edit">
+              <Pencil className="h-4 w-4" />
+              Edit
+            </Link>
+          </Button>
+        </div>
+      </div>
+
+      <CardContent className="p-6 space-y-6">
+        {/* Info Grid */}
         <div className="grid grid-cols-2 gap-4">
-          <div>
-            <p className="text-sm text-muted-foreground">Full Name</p>
-            <p className="font-medium">{studentProfile.fullName}</p>
+          <div className="flex items-center gap-3 rounded-lg bg-muted/50 p-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-background">
+              <BookOpen className="h-4 w-4 text-muted-foreground" />
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Department</p>
+              <p className="font-medium text-sm">{studentProfile.department}</p>
+            </div>
           </div>
-          <div>
-            <p className="text-sm text-muted-foreground">Student ID</p>
-            <p className="font-medium">{studentProfile.studentId}</p>
-          </div>
-          <div>
-            <p className="text-sm text-muted-foreground">Department</p>
-            <p className="font-medium flex items-center gap-2">
-              <BookOpen className="h-4 w-4" />
-              {studentProfile.department}
-            </p>
-          </div>
-          <div>
-            <p className="text-sm text-muted-foreground">Course Year</p>
-            <p className="font-medium flex items-center gap-2">
-              <GraduationCap className="h-4 w-4" />
-              {studentProfile.courseYear}
-            </p>
+          <div className="flex items-center gap-3 rounded-lg bg-muted/50 p-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-background">
+              <Calendar className="h-4 w-4 text-muted-foreground" />
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Year</p>
+              <p className="font-medium text-sm">{studentProfile.courseYear}</p>
+            </div>
           </div>
         </div>
 
-        {/* Academic Marks */}
-        <div className="pt-4 border-t">
-          <p className="text-sm text-muted-foreground mb-2 flex items-center gap-2">
-            <Award className="h-4 w-4" />
-            Academic Performance
-          </p>
-          <div className="grid grid-cols-3 gap-4 text-center">
-            <div className="p-3 bg-muted rounded-lg">
-              <p className="text-2xl font-bold">
-                {studentProfile.marks10?.toFixed(1) || '-'}
-              </p>
-              <p className="text-xs text-muted-foreground">10th %</p>
-            </div>
-            <div className="p-3 bg-muted rounded-lg">
-              <p className="text-2xl font-bold">
-                {studentProfile.marks12?.toFixed(1) || '-'}
-              </p>
-              <p className="text-xs text-muted-foreground">12th %</p>
-            </div>
-            <div className="p-3 bg-muted rounded-lg">
-              <p className="text-2xl font-bold">
-                {studentProfile.averageCgpa?.toFixed(2) || '-'}
-              </p>
-              <p className="text-xs text-muted-foreground">Avg CGPA</p>
-            </div>
+        {/* Academic Performance */}
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <Award className="h-4 w-4 text-muted-foreground" />
+            <h3 className="text-sm font-medium">Academic Performance</h3>
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            {[
+              { label: '10th', value: studentProfile.marks10, max: 100, suffix: '%' },
+              { label: '12th', value: studentProfile.marks12, max: 100, suffix: '%' },
+              { label: 'CGPA', value: studentProfile.averageCgpa, max: 10, suffix: '' },
+            ].map((item) => (
+              <motion.div
+                key={item.label}
+                whileHover={{ scale: 1.02 }}
+                className="relative overflow-hidden rounded-xl bg-muted/50 p-4 text-center"
+              >
+                <p className={cn('text-2xl font-bold', getGradeColor(item.value, item.max))}>
+                  {item.value?.toFixed(item.suffix === '%' ? 1 : 2) || '-'}
+                  <span className="text-sm font-normal text-muted-foreground">{item.suffix}</span>
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">{item.label}</p>
+                {item.value && (
+                  <div className="absolute bottom-0 left-0 right-0 h-1 bg-muted">
+                    <motion.div
+                      className={cn(
+                        'h-full',
+                        getGradeColor(item.value, item.max).replace('text-', 'bg-')
+                      )}
+                      initial={{ width: 0 }}
+                      animate={{ width: `${Math.min((item.value / item.max) * 100, 100)}%` }}
+                      transition={{ duration: 0.5, delay: 0.2 }}
+                    />
+                  </div>
+                )}
+              </motion.div>
+            ))}
           </div>
         </div>
 
         {/* Skills */}
         {studentProfile.skills.length > 0 && (
-          <div className="pt-4 border-t">
-            <p className="text-sm text-muted-foreground mb-2">Skills</p>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-muted-foreground" />
+                <h3 className="text-sm font-medium">Skills</h3>
+              </div>
+              <Badge variant="secondary" className="text-xs">
+                {studentProfile.skills.length}
+              </Badge>
+            </div>
             <div className="flex flex-wrap gap-2">
-              {studentProfile.skills.map((skill) => (
-                <Badge key={skill} variant="secondary">
+              {studentProfile.skills.slice(0, 8).map((skill) => (
+                <Badge key={skill} variant="outline" className="font-normal">
                   {skill}
                 </Badge>
               ))}
+              {studentProfile.skills.length > 8 && (
+                <Badge variant="secondary">+{studentProfile.skills.length - 8} more</Badge>
+              )}
             </div>
           </div>
         )}
 
         {/* Linked Resume */}
         {studentProfile.resumeUrl && (
-          <div className="pt-4 border-t">
-            <p className="text-sm text-muted-foreground mb-2">Linked Resume</p>
+          <div className="rounded-xl border bg-muted/30 p-4">
             <a
               href={studentProfile.resumeUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-2 text-sm text-primary hover:underline"
+              className="group flex items-center justify-between"
             >
-              <FileText className="h-4 w-4" />
-              {studentProfile.resumeName || 'View Resume'}
-              <ExternalLink className="h-3 w-3" />
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                  <FileText className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="font-medium group-hover:text-primary transition-colors">
+                    {studentProfile.resumeName || 'View Resume'}
+                  </p>
+                  <p className="text-xs text-muted-foreground">Linked to profile</p>
+                </div>
+              </div>
+              <ExternalLink className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-primary" />
             </a>
           </div>
         )}

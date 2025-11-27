@@ -1,11 +1,11 @@
-// src/app/(auth)/login/page.tsx
 import { Suspense } from 'react';
 import Link from 'next/link';
-import { LoginForm } from '../../../components/auth/login-form';
+import type { Metadata } from 'next';
+import { LoginForm } from '@/components/auth/login-form';
 
-export const metadata = {
+export const metadata: Metadata = {
   title: 'Login | Preplyte',
-  description: 'Login to your account',
+  description: 'Login to your Preplyte account',
 };
 
 export default function LoginPage() {
@@ -28,31 +28,23 @@ export default function LoginPage() {
         </div>
 
         {/* Form */}
-        <Suspense fallback={<FormSkeleton />}>
+        <Suspense fallback={<FormSkeleton rows={3} />}>
           <LoginForm />
         </Suspense>
-
-        {/* Footer */}
-        <p className="mt-8 text-center text-sm text-muted-foreground">
-          Don't have an account?{' '}
-          <Link
-            href="/register"
-            className="font-medium text-foreground underline-offset-4 hover:underline"
-          >
-            Sign up
-          </Link>
-        </p>
       </div>
     </div>
   );
 }
 
-function FormSkeleton() {
+function FormSkeleton({ rows }: { rows: number }) {
   return (
     <div className="space-y-4">
-      <div className="h-10 w-full animate-pulse rounded-md bg-secondary" />
-      <div className="h-10 w-full animate-pulse rounded-md bg-secondary" />
-      <div className="h-10 w-full animate-pulse rounded-md bg-secondary" />
+      {Array.from({ length: rows }).map((_, i) => (
+        <div
+          key={i}
+          className="h-11 w-full animate-pulse rounded-md bg-secondary"
+        />
+      ))}
     </div>
   );
 }

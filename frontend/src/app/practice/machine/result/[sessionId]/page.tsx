@@ -4,11 +4,11 @@
 
 import { useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { motion } from "framer-motion";
 import { useMachine } from "../../../../../lib/hooks/use-machine";
 import { SessionResult } from "../../../../../components/practice/machine/session-result";
 import { Button } from "../../../../../components/ui/button";
-import { Card, CardContent } from "../../../../../components/ui/card";
-import { Loader2, AlertCircle, ArrowLeft } from "lucide-react";
+import { Loader2, AlertCircle, ArrowLeft, Brain } from "lucide-react";
 import Link from "next/link";
 
 export default function MachineResultPage() {
@@ -32,55 +32,58 @@ export default function MachineResultPage() {
     };
   }, [resetSession]);
 
-  // Loading state
   if (isLoading || !result) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="mx-auto h-6 w-6 animate-spin text-muted-foreground" />
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="text-center"
+        >
+          <div className="relative mx-auto h-16 w-16">
+            <div className="absolute inset-0 animate-ping rounded-full bg-primary/20" />
+            <div className="relative flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+              <Brain className="h-8 w-8 text-primary" />
+            </div>
+          </div>
           <p className="mt-4 text-sm text-muted-foreground">Loading results...</p>
-        </div>
+        </motion.div>
       </div>
     );
   }
 
-  // Error state
   if (error) {
     return (
       <div className="container max-w-md py-20">
-        <Card className="border-border">
-          <CardContent className="py-12 text-center">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-secondary">
-              <AlertCircle className="h-6 w-6 text-muted-foreground" />
-            </div>
-            <h2 className="mb-2 text-lg font-semibold">Error Loading Results</h2>
-            <p className="mb-6 text-sm text-muted-foreground">{error}</p>
-            <Button asChild variant="outline">
-              <Link href="/practice/machine">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Practice
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="rounded-2xl bg-muted/30 p-12 text-center"
+        >
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-rose-500/10">
+            <AlertCircle className="h-6 w-6 text-rose-500" />
+          </div>
+          <h2 className="mb-2 text-lg font-semibold">Error Loading Results</h2>
+          <p className="mb-6 text-sm text-muted-foreground">{error}</p>
+          <Button asChild variant="outline">
+            <Link href="/practice/machine">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Practice
+            </Link>
+          </Button>
+        </motion.div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Background gradient */}
-      <div className="absolute inset-x-0 top-0 -z-10 h-64 bg-gradient-to-b from-secondary/50 to-transparent" />
+    <div className="relative min-h-screen bg-background">
+      {/* Background effects */}
+      <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+        <div className="absolute -top-1/2 left-1/2 h-[800px] w-[800px] -translate-x-1/2 rounded-full bg-gradient-to-b from-primary/5 to-transparent blur-3xl" />
+      </div>
 
       <div className="container py-12 lg:py-16">
-        {/* Page Header */}
-        <div className="mb-10 text-center">
-          <h1 className="mb-2 text-3xl font-semibold tracking-tight">Session Complete</h1>
-          <p className="text-muted-foreground">
-            Here&apos;s a detailed breakdown of your performance
-          </p>
-        </div>
-
         <SessionResult result={result} />
       </div>
     </div>

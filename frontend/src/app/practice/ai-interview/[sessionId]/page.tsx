@@ -1,106 +1,60 @@
 // src/app/practice/ai-interview/[sessionId]/page.tsx
 
-"use client";
+'use client';
 
-import { useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
-import { Loader2, AlertCircle, ArrowLeft } from "lucide-react";
-import { InterviewSession } from "../../../../components/practice/ai-interview/interview-session";
-import { useInterview } from "../../../../lib/hooks/use-interview";
-import { Button } from "../../../../components/ui/button";
+import { useEffect } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import { InterviewRoom } from '@/components/practice/ai-interview';
+import { useInterviewSession } from '@/lib/hooks/use-interview';
+import { useInterviewStore } from '@/lib/store/interview-store';
+import { Loader2 } from 'lucide-react';
 
 export default function InterviewSessionPage() {
   const params = useParams();
   const router = useRouter();
-  const sessionId = params?.sessionId as string;
+  const sessionId = params.sessionId as string;
 
-  const {
-    status,
-    loading,
-    error,
-    currentQuestionIndex,
-    currentQuestionText,
-    currentCategory,
-    currentTranscript,
-    fullTranscript,
-    silenceTimer,
-    isRecording,
-    isAiSpeaking,
-    isProcessing,
-    micPermission,
-    totalQuestions,
-    progress,
-    context,
-    stopRecording,
-    startRecording,
-    submitAnswer,
-    endSession,
-  } = useInterview();
+  const { data: session, isLoading, error } = useInterviewSession(sessionId);
+  const { reset } = useInterviewStore();
 
+  // Reset store on mount
   useEffect(() => {
-    if (!sessionId) {
-      router.push("/practice/ai-interview");
+    return () => {
+      reset();
+    };
+  }, [reset]);
+
+  // Redirect if session is completed
+  useEffect(() => {
+    if (session?.status === 'COMPLETED') {
+      router.replace(`/practice/ai-interview/results/${sessionId}`);
     }
-  }, [sessionId, router]);
+  }, [session?.status, sessionId, router]);
 
-  if (loading) {
+  if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen">
-        <div className="h-12 w-12 rounded-full border border-border flex items-center justify-center mb-4">
-          <Loader2 className="h-5 w-5 animate-spin" />
-        </div>
-        <p className="text-sm text-muted-foreground">Loading session...</p>
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
 
-  if (error && status === "ERROR") {
+  if (error || !session) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen">
-        <div className="text-center space-y-4 max-w-sm">
-          <div className="h-12 w-12 rounded-full border border-border flex items-center justify-center mx-auto">
-            <AlertCircle className="h-5 w-5" />
-          </div>
-          <div className="space-y-1">
-            <h2 className="font-semibold">Session Error</h2>
-            <p className="text-sm text-muted-foreground">{error}</p>
-          </div>
-          <Button
-            onClick={() => router.push("/practice/ai-interview")}
-            variant="outline"
-            size="sm"
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Go Back
-          </Button>
-        </div>
+      <div className="flex flex-col items-center justify-center min-h-screen gap-4">
+        <h1 className="text-2xl font-bold">Session Not Found</h1>
+        <p className="text-muted-foreground">
+          The interview session you're looking for doesn't exist or has expired.
+        </p>
+        <button
+          onClick={() => router.push('/practice/ai-interview')}
+          className="text-primary hover:underline"
+        >
+          Start a new interview
+        </button>
       </div>
     );
   }
 
-  return (
-    <div className="h-screen overflow-hidden">
-      <InterviewSession
-        status={status}
-        currentQuestionText={currentQuestionText}
-        currentCategory={currentCategory}
-        currentQuestionIndex={currentQuestionIndex}
-        totalQuestions={totalQuestions}
-        currentTranscript={currentTranscript}
-        fullTranscript={fullTranscript}
-        silenceTimer={silenceTimer}
-        error={error}
-        isRecording={isRecording}
-        isAiSpeaking={isAiSpeaking}
-        isProcessing={isProcessing}
-        micPermission={micPermission}
-        progress={progress}
-        context={context}
-        onStopRecording={stopRecording}
-        onStartRecording={startRecording}
-        onSubmitAnswer={submitAnswer}
-        onEndSession={endSession}
-      />
-    </div>
-  );
+  return <InterviewRoom sessionId={sessionId} />;
 }

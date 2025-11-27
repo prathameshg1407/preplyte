@@ -87,4 +87,32 @@ export const useProfileData = () => {
   return rest;
 };
 
+// Hook specifically for resumes - auto-fetches on mount
+export const useResumes = () => {
+  const store = useProfileStore();
+
+  useEffect(() => {
+    // Only fetch if we don't have resumes and aren't already loading
+    if (store.resumes.length === 0 && !store.isLoading) {
+      store.fetchResumes();
+    }
+  }, [store]);
+
+  return {
+    data: {
+      resumes: store.resumes,
+      count: store.resumeCount,
+      maxResumes: store.maxResumes,
+    },
+    isLoading: store.isLoading,
+    error: store.error,
+    refetch: store.fetchResumes,
+    uploadResume: store.uploadResume,
+    deleteResume: store.deleteResume,
+    setDefaultResume: store.setDefaultResume,
+    isUploadingResume: store.isUploadingResume,
+    canUploadMore: store.resumeCount < store.maxResumes,
+  };
+};
+
 export default useProfile;

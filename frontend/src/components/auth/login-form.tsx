@@ -1,94 +1,144 @@
-// src/components/auth/login-form.tsx
 'use client';
 
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
 import { useState } from 'react';
-import { loginSchema, LoginFormData } from '../../lib/validations/auth.schema';
-import { useAuth } from '../../lib/hooks/use-auth';
-import { Button } from '../ui/button';
-import { Input } from '../ui/input';
-import { Label } from '../ui/label';
-import { Loader2, Eye, EyeOff } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { loginSchema, type LoginFormData } from '@/lib/validations/auth.schema';
+import { useAuth } from '@/lib/hooks/use-auth';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Loader2, Eye, EyeOff, AlertCircle, Mail, Lock } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 export function LoginForm() {
-  const { login } = useAuth();
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { login, isLoading } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const {
     register,
     handleSubmit,
-    formState: { errors },
+    formState: { errors, isSubmitting },
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: '',
+      password: '',
+    },
   });
 
   const onSubmit = async (data: LoginFormData) => {
-    setIsSubmitting(true);
     setError(null);
-    try {
-      await login(data);
-    } catch (err) {
+    
+    const success = await login(data);
+    
+    if (!success) {
       setError('Invalid email or password. Please try again.');
-    } finally {
-      setIsSubmitting(false);
     }
+    // Navigation is handled in useAuth hook on success
   };
 
+  const isDisabled = isSubmitting || isLoading;
+
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+    <motion.form
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+      onSubmit={handleSubmit(onSubmit)}
+      className="space-y-5"
+    >
       {/* Error Message */}
-      {error && (
-        <div className="rounded-lg border border-border bg-secondary/50 px-4 py-3 text-sm">
-          {error}
-        </div>
-      )}
+      <AnimatePresence>
+        {error && (
+          <motion.div
+            initial={{ opacity: 0, y: -10, height: 0 }}
+            animate={{ opacity: 1, y: 0, height: 'auto' }}
+            exit={{ opacity: 0, y: -10, height: 0 }}
+            className="overflow-hidden"
+          >
+            <div className="flex items-center gap-3 rounded-xl border-2 border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-700 dark:text-rose-300">
+              <AlertCircle className="h-4 w-4 shrink-0" />
+              {error}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Email */}
       <div className="space-y-2">
-        <Label htmlFor="email">Email</Label>
-        <Input
-          id="email"
-          type="email"
-          placeholder="you@example.com"
-          autoComplete="email"
-          disabled={isSubmitting}
-          {...register('email')}
-        />
-        {errors.email && (
-          <p className="text-xs text-muted-foreground">{errors.email.message}</p>
-        )}
+        <Label htmlFor="email" className="text-sm font-medium">
+          Email address
+        </Label>
+        <div className="relative">
+          <div className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2">
+            <Mail className="h-4 w-4 text-muted-foreground" />
+          </div>
+          <Input
+            id="email"
+            type="email"
+            placeholder="you@example.com"
+            autoComplete="email"
+            disabled={isDisabled}
+            className={cn(
+              'h-11 pl-10 transition-all',
+              errors.email && 'border-rose-500/50 focus-visible:ring-rose-500/20'
+            )}
+            {...register('email')}
+          />
+        </div>
+        <AnimatePresence>
+          {errors.email && (
+            <motion.p
+              initial={{ opacity: 0, y: -5 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -5 }}
+              className="text-xs text-rose-600 dark:text-rose-400"
+            >
+              {errors.email.message}
+            </motion.p>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Password */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <Label htmlFor="password">Password</Label>
+          <Label htmlFor="password" className="text-sm font-medium">
+            Password
+          </Label>
           <Link
             href="/forgot-password"
-            className="text-xs text-muted-foreground transition-colors hover:text-foreground"
+            className="text-xs text-muted-foreground transition-colors hover:text-primary"
           >
             Forgot password?
           </Link>
         </div>
         <div className="relative">
+          <div className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2">
+            <Lock className="h-4 w-4 text-muted-foreground" />
+          </div>
           <Input
             id="password"
             type={showPassword ? 'text' : 'password'}
             placeholder="••••••••"
             autoComplete="current-password"
-            disabled={isSubmitting}
-            className="pr-10"
+            disabled={isDisabled}
+            className={cn(
+              'h-11 pl-10 pr-10 transition-all',
+              errors.password && 'border-rose-500/50 focus-visible:ring-rose-500/20'
+            )}
             {...register('password')}
           />
           <button
             type="button"
             onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
+            className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
             tabIndex={-1}
+            disabled={isDisabled}
           >
             {showPassword ? (
               <EyeOff className="h-4 w-4" />
@@ -100,18 +150,27 @@ export function LoginForm() {
             </span>
           </button>
         </div>
-        {errors.password && (
-          <p className="text-xs text-muted-foreground">{errors.password.message}</p>
-        )}
+        <AnimatePresence>
+          {errors.password && (
+            <motion.p
+              initial={{ opacity: 0, y: -5 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -5 }}
+              className="text-xs text-rose-600 dark:text-rose-400"
+            >
+              {errors.password.message}
+            </motion.p>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Submit Button */}
       <Button
         type="submit"
-        className="w-full"
-        disabled={isSubmitting}
+        className="h-11 w-full text-base font-medium"
+        disabled={isDisabled}
       >
-        {isSubmitting ? (
+        {isDisabled ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             Signing in...
@@ -122,13 +181,13 @@ export function LoginForm() {
       </Button>
 
       {/* Divider */}
-      <div className="relative my-6">
+      <div className="relative py-2">
         <div className="absolute inset-0 flex items-center">
           <div className="w-full border-t border-border" />
         </div>
-        <div className="relative flex justify-center text-xs">
-          <span className="bg-background px-2 text-muted-foreground">
-            or
+        <div className="relative flex justify-center">
+          <span className="bg-background px-4 text-xs text-muted-foreground">
+            or continue with
           </span>
         </div>
       </div>
@@ -137,28 +196,11 @@ export function LoginForm() {
       <Button
         type="button"
         variant="outline"
-        className="w-full"
-        disabled={isSubmitting}
+        className="h-11 w-full gap-3 text-base font-medium"
+        disabled={isDisabled}
       >
-        <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
-          <path
-            fill="currentColor"
-            d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-          />
-          <path
-            fill="currentColor"
-            d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-          />
-          <path
-            fill="currentColor"
-            d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-          />
-          <path
-            fill="currentColor"
-            d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-          />
-        </svg>
-        Continue with Google
+        <GoogleIcon />
+        Google
       </Button>
 
       {/* Register Link */}
@@ -166,11 +208,34 @@ export function LoginForm() {
         Don&apos;t have an account?{' '}
         <Link
           href="/register"
-          className="font-medium text-foreground underline-offset-4 hover:underline"
+          className="font-medium text-primary underline-offset-4 hover:underline"
         >
           Sign up
         </Link>
       </p>
-    </form>
+    </motion.form>
+  );
+}
+
+function GoogleIcon() {
+  return (
+    <svg className="h-5 w-5" viewBox="0 0 24 24">
+      <path
+        fill="#4285F4"
+        d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+      />
+      <path
+        fill="#34A853"
+        d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+      />
+      <path
+        fill="#FBBC05"
+        d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+      />
+      <path
+        fill="#EA4335"
+        d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+      />
+    </svg>
   );
 }

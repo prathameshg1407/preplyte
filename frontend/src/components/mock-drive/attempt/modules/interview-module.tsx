@@ -1,0 +1,279 @@
+// src/components/mock-drive/attempt/modules/interview-module.tsx (fixed payload types)
+
+'use client';
+
+import { FC, useState, useEffect, useRef } from 'react';
+import { Send, SkipForward, Check, Loader2, User, Bot } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { cn } from '@/lib/utils';
+import {
+  AiInterviewModuleConfig,
+  AiInterviewModuleData,
+  ModuleConfig,
+  ModuleData,
+  InterviewRespondPayload,
+  InterviewSkipPayload,
+} from '@/types/mockdrive.types';
+import { useInterviewRespond, useInterviewSkip } from '@/lib/hooks/mock-drive/use-attempt';
+import { useAttemptStore } from '@/lib/store/mock-drive/attempt-store';
+
+interface InterviewModuleProps {
+  driveId: string;
+  moduleId: string;
+  config: ModuleConfig;
+  data: Partial<ModuleData> | null;
+  onSubmit: () => void;
+  isSubmitting: boolean;
+}
+
+export const InterviewModule: FC<InterviewModuleProps> = ({
+  driveId,
+  moduleId,
+  config,
+  data,
+  onSubmit,
+  isSubmitting,
+}) => {
+  const interviewConfig = config as AiInterviewModuleConfig;
+  const interviewData = data as AiInterviewModuleData | null;
+
+  const [answer, setAnswer] = useState('');
+  const [answerStartTime, setAnswerStartTime] = useState<number>(Date.now());
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+
+  const { localModuleData, updateLocalModuleData } = useAttemptStore();
+  const localData = localModuleData as AiInterviewModuleData | null;
+
+  const respondMutation = useInterviewRespond();
+  const skipMutation = useInterviewSkip();
+
+  useEffect(() => {
+    if (interviewData && !localData) {
+      updateLocalModuleData(interviewData);
+    }
+  }, [interviewData, localData, updateLocalModuleData]);
+
+  const conversation = localData?.conversation || interviewData?.conversation || [];
+  const responses = localData?.responses || interviewData?.responses || [];
+  const targetQuestions = interviewConfig.targetQuestions;
+  const questionsAnswered = responses.length;
+  const isComplete = questionsAnswered >= targetQuestions;
+
+  useEffect(() => {
+    if (scrollAreaRef.current) {
+      scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
+    }
+  }, [conversation]);
+
+  useEffect(() => {
+    setAnswerStartTime(Date.now());
+  }, [conversation.length]);
+
+  const handleSubmitAnswer = () => {
+    if (!answer.trim()) return;
+
+    const timeTaken = Math.floor((Date.now() - answerStartTime) / 1000);
+
+    const payload: InterviewRespondPayload = {
+      answer: answer.trim(),
+      timeTaken,
+    };
+
+    respondMutation.mutate(
+      {
+        driveId,
+        moduleId,
+        payload,
+      },
+      {
+        onSuccess: (response) => {
+          if (response.updatedData) {
+            updateLocalModuleData(response.updatedData);
+          }
+          setAnswer('');
+        },
+      }
+    );
+  };
+
+  const handleSkip = () => {
+    const payload: InterviewSkipPayload = {
+      reason: 'User skipped',
+    };
+
+    skipMutation.mutate(
+      {
+        driveId,
+        moduleId,
+        payload,
+      },
+      {
+        onSuccess: (response) => {
+          if (response.updatedData) {
+            updateLocalModuleData(response.updatedData);
+          }
+        },
+      }
+    );
+  };
+
+  return (
+    <div className="max-w-4xl mx-auto space-y-4">
+      {/* Header */}
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-lg">AI Interview</CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">
+                {interviewConfig.jobTitle}
+                {interviewConfig.companyName && ` at ${interviewConfig.companyName}`}
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge variant="outline">
+                {questionsAnswered}/{targetQuestions} Questions
+              </Badge>
+              {isComplete && (
+                <Badge variant="default" className="bg-green-500">
+                  Complete
+                </Badge>
+              )}
+            </div>
+          </div>
+        </CardHeader>
+      </Card>
+
+      {/* Conversation */}
+      <Card className="h-[500px] flex flex-col">
+        <CardContent className="flex-1 p-0 overflow-hidden">
+          <ScrollArea className="h-full p-4" ref={scrollAreaRef}>
+            <div className="space-y-4">
+              {conversation.map((message) => (
+                <div
+                  key={message.id}
+                  className={cn(
+                    'flex gap-3',
+                    message.role === 'user' && 'flex-row-reverse'
+                  )}
+                >
+                  <div
+                    className={cn(
+                      'w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0',
+                      message.role === 'assistant'
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-muted'
+                    )}
+                  >
+                    {message.role === 'assistant' ? (
+                      <Bot className="h-4 w-4" />
+                    ) : (
+                      <User className="h-4 w-4" />
+                    )}
+                  </div>
+                  <div
+                    className={cn(
+                      'max-w-[80%] rounded-lg p-4',
+                      message.role === 'assistant'
+                        ? 'bg-muted'
+                        : 'bg-primary text-primary-foreground'
+                    )}
+                  >
+                    <p className="whitespace-pre-wrap">{message.content}</p>
+                    <p
+                      className={cn(
+                        'text-xs mt-2',
+                        message.role === 'assistant'
+                          ? 'text-muted-foreground'
+                          : 'text-primary-foreground/70'
+                      )}
+                    >
+                      {new Date(message.timestamp).toLocaleTimeString()}
+                    </p>
+                  </div>
+                </div>
+              ))}
+
+              {(respondMutation.isPending || skipMutation.isPending) && (
+                <div className="flex gap-3">
+                  <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center">
+                    <Bot className="h-4 w-4" />
+                  </div>
+                  <div className="bg-muted rounded-lg p-4">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  </div>
+                </div>
+              )}
+            </div>
+          </ScrollArea>
+        </CardContent>
+
+        {!isComplete && (
+          <div className="p-4 border-t">
+            <div className="flex gap-2">
+              <Textarea
+                value={answer}
+                onChange={(e) => setAnswer(e.target.value)}
+                placeholder="Type your answer here..."
+                className="min-h-[80px] resize-none"
+                disabled={respondMutation.isPending || skipMutation.isPending}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && e.ctrlKey) {
+                    handleSubmitAnswer();
+                  }
+                }}
+              />
+            </div>
+            <div className="flex justify-between items-center mt-2">
+              <p className="text-xs text-muted-foreground">Press Ctrl+Enter to submit</p>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleSkip}
+                  disabled={respondMutation.isPending || skipMutation.isPending}
+                >
+                  <SkipForward className="h-4 w-4 mr-1" />
+                  Skip
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={handleSubmitAnswer}
+                  disabled={!answer.trim() || respondMutation.isPending || skipMutation.isPending}
+                >
+                  {respondMutation.isPending ? (
+                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                  ) : (
+                    <Send className="h-4 w-4 mr-1" />
+                  )}
+                  Submit Answer
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+      </Card>
+
+      {/* Submit Module */}
+      <div className="flex justify-end">
+        <Button onClick={onSubmit} disabled={isSubmitting} size="lg">
+          {isSubmitting ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Submitting...
+            </>
+          ) : (
+            <>
+              <Check className="mr-2 h-4 w-4" />
+              {isComplete ? 'Submit Interview' : 'End Interview Early'}
+            </>
+          )}
+        </Button>
+      </div>
+    </div>
+  );
+};

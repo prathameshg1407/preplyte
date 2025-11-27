@@ -2,20 +2,43 @@
 
 "use client";
 
-import { Card, CardContent } from "../../ui/card";
+import { motion } from "framer-motion";
+import { Badge } from "../../ui/badge";
 import { ScrollArea } from "../../ui/scroll-area";
 import type { QuestionDetail, DifficultyLevel } from "../../../types/machine.types";
-import { FileInput, FileOutput, AlertCircle, FlaskConical, Hash, Eye } from "lucide-react";
+import {
+  FileInput,
+  FileOutput,
+  AlertCircle,
+  FlaskConical,
+  Hash,
+  Eye,
+  Tag,
+} from "lucide-react";
+import { cn } from "../../../lib/utils";
 
 interface ProblemDescriptionProps {
   question: QuestionDetail;
 }
 
+const DIFFICULTY_STYLES: Record<DifficultyLevel, { color: string; bg: string }> = {
+  EASY: {
+    color: "text-emerald-600 dark:text-emerald-400",
+    bg: "bg-emerald-500/10",
+  },
+  MEDIUM: {
+    color: "text-amber-600 dark:text-amber-400",
+    bg: "bg-amber-500/10",
+  },
+  HARD: {
+    color: "text-rose-600 dark:text-rose-400",
+    bg: "bg-rose-500/10",
+  },
+};
+
 export function ProblemDescription({ question }: ProblemDescriptionProps) {
-  // Parse constraints - backend returns string, may be JSON array or plain text
   const parseConstraints = (constraints: string | null): string[] => {
     if (!constraints) return [];
-
     try {
       const parsed = JSON.parse(constraints);
       if (Array.isArray(parsed)) return parsed;
@@ -30,105 +53,136 @@ export function ProblemDescription({ question }: ProblemDescriptionProps) {
 
   const constraintsList = parseConstraints(question.constraints);
   const hiddenTestCases = question.totalTestCases - question.sampleTestCases.length;
+  const difficultyStyle = DIFFICULTY_STYLES[question.difficulty];
 
   return (
     <ScrollArea className="h-full">
       <div className="space-y-6 p-5">
         {/* Header */}
-        <div>
-          <div className="mb-3 flex items-start justify-between">
-            <h2 className="text-xl font-semibold tracking-tight">{question.title}</h2>
-            <DifficultyBadge difficulty={question.difficulty} />
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <div className="mb-3 flex items-start justify-between gap-4">
+            <h2 className="text-xl font-bold tracking-tight">{question.title}</h2>
+            <Badge
+              className={cn(
+                "shrink-0 border-0 font-medium",
+                difficultyStyle.color,
+                difficultyStyle.bg
+              )}
+            >
+              {question.difficulty}
+            </Badge>
           </div>
 
           {question.tags.length > 0 && (
             <div className="flex flex-wrap gap-1.5">
               {question.tags.map((tag) => (
-                <span
-                  key={tag}
-                  className="rounded-md border border-border bg-secondary px-2 py-0.5 text-xs"
-                >
+                <Badge key={tag} variant="secondary" className="gap-1 text-xs font-normal">
+                  <Tag className="h-3 w-3" />
                   {tag}
-                </span>
+                </Badge>
               ))}
             </div>
           )}
-        </div>
+        </motion.div>
 
-        {/* Divider */}
         <div className="h-px bg-border" />
 
         {/* Description */}
         {question.description && (
-          <div className="prose prose-sm prose-neutral max-w-none dark:prose-invert">
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="prose prose-sm prose-neutral max-w-none dark:prose-invert"
+          >
             <div dangerouslySetInnerHTML={{ __html: question.description }} />
-          </div>
+          </motion.div>
         )}
 
         {/* Input Format */}
         {question.inputFormat && (
-          <Section icon={FileInput} title="Input Format">
+          <Section icon={FileInput} title="Input Format" delay={0.15}>
             <CodeBlock content={question.inputFormat} />
           </Section>
         )}
 
         {/* Output Format */}
         {question.outputFormat && (
-          <Section icon={FileOutput} title="Output Format">
+          <Section icon={FileOutput} title="Output Format" delay={0.2}>
             <CodeBlock content={question.outputFormat} />
           </Section>
         )}
 
         {/* Constraints */}
         {constraintsList.length > 0 && (
-          <Section icon={AlertCircle} title="Constraints">
-            <ul className="space-y-1.5 text-sm text-muted-foreground">
+          <Section icon={AlertCircle} title="Constraints" delay={0.25}>
+            <ul className="space-y-2">
               {constraintsList.map((constraint, index) => (
-                <li key={index} className="flex items-start gap-2">
-                  <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-muted-foreground" />
-                  <span>{constraint}</span>
-                </li>
+                <motion.li
+                  key={index}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.25 + index * 0.05 }}
+                  className="flex items-start gap-3 text-sm text-muted-foreground"
+                >
+                  <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
+                  <code className="font-mono">{constraint}</code>
+                </motion.li>
               ))}
             </ul>
           </Section>
         )}
 
         {/* Sample Test Cases */}
-        <Section icon={FlaskConical} title="Examples">
+        <Section icon={FlaskConical} title="Examples" delay={0.3}>
           <div className="space-y-4">
             {question.sampleTestCases.map((tc, index) => (
-              <Card key={tc.id} className="border-border">
-                <CardContent className="p-4">
-                  <div className="mb-3 flex items-center gap-2 text-sm font-medium">
-                    <Hash className="h-3.5 w-3.5 text-muted-foreground" />
-                    Example {index + 1}
+              <motion.div
+                key={tc.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 + index * 0.1 }}
+                className="rounded-xl border-2 border-border bg-muted/30 p-4"
+              >
+                <div className="mb-3 flex items-center gap-2 text-sm font-semibold">
+                  <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary text-xs text-primary-foreground">
+                    {index + 1}
                   </div>
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div>
-                      <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
-                        Input
-                      </label>
-                      <CodeBlock content={tc.input} />
-                    </div>
-                    <div>
-                      <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
-                        Output
-                      </label>
-                      <CodeBlock content={tc.expectedOutput} />
-                    </div>
+                  Example {index + 1}
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
+                      Input
+                    </label>
+                    <CodeBlock content={tc.input} />
                   </div>
-                </CardContent>
-              </Card>
+                  <div>
+                    <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
+                      Output
+                    </label>
+                    <CodeBlock content={tc.expectedOutput} />
+                  </div>
+                </div>
+              </motion.div>
             ))}
           </div>
 
           {hiddenTestCases > 0 && (
-            <div className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.5 }}
+              className="mt-4 flex items-center gap-2 text-sm text-muted-foreground"
+            >
               <Eye className="h-4 w-4" />
               <span>
-                {hiddenTestCases} hidden test case{hiddenTestCases > 1 ? "s" : ""}
+                + {hiddenTestCases} hidden test case{hiddenTestCases > 1 ? "s" : ""}
               </span>
-            </div>
+            </motion.div>
           )}
         </Section>
       </div>
@@ -136,46 +190,35 @@ export function ProblemDescription({ question }: ProblemDescriptionProps) {
   );
 }
 
-// Difficulty Badge Component
-function DifficultyBadge({ difficulty }: { difficulty: DifficultyLevel }) {
-  const labels: Record<DifficultyLevel, string> = {
-    EASY: "Easy",
-    MEDIUM: "Medium",
-    HARD: "Hard",
-  };
-
-  return (
-    <span className="rounded-md border border-border bg-secondary px-2.5 py-1 text-xs font-medium">
-      {labels[difficulty]}
-    </span>
-  );
-}
-
-// Section Component
 function Section({
   icon: Icon,
   title,
   children,
+  delay = 0,
 }: {
   icon: React.ElementType;
   title: string;
   children: React.ReactNode;
+  delay?: number;
 }) {
   return (
-    <div>
-      <h3 className="mb-3 flex items-center gap-2 text-sm font-medium">
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay }}
+    >
+      <h3 className="mb-3 flex items-center gap-2 font-semibold">
         <Icon className="h-4 w-4 text-muted-foreground" />
         {title}
       </h3>
       {children}
-    </div>
+    </motion.div>
   );
 }
 
-// Code Block Component
 function CodeBlock({ content }: { content: string }) {
   return (
-    <pre className="overflow-x-auto whitespace-pre-wrap rounded-lg border border-border bg-secondary p-3 font-mono text-sm">
+    <pre className="overflow-x-auto whitespace-pre-wrap rounded-lg bg-muted p-3 font-mono text-sm">
       {content}
     </pre>
   );

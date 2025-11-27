@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import { authService } from './auth.service';
 import { AuthenticatedRequest } from '../../middleware/auth.middleware';
-import { sendSuccess } from '../../utils/response';
+import { sendSuccess, sendError } from '../../utils/response';
 
 // ============================================
 // Validation Schemas
@@ -42,7 +42,7 @@ const refreshTokenSchema = z.object({
 });
 
 const logoutSchema = z.object({
-  refreshToken: z.string().min(1, 'Refresh token is required'),
+  refreshToken: z.string().optional(),
 });
 
 // ============================================
@@ -51,6 +51,19 @@ const logoutSchema = z.object({
 
 export type RegisterDto = z.infer<typeof registerSchema>;
 export type LoginDto = z.infer<typeof loginSchema>;
+
+// ============================================
+// Helper Functions
+// ============================================
+
+function handleValidationError(res: Response, error: z.ZodError): void {
+  const details = error.errors.map((e) => ({
+    field: e.path.join('.'),
+    message: e.message,
+    code: e.code,
+  }));
+  sendError(res, 'VALIDATION_ERROR', 'Validation failed', 400, details);
+}
 
 // ============================================
 // Controller Functions
@@ -62,8 +75,13 @@ export const register = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const data = registerSchema.parse(req.body);
-    const user = await authService.register(data);
+    const parseResult = registerSchema.safeParse(req.body);
+    if (!parseResult.success) {
+      handleValidationError(res, parseResult.error);
+      return;
+    }
+
+    const user = await authService.register(parseResult.data);
     sendSuccess(res, user, 'User registered successfully', 201);
   } catch (error) {
     next(error);
@@ -76,8 +94,13 @@ export const login = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const data = loginSchema.parse(req.body);
-    const result = await authService.login(data);
+    const parseResult = loginSchema.safeParse(req.body);
+    if (!parseResult.success) {
+      handleValidationError(res, parseResult.error);
+      return;
+    }
+
+    const result = await authService.login(parseResult.data);
     sendSuccess(res, result, 'Login successful');
   } catch (error) {
     next(error);
@@ -90,8 +113,13 @@ export const refreshToken = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { refreshToken } = refreshTokenSchema.parse(req.body);
-    const result = await authService.refreshToken(refreshToken);
+    const parseResult = refreshTokenSchema.safeParse(req.body);
+    if (!parseResult.success) {
+      handleValidationError(res, parseResult.error);
+      return;
+    }
+
+    const result = await authService.refreshToken(parseResult.data.refreshToken);
     sendSuccess(res, result, 'Token refreshed successfully');
   } catch (error) {
     next(error);
@@ -104,8 +132,22 @@ export const logout = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { refreshToken } = logoutSchema.parse(req.body);
-    await authService.logout(req.user!.id, refreshToken);
+    if (!req.user) {
+      sendError(res, 'UNAUTHORIZED', 'Authentication required', 401);
+      return;
+    }
+
+    const parseResult = logoutSchema.safeParse(req.body);
+    if (!parseResult.success) {
+      handleValidationError(res, parseResult.error);
+      return;
+    }
+
+    const { refreshToken } = parseResult.data;
+    if (refreshToken) {
+      await authService.logout(req.user.id, refreshToken);
+    }
+
     sendSuccess(res, null, 'Logout successful');
   } catch (error) {
     next(error);
@@ -118,7 +160,12 @@ export const logoutAll = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    await authService.logoutAll(req.user!.id);
+    if (!req.user) {
+      sendError(res, 'UNAUTHORIZED', 'Authentication required', 401);
+      return;
+    }
+
+    await authService.logoutAll(req.user.id);
     sendSuccess(res, null, 'Logged out from all devices');
   } catch (error) {
     next(error);
@@ -131,7 +178,12 @@ export const me = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const user = await authService.getUser(req.user!.id);
+    if (!req.user) {
+      sendError(res, 'UNAUTHORIZED', 'Authentication required', 401);
+      return;
+    }
+
+    const user = await authService.getUser(req.user.id);
     sendSuccess(res, user);
   } catch (error) {
     next(error);
@@ -143,5 +195,10 @@ export const verifyToken = async (
   res: Response,
   _next: NextFunction
 ): Promise<void> => {
+  if (!req.user) {
+    sendError(res, 'UNAUTHORIZED', 'Authentication required', 401);
+    return;
+  }
+
   sendSuccess(res, { valid: true, user: req.user }, 'Token is valid');
 };

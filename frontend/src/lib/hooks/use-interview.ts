@@ -1,629 +1,300 @@
 // src/lib/hooks/use-interview.ts
 
-"use client";
+import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
+import { useRouter } from 'next/navigation';
+import { useCallback } from 'react';
+import { interviewService } from '@/lib/api/services/interview.service';
+import { useInterviewStore } from '@/lib/store/interview-store';
+import { useToast } from '@/components/ui/use-toast';
+import type {
+  CreateSessionInput,
+  InterviewSession,
+  InterviewFeedback,
+} from '@/types/interview.types';
 
-import { useCallback, useEffect, useRef } from "react";
-import { useRouter, useParams } from "next/navigation";
-import { useInterviewStore } from "../store/interview-store";
-import { useSpeechRecognition } from "./useSpeechRecognition";
-import { useTextToSpeech } from "./useTextToSpeech";
-import {
-  startInterviewSession,
-  submitInterviewAnswer,
-  getInterviewFeedback,
-  getInterviewSession,
-  getUserSessions,
-  getUserSessionStats,
-  deleteSession as apiDeleteSession,
-  endSession as apiEndSession,
-} from "../api/services/interview.service";
-import { getErrorMessage } from "../api/error-handler";
-import {
-  AiInterviewQuestionCategory,
-  AiInterviewSessionStatus,
-  StartInterviewRequest,
-  SubmitResponseDto,
-  SessionResponse,
-  SubmitResponseResult,
-  FeedbackResponse,
-  GetSessionsParams,
-} from "../../types/aiInterview.types";
+// =====================================================
+// QUERY KEYS
+// =====================================================
 
-const SILENCE_TIMEOUT_SECONDS = 7;
-const MAX_NO_SPEECH_RETRIES = 3;
-const SUBMIT_RETRY_LIMIT = 3;
+export const interviewKeys = {
+  all: ['interview'] as const,
+  sessions: () => [...interviewKeys.all, 'sessions'] as const,
+  session: (id: string) => [...interviewKeys.all, 'session', id] as const,
+  sessionDetail: (id: string) => [...interviewKeys.all, 'session', id, 'detail'] as const,
+  feedback: (id: string) => [...interviewKeys.all, 'feedback', id] as const,
+};
 
-export function useInterview() {
-  const router = useRouter();
-  const params = useParams();
-  const sessionIdFromUrl = params?.sessionId as string | undefined;
+// =====================================================
+// SESSION HOOKS
+// =====================================================
 
-  // Store selectors
-  const sessionId = useInterviewStore((s) => s.sessionId);
-  const phase = useInterviewStore((s) => s.phase);
-  const status = useInterviewStore((s) => s.status);
-  const questions = useInterviewStore((s) => s.questions);
-  const currentQuestionIndex = useInterviewStore((s) => s.currentQuestionIndex);
-  const currentQuestion = useInterviewStore((s) => s.currentQuestion);
-  const totalQuestions = useInterviewStore((s) => s.totalQuestions);
-  const progress = useInterviewStore((s) => s.progress);
-  const transcript = useInterviewStore((s) => s.transcript);
-  const currentTranscript = useInterviewStore((s) => s.currentTranscript);
-  const feedback = useInterviewStore((s) => s.feedback);
-  const sessions = useInterviewStore((s) => s.sessions);
-  const sessionsPagination = useInterviewStore((s) => s.sessionsPagination);
-  const stats = useInterviewStore((s) => s.stats);
-  const loading = useInterviewStore((s) => s.loading);
-  const error = useInterviewStore((s) => s.error);
-  const micPermission = useInterviewStore((s) => s.micPermission);
-  const silenceTimer = useInterviewStore((s) => s.silenceTimer);
-  const isRecording = useInterviewStore((s) => s.isRecording);
-  const isAiSpeaking = useInterviewStore((s) => s.isAiSpeaking);
-  const isProcessing = useInterviewStore((s) => s.isProcessing);
-  const context = useInterviewStore((s) => s.context);
+/**
+ * Hook for fetching paginated interview sessions with infinite scroll support
+ */
+export function useInterviewSessions(pageSize = 10) {
+  const { setSessionHistory, appendSessionHistory, setHistoryLoading } = useInterviewStore();
 
-  // Get actions once - they're stable
-  const setStatus = useInterviewStore((s) => s.setStatus);
-  const setSessionStatus = useInterviewStore((s) => s.setSessionStatus);
-  const addToTranscript = useInterviewStore((s) => s.addToTranscript);
-  const setCurrentTranscript = useInterviewStore((s) => s.setCurrentTranscript);
-  const setFeedback = useInterviewStore((s) => s.setFeedback);
-  const setSessions = useInterviewStore((s) => s.setSessions);
-  const setStats = useInterviewStore((s) => s.setStats);
-  const setLoading = useInterviewStore((s) => s.setLoading);
-  const setError = useInterviewStore((s) => s.setError);
-  const setMicPermission = useInterviewStore((s) => s.setMicPermission);
-  const resetSilenceTimer = useInterviewStore((s) => s.resetSilenceTimer);
-  const decrementSilenceTimer = useInterviewStore((s) => s.decrementSilenceTimer);
-  const initSession = useInterviewStore((s) => s.initSession);
-  const advanceQuestion = useInterviewStore((s) => s.advanceQuestion);
-  const updateProgress = useInterviewStore((s) => s.updateProgress);
-  const completeSession = useInterviewStore((s) => s.completeSession);
-  const resetSession = useInterviewStore((s) => s.resetSession);
-  const resetAll = useInterviewStore((s) => s.resetAll);
-  const setPhase = useInterviewStore((s) => s.setPhase);
-  const setContext = useInterviewStore((s) => s.setContext);
-
-  // Refs
-  const isMountedRef = useRef(true);
-  const noSpeechCountRef = useRef(0);
-  const silenceIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const questionStartTimeRef = useRef(Date.now());
-  const isSubmittingRef = useRef(false);
-  const isLoadingSessionRef = useRef(false);
-  const loadedSessionIdRef = useRef<string | null>(null);
-
-  // Clear silence interval helper
-  const clearSilenceInterval = useCallback(() => {
-    if (silenceIntervalRef.current) {
-      clearInterval(silenceIntervalRef.current);
-      silenceIntervalRef.current = null;
-    }
-  }, []);
-
-  // Text to Speech setup
-  const {
-    speak: ttsSpeak,
-    stop: ttsStop,
-    isSpeaking,
-  } = useTextToSpeech({
-    onStart: () => setStatus("AI_SPEAKING"),
-    onEnd: () => {
-      const state = useInterviewStore.getState();
-      if (isMountedRef.current && state.phase === "interview") {
-        setStatus("USER_LISTENING");
+  const query = useInfiniteQuery({
+    queryKey: interviewKeys.sessions(),
+    queryFn: async ({ pageParam = 1 }) => {
+      setHistoryLoading(true);
+      try {
+        const data = await interviewService.listSessions({ 
+          page: pageParam, 
+          pageSize 
+        });
+        return data;
+      } finally {
+        setHistoryLoading(false);
       }
     },
-    onError: (error) => {
-      console.warn("TTS error:", error);
-      const state = useInterviewStore.getState();
-      if (isMountedRef.current && state.phase === "interview") {
-        setStatus("USER_LISTENING");
-      }
+    getNextPageParam: (lastPage, allPages) => {
+      if (!lastPage.hasMore) return undefined;
+      return allPages.length + 1;
     },
+    initialPageParam: 1,
+    staleTime: 30000,
   });
 
-  // Speak question helper
-  const speakQuestion = useCallback(
-    async (text: string, audioUrl?: string) => {
-      addToTranscript({
-        speaker: "AI",
-        text,
-        timestamp: new Date(),
-        audioUrl,
-      });
-      await ttsSpeak(text);
-    },
-    [ttsSpeak, addToTranscript]
-  );
-
-  // Forward declare handleSubmitAnswer
-  const handleSubmitAnswerRef = useRef<
-    ((retryCount?: number) => Promise<void>) | null
-  >(null);
-
-  // Speech Recognition setup
-  const {
-    isSupported: isSpeechSupported,
-    isListening,
-    transcript: speechTranscript,
-    startListening,
-    stopListening,
-    resetTranscript,
-    hasPermission: micPermissionFromSpeech,
-    requestPermission,
-  } = useSpeechRecognition({
-    onResult: (text, isFinal) => {
-      setCurrentTranscript(text);
-      if (isFinal) {
-        noSpeechCountRef.current = 0;
-        resetSilenceTimer();
-      }
-    },
-    onSpeechDetected: () => {
-      noSpeechCountRef.current = 0;
-      resetSilenceTimer();
-    },
-    onEnd: () => {
-      const state = useInterviewStore.getState();
-      if (!isSubmittingRef.current && state.status === "USER_LISTENING") {
-        if (state.currentTranscript.trim().length > 0) {
-          handleSubmitAnswerRef.current?.();
-        } else if (noSpeechCountRef.current >= MAX_NO_SPEECH_RETRIES) {
-          handleSubmitAnswerRef.current?.();
-        } else {
-          noSpeechCountRef.current++;
-        }
-      }
-    },
-    onError: (error) => {
-      if (error === "no-speech") {
-        noSpeechCountRef.current++;
-        if (noSpeechCountRef.current >= MAX_NO_SPEECH_RETRIES) {
-          handleSubmitAnswerRef.current?.();
-        }
-      } else {
-        setError(`Speech recognition error: ${error}`);
-        setStatus("ERROR");
-      }
-    },
-  });
-
-  // Update mic permission in store
-  useEffect(() => {
-    setMicPermission(micPermissionFromSpeech);
-  }, [micPermissionFromSpeech, setMicPermission]);
-
-  // Stop recording function
-  const stopRecording = useCallback(() => {
-    clearSilenceInterval();
-    stopListening();
-  }, [stopListening, clearSilenceInterval]);
-
-  // Submit Answer function
-  const handleSubmitAnswer = useCallback(
-    async (retryCount = 0) => {
-      if (isSubmittingRef.current) return;
-
-      const state = useInterviewStore.getState();
-      if (!state.sessionId || !state.currentQuestion) return;
-
-      isSubmittingRef.current = true;
-      stopRecording();
-      setStatus("PROCESSING_ANSWER");
-
-      const answer = state.currentTranscript.trim() || "(No answer provided)";
-
-      addToTranscript({
-        speaker: "USER",
-        text: answer,
-        timestamp: new Date(),
-      });
-
-      try {
-        const request: SubmitResponseDto = {
-          transcript: answer,
-        };
-
-        const response: SubmitResponseResult = await submitInterviewAnswer(
-          state.sessionId,
-          request
-        );
-
-        if (!isMountedRef.current) {
-          isSubmittingRef.current = false;
-          return;
-        }
-
-        if (response.progress) {
-          updateProgress(response.progress);
-        }
-
-        if (response.isComplete) {
-          completeSession();
-          setSessionStatus(AiInterviewSessionStatus.COMPLETED);
-
-          try {
-            const feedbackData: FeedbackResponse = await getInterviewFeedback(
-              state.sessionId
-            );
-            setFeedback(feedbackData);
-          } catch (feedbackError) {
-            console.warn("Failed to fetch feedback:", feedbackError);
-          }
-
-          router.push(`/practice/ai-interview/results/${state.sessionId}`);
-        } else if (response.nextQuestion) {
-          advanceQuestion(response.nextQuestion, response.progress);
-          await speakQuestion(
-            response.nextQuestion.text,
-            response.nextQuestion.audioUrl
-          );
-        }
-      } catch (error) {
-        if (!isMountedRef.current) {
-          isSubmittingRef.current = false;
-          return;
-        }
-
-        if (retryCount < SUBMIT_RETRY_LIMIT) {
-          isSubmittingRef.current = false;
-          setTimeout(
-            () => handleSubmitAnswer(retryCount + 1),
-            1000 * (retryCount + 1)
-          );
-          return;
-        } else {
-          setError(getErrorMessage(error));
-          setStatus("ERROR");
-        }
-      } finally {
-        isSubmittingRef.current = false;
-        setCurrentTranscript("");
-      }
-    },
-    [
-      stopRecording,
-      addToTranscript,
-      completeSession,
-      advanceQuestion,
-      updateProgress,
-      setFeedback,
-      setError,
-      setStatus,
-      setCurrentTranscript,
-      setSessionStatus,
-      router,
-      speakQuestion,
-    ]
-  );
-
-  // Update ref with latest function
-  useEffect(() => {
-    handleSubmitAnswerRef.current = handleSubmitAnswer;
-  }, [handleSubmitAnswer]);
-
-  // Start recording function
-  const startRecording = useCallback(async () => {
-    if (!isSpeechSupported) {
-      setError("Speech recognition not supported in this browser");
-      return;
+  // Sync all pages to store whenever data changes
+  const syncToStore = useCallback(() => {
+    if (query.data) {
+      const allSessions = query.data.pages.flatMap((page) => page.sessions);
+      const hasMore = query.data.pages[query.data.pages.length - 1]?.hasMore ?? false;
+      setSessionHistory(allSessions, hasMore);
     }
+  }, [query.data, setSessionHistory]);
 
-    const state = useInterviewStore.getState();
-    if (!state.micPermission) {
-      const granted = await requestPermission();
-      if (!granted) {
-        setError("Microphone permission denied");
-        setStatus("ERROR");
-        return;
-      }
-    }
-
-    setStatus("USER_LISTENING");
-    resetTranscript();
-    setCurrentTranscript("");
-    questionStartTimeRef.current = Date.now();
-    noSpeechCountRef.current = 0;
-
-    startListening();
-
-    clearSilenceInterval();
-    resetSilenceTimer();
-
-    silenceIntervalRef.current = setInterval(() => {
-      decrementSilenceTimer();
-      const currentTimer = useInterviewStore.getState().silenceTimer;
-      if (currentTimer <= 0) {
-        clearSilenceInterval();
-        handleSubmitAnswerRef.current?.();
-      }
-    }, 1000);
-  }, [
-    isSpeechSupported,
-    requestPermission,
-    resetTranscript,
-    startListening,
-    clearSilenceInterval,
-    setError,
-    setStatus,
-    setCurrentTranscript,
-    resetSilenceTimer,
-    decrementSilenceTimer,
-  ]);
-
-  // Cleanup on unmount
-  useEffect(() => {
-    isMountedRef.current = true;
-
-    return () => {
-      isMountedRef.current = false;
-      clearSilenceInterval();
-      ttsStop();
-    };
-  }, [clearSilenceInterval, ttsStop]);
-
-  // Load session from URL
-  useEffect(() => {
-    if (!sessionIdFromUrl || phase === "results") {
-      return;
-    }
-
-    if (
-      isLoadingSessionRef.current ||
-      loadedSessionIdRef.current === sessionIdFromUrl
-    ) {
-      return;
-    }
-
-    if (sessionId === sessionIdFromUrl) {
-      return;
-    }
-
-    const loadSession = async () => {
-      isLoadingSessionRef.current = true;
-      setLoading(true);
-      setError(null);
-
-      try {
-        const session: SessionResponse =
-          await getInterviewSession(sessionIdFromUrl);
-
-        if (!isMountedRef.current) return;
-
-        loadedSessionIdRef.current = sessionIdFromUrl;
-
-        initSession({
-          sessionId: session.sessionId,
-          currentQuestion: session.currentQuestion,
-          currentQuestionIndex: session.progress.questionNumber - 1,
-          totalQuestions: session.progress.estimatedTotal,
-          progress: session.progress,
-          context: session.context,
-        });
-
-        await speakQuestion(
-          session.currentQuestion.text,
-          session.currentQuestion.audioUrl
-        );
-      } catch (error) {
-        if (isMountedRef.current) {
-          setError(getErrorMessage(error));
-          router.push("/practice/ai-interview");
-        }
-      } finally {
-        if (isMountedRef.current) {
-          setLoading(false);
-        }
-        isLoadingSessionRef.current = false;
-      }
-    };
-
-    loadSession();
-  }, [sessionIdFromUrl]);
-
-  // Start new session
-  const startSession = useCallback(
-    async (config: StartInterviewRequest) => {
-      if (!config.jobTitle?.trim()) {
-        setError("Please enter a job title");
-        return;
-      }
-
-      setLoading(true);
-      setError(null);
-
-      try {
-        const session: SessionResponse = await startInterviewSession(config);
-
-        if (!isMountedRef.current) return;
-
-        loadedSessionIdRef.current = session.sessionId;
-
-        initSession({
-          sessionId: session.sessionId,
-          currentQuestion: session.currentQuestion,
-          currentQuestionIndex: 0,
-          totalQuestions: session.progress.estimatedTotal,
-          progress: session.progress,
-          context: session.context,
-        });
-
-        router.push(`/practice/ai-interview/${session.sessionId}`);
-
-        await speakQuestion(
-          session.currentQuestion.text,
-          session.currentQuestion.audioUrl
-        );
-      } catch (error) {
-        if (isMountedRef.current) {
-          setError(getErrorMessage(error));
-        }
-      } finally {
-        if (isMountedRef.current) {
-          setLoading(false);
-        }
-      }
-    },
-    [router, speakQuestion, initSession, setLoading, setError]
-  );
-
-  // End current session
-  const endSession = useCallback(async () => {
-    const state = useInterviewStore.getState();
-    if (!state.sessionId) return;
-
-    try {
-      const feedbackData: FeedbackResponse = await apiEndSession(
-        state.sessionId
-      );
-      setFeedback(feedbackData);
-      completeSession();
-      setSessionStatus(AiInterviewSessionStatus.COMPLETED);
-      loadedSessionIdRef.current = null;
-      router.push(`/practice/ai-interview/results/${state.sessionId}`);
-    } catch (error) {
-      setError(getErrorMessage(error));
-    }
-  }, [completeSession, setFeedback, setSessionStatus, router, setError]);
-
-  // Delete a session
-  const handleDeleteSession = useCallback(
-    async (id: string) => {
-      try {
-        await apiDeleteSession(id);
-        // Refresh sessions list
-        const result = await getUserSessions();
-        setSessions(result);
-      } catch (error) {
-        setError(getErrorMessage(error));
-      }
-    },
-    [setSessions, setError]
-  );
-
-  // Fetch user sessions with pagination
-  const fetchUserSessions = useCallback(
-    async (params?: GetSessionsParams) => {
-      try {
-        const result = await getUserSessions(params);
-        setSessions(result);
-      } catch (error) {
-        console.error("Failed to fetch sessions:", error);
-      }
-    },
-    [setSessions]
-  );
-
-  // Fetch user stats
-  const fetchUserStats = useCallback(async () => {
-    try {
-      const statsData = await getUserSessionStats();
-      setStats(statsData);
-    } catch (error) {
-      console.error("Failed to fetch stats:", error);
-    }
-  }, [setStats]);
-
-  // Manual load session function (for explicit calls)
-  const loadSession = useCallback(
-    async (id: string) => {
-      if (isLoadingSessionRef.current) return;
-
-      isLoadingSessionRef.current = true;
-      setLoading(true);
-      setError(null);
-
-      try {
-        const session: SessionResponse = await getInterviewSession(id);
-
-        if (!isMountedRef.current) return;
-
-        loadedSessionIdRef.current = id;
-
-        initSession({
-          sessionId: session.sessionId,
-          currentQuestion: session.currentQuestion,
-          currentQuestionIndex: session.progress.questionNumber - 1,
-          totalQuestions: session.progress.estimatedTotal,
-          progress: session.progress,
-          context: session.context,
-        });
-
-        await speakQuestion(
-          session.currentQuestion.text,
-          session.currentQuestion.audioUrl
-        );
-      } catch (error) {
-        if (isMountedRef.current) {
-          setError(getErrorMessage(error));
-          router.push("/practice/ai-interview");
-        }
-      } finally {
-        if (isMountedRef.current) {
-          setLoading(false);
-        }
-        isLoadingSessionRef.current = false;
-      }
-    },
-    [router, speakQuestion, initSession, setLoading, setError]
-  );
+  // Sync on data change
+  if (query.data) {
+    syncToStore();
+  }
 
   return {
-    // Session State
-    sessionId,
-    phase,
-    status,
-    context,
-
-    // Questions
-    questions,
-    currentQuestionIndex,
-    currentQuestion,
-    currentQuestionText: currentQuestion?.text || "Please wait...",
-    currentCategory:
-      currentQuestion?.category || AiInterviewQuestionCategory.INTRODUCTORY,
-    totalQuestions,
-    progress,
-
-    // Transcript
-    fullTranscript: transcript,
-    currentTranscript,
-
-    // UI State
-    loading,
-    error,
-    micPermission,
-    silenceTimer,
-    isRecording,
-    isAiSpeaking,
-    isProcessing,
-    isListening,
-    isSpeaking,
-    isSpeechSupported,
-
-    // User Data
-    sessions,
-    sessionsPagination,
-    stats,
-    feedback,
-
-    // Actions
-    startSession,
-    loadSession,
-    startRecording,
-    stopRecording,
-    submitAnswer: handleSubmitAnswer,
-    endSession,
-    deleteSession: handleDeleteSession,
-    fetchUserSessions,
-    fetchUserStats,
-    requestMicPermission: requestPermission,
-    setError,
-    setLoading,
-    setPhase,
-    setFeedback,
-    resetSession,
-    resetAll,
+    data: query.data,
+    isLoading: query.isLoading,
+    isError: query.isError,
+    error: query.error,
+    isFetching: query.isFetching,
+    isFetchingNextPage: query.isFetchingNextPage,
+    fetchNextPage: query.fetchNextPage,
+    hasNextPage: query.hasNextPage,
+    refetch: query.refetch,
   };
+}
+
+/**
+ * Alternative: Simple pagination hook (non-infinite)
+ */
+export function useInterviewSessionsPaginated(page = 1, pageSize = 10) {
+  const store = useInterviewStore();
+  const { setSessionHistory, appendSessionHistory, setHistoryLoading } = store;
+
+  const query = useQuery({
+    queryKey: [...interviewKeys.sessions(), page],
+    queryFn: async () => {
+      setHistoryLoading(true);
+      try {
+        const data = await interviewService.listSessions({ page, pageSize });
+        if (page === 1) {
+          setSessionHistory(data.sessions, data.hasMore);
+        } else {
+          appendSessionHistory(data.sessions, data.hasMore);
+        }
+        return data;
+      } finally {
+        setHistoryLoading(false);
+      }
+    },
+    staleTime: 30000,
+  });
+
+  return query;
+}
+
+export function useInterviewSession(sessionId: string) {
+  const { setCurrentSession } = useInterviewStore();
+
+  return useQuery({
+    queryKey: interviewKeys.session(sessionId),
+    queryFn: async () => {
+      const session = await interviewService.getSession(sessionId);
+      setCurrentSession(session);
+      return session;
+    },
+    enabled: !!sessionId,
+  });
+}
+
+export function useInterviewSessionDetail(sessionId: string) {
+  return useQuery({
+    queryKey: interviewKeys.sessionDetail(sessionId),
+    queryFn: () => interviewService.getSessionDetail(sessionId),
+    enabled: !!sessionId,
+  });
+}
+
+// =====================================================
+// MUTATION HOOKS
+// =====================================================
+
+export function useCreateSession() {
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const { setCurrentSession } = useInterviewStore();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: (input: CreateSessionInput) => interviewService.createSession(input),
+    onSuccess: (session) => {
+      setCurrentSession(session);
+      queryClient.invalidateQueries({ queryKey: interviewKeys.sessions() });
+      toast({
+        title: 'Session Created',
+        description: 'Your interview session is ready to start.',
+      });
+      router.push(`/practice/ai-interview/${session.id}`);
+    },
+    onError: (error: Error & { response?: { data?: { message?: string } } }) => {
+      toast({
+        title: 'Error',
+        description: error.response?.data?.message || 'Failed to create session',
+        variant: 'destructive',
+      });
+    },
+  });
+}
+
+export function useStartSession() {
+  const queryClient = useQueryClient();
+  const { setCurrentSession, addMessage } = useInterviewStore();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: (sessionId: string) => interviewService.startSession(sessionId),
+    onSuccess: (data, sessionId) => {
+      setCurrentSession(data.session);
+      
+      // Add opening message to conversation
+      addMessage({
+        id: `ai-${Date.now()}`,
+        role: 'assistant',
+        content: data.openingMessage,
+        timestamp: new Date(),
+        category: 'INTRODUCTORY',
+      });
+
+      queryClient.invalidateQueries({ queryKey: interviewKeys.session(sessionId) });
+    },
+    onError: (error: Error & { response?: { data?: { message?: string } } }) => {
+      toast({
+        title: 'Error',
+        description: error.response?.data?.message || 'Failed to start session',
+        variant: 'destructive',
+      });
+    },
+  });
+}
+
+export function useCancelSession() {
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const { reset } = useInterviewStore();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: (sessionId: string) => interviewService.cancelSession(sessionId),
+    onSuccess: () => {
+      reset();
+      queryClient.invalidateQueries({ queryKey: interviewKeys.sessions() });
+      toast({
+        title: 'Session Cancelled',
+        description: 'Your interview session has been cancelled.',
+      });
+      router.push('/practice/ai-interview');
+    },
+    onError: (error: Error & { response?: { data?: { message?: string } } }) => {
+      toast({
+        title: 'Error',
+        description: error.response?.data?.message || 'Failed to cancel session',
+        variant: 'destructive',
+      });
+    },
+  });
+}
+
+export function useEndSession() {
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const { setFeedback, updateSessionStatus } = useInterviewStore();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: (sessionId: string) => interviewService.endSession(sessionId),
+    onSuccess: (data, sessionId) => {
+      setFeedback(data.feedback);
+      updateSessionStatus('COMPLETED');
+      queryClient.invalidateQueries({ queryKey: interviewKeys.sessions() });
+      toast({
+        title: 'Interview Complete',
+        description: 'Your feedback is ready.',
+      });
+      router.push(`/practice/ai-interview/results/${sessionId}`);
+    },
+    onError: (error: Error & { response?: { data?: { message?: string } } }) => {
+      toast({
+        title: 'Error',
+        description: error.response?.data?.message || 'Failed to end session',
+        variant: 'destructive',
+      });
+    },
+  });
+}
+
+// =====================================================
+// FEEDBACK HOOKS
+// =====================================================
+
+export function useInterviewFeedback(sessionId: string) {
+  const { setFeedback, setFeedbackLoading } = useInterviewStore();
+
+  return useQuery({
+    queryKey: interviewKeys.feedback(sessionId),
+    queryFn: async () => {
+      setFeedbackLoading(true);
+      try {
+        const feedback = await interviewService.getFeedback(sessionId);
+        setFeedback(feedback);
+        return feedback;
+      } finally {
+        setFeedbackLoading(false);
+      }
+    },
+    enabled: !!sessionId,
+  });
+}
+
+export function useRegenerateFeedback() {
+  const queryClient = useQueryClient();
+  const { setFeedback } = useInterviewStore();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: (sessionId: string) => interviewService.regenerateFeedback(sessionId),
+    onSuccess: (feedback, sessionId) => {
+      setFeedback(feedback);
+      queryClient.invalidateQueries({ queryKey: interviewKeys.feedback(sessionId) });
+      toast({
+        title: 'Feedback Regenerated',
+        description: 'Your feedback has been updated.',
+      });
+    },
+    onError: (error: Error & { response?: { data?: { message?: string } } }) => {
+      toast({
+        title: 'Error',
+        description: error.response?.data?.message || 'Failed to regenerate feedback',
+        variant: 'destructive',
+      });
+    },
+  });
 }

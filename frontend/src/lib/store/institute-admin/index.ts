@@ -1,0 +1,28 @@
+// src/lib/store/institute-admin/index.ts
+
+export {
+  useWizardStore,
+  useWizardCurrentStep,
+  useWizardBasicInfo,
+  useWizardSchedule,
+  useWizardEligibility,
+  useWizardModules,
+  useWizardSettings,
+  useWizardErrors,
+  useWizardIsDirty,
+  useWizardCompletedSteps,
+  useWizardNavigation,
+  useWizardModuleActions,
+  WIZARD_STEPS,
+  TOTAL_STEPS,
+  type WizardStore,
+  type WizardState,
+  type WizardActions,
+  type WizardModule,
+  type WizardBasicInfo,
+  type WizardSchedule,
+  type WizardEligibility,
+  type WizardSettings,
+  type WizardValidationErrors,
+  type CreateMockDrivePayload,
+} from './mockdrive-wizard-store';

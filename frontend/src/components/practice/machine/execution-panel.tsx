@@ -3,10 +3,12 @@
 "use client";
 
 import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "../../ui/button";
 import { Textarea } from "../../ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../ui/tabs";
 import { ScrollArea } from "../../ui/scroll-area";
+import { Badge } from "../../ui/badge";
 import type {
   RunCodeResponse,
   SubmitCodeResponse,
@@ -29,6 +31,7 @@ import {
   AlertTriangle,
   ChevronDown,
   ChevronRight,
+  Zap,
 } from "lucide-react";
 import { cn } from "../../../lib/utils";
 
@@ -62,24 +65,20 @@ export function ExecutionPanel({
   const handleRunWithCustomInput = () => onRun(customInput);
   const handleSubmit = () => onSubmit();
 
-  // Get execution stats from run result
   const getExecutionStats = () => {
     if (!runResult) return null;
-
     if (isRunCodeCustomInput(runResult)) {
       return {
         time: runResult.result.executionTime,
         memory: runResult.result.memoryUsed,
       };
     }
-
     if (isRunCodeSampleTestCases(runResult)) {
       return {
         time: runResult.summary.averageExecutionTime,
         memory: runResult.summary.maxMemoryUsed,
       };
     }
-
     return null;
   };
 
@@ -93,16 +92,11 @@ export function ExecutionPanel({
 
   const handleInternalTabChange = (tab: "input" | "output" | "result") => {
     setInputTab(tab);
-    if (tab === "output") {
-      onTabChange("output");
-    } else if (tab === "result") {
-      onTabChange("submissions");
-    } else {
-      onTabChange("description");
-    }
+    if (tab === "output") onTabChange("output");
+    else if (tab === "result") onTabChange("submissions");
+    else onTabChange("description");
   };
 
-  // Get result status for output tab
   const getOutputStatus = () => {
     if (!runResult) return null;
     if (runResult.compilationStatus === "COMPILATION_ERROR") return "error";
@@ -137,7 +131,7 @@ export function ExecutionPanel({
             size="sm"
             onClick={handleSubmit}
             disabled={isRunning || isSubmitting}
-            className="gap-2"
+            className="gap-2 bg-emerald-600 hover:bg-emerald-700"
           >
             {isSubmitting ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -148,22 +142,29 @@ export function ExecutionPanel({
           </Button>
         </div>
 
-        {stats && (
-          <div className="flex items-center gap-4 text-xs text-muted-foreground">
-            {stats.time !== undefined && (
-              <span className="flex items-center gap-1.5">
-                <Clock className="h-3.5 w-3.5" />
-                {stats.time.toFixed(2)}ms
-              </span>
-            )}
-            {stats.memory !== undefined && (
-              <span className="flex items-center gap-1.5">
-                <MemoryStick className="h-3.5 w-3.5" />
-                {(stats.memory / 1024).toFixed(1)}MB
-              </span>
-            )}
-          </div>
-        )}
+        <AnimatePresence>
+          {stats && (
+            <motion.div
+              initial={{ opacity: 0, x: 10 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 10 }}
+              className="flex items-center gap-4 text-xs"
+            >
+              {stats.time !== undefined && (
+                <div className="flex items-center gap-1.5 text-muted-foreground">
+                  <Zap className="h-3.5 w-3.5" />
+                  <span className="font-mono">{stats.time.toFixed(2)}ms</span>
+                </div>
+              )}
+              {stats.memory !== undefined && (
+                <div className="flex items-center gap-1.5 text-muted-foreground">
+                  <MemoryStick className="h-3.5 w-3.5" />
+                  <span className="font-mono">{(stats.memory / 1024).toFixed(1)}MB</span>
+                </div>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Tabs */}
@@ -175,51 +176,51 @@ export function ExecutionPanel({
         <TabsList className="h-auto w-full justify-start gap-0 rounded-none border-b border-border bg-transparent p-0">
           <TabsTrigger
             value="input"
-            className="gap-2 rounded-none border-b-2 border-transparent px-4 py-2.5 text-sm data-[state=active]:border-foreground data-[state=active]:bg-transparent"
+            className="gap-2 rounded-none border-b-2 border-transparent px-4 py-2.5 text-sm data-[state=active]:border-primary data-[state=active]:bg-transparent"
           >
             <Terminal className="h-4 w-4" />
             Input
           </TabsTrigger>
           <TabsTrigger
             value="output"
-            className="gap-2 rounded-none border-b-2 border-transparent px-4 py-2.5 text-sm data-[state=active]:border-foreground data-[state=active]:bg-transparent"
+            className="gap-2 rounded-none border-b-2 border-transparent px-4 py-2.5 text-sm data-[state=active]:border-primary data-[state=active]:bg-transparent"
           >
             Output
             {runResult && (
-              <span
+              <Badge
+                variant="secondary"
                 className={cn(
-                  "ml-1 rounded px-1.5 py-0.5 text-xs font-medium",
-                  outputStatus === "error"
-                    ? "bg-secondary text-muted-foreground"
-                    : outputStatus === "success"
-                    ? "bg-secondary text-foreground"
-                    : "bg-secondary text-muted-foreground"
+                  "ml-1 px-1.5 py-0 text-xs",
+                  outputStatus === "success" && "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
+                  outputStatus === "error" && "bg-rose-500/10 text-rose-600 dark:text-rose-400",
+                  outputStatus === "partial" && "bg-amber-500/10 text-amber-600 dark:text-amber-400"
                 )}
               >
                 {runResult.compilationStatus === "COMPILATION_ERROR"
                   ? "CE"
                   : isRunCodeSampleTestCases(runResult)
-                  ? `${runResult.summary.passed}/${runResult.summary.totalTestCases}`
-                  : "✓"}
-              </span>
+                    ? `${runResult.summary.passed}/${runResult.summary.totalTestCases}`
+                    : "✓"}
+              </Badge>
             )}
           </TabsTrigger>
           <TabsTrigger
             value="result"
-            className="gap-2 rounded-none border-b-2 border-transparent px-4 py-2.5 text-sm data-[state=active]:border-foreground data-[state=active]:bg-transparent"
+            className="gap-2 rounded-none border-b-2 border-transparent px-4 py-2.5 text-sm data-[state=active]:border-primary data-[state=active]:bg-transparent"
           >
             Result
             {submitResult && (
-              <span
+              <Badge
+                variant="secondary"
                 className={cn(
-                  "ml-1 rounded px-1.5 py-0.5 text-xs font-medium",
+                  "ml-1 px-1.5 py-0 text-xs",
                   submitResult.isSolved
-                    ? "bg-secondary text-foreground"
-                    : "bg-secondary text-muted-foreground"
+                    ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                    : "bg-rose-500/10 text-rose-600 dark:text-rose-400"
                 )}
               >
                 {submitResult.testCasesPassed}/{submitResult.testCasesTotal}
-              </span>
+              </Badge>
             )}
           </TabsTrigger>
         </TabsList>
@@ -234,7 +235,7 @@ export function ExecutionPanel({
               value={customInput}
               onChange={(e) => setCustomInput(e.target.value)}
               placeholder="Enter your test input..."
-              className="min-h-[120px] flex-1 resize-none font-mono text-sm"
+              className="min-h-[100px] flex-1 resize-none font-mono text-sm"
             />
             <Button
               variant="outline"
@@ -258,7 +259,7 @@ export function ExecutionPanel({
           <ScrollArea className="h-full">
             <div className="p-4">
               {!runResult ? (
-                <EmptyState message="Run your code to see output" />
+                <EmptyState message="Run your code to see output" icon={Play} />
               ) : (
                 <RunResultDisplay result={runResult} />
               )}
@@ -271,7 +272,7 @@ export function ExecutionPanel({
           <ScrollArea className="h-full">
             <div className="p-4">
               {!submitResult ? (
-                <EmptyState message="Submit your code to see results" />
+                <EmptyState message="Submit your code to see results" icon={Send} />
               ) : (
                 <SubmitResultDisplay result={submitResult} />
               )}
@@ -284,43 +285,62 @@ export function ExecutionPanel({
 }
 
 // Empty State Component
-function EmptyState({ message }: { message: string }) {
+function EmptyState({ message, icon: Icon }: { message: string; icon: React.ElementType }) {
   return (
-    <div className="flex flex-col items-center justify-center py-12 text-center">
-      <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-secondary">
-        <Terminal className="h-5 w-5 text-muted-foreground" />
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="flex flex-col items-center justify-center py-12 text-center"
+    >
+      <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+        <Icon className="h-5 w-5 text-muted-foreground" />
       </div>
       <p className="text-sm text-muted-foreground">{message}</p>
-    </div>
+    </motion.div>
   );
 }
 
 // Run Result Display Component
 function RunResultDisplay({ result }: { result: RunCodeResponse }) {
-  // Compilation Error
   if (result.compilationStatus === "COMPILATION_ERROR") {
     return (
-      <div className="space-y-3">
-        <div className="flex items-center gap-2">
-          <XCircle className="h-5 w-5" />
-          <span className="font-medium">Compilation Error</span>
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="space-y-4"
+      >
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-rose-500/10">
+            <XCircle className="h-5 w-5 text-rose-500" />
+          </div>
+          <div>
+            <span className="font-semibold text-rose-600 dark:text-rose-400">
+              Compilation Error
+            </span>
+            <p className="text-xs text-muted-foreground">Fix the errors and try again</p>
+          </div>
         </div>
         {result.compileOutput && (
-          <pre className="overflow-x-auto whitespace-pre-wrap rounded-lg border border-border bg-secondary p-4 font-mono text-sm">
+          <pre className="overflow-x-auto whitespace-pre-wrap rounded-xl border border-rose-500/20 bg-rose-500/5 p-4 font-mono text-sm text-rose-700 dark:text-rose-300">
             {result.compileOutput}
           </pre>
         )}
-      </div>
+      </motion.div>
     );
   }
 
-  // Custom Input Result
   if (isRunCodeCustomInput(result)) {
     return (
-      <div className="space-y-4">
-        <div className="flex items-center gap-2">
-          <CheckCircle2 className="h-5 w-5" />
-          <span className="font-medium">Execution Complete</span>
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="space-y-4"
+      >
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500/10">
+            <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+          </div>
+          <span className="font-semibold">Execution Complete</span>
         </div>
 
         <div className="space-y-3">
@@ -328,42 +348,47 @@ function RunResultDisplay({ result }: { result: RunCodeResponse }) {
           <OutputBlock label="Output" content={result.result.output || "(no output)"} />
         </div>
 
-        <ExecutionMeta
-          time={result.result.executionTime}
-          memory={result.result.memoryUsed}
-        />
-      </div>
+        <ExecutionMeta time={result.result.executionTime} memory={result.result.memoryUsed} />
+      </motion.div>
     );
   }
 
-  // Sample Test Cases Result
   if (isRunCodeSampleTestCases(result)) {
     const allPassed = result.summary.failed === 0;
 
     return (
-      <div className="space-y-4">
-        {/* Summary */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="space-y-4"
+      >
         <div className="flex items-center gap-3">
-          {allPassed ? (
-            <CheckCircle2 className="h-5 w-5" />
-          ) : (
-            <XCircle className="h-5 w-5" />
-          )}
+          <div
+            className={cn(
+              "flex h-10 w-10 items-center justify-center rounded-full",
+              allPassed ? "bg-emerald-500/10" : "bg-amber-500/10"
+            )}
+          >
+            {allPassed ? (
+              <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+            ) : (
+              <AlertTriangle className="h-5 w-5 text-amber-500" />
+            )}
+          </div>
           <div>
-            <div className="font-medium">
+            <div className="font-semibold">
               {result.summary.passed} / {result.summary.totalTestCases} Passed
             </div>
             <div className="text-xs text-muted-foreground">Sample test cases</div>
           </div>
         </div>
 
-        {/* Individual Results */}
         <div className="space-y-2">
           {result.results.map((tc, index) => (
             <TestCaseResultItem key={index} result={tc} index={index} />
           ))}
         </div>
-      </div>
+      </motion.div>
     );
   }
 
@@ -377,7 +402,7 @@ function OutputBlock({ label, content }: { label: string; content: string }) {
       <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
         {label}
       </label>
-      <pre className="overflow-x-auto whitespace-pre-wrap rounded-lg border border-border bg-secondary p-3 font-mono text-sm">
+      <pre className="overflow-x-auto whitespace-pre-wrap rounded-xl bg-muted/50 p-4 font-mono text-sm">
         {content}
       </pre>
     </div>
@@ -389,17 +414,17 @@ function ExecutionMeta({ time, memory }: { time?: number; memory?: number }) {
   if (!time && !memory) return null;
 
   return (
-    <div className="flex items-center gap-4 text-xs text-muted-foreground">
+    <div className="flex items-center gap-4 rounded-xl bg-muted/50 p-3 text-sm">
       {time !== undefined && (
-        <span className="flex items-center gap-1.5">
-          <Clock className="h-3.5 w-3.5" />
-          {time.toFixed(2)}ms
+        <span className="flex items-center gap-1.5 text-muted-foreground">
+          <Zap className="h-4 w-4" />
+          <span className="font-mono">{time.toFixed(2)}ms</span>
         </span>
       )}
       {memory !== undefined && (
-        <span className="flex items-center gap-1.5">
-          <MemoryStick className="h-3.5 w-3.5" />
-          {(memory / 1024).toFixed(1)}MB
+        <span className="flex items-center gap-1.5 text-muted-foreground">
+          <MemoryStick className="h-4 w-4" />
+          <span className="font-mono">{(memory / 1024).toFixed(1)}MB</span>
         </span>
       )}
     </div>
@@ -418,31 +443,43 @@ function TestCaseResultItem({
   const isPassed = result.status === "PASSED";
 
   return (
-    <div className="rounded-lg border border-border">
-      {/* Header */}
+    <motion.div
+      initial={{ opacity: 0, y: 5 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.05 }}
+      className={cn(
+        "overflow-hidden rounded-xl border-2",
+        isPassed
+          ? "border-emerald-500/30 bg-emerald-500/5"
+          : "border-rose-500/30 bg-rose-500/5"
+      )}
+    >
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="flex w-full items-center justify-between p-3 text-left transition-colors hover:bg-secondary/50"
+        className="flex w-full items-center justify-between p-3 text-left transition-colors hover:bg-muted/30"
       >
         <div className="flex items-center gap-3">
           {isPassed ? (
-            <CheckCircle2 className="h-4 w-4" />
+            <CheckCircle2 className="h-4 w-4 text-emerald-500" />
           ) : (
-            <XCircle className="h-4 w-4" />
+            <XCircle className="h-4 w-4 text-rose-500" />
           )}
           <span className="text-sm font-medium">
             Test Case {result.testCaseNumber ?? index + 1}
           </span>
         </div>
         <div className="flex items-center gap-2">
-          <span
+          <Badge
+            variant="secondary"
             className={cn(
-              "rounded px-2 py-0.5 text-xs font-medium",
-              isPassed ? "bg-secondary" : "bg-secondary text-muted-foreground"
+              "text-xs",
+              isPassed
+                ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                : "bg-rose-500/10 text-rose-600 dark:text-rose-400"
             )}
           >
             {result.status.replace(/_/g, " ")}
-          </span>
+          </Badge>
           {isExpanded ? (
             <ChevronDown className="h-4 w-4 text-muted-foreground" />
           ) : (
@@ -451,42 +488,53 @@ function TestCaseResultItem({
         </div>
       </button>
 
-      {/* Content */}
-      {isExpanded && (
-        <div className="border-t border-border p-3">
-          <div className="grid gap-3 sm:grid-cols-2">
-            <OutputBlock label="Input" content={result.input} />
-            <OutputBlock label="Expected" content={result.expectedOutput} />
-          </div>
+      <AnimatePresence>
+        {isExpanded && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="border-t border-border/50"
+          >
+            <div className="p-3">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <OutputBlock label="Input" content={result.input} />
+                <OutputBlock label="Expected" content={result.expectedOutput} />
+              </div>
 
-          {!isPassed && (
-            <div className="mt-3">
-              <OutputBlock
-                label="Your Output"
-                content={result.actualOutput || "(no output)"}
-              />
-            </div>
-          )}
+              {!isPassed && (
+                <div className="mt-3">
+                  <OutputBlock
+                    label="Your Output"
+                    content={result.actualOutput || "(no output)"}
+                  />
+                </div>
+              )}
 
-          {result.stderr && (
-            <div className="mt-3">
-              <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
-                Error
-              </label>
-              <pre className="overflow-x-auto whitespace-pre-wrap rounded-lg border border-border bg-secondary p-3 font-mono text-sm">
-                {result.stderr}
-              </pre>
-            </div>
-          )}
+              {result.stderr && (
+                <div className="mt-3">
+                  <label className="mb-1.5 block text-xs font-medium text-rose-500">
+                    Error
+                  </label>
+                  <pre className="overflow-x-auto whitespace-pre-wrap rounded-xl border border-rose-500/20 bg-rose-500/5 p-3 font-mono text-sm text-rose-700 dark:text-rose-300">
+                    {result.stderr}
+                  </pre>
+                </div>
+              )}
 
-          {(result.executionTime !== null || result.memoryUsed) && (
-            <div className="mt-3">
-              <ExecutionMeta time={result.executionTime ?? undefined} memory={result.memoryUsed ?? undefined} />
+              {(result.executionTime !== null || result.memoryUsed) && (
+                <div className="mt-3">
+                  <ExecutionMeta
+                    time={result.executionTime ?? undefined}
+                    memory={result.memoryUsed ?? undefined}
+                  />
+                </div>
+              )}
             </div>
-          )}
-        </div>
-      )}
-    </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
   );
 }
 
@@ -495,56 +543,78 @@ function SubmitResultDisplay({ result }: { result: SubmitCodeResponse }) {
   const statusDisplay = result.status.replace(/_/g, " ");
 
   return (
-    <div className="space-y-4">
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="space-y-4"
+    >
       {/* Status Banner */}
-      <div className="flex items-center gap-4 rounded-lg border border-border bg-secondary/50 p-4">
-        {result.isSolved ? (
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-secondary">
-            <CheckCircle2 className="h-5 w-5" />
-          </div>
-        ) : (
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-secondary">
-            <XCircle className="h-5 w-5" />
-          </div>
+      <div
+        className={cn(
+          "flex items-center gap-4 rounded-xl p-4",
+          result.isSolved
+            ? "bg-emerald-500/10"
+            : "bg-rose-500/10"
         )}
+      >
+        <div
+          className={cn(
+            "flex h-12 w-12 items-center justify-center rounded-full",
+            result.isSolved ? "bg-emerald-500" : "bg-rose-500"
+          )}
+        >
+          {result.isSolved ? (
+            <CheckCircle2 className="h-6 w-6 text-white" />
+          ) : (
+            <XCircle className="h-6 w-6 text-white" />
+          )}
+        </div>
         <div>
-          <div className="font-semibold">{statusDisplay}</div>
+          <div
+            className={cn(
+              "font-semibold",
+              result.isSolved
+                ? "text-emerald-700 dark:text-emerald-300"
+                : "text-rose-700 dark:text-rose-300"
+            )}
+          >
+            {statusDisplay}
+          </div>
           <div className="text-sm text-muted-foreground">{result.message}</div>
         </div>
       </div>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-3 gap-3">
-        <div className="rounded-lg border border-border p-3 text-center">
-          <div className="text-lg font-semibold">
-            {result.testCasesPassed}/{result.testCasesTotal}
-          </div>
-          <div className="text-xs text-muted-foreground">Test Cases</div>
-        </div>
+        <StatCard
+          label="Test Cases"
+          value={`${result.testCasesPassed}/${result.testCasesTotal}`}
+          icon={CheckCircle2}
+        />
         {result.executionTime !== null && (
-          <div className="rounded-lg border border-border p-3 text-center">
-            <div className="text-lg font-semibold">
-              {result.executionTime.toFixed(0)}ms
-            </div>
-            <div className="text-xs text-muted-foreground">Runtime</div>
-          </div>
+          <StatCard
+            label="Runtime"
+            value={`${result.executionTime.toFixed(0)}ms`}
+            icon={Zap}
+          />
         )}
         {result.memoryUsed !== null && (
-          <div className="rounded-lg border border-border p-3 text-center">
-            <div className="text-lg font-semibold">
-              {(result.memoryUsed / 1024).toFixed(1)}MB
-            </div>
-            <div className="text-xs text-muted-foreground">Memory</div>
-          </div>
+          <StatCard
+            label="Memory"
+            value={`${(result.memoryUsed / 1024).toFixed(1)}MB`}
+            icon={MemoryStick}
+          />
         )}
       </div>
 
       {/* Failed Test Case Info */}
       {result.failedTestCase && (
-        <div className="rounded-lg border border-border p-4">
+        <div className="rounded-xl border-2 border-rose-500/30 bg-rose-500/5 p-4">
           <div className="mb-3 flex items-center gap-2">
-            <AlertTriangle className="h-4 w-4" />
-            <span className="text-sm font-medium">{result.failedTestCase.message}</span>
+            <AlertTriangle className="h-4 w-4 text-rose-500" />
+            <span className="text-sm font-medium text-rose-700 dark:text-rose-300">
+              {result.failedTestCase.message}
+            </span>
           </div>
 
           {result.failedTestCase.input !== "[Hidden]" && (
@@ -564,6 +634,24 @@ function SubmitResultDisplay({ result }: { result: SubmitCodeResponse }) {
           )}
         </div>
       )}
+    </motion.div>
+  );
+}
+
+function StatCard({
+  label,
+  value,
+  icon: Icon,
+}: {
+  label: string;
+  value: string;
+  icon: React.ElementType;
+}) {
+  return (
+    <div className="rounded-xl bg-muted/50 p-3 text-center">
+      <Icon className="mx-auto mb-1 h-4 w-4 text-muted-foreground" />
+      <div className="text-lg font-semibold">{value}</div>
+      <div className="text-xs text-muted-foreground">{label}</div>
     </div>
   );
 }

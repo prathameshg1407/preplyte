@@ -1,7 +1,7 @@
-// src/lib/api/services/auth.service.ts
 import { apiClient } from '../axios-instance';
 import { API_ENDPOINTS } from '../endpoints';
-import { AUTH_STORAGE_KEYS } from '@/lib/utils/storage';
+import { AUTH_STORAGE_KEYS, clearAuthStorage, storage } from '@/lib/utils/storage';
+import { logger } from '@/lib/utils/logger';
 import type { ApiResponse } from '@/types/api.types';
 import type {
   LoginCredentials,
@@ -16,19 +16,10 @@ type RegisterResponse = ApiResponse<User>;
 const unwrap = <T>(promise: Promise<{ data: T }>): Promise<T> =>
   promise.then((res) => res.data);
 
-// Save token to localStorage
-const saveTokenSync = (token: string): boolean => {
-  if (typeof window === 'undefined') return false;
-  
-  try {
-    localStorage.setItem(AUTH_STORAGE_KEYS.TOKEN, token);
-    const saved = localStorage.getItem(AUTH_STORAGE_KEYS.TOKEN);
-    console.log('[AuthService] Token save:', saved === token ? '✅ SUCCESS' : '❌ FAILED');
-    return saved === token;
-  } catch (error) {
-    console.error('[AuthService] Token save error:', error);
-    return false;
-  }
+const saveTokens = (accessToken: string, refreshToken: string): void => {
+  storage.set(AUTH_STORAGE_KEYS.ACCESS_TOKEN, accessToken);
+  storage.set(AUTH_STORAGE_KEYS.REFRESH_TOKEN, refreshToken);
+  logger.debug('[AuthService] Tokens saved');
 };
 
 export const authService = {
@@ -37,13 +28,8 @@ export const authService = {
       apiClient.post<LoginResponse>(API_ENDPOINTS.AUTH.LOGIN, credentials)
     );
 
-    console.log('[AuthService] Login response:', response);
-
-    // Save accessToken (not token!)
-    if (response.success && response.data?.accessToken) {
-      saveTokenSync(response.data.accessToken);
-    } else {
-      console.error('[AuthService] No accessToken in response');
+    if (response.success && response.data?.accessToken && response.data?.refreshToken) {
+      saveTokens(response.data.accessToken, response.data.refreshToken);
     }
 
     return response;
@@ -52,17 +38,22 @@ export const authService = {
   register: (credentials: RegisterCredentials): Promise<RegisterResponse> =>
     unwrap(apiClient.post(API_ENDPOINTS.AUTH.REGISTER, credentials)),
 
-  logout: async (): Promise<ApiResponse<void>> => {
+  logout: async (): Promise<ApiResponse<null>> => {
     try {
-      const response = await unwrap(
-        apiClient.post<ApiResponse<void>>(API_ENDPOINTS.AUTH.LOGOUT)
-      );
-      return response;
-    } finally {
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem(AUTH_STORAGE_KEYS.TOKEN);
-        localStorage.removeItem(AUTH_STORAGE_KEYS.STORE);
+      const refreshToken = storage.getRaw(AUTH_STORAGE_KEYS.REFRESH_TOKEN);
+
+      if (refreshToken) {
+        await unwrap(
+          apiClient.post<ApiResponse<null>>(API_ENDPOINTS.AUTH.LOGOUT, { refreshToken })
+        );
       }
+
+      return { success: true, data: null };
+    } catch (error) {
+      logger.warn('[AuthService] Logout API error (ignored)', error);
+      return { success: true, data: null };
+    } finally {
+      clearAuthStorage();
     }
   },
 
@@ -70,12 +61,18 @@ export const authService = {
     unwrap(apiClient.get(API_ENDPOINTS.AUTH.ME)),
 
   refreshToken: async (): Promise<LoginResponse> => {
+    const refreshToken = storage.getRaw(AUTH_STORAGE_KEYS.REFRESH_TOKEN);
+
+    if (!refreshToken) {
+      throw new Error('No refresh token available');
+    }
+
     const response = await unwrap(
-      apiClient.post<LoginResponse>(API_ENDPOINTS.AUTH.REFRESH)
+      apiClient.post<LoginResponse>(API_ENDPOINTS.AUTH.REFRESH, { refreshToken })
     );
 
-    if (response.success && response.data?.accessToken) {
-      saveTokenSync(response.data.accessToken);
+    if (response.success && response.data?.accessToken && response.data?.refreshToken) {
+      saveTokens(response.data.accessToken, response.data.refreshToken);
     }
 
     return response;

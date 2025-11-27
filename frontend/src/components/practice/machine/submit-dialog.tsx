@@ -2,6 +2,7 @@
 
 "use client";
 
+import { motion } from "framer-motion";
 import {
   Dialog,
   DialogContent,
@@ -11,7 +12,8 @@ import {
   DialogTitle,
 } from "../../ui/dialog";
 import { Button } from "../../ui/button";
-import { CheckCircle2, Circle, Code2, Loader2, AlertCircle } from "lucide-react";
+import { CheckCircle2, Circle, Code2, Loader2, AlertTriangle } from "lucide-react";
+import { cn } from "../../../lib/utils";
 
 interface SubmitDialogProps {
   open: boolean;
@@ -33,74 +35,114 @@ export function SubmitDialog({
   isSubmitting,
 }: SubmitDialogProps) {
   const unattempted = totalQuestions - attemptedCount;
-  const partiallyAttempted = attemptedCount - solvedCount;
-  const allAttempted = unattempted === 0;
+  const allSolved = solvedCount === totalQuestions;
+  const percentage = (solvedCount / totalQuestions) * 100;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary">
-              <Code2 className="h-4 w-4" />
-            </div>
-            Complete Session
-          </DialogTitle>
-          <DialogDescription>
-            {allAttempted
-              ? "You have attempted all problems. Ready to complete?"
-              : `You have ${unattempted} unattempted problem${unattempted > 1 ? "s" : ""}. Are you sure you want to complete?`}
-          </DialogDescription>
-        </DialogHeader>
+      <DialogContent className="overflow-hidden p-0 sm:max-w-md">
+        {/* Header */}
+        <div
+          className={cn(
+            "flex flex-col items-center px-6 pb-4 pt-8",
+            allSolved ? "bg-emerald-500/10" : "bg-amber-500/10"
+          )}
+        >
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ type: "spring", stiffness: 200, damping: 15 }}
+            className={cn(
+              "mb-4 flex h-16 w-16 items-center justify-center rounded-full",
+              allSolved ? "bg-emerald-500" : "bg-amber-500"
+            )}
+          >
+            {allSolved ? (
+              <CheckCircle2 className="h-8 w-8 text-white" />
+            ) : (
+              <AlertTriangle className="h-8 w-8 text-white" />
+            )}
+          </motion.div>
 
-        <div className="py-4">
+          <DialogHeader className="text-center">
+            <DialogTitle className="text-xl">
+              {allSolved ? "Great Work!" : "Complete Session?"}
+            </DialogTitle>
+            <DialogDescription className="text-center">
+              {allSolved
+                ? "You've solved all problems. Ready to complete?"
+                : `You have ${unattempted} unattempted problem${unattempted > 1 ? "s" : ""}.`}
+            </DialogDescription>
+          </DialogHeader>
+        </div>
+
+        {/* Stats */}
+        <div className="space-y-4 p-6">
           <div className="grid grid-cols-3 gap-3">
             <StatBlock
               icon={CheckCircle2}
               value={solvedCount}
               label="Solved"
-              highlight
+              color="text-emerald-500"
             />
             <StatBlock
-              icon={AlertCircle}
-              value={partiallyAttempted}
+              icon={AlertTriangle}
+              value={attemptedCount - solvedCount}
               label="Attempted"
+              color="text-amber-500"
             />
             <StatBlock
               icon={Circle}
               value={unattempted}
               label="Unattempted"
-              muted
             />
           </div>
 
-          {/* Progress indicator */}
-          <div className="mt-4">
-            <div className="mb-2 flex items-center justify-between text-xs text-muted-foreground">
+          {/* Progress Bar */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
               <span>Progress</span>
-              <span>{solvedCount} of {totalQuestions} solved</span>
+              <span>
+                {solvedCount} of {totalQuestions} solved
+              </span>
             </div>
-            <div className="h-2 overflow-hidden rounded-full bg-secondary">
-              <div
-                className="h-full bg-foreground transition-all"
-                style={{ width: `${(solvedCount / totalQuestions) * 100}%` }}
+            <div className="relative h-2.5 overflow-hidden rounded-full bg-muted">
+              <motion.div
+                className={cn(
+                  "absolute inset-y-0 left-0 rounded-full",
+                  allSolved ? "bg-emerald-500" : "bg-amber-500"
+                )}
+                initial={{ width: 0 }}
+                animate={{ width: `${percentage}%` }}
+                transition={{ duration: 0.5, ease: "easeOut" }}
               />
             </div>
           </div>
         </div>
 
-        <DialogFooter className="gap-2 sm:gap-0">
+        {/* Footer */}
+        <DialogFooter className="gap-2 border-t border-border bg-muted/30 px-6 py-4 sm:gap-0">
           <Button
             variant="ghost"
             onClick={() => onOpenChange(false)}
             disabled={isSubmitting}
+            className="flex-1"
           >
             Continue Coding
           </Button>
-          <Button onClick={onConfirm} disabled={isSubmitting}>
+          <Button
+            onClick={onConfirm}
+            disabled={isSubmitting}
+            className={cn(
+              "flex-1 gap-2",
+              allSolved
+                ? "bg-emerald-600 hover:bg-emerald-700"
+                : "bg-amber-600 hover:bg-amber-700"
+            )}
+          >
             {isSubmitting ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Loader2 className="h-4 w-4 animate-spin" />
                 Completing...
               </>
             ) : (
@@ -113,42 +155,22 @@ export function SubmitDialog({
   );
 }
 
-// Stat Block Component
 function StatBlock({
   icon: Icon,
   value,
   label,
-  highlight,
-  muted,
+  color,
 }: {
   icon: React.ElementType;
   value: number;
   label: string;
-  highlight?: boolean;
-  muted?: boolean;
+  color?: string;
 }) {
   return (
-    <div className="rounded-lg border border-border p-3 text-center">
-      <Icon
-        className={cn(
-          "mx-auto mb-1.5 h-5 w-5",
-          muted ? "text-muted-foreground" : ""
-        )}
-      />
-      <div
-        className={cn(
-          "text-xl font-semibold",
-          muted ? "text-muted-foreground" : ""
-        )}
-      >
-        {value}
-      </div>
+    <div className="rounded-xl bg-muted/50 p-3 text-center">
+      <Icon className={cn("mx-auto mb-1 h-5 w-5", color || "text-muted-foreground")} />
+      <div className="text-xl font-bold">{value}</div>
       <div className="text-xs text-muted-foreground">{label}</div>
     </div>
   );
-}
-
-// Helper for cn
-function cn(...classes: (string | boolean | undefined)[]) {
-  return classes.filter(Boolean).join(" ");
 }
