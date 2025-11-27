@@ -1,69 +1,53 @@
 // src/lib/store/auth-store.ts
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { AuthUser, AuthContext } from '@/types/auth.types';
+import { AUTH_STORAGE_KEYS } from '@/lib/utils/storage';
+import type { User, AuthContext, AuthState } from '@/types/auth.types';
 
-interface AuthStore {
-  // State
-  user: AuthUser | null;
-  token: string | null;
-  context: AuthContext | null;
-  isAuthenticated: boolean;
-  isLoading: boolean;
-  isHydrated: boolean;
-
-  // Actions
-  setAuth: (user: AuthUser, token: string, context: AuthContext) => void;
+interface AuthActions {
+  setAuth: (user: User, token: string, context: AuthContext) => void;
   logout: () => void;
-  updateUser: (user: Partial<AuthUser>) => void;
+  updateUser: (data: Partial<User>) => void;
   setLoading: (loading: boolean) => void;
   setHydrated: (hydrated: boolean) => void;
 }
 
-// Helper to safely access localStorage
-const safeLocalStorage = {
-  getItem: (key: string): string | null => {
-    if (typeof window === 'undefined') return null;
-    try {
-      return localStorage.getItem(key);
-    } catch {
-      return null;
+type AuthStore = AuthState & AuthActions;
+
+const initialState: AuthState = {
+  user: null,
+  token: null,
+  refreshToken: null,
+  context: null,
+  isAuthenticated: false,
+  isLoading: true,
+  isHydrated: false,
+};
+
+const syncTokenToStorage = (token: string | null): void => {
+  if (typeof window === 'undefined') return;
+
+  try {
+    if (token) {
+      localStorage.setItem(AUTH_STORAGE_KEYS.TOKEN, token);
+    } else {
+      localStorage.removeItem(AUTH_STORAGE_KEYS.TOKEN);
     }
-  },
-  setItem: (key: string, value: string): void => {
-    if (typeof window === 'undefined') return;
-    try {
-      localStorage.setItem(key, value);
-    } catch {
-      console.error('Failed to save to localStorage');
-    }
-  },
-  removeItem: (key: string): void => {
-    if (typeof window === 'undefined') return;
-    try {
-      localStorage.removeItem(key);
-    } catch {
-      console.error('Failed to remove from localStorage');
-    }
-  },
+  } catch (error) {
+    console.warn('[AuthStore] Token sync failed:', error);
+  }
 };
 
 export const useAuthStore = create<AuthStore>()(
   persist(
-    (set, get) => ({
-      // Initial state
-      user: null,
-      token: null,
-      context: null,
-      isAuthenticated: false,
-      isLoading: true, // Start as loading until hydrated
-      isHydrated: false,
+    (set) => ({
+      ...initialState,
 
       setAuth: (user, token, context) => {
-        console.log('[AuthStore] Setting auth for:', user?.email);
-
-        // Store token separately for axios interceptor
-        safeLocalStorage.setItem('auth_token', token);
+        console.log('[AuthStore] setAuth called with token:', token?.substring(0, 20) + '...');
+        
+        // Sync to direct storage
+        syncTokenToStorage(token);
 
         set({
           user,
@@ -75,70 +59,61 @@ export const useAuthStore = create<AuthStore>()(
       },
 
       logout: () => {
-        console.log('[AuthStore] Logging out');
-
-        // Clear auth data
-        safeLocalStorage.removeItem('auth_token');
-        safeLocalStorage.removeItem('auth_user');
+        console.log('[AuthStore] logout called');
+        syncTokenToStorage(null);
 
         set({
-          user: null,
-          token: null,
-          context: null,
-          isAuthenticated: false,
+          ...initialState,
           isLoading: false,
+          isHydrated: true,
         });
       },
 
-      updateUser: (userData) => {
+      updateUser: (data) =>
         set((state) => ({
-          user: state.user ? { ...state.user, ...userData } : null,
-        }));
-      },
+          user: state.user ? { ...state.user, ...data } : null,
+        })),
 
-      setLoading: (loading) => {
-        set({ isLoading: loading });
-      },
+      setLoading: (isLoading) => set({ isLoading }),
 
-      setHydrated: (hydrated) => {
-        set({ isHydrated: hydrated, isLoading: false });
-      },
+      setHydrated: (isHydrated) => set({ isHydrated, isLoading: false }),
     }),
     {
-      name: 'auth-storage',
-      storage: createJSONStorage(() => {
-        // Return a no-op storage for SSR
-        if (typeof window === 'undefined') {
-          return {
-            getItem: () => null,
-            setItem: () => {},
-            removeItem: () => {},
-          };
-        }
-        return localStorage;
-      }),
+      name: AUTH_STORAGE_KEYS.STORE,
+      storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         user: state.user,
         token: state.token,
         context: state.context,
         isAuthenticated: state.isAuthenticated,
       }),
-      onRehydrateStorage: () => (state) => {
+      onRehydrateStorage: () => (state, error) => {
+        if (error) {
+          console.error('[AuthStore] Hydration error:', error);
+          return;
+        }
+
         if (state) {
-          state.setHydrated(true);
-          
-          // Sync token to separate localStorage key for axios
+          console.log('[AuthStore] Hydrated:', {
+            hasUser: !!state.user,
+            hasToken: !!state.token,
+          });
+
           if (state.token) {
-            safeLocalStorage.setItem('auth_token', state.token);
+            syncTokenToStorage(state.token);
           }
+
+          state.setHydrated(true);
         }
       },
     }
   )
 );
 
-// Selector hooks for optimized re-renders
-export const useUser = () => useAuthStore((state) => state.user);
-export const useIsAuthenticated = () => useAuthStore((state) => state.isAuthenticated);
-export const useAuthLoading = () => useAuthStore((state) => state.isLoading);
-export const useAuthContext = () => useAuthStore((state) => state.context);
+// Selectors
+export const useUser = () => useAuthStore((s) => s.user);
+export const useToken = () => useAuthStore((s) => s.token);
+export const useIsAuthenticated = () => useAuthStore((s) => s.isAuthenticated);
+export const useAuthLoading = () => useAuthStore((s) => s.isLoading);
+export const useAuthContext = () => useAuthStore((s) => s.context);
+export const useIsHydrated = () => useAuthStore((s) => s.isHydrated);

@@ -9,13 +9,13 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Label } from '@/components/ui/label';
-import { Slider } from '@/components/ui/slider';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
+} from '../../ui/card';
+import { Button } from '../../ui/button';
+import { Checkbox } from '../../ui/checkbox';
+import { Label } from '../../ui/label';
+import { Slider } from '../../ui/slider';
+import { Badge } from '../../ui/badge';
+import { Separator } from '../../ui/separator';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,8 +25,8 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import { useAptitude } from '@/lib/hooks/use-aptitude';
+} from '../../ui/alert-dialog';
+import { useAptitude } from '../../../lib/hooks/use-aptitude';
 import {
   QUESTION_TYPE_CONFIG,
   DIFFICULTY_CONFIG,
@@ -35,14 +35,14 @@ import {
   RECOMMENDED_TIME_LIMITS,
   formatDuration,
   calculateRecommendedTime,
-} from '@/lib/constants/aptitude.constants';
+} from '../../../lib/constants/aptitude.constants';
 import type {
   QuestionType,
   DifficultyLevel,
   SessionListItem,
   AptitudeQuestionTypeInfo,
   DifficultyLevelInfo,
-} from '@/types/aptitude.types';
+} from '../../../types/aptitude.types';
 import {
   Brain,
   Calculator,
@@ -55,9 +55,10 @@ import {
   TrendingUp,
   Info,
   Play,
-  AlertTriangle,
+  AlertCircle,
+  Check,
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn } from '../../../lib/utils';
 
 // Icon mapping
 const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -114,17 +115,14 @@ export function PracticeConfigForm() {
 
   // Initialize: fetch config and check for active sessions
   useEffect(() => {
-    // Prevent double initialization in React Strict Mode
     if (hasInitialized.current) return;
     hasInitialized.current = true;
 
     const initialize = async () => {
       setIsInitializing(true);
       try {
-        // Fetch configuration
         await fetchConfig();
 
-        // Check for active (in_progress) sessions
         const sessionsData = await listSessions({
           status: 'in_progress',
           limit: 1,
@@ -154,8 +152,8 @@ export function PracticeConfigForm() {
     }
   }, [numberOfQuestions, difficulty, useRecommendedTime]);
 
-  // Normalize question type options for consistent rendering
-  const normalizedQuestionTypes: NormalizedQuestionType[] = 
+  // Normalize question type options
+  const normalizedQuestionTypes: NormalizedQuestionType[] =
     questionTypeOptions.length > 0
       ? questionTypeOptions.map((opt: AptitudeQuestionTypeInfo) => ({
           value: opt.value,
@@ -170,8 +168,8 @@ export function PracticeConfigForm() {
           icon: config.icon,
         }));
 
-  // Normalize difficulty options for consistent rendering
-  const normalizedDifficulties: NormalizedDifficulty[] = 
+  // Normalize difficulty options
+  const normalizedDifficulties: NormalizedDifficulty[] =
     difficultyLevels.length > 0
       ? difficultyLevels.map((opt: DifficultyLevelInfo) => ({
           value: opt.value,
@@ -184,7 +182,7 @@ export function PracticeConfigForm() {
           description: `${config.timePerQuestion}s / question`,
         }));
 
-  // Get time limit bounds for current difficulty
+  // Get time limit bounds
   const getTimeLimitBounds = () => {
     if (timeLimitConfig && timeLimitConfig[difficulty]) {
       return timeLimitConfig[difficulty];
@@ -208,20 +206,6 @@ export function PracticeConfigForm() {
 
   // Handle form submission
   const handleStart = async () => {
-  const requestData = {
-    difficulty,
-    questionTypes: selectedTypes,
-    numberOfQuestions,
-    timeLimit,
-  };
-
-  console.log('📤 Sending to backend:', JSON.stringify(requestData, null, 2));
-  console.log('📤 Data types:', {
-    difficulty: typeof difficulty,
-    questionTypes: Array.isArray(selectedTypes),
-    numberOfQuestions: typeof numberOfQuestions,
-    timeLimit: typeof timeLimit,
-  });
     try {
       await createSession({
         questionTypes: selectedTypes,
@@ -230,7 +214,7 @@ export function PracticeConfigForm() {
         timeLimit,
       });
     } catch {
-      // Error is handled in the hook
+      // Error handled in hook
     }
   };
 
@@ -245,23 +229,23 @@ export function PracticeConfigForm() {
     }
   };
 
-  // Handle start new (dismiss active session dialog)
+  // Handle start new
   const handleStartNew = () => {
     setActiveSession(null);
     setShowResumeDialog(false);
   };
 
-  // Get icon component for question type
+  // Get icon component
   const getIconComponent = (iconName: string): React.ComponentType<{ className?: string }> => {
     return ICONS[iconName] || ICONS[iconName.toLowerCase()] || Brain;
   };
 
   if (isInitializing) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center space-y-4">
-          <Loader2 className="h-10 w-10 animate-spin mx-auto text-primary" />
-          <p className="text-muted-foreground">Loading configuration...</p>
+      <div className="flex min-h-[400px] items-center justify-center">
+        <div className="space-y-4 text-center">
+          <Loader2 className="mx-auto h-8 w-8 animate-spin text-muted-foreground" />
+          <p className="text-sm text-muted-foreground">Loading configuration...</p>
         </div>
       </div>
     );
@@ -274,7 +258,7 @@ export function PracticeConfigForm() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-yellow-500" />
+              <AlertCircle className="h-5 w-5" />
               Active Session Found
             </AlertDialogTitle>
             <AlertDialogDescription>
@@ -283,24 +267,24 @@ export function PracticeConfigForm() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           {activeSession && (
-            <div className="py-4 space-y-3">
+            <div className="space-y-3 py-4">
               <div className="flex flex-wrap gap-2">
-                <Badge variant="outline">
+                <Badge variant="secondary">
                   {DIFFICULTY_CONFIG[activeSession.difficulty]?.label || activeSession.difficulty}
                 </Badge>
-                <Badge variant="outline">
+                <Badge variant="secondary">
                   {activeSession.numberOfQuestions} questions
                 </Badge>
-                <Badge variant="outline">
+                <Badge variant="secondary">
                   {activeSession.timeLimit} min
                 </Badge>
               </div>
-              <div className="text-sm text-muted-foreground">
+              <p className="text-sm text-muted-foreground">
                 Question types:{' '}
                 {activeSession.questionTypes
                   .map((t) => QUESTION_TYPE_CONFIG[t]?.label || t)
                   .join(', ')}
-              </div>
+              </p>
             </div>
           )}
           <AlertDialogFooter>
@@ -315,20 +299,19 @@ export function PracticeConfigForm() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <div className="max-w-2xl mx-auto space-y-6">
-        {/* Question Types Card */}
-        <Card className="border-2">
-          <CardHeader className="pb-4">
-            <CardTitle className="flex items-center gap-2 text-xl">
-              <Target className="h-5 w-5 text-primary" />
+      <div className="mx-auto max-w-2xl space-y-6">
+        {/* Question Types */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Target className="h-4 w-4" />
               Question Types
             </CardTitle>
             <CardDescription>
-              Select 1-3 question types to practice. Mix them up for a
-              comprehensive test!
+              Select 1-3 question types to practice
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-2">
             {normalizedQuestionTypes.map((config) => {
               const IconComponent = getIconComponent(config.icon);
               const isSelected = selectedTypes.includes(config.value);
@@ -337,10 +320,10 @@ export function PracticeConfigForm() {
                 <div
                   key={config.value}
                   className={cn(
-                    'flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all duration-200',
+                    'flex cursor-pointer items-center gap-4 rounded-lg border p-4 transition-colors',
                     isSelected
-                      ? 'border-primary bg-primary/5 shadow-sm'
-                      : 'border-border hover:border-primary/50 hover:bg-muted/50'
+                      ? 'border-foreground bg-secondary'
+                      : 'border-border hover:bg-secondary/50'
                   )}
                   onClick={() => handleTypeToggle(config.value)}
                   role="button"
@@ -356,33 +339,28 @@ export function PracticeConfigForm() {
                     id={config.value}
                     checked={isSelected}
                     onCheckedChange={() => handleTypeToggle(config.value)}
-                    className="data-[state=checked]:bg-primary"
                   />
                   <div
                     className={cn(
-                      'p-2.5 rounded-lg transition-colors',
-                      isSelected
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-muted'
+                      'rounded-md p-2 transition-colors',
+                      isSelected ? 'bg-foreground text-background' : 'bg-secondary'
                     )}
                   >
-                    <IconComponent className="h-5 w-5" />
+                    <IconComponent className="h-4 w-4" />
                   </div>
                   <div className="flex-1">
                     <Label
                       htmlFor={config.value}
-                      className="text-base font-semibold cursor-pointer"
+                      className="cursor-pointer font-medium"
                     >
                       {config.label}
                     </Label>
-                    <p className="text-sm text-muted-foreground mt-0.5">
+                    <p className="text-sm text-muted-foreground">
                       {config.description}
                     </p>
                   </div>
                   {isSelected && (
-                    <Badge variant="secondary" className="ml-auto">
-                      Selected
-                    </Badge>
+                    <Check className="h-4 w-4 text-foreground" />
                   )}
                 </div>
               );
@@ -390,79 +368,61 @@ export function PracticeConfigForm() {
           </CardContent>
         </Card>
 
-        {/* Difficulty Level Card */}
-        <Card className="border-2">
-          <CardHeader className="pb-4">
-            <CardTitle className="flex items-center gap-2 text-xl">
-              <TrendingUp className="h-5 w-5 text-primary" />
+        {/* Difficulty Level */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <TrendingUp className="h-4 w-4" />
               Difficulty Level
             </CardTitle>
             <CardDescription>
-              Choose your challenge level. Higher difficulty means more complex
-              questions.
+              Choose your challenge level
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-3 gap-3">
-              {normalizedDifficulties.map((config) => {
-                const diffConfig = DIFFICULTY_CONFIG[config.value];
-
-                return (
-                  <button
-                    key={config.value}
-                    type="button"
-                    className={cn(
-                      'relative p-4 rounded-xl border-2 transition-all duration-200',
-                      difficulty === config.value
-                        ? 'border-primary bg-primary/5 shadow-sm'
-                        : 'border-border hover:border-primary/50 hover:bg-muted/50'
-                    )}
-                    onClick={() => setDifficulty(config.value)}
-                  >
-                    <div
-                      className={cn(
-                        'w-3 h-3 rounded-full mx-auto mb-3',
-                        diffConfig?.bgColor || 'bg-gray-500'
-                      )}
-                    />
-                    <div className="font-semibold">{config.label}</div>
-                    <div className="text-xs text-muted-foreground mt-1">
-                      {config.description}
+              {normalizedDifficulties.map((config) => (
+                <button
+                  key={config.value}
+                  type="button"
+                  className={cn(
+                    'relative rounded-lg border p-4 text-center transition-colors',
+                    difficulty === config.value
+                      ? 'border-foreground bg-secondary'
+                      : 'border-border hover:bg-secondary/50'
+                  )}
+                  onClick={() => setDifficulty(config.value)}
+                >
+                  <div className="font-medium">{config.label}</div>
+                  <div className="mt-1 text-xs text-muted-foreground">
+                    {config.description}
+                  </div>
+                  {difficulty === config.value && (
+                    <div className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-foreground">
+                      <Check className="h-3 w-3 text-background" />
                     </div>
-                    {difficulty === config.value && (
-                      <div className="absolute -top-1 -right-1">
-                        <div className="w-3 h-3 bg-primary rounded-full" />
-                      </div>
-                    )}
-                  </button>
-                );
-              })}
+                  )}
+                </button>
+              ))}
             </div>
           </CardContent>
         </Card>
 
-        {/* Number of Questions Card */}
-        <Card className="border-2">
-          <CardHeader className="pb-4">
-            <CardTitle className="flex items-center gap-2 text-xl">
-              <Zap className="h-5 w-5 text-primary" />
+        {/* Number of Questions */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Zap className="h-4 w-4" />
               Number of Questions
             </CardTitle>
             <CardDescription>
-              Select between {QUESTION_LIMITS.MIN} and {QUESTION_LIMITS.MAX}{' '}
-              questions for your practice session.
+              Select between {QUESTION_LIMITS.MIN} and {QUESTION_LIMITS.MAX} questions
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <span className="text-4xl font-bold text-primary">
-                  {numberOfQuestions}
-                </span>
-                <span className="text-lg text-muted-foreground ml-2">
-                  questions
-                </span>
-              </div>
+            <div className="flex items-baseline gap-2">
+              <span className="text-4xl font-semibold">{numberOfQuestions}</span>
+              <span className="text-muted-foreground">questions</span>
             </div>
 
             <Slider
@@ -474,24 +434,22 @@ export function PracticeConfigForm() {
               className="w-full"
             />
 
-            <div className="flex justify-between text-sm text-muted-foreground px-1">
+            <div className="flex justify-between px-1 text-xs text-muted-foreground">
               <span>{QUESTION_LIMITS.MIN}</span>
               <span>{Math.round(QUESTION_LIMITS.MAX / 2)}</span>
               <span>{QUESTION_LIMITS.MAX}</span>
             </div>
 
-            {/* Quick Select Buttons */}
-            <div className="flex flex-wrap gap-2 pt-2">
-              <span className="text-sm text-muted-foreground mr-2">
-                Quick select:
-              </span>
+            {/* Quick Select */}
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-sm text-muted-foreground">Quick:</span>
               {QUESTION_LIMITS.RECOMMENDED.map((num) => (
                 <Button
                   key={num}
                   variant={numberOfQuestions === num ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setNumberOfQuestions(num)}
-                  className="min-w-[3rem]"
+                  className="h-8 min-w-[3rem]"
                 >
                   {num}
                 </Button>
@@ -500,30 +458,30 @@ export function PracticeConfigForm() {
           </CardContent>
         </Card>
 
-        {/* Time Limit Card */}
-        <Card className="border-2">
-          <CardHeader className="pb-4">
-            <CardTitle className="flex items-center gap-2 text-xl">
-              <Clock className="h-5 w-5 text-primary" />
+        {/* Time Limit */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Clock className="h-4 w-4" />
               Time Limit
             </CardTitle>
             <CardDescription>
-              Set a time limit for your practice session ({TIME_LIMITS.MIN}-{TIME_LIMITS.MAX} minutes).
+              Set a time limit for your session
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3">
                 <Checkbox
                   id="useRecommended"
                   checked={useRecommendedTime}
                   onCheckedChange={(checked) => setUseRecommendedTime(!!checked)}
                 />
-                <Label htmlFor="useRecommended" className="cursor-pointer">
+                <Label htmlFor="useRecommended" className="cursor-pointer text-sm">
                   Use recommended time
                 </Label>
               </div>
-              <Badge variant="secondary" className="text-base px-4 py-2">
+              <Badge variant="secondary" className="px-3 py-1.5 text-sm font-medium">
                 {formatDuration(timeLimit)}
               </Badge>
             </div>
@@ -539,21 +497,19 @@ export function PracticeConfigForm() {
                   className="w-full"
                 />
 
-                <div className="flex justify-between text-sm text-muted-foreground px-1">
+                <div className="flex justify-between px-1 text-xs text-muted-foreground">
                   <span>{timeBounds.min} min</span>
-                  <span className="text-primary font-medium">
-                    Recommended: {timeBounds.recommended} min
-                  </span>
+                  <span>Recommended: {timeBounds.recommended} min</span>
                   <span>{timeBounds.max} min</span>
                 </div>
               </>
             )}
 
             {useRecommendedTime && (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 p-3 rounded-lg">
-                <Info className="h-4 w-4" />
+              <div className="flex items-center gap-2 rounded-lg bg-secondary p-3 text-sm text-muted-foreground">
+                <Info className="h-4 w-4 shrink-0" />
                 <span>
-                  Time is calculated based on {numberOfQuestions} questions at{' '}
+                  Based on {numberOfQuestions} questions at{' '}
                   {DIFFICULTY_CONFIG[difficulty]?.label || difficulty} difficulty
                 </span>
               </div>
@@ -561,47 +517,43 @@ export function PracticeConfigForm() {
           </CardContent>
         </Card>
 
-        {/* Summary & Start Card */}
-        <Card className="border-2 border-primary/50 bg-gradient-to-br from-primary/5 to-transparent">
+        {/* Summary & Start */}
+        <Card className="border-foreground/20">
           <CardContent className="pt-6">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
+            <div className="mb-4 flex items-center gap-2 text-sm text-muted-foreground">
               <Info className="h-4 w-4" />
-              <span>Review your practice configuration</span>
+              <span>Review your configuration</span>
             </div>
 
-            <div className="flex flex-wrap gap-2 mb-6">
+            <div className="mb-6 flex flex-wrap gap-2">
               {selectedTypes.map((type) => (
-                <Badge key={type} variant="outline" className="px-3 py-1">
+                <Badge key={type} variant="outline">
                   {QUESTION_TYPE_CONFIG[type]?.label || type}
                 </Badge>
               ))}
-              <Badge variant="outline" className="px-3 py-1">
+              <Badge variant="outline">
                 {DIFFICULTY_CONFIG[difficulty]?.label || difficulty}
               </Badge>
-              <Badge variant="outline" className="px-3 py-1">
-                {numberOfQuestions} questions
-              </Badge>
-              <Badge variant="outline" className="px-3 py-1">
-                {formatDuration(timeLimit)}
-              </Badge>
+              <Badge variant="outline">{numberOfQuestions} questions</Badge>
+              <Badge variant="outline">{formatDuration(timeLimit)}</Badge>
             </div>
 
             <Separator className="my-4" />
 
             <Button
-              className="w-full h-12 text-lg font-semibold"
+              className="h-12 w-full text-base font-medium"
               size="lg"
               onClick={handleStart}
               disabled={isLoading || selectedTypes.length === 0}
             >
               {isLoading ? (
                 <>
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  Starting Practice...
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Starting...
                 </>
               ) : (
                 <>
-                  <Play className="mr-2 h-5 w-5" />
+                  <Play className="mr-2 h-4 w-4" />
                   Start Practice Session
                 </>
               )}

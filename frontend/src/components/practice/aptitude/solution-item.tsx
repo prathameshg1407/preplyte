@@ -2,21 +2,20 @@
 
 'use client';
 
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Badge } from '../../ui/badge';
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from '@/components/ui/accordion';
-import type { SolutionItem as SolutionItemType } from '@/types/aptitude.types';
+} from '../../ui/accordion';
+import type { SolutionItem as SolutionItemType } from '../../../types/aptitude.types';
 import {
   QUESTION_TYPE_CONFIG,
   DIFFICULTY_CONFIG,
-} from '@/lib/constants/aptitude.constants';
-import { CheckCircle2, XCircle, MinusCircle, Lightbulb } from 'lucide-react';
-import { cn } from '@/lib/utils';
+} from '../../../lib/constants/aptitude.constants';
+import { Check, X, Minus, Lightbulb } from 'lucide-react';
+import { cn } from '../../../lib/utils';
 
 interface SolutionItemProps {
   solution: SolutionItemType;
@@ -29,44 +28,53 @@ export function SolutionItem({ solution, index }: SolutionItemProps) {
 
   const getStatusIcon = () => {
     if (solution.selectedOptionId === null) {
-      return <MinusCircle className="h-5 w-5 text-muted-foreground" />;
+      return (
+        <div className="flex h-6 w-6 items-center justify-center rounded bg-secondary">
+          <Minus className="h-3.5 w-3.5 text-muted-foreground" />
+        </div>
+      );
     }
     if (solution.isCorrect) {
-      return <CheckCircle2 className="h-5 w-5 text-green-500" />;
+      return (
+        <div className="flex h-6 w-6 items-center justify-center rounded bg-foreground">
+          <Check className="h-3.5 w-3.5 text-background" />
+        </div>
+      );
     }
-    return <XCircle className="h-5 w-5 text-red-500" />;
+    return (
+      <div className="flex h-6 w-6 items-center justify-center rounded bg-muted-foreground">
+        <X className="h-3.5 w-3.5 text-background" />
+      </div>
+    );
   };
 
-  const getStatusColor = () => {
+  const getStatusStyle = () => {
     if (solution.selectedOptionId === null) {
-      return 'border-muted-foreground/30 bg-muted/5';
+      return 'border-border';
     }
     if (solution.isCorrect) {
-      return 'border-green-500/30 bg-green-500/5';
+      return 'border-foreground/30 bg-secondary/30';
     }
-    return 'border-red-500/30 bg-red-500/5';
+    return 'border-muted-foreground/30 bg-secondary/20';
   };
 
   return (
     <AccordionItem
       value={solution.questionId}
-      className={cn('border rounded-lg px-4', getStatusColor())}
+      className={cn('rounded-lg border px-4', getStatusStyle())}
     >
-      <AccordionTrigger className="hover:no-underline py-4">
-        <div className="flex items-center gap-3 text-left flex-1">
+      <AccordionTrigger className="py-4 hover:no-underline">
+        <div className="flex flex-1 items-center gap-3 text-left">
           {getStatusIcon()}
           <span className="font-medium">Q{solution.order}.</span>
-          <span className="text-sm text-muted-foreground line-clamp-1 flex-1">
+          <span className="line-clamp-1 flex-1 text-sm text-muted-foreground">
             {solution.questionText}
           </span>
-          <div className="flex gap-2 mr-4">
-            <Badge variant="outline" className={cn('text-xs', typeConfig?.color)}>
+          <div className="mr-4 flex gap-2">
+            <Badge variant="outline" className="text-xs">
               {typeConfig?.label || solution.questionType}
             </Badge>
-            <Badge
-              variant="outline"
-              className={cn('text-xs', difficultyConfig?.color)}
-            >
+            <Badge variant="secondary" className="text-xs">
               {difficultyConfig?.label || solution.difficulty}
             </Badge>
           </div>
@@ -75,8 +83,8 @@ export function SolutionItem({ solution, index }: SolutionItemProps) {
       <AccordionContent className="pb-4">
         <div className="space-y-4 pt-2">
           {/* Question */}
-          <div className="bg-muted/50 rounded-lg p-4">
-            <p className="font-medium whitespace-pre-wrap">
+          <div className="rounded-lg border border-border bg-secondary/30 p-4">
+            <p className="whitespace-pre-wrap font-medium">
               {solution.questionText}
             </p>
           </div>
@@ -91,38 +99,44 @@ export function SolutionItem({ solution, index }: SolutionItemProps) {
                 <div
                   key={option.id}
                   className={cn(
-                    'p-3 rounded-lg border-2 flex items-center gap-3',
-                    isCorrectOption && 'border-green-500 bg-green-500/10',
-                    isSelected && !isCorrectOption && 'border-red-500 bg-red-500/10',
-                    !isCorrectOption && !isSelected && 'border-border bg-muted/30'
+                    'flex items-center gap-3 rounded-lg border p-3',
+                    isCorrectOption && 'border-foreground bg-secondary',
+                    isSelected && !isCorrectOption && 'border-muted-foreground bg-secondary/50 border-dashed',
+                    !isCorrectOption && !isSelected && 'border-border opacity-50'
                   )}
                 >
                   <div
                     className={cn(
-                      'w-8 h-8 rounded-lg flex items-center justify-center font-semibold text-sm',
-                      isCorrectOption && 'bg-green-500 text-white',
-                      isSelected && !isCorrectOption && 'bg-red-500 text-white',
-                      !isCorrectOption && !isSelected && 'bg-muted'
+                      'flex h-7 w-7 shrink-0 items-center justify-center rounded text-sm font-medium',
+                      isCorrectOption && 'bg-foreground text-background',
+                      isSelected && !isCorrectOption && 'bg-muted-foreground text-background',
+                      !isCorrectOption && !isSelected && 'bg-secondary'
                     )}
                   >
-                    {String.fromCharCode(65 + optIndex)}
+                    {isCorrectOption ? (
+                      <Check className="h-3.5 w-3.5" />
+                    ) : isSelected && !isCorrectOption ? (
+                      <X className="h-3.5 w-3.5" />
+                    ) : (
+                      String.fromCharCode(65 + optIndex)
+                    )}
                   </div>
-                  <span className="flex-1">{option.text}</span>
+                  <span className={cn(
+                    'flex-1 text-sm',
+                    isCorrectOption && 'font-medium',
+                    isSelected && !isCorrectOption && 'text-muted-foreground'
+                  )}>
+                    {option.text}
+                  </span>
                   <div className="flex items-center gap-2">
                     {isCorrectOption && (
-                      <Badge variant="outline" className="text-green-500 border-green-500">
-                        Correct
-                      </Badge>
+                      <span className="text-xs font-medium">Correct</span>
                     )}
                     {isSelected && !isCorrectOption && (
-                      <Badge variant="outline" className="text-red-500 border-red-500">
-                        Your Answer
-                      </Badge>
+                      <span className="text-xs text-muted-foreground">Your answer</span>
                     )}
                     {isSelected && isCorrectOption && (
-                      <Badge variant="outline" className="text-green-500 border-green-500">
-                        Your Answer ✓
-                      </Badge>
+                      <span className="text-xs font-medium">Your answer</span>
                     )}
                   </div>
                 </div>
@@ -132,14 +146,14 @@ export function SolutionItem({ solution, index }: SolutionItemProps) {
 
           {/* Explanation */}
           {solution.explanation && (
-            <div className="bg-primary/5 border border-primary/20 rounded-lg p-4">
-              <div className="flex items-start gap-2">
-                <Lightbulb className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="font-medium text-sm text-primary mb-1">
-                    Explanation
-                  </p>
-                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+            <div className="rounded-lg border border-border bg-secondary/50 p-4">
+              <div className="flex items-start gap-3">
+                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-foreground">
+                  <Lightbulb className="h-3.5 w-3.5 text-background" />
+                </div>
+                <div className="flex-1">
+                  <p className="mb-1 text-sm font-medium">Explanation</p>
+                  <p className="whitespace-pre-wrap text-sm text-muted-foreground">
                     {solution.explanation}
                   </p>
                 </div>

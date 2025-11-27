@@ -51,10 +51,17 @@ enum SubmissionStatus {
 }
 
 enum AiInterviewSessionStatus {
+  CREATED
   STARTED
   IN_PROGRESS
   COMPLETED
   CANCELLED
+  FAILED
+}
+
+enum AiInterviewSessionType {
+  TEXT
+  VOICE
 }
 
 enum AiInterviewQuestionCategory {
@@ -62,6 +69,8 @@ enum AiInterviewQuestionCategory {
   TECHNICAL
   BEHAVIORAL
   SITUATIONAL
+  PROJECT_BASED
+  SKILL_BASED
   CLOSING
 }
 
@@ -82,16 +91,39 @@ model User {
   updatedAt   DateTime  @updatedAt
   lastLoginAt DateTime?
 
+  tokenVersion  Int            @default(0)
+
   institute            Institute?              @relation(fields: [instituteId], references: [id])
+  refreshTokens        RefreshToken[]
   aptitudeSessions     AptitudePracticeSession[]
   machineSessions      MachinePracticeSession[]
   resumes              Resume[]
   aiInterviewSessions  AiInterviewSession[]
   aiInterviewFeedbacks AiInterviewFeedback[]
+  profile              StudentProfile?
 
   @@index([email])
   @@index([instituteId])
   @@map("users")
+}
+
+model RefreshToken {
+  id        String    @id @default(cuid())
+  token     String    @unique
+  userId    String
+  expiresAt DateTime
+  revokedAt DateTime?
+  userAgent String?
+  ipAddress String?
+
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
+  @@index([expiresAt])
+  @@map("refresh_tokens")
 }
 
 model Institute {
@@ -103,14 +135,70 @@ model Institute {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  users User[]
+  users   User[]
+  profile InstituteProfile?
 
   @@index([domain])
   @@map("institutes")
 }
 
 // =====================================================
-// RESUME (File metadata only - no content storage)
+// STUDENT PROFILE
+// =====================================================
+
+model StudentProfile {
+  id         String   @id @default(cuid())
+  userId     String   @unique
+  fullName   String
+  studentId  String   @unique
+
+  resumeUrl  String?
+  resumeName String?
+
+  skills     String[]
+
+  department String
+  courseYear String
+
+  marks10       Float?
+  marks12       Float?
+  cgpaSemesters Float[]
+
+  averageCgpa Float?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([studentId])
+  @@map("student_profiles")
+}
+
+// =====================================================
+// INSTITUTE PROFILE
+// =====================================================
+
+model InstituteProfile {
+  id          String @id @default(cuid())
+  instituteId String @unique
+
+  logoUrl       String?
+  location      String?
+  totalStudents Int     @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  institute Institute @relation(fields: [instituteId], references: [id], onDelete: Cascade)
+
+  @@index([instituteId])
+  @@map("institute_profiles")
+}
+
+// =====================================================
+// RESUME (File metadata + optional cached parsed text)
 // =====================================================
 
 model Resume {
@@ -121,6 +209,11 @@ model Resume {
   fileSize  Int?
   mimeType  String?
   isDefault Boolean @default(false)
+
+  // Optional: Cache parsed text to avoid re-parsing
+  // This is NOT the full resume content, just extracted text for processing
+  parsedTextHash String?   // Hash to detect if re-parsing needed
+  lastParsedAt   DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -371,52 +464,95 @@ model ProgrammingLanguage {
 }
 
 // =====================================================
-// AI INTERVIEW - SESSION
+// AI INTERVIEW - SESSION (Updated for Vapi Voice)
 // =====================================================
 
 model AiInterviewSession {
-  id                   String                   @id @default(uuid())
-  userId               String
-  resumeId             Int?
-  jobTitle             String?
-  companyName          String?
-  questions            Json
-  totalQuestions       Int                      @default(10)
-  currentQuestionIndex Int                      @default(0)
-  status               AiInterviewSessionStatus @default(STARTED)
-
-  startedAt   DateTime  @default(now())
+  id          String                   @id @default(uuid())
+  userId      String
+  resumeId    Int?
+  
+  // Session configuration
+  sessionType AiInterviewSessionType   @default(TEXT)
+  jobTitle    String?
+  companyName String?
+  difficulty  DifficultyLevel          @default(MEDIUM)
+  
+  // Resume context - compact summary passed to Vapi, NOT full resume
+  // Example: "Name: John; Skills: React, Node; Projects: E-commerce app..."
+  resumeContext String?                @db.Text
+  
+  // Session state
+  status      AiInterviewSessionStatus @default(CREATED)
+  
+  // For TEXT type: stores pre-generated questions (legacy support)
+  // For VOICE type: NULL (questions generated live by Vapi assistant)
+  questions   Json?
+  
+  // For TEXT type only
+  totalQuestions       Int             @default(10)
+  currentQuestionIndex Int             @default(0)
+  
+  // Vapi-specific fields (for VOICE type)
+  vapiCallId    String?   @unique      // Vapi's call ID for webhook matching
+  vapiAssistantId String?              // Which assistant was used
+  
+  // Call data (populated from Vapi webhook)
+  transcript    String?   @db.Text     // Full conversation transcript
+  recordingUrl  String?                // Audio recording URL if enabled
+  callDuration  Int?                   // Duration in seconds
+  
+  // Timestamps
+  startedAt   DateTime?
   completedAt DateTime?
-
+  
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // Relations
   user      User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
   resume    Resume?               @relation(fields: [resumeId], references: [id], onDelete: SetNull)
   responses AiInterviewResponse[]
   feedback  AiInterviewFeedback?
+  vapiLogs  VapiCallLog[]
 
   @@index([userId])
   @@index([userId, status])
   @@index([userId, createdAt])
+  @@index([userId, sessionType])
   @@index([status])
+  @@index([vapiCallId])
+  @@index([sessionType, status])
   @@map("ai_interview_sessions")
 }
 
 // =====================================================
-// AI INTERVIEW - RESPONSE
+// AI INTERVIEW - RESPONSE (For TEXT type or parsed from VOICE)
 // =====================================================
 
 model AiInterviewResponse {
   id               String                      @id @default(uuid())
   sessionId        String
+  
+  // Question details
   category         AiInterviewQuestionCategory
   question         String                      @db.Text
   answer           String                      @db.Text
+  
+  // Metadata
+  questionOrder    Int                         @default(0)
   isFollowup       Boolean                     @default(false)
+  
+  // Scoring (can be populated by LLM analysis post-interview)
   scoresJson       Json?
   feedbackText     String?                     @db.Text
+  
+  // Timing
   timeTakenSeconds Int?
+  
+  // For VOICE type: timestamps of when Q&A occurred in call
+  startTimestamp   Float?                      // Seconds into call
+  endTimestamp     Float?                      // Seconds into call
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -425,6 +561,7 @@ model AiInterviewResponse {
 
   @@index([sessionId])
   @@index([sessionId, category])
+  @@index([sessionId, questionOrder])
   @@map("ai_interview_responses")
 }
 
@@ -436,11 +573,29 @@ model AiInterviewFeedback {
   id                  String   @id @default(uuid())
   sessionId           String   @unique
   userId              String
+  
+  // Overall assessment
   overallScore        Decimal  @db.Decimal(5, 2)
   overallSummary      String   @db.Text
+  
+  // Detailed feedback
   keyStrengths        String[]
   areasForImprovement String[]
+  
+  // Category-wise scores (optional detailed breakdown)
+  technicalScore      Decimal? @db.Decimal(5, 2)
+  communicationScore  Decimal? @db.Decimal(5, 2)
+  problemSolvingScore Decimal? @db.Decimal(5, 2)
+  behavioralScore     Decimal? @db.Decimal(5, 2)
+  
+  // Raw feedback data
   feedbackJson        Json?
+  
+  // Actionable recommendations
+  recommendations     String[] @default([])
+  
+  // Source of feedback
+  generatedBy         String   @default("ai") // "ai" or "manual"
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -452,4 +607,36 @@ model AiInterviewFeedback {
   @@index([userId])
   @@index([userId, createdAt])
   @@map("ai_interview_feedbacks")
+}
+
+// =====================================================
+// VAPI CALL LOG (Raw webhook data storage)
+// =====================================================
+
+model VapiCallLog {
+  id        String @id @default(uuid())
+  sessionId String
+  
+  // Vapi identifiers
+  vapiCallId    String
+  vapiEventType String    // "call.started", "call.ended", "transcript", etc.
+  
+  // Raw webhook payload
+  payload   Json
+  
+  // Processing status
+  processed Boolean @default(false)
+  processedAt DateTime?
+  processingError String?
+
+  createdAt DateTime @default(now())
+
+  session AiInterviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@index([vapiCallId])
+  @@index([vapiEventType])
+  @@index([processed])
+  @@index([createdAt])
+  @@map("vapi_call_logs")
 }

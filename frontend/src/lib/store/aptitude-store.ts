@@ -13,7 +13,7 @@ import type {
   AptitudeQuestionTypeInfo,
   SessionProgress,
   TimeLimitConfig,
-} from '@/types/aptitude.types';
+} from '../../types/aptitude.types';
 
 // =====================================================
 // STORE STATE INTERFACE

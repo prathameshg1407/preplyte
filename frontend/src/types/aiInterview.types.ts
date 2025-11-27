@@ -1,10 +1,12 @@
 // src/types/aiInterview.types.ts
 
-// ============= Enums (match Prisma) =============
+// ============= Enums (match Prisma/Backend) =============
 
 export enum AiInterviewQuestionCategory {
   INTRODUCTORY = "INTRODUCTORY",
   TECHNICAL = "TECHNICAL",
+  BEHAVIORAL = "BEHAVIORAL",
+  SITUATIONAL = "SITUATIONAL",
   CLOSING = "CLOSING",
 }
 
@@ -15,134 +17,132 @@ export enum AiInterviewSessionStatus {
   CANCELLED = "CANCELLED",
 }
 
-// ============= Request Types =============
+// ============= Core Types =============
+
+export interface QuestionItem {
+  id?: string;
+  text: string;
+  category: AiInterviewQuestionCategory;
+  audioUrl?: string;
+  isFollowUp?: boolean;
+  transition?: string;
+}
+
+export interface Progress {
+  questionNumber: number;
+  estimatedTotal: number;
+  topicsCovered: string[];
+  percentComplete: number;
+}
+
+export interface AnswerScore {
+  contentScore: number;
+  clarityScore: number;
+  relevanceScore: number;
+  depthScore: number;
+  overallScore: number;
+  feedback: string;
+}
+
+export interface CategoryScore {
+  category: string;
+  score: number;
+  feedback: string;
+}
+
+// ============= Request DTOs =============
 
 export interface StartInterviewRequest {
   resumeId?: number;
   jobTitle?: string;
   companyName?: string;
+  difficulty?: "entry" | "mid" | "senior" | "lead";
+  focusAreas?: string[];
 }
 
-export interface SubmitAnswerRequest {
-  question: string;
-  answer: string;
-  category: AiInterviewQuestionCategory;
-  questionIndex?: number;
-  isTranscribed?: boolean;
-  timeTakenSeconds?: number;
+export interface SubmitResponseDto {
+  transcript?: string;
+  audioBlob?: string;
 }
 
-// ============= Response Types (match backend) =============
-
-export interface QuestionItem {
-  category: AiInterviewQuestionCategory;
-  text: string;
+export interface GetSessionsParams {
+  page?: number;
+  limit?: number;
 }
 
-// Matches backend InterviewSessionResponse
-export interface InterviewSessionResponse {
-  id: string;
-  userId: string;
-  status: AiInterviewSessionStatus;
-  questions: QuestionItem[];
+// ============= Response DTOs =============
+
+export interface SessionResponse {
+  sessionId: string;
+  status: "active" | "completed";
   currentQuestion: QuestionItem;
-  currentQuestionIndex: number;
-  totalQuestions: number;
-  audioUrl?: string;
-  createdAt: string;
-}
-
-// Matches backend SessionStateResponse
-export interface SessionStateResponse {
-  id: string;
-  userId: string;
-  status: AiInterviewSessionStatus;
-  questions: QuestionItem[];
-  currentQuestion: QuestionItem;
-  currentQuestionIndex: number;
-  totalQuestions: number;
-  audioUrl?: string;
-}
-
-// Matches backend NextQuestionResponse
-export interface NextQuestionResponse {
-  question: string;
-  category: AiInterviewQuestionCategory;
-  index: number;
-  audioUrl?: string;
-  totalQuestions: number;
-  isComplete: false;
-}
-
-// Matches backend QuestionCompletionResponse
-export interface QuestionCompletionResponse {
-  isComplete: true;
-  message: string;
-  audioUrl?: string;
-}
-
-// Matches backend SubmitAnswerResponse
-export interface SubmitAnswerResponse {
-  nextQuestion?: {
-    category: AiInterviewQuestionCategory;
-    text: string;
+  progress: Progress;
+  context: {
+    jobTitle: string;
+    companyName?: string;
   };
-  questionIndex?: number;
-  totalQuestions?: number;
+}
+
+export interface SubmitResponseResult {
+  responseReceived: {
+    id: string;
+    transcript: string;
+    scores: AnswerScore;
+  };
+  nextQuestion?: QuestionItem & {
+    isFollowUp: boolean;
+    transition?: string;
+  };
   isComplete: boolean;
-  message?: string;
-  audioUrl?: string;
+  progress: Progress;
 }
 
-// Matches backend ResponseScoreDto
-export interface ResponseScoreDto {
-  questionIndex?: number;
-  contentScore: number;
-  fluencyScore: number;
-  relevanceScore: number;
-  feedback: string;
-}
-
-// Matches backend InterviewFeedbackResponse
-export interface InterviewFeedbackResponse {
+export interface FeedbackResponse {
   overallScore: number;
-  overallSummary: string;
-  keyStrengths: string[];
-  areasForImprovement: string[];
-  weakSections: string[];
-  perResponseScores: ResponseScoreDto[];
+  summary: string;
+  strengths: string[];
+  improvements: string[];
+  categoryScores: CategoryScore[];
+  recommendations: string[];
 }
 
-// Matches backend UserSessionSummaryDto
-export interface UserSessionSummaryDto {
+export interface SessionSummary {
   id: string;
   jobTitle: string;
-  companyName: string | null;
-  resumeId: number | null;
+  companyName?: string;
   status: AiInterviewSessionStatus;
-  totalQuestions: number;
-  answeredQuestions: number;
-  currentQuestionIndex: number;
-  overallScore: number | null;
+  questionsAnswered: number;
+  overallScore?: number;
   createdAt: string;
-  completedAt: string | null;
-  hasFeedback: boolean;
+  completedAt?: string;
 }
 
-// Matches backend UserSessionStatsResponse
-export interface UserSessionStatsResponse {
+export interface PaginatedSessionsResponse {
+  sessions: SessionSummary[];
+  total: number;
+  page: number;
+  totalPages: number;
+}
+
+export interface SessionStats {
   totalSessions: number;
   completedSessions: number;
-  inProgressSessions: number;
   averageScore: number;
   totalQuestionsAnswered: number;
-  highestScore?: number | null;
-  lowestScore?: number | null;
+  topCategories: { category: string; count: number }[];
 }
 
 // ============= UI State Types =============
 
 export type InterviewPhase = "start" | "interview" | "results";
+
+export type InterviewUIStatus =
+  | "INITIALIZING"
+  | "AI_SPEAKING"
+  | "USER_LISTENING"
+  | "PROCESSING_ANSWER"
+  | "ENDED"
+  | "ERROR";
 
 export interface TranscriptMessage {
   id: string;
@@ -156,6 +156,7 @@ export interface InterviewConfig {
   jobTitle: string;
   companyName?: string;
   resumeId?: number;
+  difficulty?: "entry" | "mid" | "senior" | "lead";
 }
 
 // ============= API Response Wrapper =============
@@ -166,29 +167,25 @@ export interface ApiResponse<T> {
   message?: string;
 }
 
+// ============= Legacy Types (for backwards compatibility) =============
 
+/** @deprecated Use SessionResponse instead */
+export type InterviewSessionResponse = SessionResponse;
 
-// src/types/aiInterview.types.ts
+/** @deprecated Use SessionResponse instead */
+export type SessionStateResponse = SessionResponse;
 
-// ... (previous code remains the same)
+/** @deprecated Use SubmitResponseResult instead */
+export type SubmitAnswerResponse = SubmitResponseResult;
 
-// Update TranscriptMessage to include id
-export interface TranscriptMessage {
-  id: string;
-  speaker: "AI" | "USER";
-  text: string;
-  timestamp: Date;
-  audioUrl?: string;
-}
+/** @deprecated Use FeedbackResponse instead */
+export type InterviewFeedbackResponse = FeedbackResponse;
 
-// Rename for clarity (keep alias for backwards compatibility)
-export type InterviewUIStatus =
-  | "INITIALIZING"
-  | "AI_SPEAKING"
-  | "USER_LISTENING"
-  | "PROCESSING_ANSWER"
-  | "ENDED"
-  | "ERROR";
+/** @deprecated Use SessionSummary[] instead */
+export type UserSessionSummaryDto = SessionSummary[];
 
-// Backwards compatibility alias
+/** @deprecated Use SessionStats instead */
+export type UserSessionStatsResponse = SessionStats;
+
+/** @deprecated Use InterviewUIStatus instead */
 export type InterviewStatus = InterviewUIStatus;

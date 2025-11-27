@@ -1,99 +1,34 @@
+// interview.router.ts
+
 import { Router } from 'express';
 import { InterviewController } from './interview.controller';
 import { InterviewService } from './interview.service';
-import { authenticate } from '../../../middleware/auth.middleware'; // Updated import
+import { authenticate } from '../../../middleware/auth.middleware';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ProfileService } from '../../profile/profile.service';
 
-export const createInterviewRouter = (
-  prismaService: PrismaService,
+export function createInterviewRouter(
+  prisma: PrismaService,
   profileService: ProfileService
-): Router => {
+): Router {
   const router = Router();
+  const service = new InterviewService(prisma, profileService);
+  const controller = new InterviewController(service);
 
-  // Initialize service and controller
-  const interviewService = new InterviewService(prismaService, profileService);
-  const interviewController = new InterviewController(interviewService);
-
-  // Apply authentication middleware to all routes
+  // All routes require authentication
   router.use(authenticate);
 
-  // ============= Static Routes (Must come BEFORE parameterized routes) =============
+  // Session management
+  router.post('/start', controller.startSession);
+  router.get('/sessions', controller.getSessions);
+  router.get('/stats', controller.getStats);
 
-  /**
-   * @route   GET /practice/ai-interview/test-tts
-   * @desc    Test TTS Configuration (Debug endpoint)
-   * @access  Private
-   */
-  router.get('/test-tts', interviewController.testTTS);
-
-  /**
-   * @route   GET /practice/ai-interview/stats
-   * @desc    Get user session statistics
-   * @access  Private
-   */
-  router.get('/stats', interviewController.getUserSessionStats);
-
-  /**
-   * @route   GET /practice/ai-interview/sessions
-   * @desc    Get all user interview sessions
-   * @access  Private
-   */
-  router.get('/sessions', interviewController.getUserSessions);
-
-  /**
-   * @route   POST /practice/ai-interview/start
-   * @desc    Start new AI interview session
-   * @access  Private
-   */
-  router.post('/start', interviewController.startInterviewSession);
-
-  // ============= Parameterized Routes (Must come AFTER static routes) =============
-
-  /**
-   * @route   GET /practice/ai-interview/:sessionId
-   * @desc    Get interview session state
-   * @access  Private
-   */
-  router.get('/:sessionId', interviewController.getInterviewSession);
-
-  /**
-   * @route   GET /practice/ai-interview/:sessionId/next
-   * @desc    Get next interview question
-   * @access  Private
-   */
-  router.get('/:sessionId/next', interviewController.getNextQuestion);
-
-  /**
-   * @route   GET /practice/ai-interview/:sessionId/feedback
-   * @desc    Get comprehensive interview feedback
-   * @access  Private
-   */
-  router.get('/:sessionId/feedback', interviewController.getInterviewFeedback);
-
-  /**
-   * @route   POST /practice/ai-interview/:sessionId/answer
-   * @desc    Submit answer to interview question
-   * @access  Private
-   */
-  router.post('/:sessionId/answer', interviewController.submitAnswer);
-
-  /**
-   * @route   POST /practice/ai-interview/:sessionId/cancel
-   * @desc    Cancel interview session
-   * @access  Private
-   */
-  router.post('/:sessionId/cancel', interviewController.cancelSession);
-
-  /**
-   * @route   DELETE /practice/ai-interview/:sessionId
-   * @desc    Delete interview session
-   * @access  Private
-   */
-  router.delete('/:sessionId', interviewController.deleteSession);
+  // Active session operations
+  router.get('/:sessionId', controller.getSession);
+  router.post('/:sessionId/respond', controller.submitResponse);
+  router.post('/:sessionId/end', controller.endSession);
+  router.get('/:sessionId/feedback', controller.getFeedback);
+  router.delete('/:sessionId', controller.deleteSession);
 
   return router;
-};
-
-// Export default router factory
-export default createInterviewRouter;
+}

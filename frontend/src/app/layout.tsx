@@ -1,14 +1,23 @@
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
+import { Outfit } from 'next/font/google';
+import { GeistMono } from 'geist/font/mono';
 import './globals.css';
 import { Providers } from './providers';
-import { MainNav } from '@/components/layout/main-nav';
+import { AppHeader } from '@/components/layout/app-header';
 
-const inter = Inter({ subsets: ['latin'] });
+const outfit = Outfit({
+  subsets: ['latin'],
+  variable: '--font-outfit',
+  display: 'swap',
+  weight: ['300', '400', '500', '600', '700'],
+});
+
+const geistMono = GeistMono;
 
 export const metadata: Metadata = {
   title: 'Preplyte - Campus Placement Platform',
   description: 'Comprehensive campus placement preparation platform',
+  keywords: ['campus placement', 'job preparation', 'interview prep', 'coding practice'],
 };
 
 export default function RootLayout({
@@ -18,9 +27,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={inter.className}>
+      <body
+        className={`${outfit.variable} ${geistMono.variable} font-sans antialiased`}
+      >
         <Providers>
-          <MainNav />
+          <AppHeader />
           <main>{children}</main>
         </Providers>
       </body>

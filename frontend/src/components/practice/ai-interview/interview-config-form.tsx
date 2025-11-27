@@ -3,23 +3,23 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Button } from "../../ui/button";
+import { Input } from "../../ui/input";
+import { Label } from "../../ui/label";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
+} from "../../ui/card";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "../../ui/select";
 import { 
   Loader2, 
   Briefcase, 
@@ -27,9 +27,11 @@ import {
   FileText, 
   AlertCircle, 
   Upload, 
-  X 
+  X,
+  Mic,
+  ArrowRight
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "../../../lib/utils";
 
 interface Resume {
   id: number;
@@ -42,7 +44,7 @@ interface InterviewConfigFormProps {
     jobTitle: string;
     companyName?: string;
     resumeId?: number;
-    resumeFile?: File; // Added support for raw file
+    resumeFile?: File;
   }) => Promise<void>;
   loading: boolean;
   error: string | null;
@@ -59,23 +61,18 @@ export function InterviewConfigForm({
 }: InterviewConfigFormProps) {
   const [jobTitle, setJobTitle] = useState("");
   const [companyName, setCompanyName] = useState("");
-  
-  // State for resume selection vs upload
   const [selectedResumeId, setSelectedResumeId] = useState<string>("no-resume");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
   const [resumes, setResumes] = useState<Resume[]>(initialResumes);
   const [resumesLoading, setResumesLoading] = useState(false);
 
-  // Fetch resumes on mount
   useEffect(() => {
     if (onFetchResumes && resumes.length === 0) {
       setResumesLoading(true);
       onFetchResumes()
         .then((data) => {
           setResumes(data);
-          // Auto-select default resume only if no file is selected
           if (!selectedFile) {
             const defaultResume = data.find((r) => r.isDefault);
             if (defaultResume) {
@@ -88,27 +85,22 @@ export function InterviewConfigForm({
     }
   }, [onFetchResumes]);
 
-  // Handle Dropdown Selection
   const handleResumeSelect = (value: string) => {
     setSelectedResumeId(value);
-    // If user selects a list item, clear the file upload
     if (value !== "no-resume") {
       setSelectedFile(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
 
-  // Handle File Upload
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       setSelectedFile(file);
-      // Deselect dropdown
       setSelectedResumeId("no-resume");
     }
   };
 
-  // Clear File Upload
   const clearFile = () => {
     setSelectedFile(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
@@ -116,10 +108,7 @@ export function InterviewConfigForm({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!jobTitle.trim()) {
-      return;
-    }
+    if (!jobTitle.trim()) return;
 
     const finalResumeId = 
       selectedResumeId && selectedResumeId !== "no-resume" 
@@ -134,163 +123,203 @@ export function InterviewConfigForm({
     });
   };
 
+  const isValid = jobTitle.trim().length > 0;
+
   return (
-    <Card className="w-full max-w-lg mx-auto">
-      <CardHeader className="text-center">
-        <CardTitle className="text-2xl">AI Interview Practice</CardTitle>
+    <Card className="w-full max-w-md mx-auto border-border">
+      <CardHeader className="text-center pb-2">
+        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full border border-border">
+          <Mic className="h-6 w-6" />
+        </div>
+        <CardTitle className="text-xl font-semibold tracking-tight">
+          AI Mock Interview
+        </CardTitle>
         <CardDescription>
-          Practice your interview skills with our AI interviewer
+          Practice with an AI interviewer tailored to your role
         </CardDescription>
       </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-6">
+
+      <CardContent className="pt-6">
+        <form onSubmit={handleSubmit} className="space-y-5">
           {/* Job Title */}
           <div className="space-y-2">
-            <Label htmlFor="jobTitle" className="flex items-center gap-2">
-              <Briefcase className="w-4 h-4" />
-              Job Title *
+            <Label htmlFor="jobTitle" className="text-sm font-medium">
+              Job Title <span className="text-muted-foreground">*</span>
             </Label>
-            <Input
-              id="jobTitle"
-              placeholder="e.g., Software Engineer, Product Manager"
-              value={jobTitle}
-              onChange={(e) => setJobTitle(e.target.value)}
-              required
-              disabled={loading}
-              autoComplete="off"
-            />
+            <div className="relative">
+              <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                id="jobTitle"
+                placeholder="Software Engineer"
+                value={jobTitle}
+                onChange={(e) => setJobTitle(e.target.value)}
+                required
+                disabled={loading}
+                autoComplete="off"
+                className="h-11 pl-10"
+              />
+            </div>
           </div>
 
           {/* Company Name */}
           <div className="space-y-2">
-            <Label htmlFor="companyName" className="flex items-center gap-2">
-              <Building2 className="w-4 h-4" />
-              Company Name (Optional)
+            <Label htmlFor="companyName" className="text-sm font-medium">
+              Company <span className="text-muted-foreground text-xs font-normal">Optional</span>
             </Label>
-            <Input
-              id="companyName"
-              placeholder="e.g., Google, Amazon, Microsoft"
-              value={companyName}
-              onChange={(e) => setCompanyName(e.target.value)}
-              disabled={loading}
-              autoComplete="off"
-            />
+            <div className="relative">
+              <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                id="companyName"
+                placeholder="Google, Amazon, etc."
+                value={companyName}
+                onChange={(e) => setCompanyName(e.target.value)}
+                disabled={loading}
+                autoComplete="off"
+                className="h-11 pl-10"
+              />
+            </div>
           </div>
 
-          {/* Resume Selection Section */}
-          <div className="space-y-4">
-            <Label className="flex items-center gap-2">
-              <FileText className="w-4 h-4" />
-              Resume Context (Optional)
+          {/* Resume Section */}
+          <div className="space-y-3">
+            <Label className="text-sm font-medium">
+              Resume <span className="text-muted-foreground text-xs font-normal">Optional</span>
             </Label>
             
-            <div className="space-y-3 p-4 border rounded-md bg-card/50">
-              {/* Option A: Select Existing */}
-              <div className="space-y-2">
-                <Label htmlFor="resume-select" className="text-xs text-muted-foreground font-normal uppercase">
-                  Select from profile
-                </Label>
-                <Select
-                  value={selectedResumeId}
-                  onValueChange={handleResumeSelect}
-                  disabled={loading || resumesLoading || !!selectedFile}
+            <div className="space-y-3 p-4 border border-border rounded-lg bg-card">
+              {/* Select Existing */}
+              <Select
+                value={selectedResumeId}
+                onValueChange={handleResumeSelect}
+                disabled={loading || resumesLoading || !!selectedFile}
+              >
+                <SelectTrigger 
+                  className={cn(
+                    "h-10",
+                    selectedFile && "opacity-50"
+                  )}
                 >
-                  <SelectTrigger id="resume-select" className={cn(selectedFile && "opacity-50")}>
+                  <div className="flex items-center gap-2">
+                    <FileText className="h-4 w-4 text-muted-foreground" />
                     <SelectValue
-                      placeholder={
-                        resumesLoading ? "Loading resumes..." : "Choose a saved resume"
-                      }
+                      placeholder={resumesLoading ? "Loading..." : "Select saved resume"}
                     />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="no-resume">No saved resume</SelectItem>
-                    {resumes.map((resume) => (
-                      <SelectItem key={resume.id} value={resume.id.toString()}>
-                        {resume.fileName}
-                        {resume.isDefault && " (Default)"}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+                  </div>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="no-resume">No resume</SelectItem>
+                  {resumes.map((resume) => (
+                    <SelectItem key={resume.id} value={resume.id.toString()}>
+                      {resume.fileName}
+                      {resume.isDefault && " (Default)"}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
 
-              <div className="relative">
+              {/* Divider */}
+              <div className="relative py-1">
                 <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t" />
+                  <span className="w-full border-t border-border" />
                 </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-background px-2 text-muted-foreground">Or upload new</span>
+                <div className="relative flex justify-center">
+                  <span className="bg-card px-2 text-xs text-muted-foreground">
+                    or
+                  </span>
                 </div>
               </div>
 
-              {/* Option B: Upload New */}
+              {/* Upload */}
               <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <Input
-                    ref={fileInputRef}
-                    id="resume-upload"
-                    type="file"
-                    accept=".pdf,.docx,.txt"
-                    onChange={handleFileChange}
-                    disabled={loading}
-                    className="cursor-pointer file:cursor-pointer file:text-primary file:font-medium"
-                  />
-                  {selectedFile && (
+                {!selectedFile ? (
+                  <label
+                    htmlFor="resume-upload"
+                    className={cn(
+                      "flex items-center justify-center gap-2 h-10 px-4",
+                      "border border-dashed border-border rounded-lg",
+                      "text-sm text-muted-foreground",
+                      "cursor-pointer transition-colors",
+                      "hover:border-foreground/30 hover:text-foreground",
+                      loading && "pointer-events-none opacity-50"
+                    )}
+                  >
+                    <Upload className="h-4 w-4" />
+                    Upload new resume
+                    <Input
+                      ref={fileInputRef}
+                      id="resume-upload"
+                      type="file"
+                      accept=".pdf,.docx,.txt"
+                      onChange={handleFileChange}
+                      disabled={loading}
+                      className="hidden"
+                    />
+                  </label>
+                ) : (
+                  <div className="flex items-center justify-between gap-2 h-10 px-3 border border-border rounded-lg bg-secondary/50">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+                      <span className="text-sm truncate">{selectedFile.name}</span>
+                    </div>
                     <Button
                       type="button"
                       variant="ghost"
                       size="icon"
                       onClick={clearFile}
-                      className="shrink-0 text-muted-foreground hover:text-destructive"
-                      title="Remove file"
+                      className="h-7 w-7 shrink-0"
                     >
-                      <X className="w-4 h-4" />
+                      <X className="h-3.5 w-3.5" />
                     </Button>
-                  )}
-                </div>
-                {selectedFile && (
-                  <p className="text-xs text-green-600 flex items-center gap-1">
-                    <Upload className="w-3 h-3" />
-                    Using: {selectedFile.name}
-                  </p>
+                  </div>
                 )}
+                <p className="text-xs text-muted-foreground">
+                  PDF, DOCX, or TXT up to 5MB
+                </p>
               </div>
             </div>
           </div>
 
-          {/* Error Message */}
+          {/* Error */}
           {error && (
-            <div className="flex items-start gap-2 p-3 text-sm text-red-600 bg-red-50 dark:bg-red-900/20 dark:text-red-400 rounded-md">
-              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+            <div className="flex items-start gap-2.5 p-3 text-sm border border-border rounded-lg bg-secondary/50">
+              <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
               <span>{error}</span>
             </div>
           )}
 
-          {/* Submit Button */}
+          {/* Submit */}
           <Button
             type="submit"
-            className="w-full"
-            size="lg"
-            disabled={loading || !jobTitle.trim()}
+            className="w-full h-11"
+            disabled={loading || !isValid}
           >
             {loading ? (
               <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Starting Interview...
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Preparing Interview...
               </>
             ) : (
-              "Start Interview"
+              <>
+                Start Interview
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </>
             )}
           </Button>
 
           {/* Tips */}
-          <div className="text-sm text-muted-foreground space-y-2 p-4 bg-muted/50 rounded-lg">
-            <p className="font-medium">💡 Tips for best experience:</p>
-            <ul className="list-disc list-inside space-y-1 ml-2">
-              <li>Use a quiet environment</li>
-              <li>Allow microphone access when prompted</li>
-              <li>Speak clearly and at a moderate pace</li>
-              <li>Take a moment to think before answering</li>
+          <div className="pt-4 border-t border-border">
+            <p className="text-xs font-medium mb-2">Before you start</p>
+            <ul className="space-y-1.5 text-xs text-muted-foreground">
+              {[
+                "Find a quiet environment",
+                "Allow microphone access",
+                "Speak clearly and naturally"
+              ].map((tip, index) => (
+                <li key={index} className="flex items-center gap-2">
+                  <span className="h-1 w-1 rounded-full bg-muted-foreground" />
+                  {tip}
+                </li>
+              ))}
             </ul>
           </div>
         </form>

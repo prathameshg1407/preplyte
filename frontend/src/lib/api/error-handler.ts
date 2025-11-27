@@ -1,32 +1,8 @@
 // src/lib/api/error-handler.ts
 import { AxiosError } from 'axios';
 import toast from 'react-hot-toast';
+import type { ApiError, ValidationDetail } from '@/types/api.types';
 
-// Match backend error response format
-export interface ApiErrorResponse {
-  success: false;
-  error: {
-    code: string;
-    message: string;
-    details?: Array<{
-      field: string;
-      message: string;
-      code?: string;
-    }>;
-  };
-}
-
-export interface ApiError {
-  code: string;
-  message: string;
-  status: number;
-  details?: Array<{
-    field: string;
-    message: string;
-  }>;
-}
-
-// Error codes that match backend
 export const ERROR_CODES = {
   VALIDATION_ERROR: 'VALIDATION_ERROR',
   UNAUTHORIZED: 'UNAUTHORIZED',
@@ -37,34 +13,50 @@ export const ERROR_CODES = {
   INTERNAL_ERROR: 'INTERNAL_ERROR',
   NETWORK_ERROR: 'NETWORK_ERROR',
   TIMEOUT_ERROR: 'TIMEOUT_ERROR',
-  TOKEN_EXPIRED: 'TOKEN_EXPIRED',
 } as const;
 
-export const parseApiError = (error: unknown): ApiError => {
-  if (error instanceof AxiosError) {
-    const response = error.response?.data as ApiErrorResponse;
+export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];
 
-    // Handle structured error response from backend
-    if (response?.error) {
+interface ParsedError {
+  code: ErrorCode;
+  message: string;
+  status: number;
+  details?: ValidationDetail[];
+}
+
+interface ErrorResponseData {
+  success: false;
+  error?: ApiError;
+  message?: string;
+}
+
+export function parseApiError(error: unknown): ParsedError {
+  // Handle Axios errors
+  if (error instanceof AxiosError) {
+    const { response, code } = error;
+    const data = response?.data as ErrorResponseData | undefined;
+
+    // Structured backend error
+    if (data?.error) {
       return {
-        code: response.error.code,
-        message: response.error.message,
-        status: error.response?.status || 500,
-        details: response.error.details,
+        code: data.error.code as ErrorCode,
+        message: data.error.message,
+        status: response?.status ?? 500,
+        details: data.error.details,
       };
     }
 
-    // Handle legacy error format (if any)
-    if (response && 'message' in response) {
+    // Legacy message format
+    if (data?.message) {
       return {
         code: ERROR_CODES.INTERNAL_ERROR,
-        message: (response as any).message || 'An error occurred',
-        status: error.response?.status || 500,
+        message: data.message,
+        status: response?.status ?? 500,
       };
     }
 
-    // Handle network errors
-    if (error.code === 'ERR_NETWORK') {
+    // Network error
+    if (code === 'ERR_NETWORK') {
       return {
         code: ERROR_CODES.NETWORK_ERROR,
         message: 'Network error. Please check your connection.',
@@ -72,8 +64,8 @@ export const parseApiError = (error: unknown): ApiError => {
       };
     }
 
-    // Handle timeout errors
-    if (error.code === 'ECONNABORTED') {
+    // Timeout
+    if (code === 'ECONNABORTED') {
       return {
         code: ERROR_CODES.TIMEOUT_ERROR,
         message: 'Request timeout. Please try again.',
@@ -84,10 +76,11 @@ export const parseApiError = (error: unknown): ApiError => {
     return {
       code: ERROR_CODES.INTERNAL_ERROR,
       message: error.message || 'An unexpected error occurred',
-      status: error.response?.status || 500,
+      status: response?.status ?? 500,
     };
   }
 
+  // Standard Error
   if (error instanceof Error) {
     return {
       code: ERROR_CODES.INTERNAL_ERROR,
@@ -101,40 +94,32 @@ export const parseApiError = (error: unknown): ApiError => {
     message: 'An unexpected error occurred',
     status: 500,
   };
-};
+}
 
-export const handleApiError = (error: unknown): string => {
-  const apiError = parseApiError(error);
+export function getErrorMessage(error: unknown): string {
+  const parsed = parseApiError(error);
 
-  // Format validation errors
-  if (apiError.code === ERROR_CODES.VALIDATION_ERROR && apiError.details?.length) {
-    return apiError.details.map((d) => d.message).join('. ');
+  if (parsed.code === ERROR_CODES.VALIDATION_ERROR && parsed.details?.length) {
+    return parsed.details.map((d) => d.message).join('. ');
   }
 
-  return apiError.message;
-};
+  return parsed.message;
+}
 
-export const showErrorToast = (error: unknown): void => {
-  const errorMessage = handleApiError(error);
-  toast.error(errorMessage);
-};
+export function showErrorToast(error: unknown): void {
+  toast.error(getErrorMessage(error));
+}
 
-export const showSuccessToast = (message: string): void => {
+export function showSuccessToast(message: string): void {
   toast.success(message);
-};
+}
 
-// Check if error is a specific type
-export const isUnauthorizedError = (error: unknown): boolean => {
-  const apiError = parseApiError(error);
-  return apiError.code === ERROR_CODES.UNAUTHORIZED || apiError.status === 401;
-};
+// Type guards
+export const isUnauthorized = (error: unknown): boolean =>
+  parseApiError(error).status === 401;
 
-export const isNetworkError = (error: unknown): boolean => {
-  const apiError = parseApiError(error);
-  return apiError.code === ERROR_CODES.NETWORK_ERROR;
-};
+export const isNetworkError = (error: unknown): boolean =>
+  parseApiError(error).code === ERROR_CODES.NETWORK_ERROR;
 
-export const isValidationError = (error: unknown): boolean => {
-  const apiError = parseApiError(error);
-  return apiError.code === ERROR_CODES.VALIDATION_ERROR;
-};
+export const isValidationError = (error: unknown): boolean =>
+  parseApiError(error).code === ERROR_CODES.VALIDATION_ERROR;

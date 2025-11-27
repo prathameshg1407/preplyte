@@ -1,66 +1,61 @@
-// src/modules/interview/interview.controller.ts
+// interview.controller.ts
 
-import { Request, Response, NextFunction } from 'express';
+import { Response, NextFunction } from 'express';
 import { InterviewService } from './interview.service';
 import { AuthenticatedRequest } from '../../../middleware/auth.middleware';
 import {
-  startInterviewSchema,
-  submitAnswerSchema,
-  sessionIdParamSchema,
   parseRequest,
+  startSessionSchema,
+  submitResponseSchema,
+  sessionIdParamSchema,
+  getSessionsQuerySchema,
 } from './interview.validation';
-import { HTTP_STATUS } from '../../../config/constants';
-import { BadRequestError } from '../../../lib/errors';
+import { UnauthorizedError } from '../../../utils/errors';
 
 export class InterviewController {
-  constructor(private readonly interviewService: InterviewService) {
-    // Bind all methods
-    this.startInterviewSession = this.startInterviewSession.bind(this);
-    this.submitAnswer = this.submitAnswer.bind(this);
-    this.getInterviewFeedback = this.getInterviewFeedback.bind(this);
-    this.getInterviewSession = this.getInterviewSession.bind(this);
-    this.getNextQuestion = this.getNextQuestion.bind(this);
-    this.getUserSessions = this.getUserSessions.bind(this);
-    this.getUserSessionStats = this.getUserSessionStats.bind(this);
-    this.cancelSession = this.cancelSession.bind(this);
+  constructor(private readonly service: InterviewService) {
+    this.startSession = this.startSession.bind(this);
+    this.submitResponse = this.submitResponse.bind(this);
+    this.getSession = this.getSession.bind(this);
+    this.endSession = this.endSession.bind(this);
+    this.getFeedback = this.getFeedback.bind(this);
+    this.getSessions = this.getSessions.bind(this);
+    this.getStats = this.getStats.bind(this);
     this.deleteSession = this.deleteSession.bind(this);
-    this.testTTS = this.testTTS.bind(this);
   }
 
-  async startInterviewSession(
+  async startSession(
     req: AuthenticatedRequest,
     res: Response,
     next: NextFunction
   ): Promise<void> {
     try {
-      const userId = this.getUserId(req);
-      const dto = parseRequest(startInterviewSchema, req.body);
+      const userId = this.requireUserId(req);
+      const dto = parseRequest(startSessionSchema, req.body);
+      const result = await this.service.startSession(userId, dto);
 
-      const result = await this.interviewService.startInterviewSession(userId, dto);
-
-      res.status(HTTP_STATUS.CREATED).json({
+      res.status(201).json({
         success: true,
         data: result,
-        message: 'Interview session started successfully',
+        message: 'Interview session started',
       });
     } catch (error) {
       next(error);
     }
   }
 
-  async submitAnswer(
+  async submitResponse(
     req: AuthenticatedRequest,
     res: Response,
     next: NextFunction
   ): Promise<void> {
     try {
-      const userId = this.getUserId(req);
+      const userId = this.requireUserId(req);
       const { sessionId } = parseRequest(sessionIdParamSchema, req.params);
-      const dto = parseRequest(submitAnswerSchema, req.body);
+      const dto = parseRequest(submitResponseSchema, req.body);
+      const result = await this.service.submitResponse(sessionId, userId, dto);
 
-      const result = await this.interviewService.submitAnswer(sessionId, userId, dto);
-
-      res.status(HTTP_STATUS.OK).json({
+      res.status(200).json({
         success: true,
         data: result,
       });
@@ -69,18 +64,17 @@ export class InterviewController {
     }
   }
 
-  async getInterviewFeedback(
+  async getSession(
     req: AuthenticatedRequest,
     res: Response,
     next: NextFunction
   ): Promise<void> {
     try {
-      const userId = this.getUserId(req);
+      const userId = this.requireUserId(req);
       const { sessionId } = parseRequest(sessionIdParamSchema, req.params);
+      const result = await this.service.getSession(sessionId, userId);
 
-      const result = await this.interviewService.getInterviewFeedback(sessionId, userId);
-
-      res.status(HTTP_STATUS.OK).json({
+      res.status(200).json({
         success: true,
         data: result,
       });
@@ -89,38 +83,37 @@ export class InterviewController {
     }
   }
 
-  async getInterviewSession(
+  async endSession(
     req: AuthenticatedRequest,
     res: Response,
     next: NextFunction
   ): Promise<void> {
     try {
-      const userId = this.getUserId(req);
+      const userId = this.requireUserId(req);
       const { sessionId } = parseRequest(sessionIdParamSchema, req.params);
+      const result = await this.service.endSession(sessionId, userId);
 
-      const result = await this.interviewService.getInterviewSession(sessionId, userId);
-
-      res.status(HTTP_STATUS.OK).json({
+      res.status(200).json({
         success: true,
         data: result,
+        message: 'Interview completed',
       });
     } catch (error) {
       next(error);
     }
   }
 
-  async getNextQuestion(
+  async getFeedback(
     req: AuthenticatedRequest,
     res: Response,
     next: NextFunction
   ): Promise<void> {
     try {
-      const userId = this.getUserId(req);
+      const userId = this.requireUserId(req);
       const { sessionId } = parseRequest(sessionIdParamSchema, req.params);
+      const result = await this.service.getFeedback(sessionId, userId);
 
-      const result = await this.interviewService.getNextQuestion(sessionId, userId);
-
-      res.status(HTTP_STATUS.OK).json({
+      res.status(200).json({
         success: true,
         data: result,
       });
@@ -129,17 +122,17 @@ export class InterviewController {
     }
   }
 
-  async getUserSessions(
+  async getSessions(
     req: AuthenticatedRequest,
     res: Response,
     next: NextFunction
   ): Promise<void> {
     try {
-      const userId = this.getUserId(req);
+      const userId = this.requireUserId(req);
+      const { page, limit } = parseRequest(getSessionsQuerySchema, req.query);
+      const result = await this.service.getUserSessions(userId, page, limit);
 
-      const result = await this.interviewService.getUserSessions(userId);
-
-      res.status(HTTP_STATUS.OK).json({
+      res.status(200).json({
         success: true,
         data: result,
       });
@@ -148,39 +141,18 @@ export class InterviewController {
     }
   }
 
-  async getUserSessionStats(
+  async getStats(
     req: AuthenticatedRequest,
     res: Response,
     next: NextFunction
   ): Promise<void> {
     try {
-      const userId = this.getUserId(req);
+      const userId = this.requireUserId(req);
+      const result = await this.service.getUserStats(userId);
 
-      const result = await this.interviewService.getUserSessionStats(userId);
-
-      res.status(HTTP_STATUS.OK).json({
+      res.status(200).json({
         success: true,
         data: result,
-      });
-    } catch (error) {
-      next(error);
-    }
-  }
-
-  async cancelSession(
-    req: AuthenticatedRequest,
-    res: Response,
-    next: NextFunction
-  ): Promise<void> {
-    try {
-      const userId = this.getUserId(req);
-      const { sessionId } = parseRequest(sessionIdParamSchema, req.params);
-
-      await this.interviewService.cancelSession(sessionId, userId);
-
-      res.status(HTTP_STATUS.OK).json({
-        success: true,
-        message: 'Session cancelled successfully',
       });
     } catch (error) {
       next(error);
@@ -193,38 +165,24 @@ export class InterviewController {
     next: NextFunction
   ): Promise<void> {
     try {
-      const userId = this.getUserId(req);
+      const userId = this.requireUserId(req);
       const { sessionId } = parseRequest(sessionIdParamSchema, req.params);
+      await this.service.deleteSession(sessionId, userId);
 
-      await this.interviewService.deleteSession(sessionId, userId);
-
-      res.status(HTTP_STATUS.NO_CONTENT).send();
-    } catch (error) {
-      next(error);
-    }
-  }
-
-  async testTTS(
-    req: AuthenticatedRequest,
-    res: Response,
-    next: NextFunction
-  ): Promise<void> {
-    try {
-      const result = await this.interviewService.testTTS();
-
-      res.status(HTTP_STATUS.OK).json({
+      res.status(200).json({
         success: true,
-        data: result,
+        message: 'Session deleted',
       });
     } catch (error) {
       next(error);
     }
   }
 
-  private getUserId(req: AuthenticatedRequest): string {
-    if (!req.user?.id) {
-      throw new BadRequestError('User ID not found in request');
+  private requireUserId(req: AuthenticatedRequest): string {
+    const userId = req.user?.id;
+    if (!userId) {
+      throw new UnauthorizedError('Authentication required');
     }
-    return req.user.id;
+    return userId;
   }
 }

@@ -3,7 +3,7 @@
 
 import { useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { useAuth } from '@/lib/hooks/use-auth';
+import { useAuth } from '../../lib/hooks/use-auth';
 interface ProtectedRouteProps {
   children: React.ReactNode;
   requiredRole?: 'PLATFORM_ADMIN' | 'INSTITUTE_ADMIN' | 'USER';

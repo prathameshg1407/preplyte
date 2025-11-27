@@ -2,11 +2,11 @@
 
 'use client';
 
-import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { cn } from '@/lib/utils';
-import type { SessionQuestion, SelectedAnswers } from '@/types/aptitude.types';
-import { CheckCircle2, Circle, Target } from 'lucide-react';
+import { Button } from '../../ui/button';
+import { ScrollArea } from '../../ui/scroll-area';
+import { cn } from '../../../lib/utils';
+import type { SessionQuestion, SelectedAnswers } from '../../../types/aptitude.types';
+import { Check } from 'lucide-react';
 
 interface QuestionNavigatorProps {
   questions: SessionQuestion[];
@@ -38,86 +38,75 @@ export function QuestionNavigator({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {/* Progress Header */}
-      <div className="space-y-2">
+      <div className="space-y-3">
         <div className="flex items-center justify-between text-sm">
-          <span className="font-medium flex items-center gap-2">
-            <Target className="h-4 w-4" />
-            Progress
-          </span>
+          <span className="font-medium">Progress</span>
           <span className="text-muted-foreground">
             {answeredCount} / {questions.length}
           </span>
         </div>
 
         {/* Progress Bar */}
-        <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
+        <div className="h-1.5 w-full overflow-hidden rounded-full bg-secondary">
           <div
-            className="bg-primary h-full transition-all duration-300 rounded-full"
+            className="h-full bg-foreground transition-all duration-300"
             style={{ width: `${progressPercentage}%` }}
           />
         </div>
-        <p className="text-xs text-muted-foreground text-right">
+        <p className="text-xs text-muted-foreground">
           {progressPercentage}% complete
         </p>
       </div>
 
       {/* Question Grid */}
-      <ScrollArea className="h-[280px] pr-2">
-        <div className="grid grid-cols-5 gap-2">
+      <ScrollArea className="h-[260px]">
+        <div className="grid grid-cols-5 gap-1.5 pr-3">
           {questions.map((question, index) => {
             const isAnswered = isQuestionAnswered(question);
             const isCurrent = index === currentIndex;
 
             return (
-              <Button
+              <button
                 key={question.id}
-                variant="outline"
-                size="sm"
                 disabled={disabled}
                 className={cn(
-                  'h-10 w-10 p-0 font-medium relative transition-all duration-200',
-                  isCurrent && 'ring-2 ring-primary ring-offset-2',
-                  isAnswered &&
-                    !isCurrent &&
-                    'bg-primary text-primary-foreground hover:bg-primary/90 border-primary',
-                  !isAnswered && !isCurrent && 'bg-muted hover:bg-muted/80'
+                  'relative flex h-9 w-9 items-center justify-center rounded-md text-sm font-medium transition-colors',
+                  isCurrent && 'ring-2 ring-foreground ring-offset-2 ring-offset-background',
+                  isAnswered && !isCurrent && 'bg-foreground text-background',
+                  !isAnswered && !isCurrent && 'bg-secondary hover:bg-secondary/80',
+                  disabled && 'opacity-50 cursor-not-allowed'
                 )}
-                onClick={() => onNavigate(index)}
+                onClick={() => !disabled && onNavigate(index)}
                 title={`Question ${index + 1}${isAnswered ? ' (Answered)' : ''}`}
               >
                 {index + 1}
-                {isAnswered && !isCurrent && (
-                  <CheckCircle2 className="absolute -top-1 -right-1 h-3 w-3 text-primary-foreground" />
-                )}
-              </Button>
+              </button>
             );
           })}
         </div>
       </ScrollArea>
 
       {/* Legend */}
-      <div className="pt-2 border-t space-y-2">
-        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+      <div className="space-y-3 border-t border-border pt-4">
+        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
           Legend
         </p>
-        <div className="grid grid-cols-1 gap-2 text-xs">
+        <div className="space-y-2 text-xs">
           <div className="flex items-center gap-2">
-            <div className="h-4 w-4 rounded bg-primary flex items-center justify-center">
-              <CheckCircle2 className="h-3 w-3 text-primary-foreground" />
+            <div className="flex h-5 w-5 items-center justify-center rounded bg-foreground text-background">
+              <Check className="h-3 w-3" />
             </div>
-            <span>Answered</span>
+            <span className="text-muted-foreground">Answered</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="h-4 w-4 rounded bg-muted border flex items-center justify-center">
-              <Circle className="h-2 w-2 text-muted-foreground" />
-            </div>
-            <span>Unanswered</span>
+            <div className="h-5 w-5 rounded bg-secondary" />
+            <span className="text-muted-foreground">Unanswered</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="h-4 w-4 rounded border-2 border-primary" />
-            <span>Current</span>
+            <div className="h-5 w-5 rounded ring-2 ring-foreground ring-offset-1 ring-offset-background" />
+            <span className="text-muted-foreground">Current</span>
           </div>
         </div>
       </div>

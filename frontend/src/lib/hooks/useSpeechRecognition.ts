@@ -5,7 +5,7 @@ import type {
   ISpeechRecognition,
   SpeechRecognitionEvent,
   SpeechRecognitionErrorEvent,
-} from "@/types/speech-recognition";
+} from "../../types/speech-recognition";
 
 interface UseSpeechRecognitionOptions {
   language?: string;
@@ -51,8 +51,26 @@ export function useSpeechRecognition(
   const recognitionRef = useRef<ISpeechRecognition | null>(null);
   const isIntentionalStopRef = useRef(false);
   const transcriptRef = useRef("");
+  
+  // Store callbacks in refs to avoid stale closures
+  const callbacksRef = useRef({
+    onResult,
+    onError,
+    onEnd,
+    onSpeechDetected,
+  });
 
-  // Check browser support
+  // Update callback refs when they change
+  useEffect(() => {
+    callbacksRef.current = {
+      onResult,
+      onError,
+      onEnd,
+      onSpeechDetected,
+    };
+  }, [onResult, onError, onEnd, onSpeechDetected]);
+
+  // Initialize speech recognition once
   useEffect(() => {
     const SpeechRecognitionAPI =
       typeof window !== "undefined"
@@ -83,7 +101,7 @@ export function useSpeechRecognition(
           if (result.isFinal) {
             transcriptRef.current += text + " ";
             setTranscript(transcriptRef.current);
-            onResult?.(text, true);
+            callbacksRef.current.onResult?.(text, true);
           } else {
             interim += text + " ";
           }
@@ -92,11 +110,11 @@ export function useSpeechRecognition(
         setInterimTranscript(interim);
         
         if (hasSpeech) {
-          onSpeechDetected?.();
+          callbacksRef.current.onSpeechDetected?.();
         }
 
         if (interim) {
-          onResult?.(transcriptRef.current + interim, false);
+          callbacksRef.current.onResult?.(transcriptRef.current + interim, false);
         }
       };
 
@@ -104,7 +122,9 @@ export function useSpeechRecognition(
         setIsListening(false);
         
         if (event.error !== "aborted" && event.error !== "no-speech") {
-          onError?.(event.error);
+          callbacksRef.current.onError?.(event.error);
+        } else if (event.error === "no-speech") {
+          callbacksRef.current.onError?.(event.error);
         }
       };
 
@@ -112,7 +132,7 @@ export function useSpeechRecognition(
         setIsListening(false);
         
         if (!isIntentionalStopRef.current) {
-          onEnd?.();
+          callbacksRef.current.onEnd?.();
         }
       };
 
@@ -122,9 +142,10 @@ export function useSpeechRecognition(
     return () => {
       if (recognitionRef.current) {
         recognitionRef.current.abort();
+        recognitionRef.current = null;
       }
     };
-  }, [language, continuous, interimResults, onResult, onError, onEnd, onSpeechDetected]);
+  }, [language, continuous, interimResults]); // Remove callback deps
 
   const requestPermission = useCallback(async (): Promise<boolean> => {
     try {
@@ -148,9 +169,9 @@ export function useSpeechRecognition(
       recognitionRef.current.start();
       setIsListening(true);
     } catch (error) {
-      onError?.("Failed to start speech recognition");
+      callbacksRef.current.onError?.("Failed to start speech recognition");
     }
-  }, [isListening, onError]);
+  }, [isListening]);
 
   const stopListening = useCallback(() => {
     if (!recognitionRef.current || !isListening) return;

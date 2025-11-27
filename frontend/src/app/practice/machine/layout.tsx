@@ -1,6 +1,8 @@
 // src/app/practice/machine/layout.tsx
 
-import { MachineConfigProvider } from '@/components/providers/MachineConfigProvider';
+import { MachineConfigProvider } from "../../../components/providers/MachineConfigProvider";
+
+
 
 export default function MachineLayout({
   children,
@@ -9,7 +11,7 @@ export default function MachineLayout({
 }) {
   return (
     <MachineConfigProvider>
-      {children}
+      <div className="min-h-screen bg-background">{children}</div>
     </MachineConfigProvider>
   );
 }

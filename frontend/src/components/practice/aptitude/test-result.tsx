@@ -3,24 +3,23 @@
 'use client';
 
 import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
-import { Separator } from '@/components/ui/separator';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import type { SessionResultsResponse, SolutionFilter } from '@/types/aptitude.types';
+import { Card, CardContent, CardHeader, CardTitle } from '../../ui/card';
+import { Badge } from '../../ui/badge';
+import { Button } from '../../ui/button';
+import { Progress } from '../../ui/progress';
+import { Separator } from '../../ui/separator';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../ui/tabs';
+import type { SessionResultsResponse, SolutionFilter } from '../../../types/aptitude.types';
 import {
   QUESTION_TYPE_CONFIG,
   DIFFICULTY_CONFIG,
   getScoreGrade,
-  getPerformanceColor,
   formatDuration,
-} from '@/lib/constants/aptitude.constants';
+} from '../../../lib/constants/aptitude.constants';
 import {
-  CheckCircle2,
-  XCircle,
-  MinusCircle,
+  Check,
+  X,
+  Minus,
   Clock,
   Target,
   TrendingUp,
@@ -32,7 +31,7 @@ import {
   Eye,
 } from 'lucide-react';
 import Link from 'next/link';
-import { cn } from '@/lib/utils';
+import { cn } from '../../../lib/utils';
 
 interface TestResultProps {
   result: SessionResultsResponse;
@@ -44,44 +43,38 @@ export function TestResult({ result, onViewSolutions }: TestResultProps) {
 
   const grade = getScoreGrade(result.summary.scorePercentage, result.difficulty);
   const difficultyConfig = DIFFICULTY_CONFIG[result.difficulty];
-  const performanceColors = getPerformanceColor(result.performance.rank);
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="mx-auto max-w-4xl space-y-6">
       {/* Hero Score Card */}
-      <Card className="border-2 overflow-hidden">
-        <div
-          className={cn(
-            'py-8 px-6 text-center',
-            grade.bgColor,
-            'bg-gradient-to-br from-transparent to-background'
-          )}
-        >
-          <div className="inline-flex items-center justify-center p-4 rounded-full bg-background shadow-lg mb-4">
-            <Trophy className={cn('h-8 w-8', grade.color)} />
+      <Card>
+        <div className="border-b border-border py-8 text-center">
+          <div className="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-full bg-foreground">
+            <Trophy className="h-8 w-8 text-background" />
           </div>
 
-          <div className={cn('text-6xl font-bold mb-2', grade.color)}>
+          <div className="mb-2 text-6xl font-bold">
             {result.summary.scorePercentage}%
           </div>
-          <div className="text-xl font-medium text-foreground mb-2">
-            {grade.label}
-          </div>
-          <Badge className={cn('mb-4', performanceColors.bg, performanceColors.text)}>
-            {result.performance.rank.replace('_', ' ')}
-          </Badge>
+          <div className="mb-4 text-xl font-medium">{grade.label}</div>
 
-          <div className="flex justify-center gap-6 text-sm mt-4">
+          <div className="flex justify-center gap-6 text-sm">
             <div className="flex items-center gap-2">
-              <CheckCircle2 className="h-4 w-4 text-green-500" />
+              <div className="flex h-5 w-5 items-center justify-center rounded bg-foreground">
+                <Check className="h-3 w-3 text-background" />
+              </div>
               <span>{result.summary.totalCorrect} Correct</span>
             </div>
             <div className="flex items-center gap-2">
-              <XCircle className="h-4 w-4 text-red-500" />
+              <div className="flex h-5 w-5 items-center justify-center rounded bg-muted-foreground">
+                <X className="h-3 w-3 text-background" />
+              </div>
               <span>{result.summary.totalWrong} Wrong</span>
             </div>
             <div className="flex items-center gap-2">
-              <MinusCircle className="h-4 w-4 text-muted-foreground" />
+              <div className="flex h-5 w-5 items-center justify-center rounded bg-secondary">
+                <Minus className="h-3 w-3" />
+              </div>
               <span>{result.summary.totalUnanswered} Skipped</span>
             </div>
           </div>
@@ -89,22 +82,24 @@ export function TestResult({ result, onViewSolutions }: TestResultProps) {
 
         <CardContent className="pt-6">
           <div className="grid grid-cols-3 gap-4">
-            <div className="text-center p-4 bg-green-500/10 rounded-xl">
-              <CheckCircle2 className="h-8 w-8 text-green-500 mx-auto mb-2" />
-              <div className="text-3xl font-bold text-green-600">
-                {result.summary.totalCorrect}
+            <div className="rounded-lg border border-border bg-secondary/30 p-4 text-center">
+              <div className="mb-2 flex h-8 w-8 mx-auto items-center justify-center rounded bg-foreground">
+                <Check className="h-4 w-4 text-background" />
               </div>
+              <div className="text-3xl font-bold">{result.summary.totalCorrect}</div>
               <div className="text-sm text-muted-foreground">Correct</div>
             </div>
-            <div className="text-center p-4 bg-red-500/10 rounded-xl">
-              <XCircle className="h-8 w-8 text-red-500 mx-auto mb-2" />
-              <div className="text-3xl font-bold text-red-600">
-                {result.summary.totalWrong}
+            <div className="rounded-lg border border-border bg-secondary/30 p-4 text-center">
+              <div className="mb-2 flex h-8 w-8 mx-auto items-center justify-center rounded bg-muted-foreground">
+                <X className="h-4 w-4 text-background" />
               </div>
+              <div className="text-3xl font-bold">{result.summary.totalWrong}</div>
               <div className="text-sm text-muted-foreground">Wrong</div>
             </div>
-            <div className="text-center p-4 bg-muted rounded-xl">
-              <MinusCircle className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+            <div className="rounded-lg border border-border bg-secondary/30 p-4 text-center">
+              <div className="mb-2 flex h-8 w-8 mx-auto items-center justify-center rounded bg-secondary">
+                <Minus className="h-4 w-4" />
+              </div>
               <div className="text-3xl font-bold">{result.summary.totalUnanswered}</div>
               <div className="text-sm text-muted-foreground">Skipped</div>
             </div>
@@ -112,39 +107,35 @@ export function TestResult({ result, onViewSolutions }: TestResultProps) {
         </CardContent>
       </Card>
 
-      {/* Tabs for different views */}
+      {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="summary">Summary</TabsTrigger>
           <TabsTrigger value="breakdown">Breakdown</TabsTrigger>
-          <TabsTrigger value="suggestions">Suggestions</TabsTrigger>
+          <TabsTrigger value="insights">Insights</TabsTrigger>
         </TabsList>
 
         {/* Summary Tab */}
-        <TabsContent value="summary" className="space-y-6 mt-6">
-          <Card className="border-2">
+        <TabsContent value="summary" className="mt-6 space-y-6">
+          <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Target className="h-5 w-5 text-primary" />
+                <Target className="h-4 w-4" />
                 Test Summary
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
-                <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                <div className="flex items-center justify-between rounded-lg bg-secondary p-3">
                   <div className="flex items-center gap-2">
                     <Clock className="h-4 w-4 text-muted-foreground" />
                     <span className="text-sm">Time Taken</span>
                   </div>
-                  <span className="font-semibold">
-                    {formatDuration(result.timeTaken)}
-                  </span>
+                  <span className="font-medium">{formatDuration(result.timeTaken)}</span>
                 </div>
-                <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                <div className="flex items-center justify-between rounded-lg bg-secondary p-3">
                   <span className="text-sm">Time Limit</span>
-                  <span className="font-semibold">
-                    {formatDuration(result.timeLimit)}
-                  </span>
+                  <span className="font-medium">{formatDuration(result.timeLimit)}</span>
                 </div>
               </div>
 
@@ -152,11 +143,11 @@ export function TestResult({ result, onViewSolutions }: TestResultProps) {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm">Accuracy</span>
+                  <span className="text-sm text-muted-foreground">Accuracy</span>
                   <Badge variant="outline">{result.summary.accuracy}%</Badge>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm">Attempt Rate</span>
+                  <span className="text-sm text-muted-foreground">Attempt Rate</span>
                   <Badge variant="outline">{result.summary.attemptRate}%</Badge>
                 </div>
               </div>
@@ -164,33 +155,27 @@ export function TestResult({ result, onViewSolutions }: TestResultProps) {
               <Separator />
 
               <div className="flex items-center justify-between">
-                <span className="text-sm">Difficulty</span>
-                <Badge
-                  variant="outline"
-                  className={cn(
-                    difficultyConfig?.color,
-                    'border-current bg-current/10'
-                  )}
-                >
+                <span className="text-sm text-muted-foreground">Difficulty</span>
+                <Badge variant="secondary">
                   {difficultyConfig?.label || result.difficulty}
                 </Badge>
               </div>
 
               <div className="flex items-center justify-between">
-                <span className="text-sm">Total Questions</span>
-                <span className="font-semibold">{result.summary.totalQuestions}</span>
+                <span className="text-sm text-muted-foreground">Total Questions</span>
+                <span className="font-medium">{result.summary.totalQuestions}</span>
               </div>
             </CardContent>
           </Card>
         </TabsContent>
 
         {/* Breakdown Tab */}
-        <TabsContent value="breakdown" className="space-y-6 mt-6">
+        <TabsContent value="breakdown" className="mt-6 space-y-6">
           {/* By Type */}
-          <Card className="border-2">
+          <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <BarChart3 className="h-5 w-5 text-primary" />
+                <BarChart3 className="h-4 w-4" />
                 Performance by Type
               </CardTitle>
             </CardHeader>
@@ -202,24 +187,14 @@ export function TestResult({ result, onViewSolutions }: TestResultProps) {
                 return (
                   <div key={type} className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline" className={config?.color}>
-                          {config?.label || type}
-                        </Badge>
-                      </div>
+                      <Badge variant="outline">
+                        {config?.label || type}
+                      </Badge>
                       <span className="text-sm font-medium">
                         {data.correct}/{data.total} ({accuracy}%)
                       </span>
                     </div>
-                    <Progress
-                      value={accuracy}
-                      className={cn(
-                        'h-2',
-                        accuracy >= 70 && '[&>div]:bg-green-500',
-                        accuracy >= 40 && accuracy < 70 && '[&>div]:bg-yellow-500',
-                        accuracy < 40 && '[&>div]:bg-red-500'
-                      )}
-                    />
+                    <Progress value={accuracy} className="h-1.5" />
                     <div className="flex justify-between text-xs text-muted-foreground">
                       <span>{data.correct} correct</span>
                       <span>{data.wrong} wrong</span>
@@ -231,12 +206,12 @@ export function TestResult({ result, onViewSolutions }: TestResultProps) {
             </CardContent>
           </Card>
 
-          {/* By Difficulty (if multiple difficulties in breakdown) */}
+          {/* By Difficulty */}
           {Object.keys(result.breakdown.byDifficulty).length > 0 && (
-            <Card className="border-2">
+            <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5 text-primary" />
+                  <TrendingUp className="h-4 w-4" />
                   Performance by Difficulty
                 </CardTitle>
               </CardHeader>
@@ -248,17 +223,14 @@ export function TestResult({ result, onViewSolutions }: TestResultProps) {
                   return (
                     <div key={diff} className="space-y-2">
                       <div className="flex items-center justify-between">
-                        <Badge
-                          variant="outline"
-                          className={cn(config?.color, 'border-current bg-current/10')}
-                        >
+                        <Badge variant="secondary">
                           {config?.label || diff}
                         </Badge>
                         <span className="text-sm font-medium">
                           {data.correct}/{data.total} ({percentage}%)
                         </span>
                       </div>
-                      <Progress value={percentage} className="h-2" />
+                      <Progress value={percentage} className="h-1.5" />
                     </div>
                   );
                 })}
@@ -267,30 +239,28 @@ export function TestResult({ result, onViewSolutions }: TestResultProps) {
           )}
         </TabsContent>
 
-        {/* Suggestions Tab */}
-        <TabsContent value="suggestions" className="space-y-6 mt-6">
-          <Card className="border-2">
+        {/* Insights Tab */}
+        <TabsContent value="insights" className="mt-6 space-y-6">
+          <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Lightbulb className="h-5 w-5 text-primary" />
+                <Lightbulb className="h-4 w-4" />
                 Performance Insights
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className={cn('p-4 rounded-lg', performanceColors.bg)}>
-                <p className={cn('font-medium', performanceColors.text)}>
-                  {result.performance.message}
-                </p>
+              <div className="rounded-lg border border-border bg-secondary/50 p-4">
+                <p className="font-medium">{result.performance.message}</p>
               </div>
 
               <Separator />
 
               <div className="space-y-3">
-                <p className="font-medium text-sm">Suggestions for Improvement:</p>
+                <p className="text-sm font-medium">Suggestions for Improvement:</p>
                 <ul className="space-y-2">
                   {result.performance.suggestions.map((suggestion, index) => (
                     <li key={index} className="flex items-start gap-2 text-sm">
-                      <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                      <Check className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                       <span>{suggestion}</span>
                     </li>
                   ))}
@@ -303,15 +273,15 @@ export function TestResult({ result, onViewSolutions }: TestResultProps) {
 
       {/* View Solutions Button */}
       {onViewSolutions && (
-        <Card className="border-2">
+        <Card>
           <CardContent className="py-6">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="font-semibold flex items-center gap-2">
-                  <Eye className="h-5 w-5 text-primary" />
+                <h3 className="flex items-center gap-2 font-semibold">
+                  <Eye className="h-4 w-4" />
                   Review Solutions
                 </h3>
-                <p className="text-sm text-muted-foreground mt-1">
+                <p className="mt-1 text-sm text-muted-foreground">
                   View detailed solutions with explanations
                 </p>
               </div>
@@ -329,14 +299,14 @@ export function TestResult({ result, onViewSolutions }: TestResultProps) {
       )}
 
       {/* Action Buttons */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        <Button asChild variant="outline" className="flex-1 h-12">
+      <div className="flex flex-col gap-4 sm:flex-row">
+        <Button asChild variant="outline" className="h-12 flex-1">
           <Link href="/practice/aptitude">
             <RotateCcw className="mr-2 h-4 w-4" />
             Practice Again
           </Link>
         </Button>
-        <Button asChild className="flex-1 h-12">
+        <Button asChild className="h-12 flex-1">
           <Link href="/dashboard">
             <Home className="mr-2 h-4 w-4" />
             Back to Dashboard

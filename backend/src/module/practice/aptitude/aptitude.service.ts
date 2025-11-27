@@ -1,12 +1,14 @@
 import { prisma } from '../../../lib/db';
 import { DifficultyLevel, Prisma } from '@prisma/client';
 import {
-  CreateAptitudeSessionDto,
+  CreateSessionDto,
   SaveAnswerDto,
   SessionListFilters,
-  SessionQuestion,
+  SessionStatus,
+  SolutionFilter,
   TypeBreakdown,
   PerformanceEvaluation,
+  PERFORMANCE_THRESHOLDS,
 } from './aptitude.types';
 import {
   NotFoundError,
@@ -15,205 +17,265 @@ import {
   SessionAlreadyCompletedError,
   SessionNotCompletedError,
   InvalidOptionError,
+  InsufficientQuestionsError, // Add this new error type
 } from '../../../utils/errors';
-import {
-  calculateTimeRemaining,
-  formatTimeRemaining,
-  getSessionStatus,
-  shuffleArray,
-  calculateScore,
-  calculateAccuracy,
-} from '../../../utils/helpers';
 import { logger } from '../../../utils/logger';
 
-export class AptitudeService {
-  /**
-   * Create a new aptitude practice session
-   */
-  async createSession(userId: string, dto: CreateAptitudeSessionDto) {
-    // Check for active session
-    const activeSession = await prisma.aptitudePracticeSession.findFirst({
-      where: {
-        userId,
-        completedAt: null,
-        expiresAt: { gt: new Date() },
-      },
-    });
+// =====================================================
+// CONSTANTS
+// =====================================================
 
-    if (activeSession) {
-      throw new SessionInProgressError(activeSession.id, activeSession.expiresAt);
-    }
+const SESSION_SELECT_FIELDS = {
+  id: true,
+  difficulty: true,
+  questionTypes: true,
+  numberOfQuestions: true,
+  timeLimit: true,
+  startedAt: true,
+  completedAt: true,
+  expiresAt: true,
+  totalScore: true,
+  totalCorrect: true,
+  totalWrong: true,
+  totalUnanswered: true,
+} as const;
 
-    // Fetch questions based on criteria
-    const questions = await prisma.aptitudeQuestion.findMany({
-      where: {
-        isActive: true,
-        difficulty: dto.difficulty,
-        questionType: { in: dto.questionTypes },
-      },
-      include: {
-        options: true,
-      },
-    });
+const QUESTION_SELECT_FIELDS = {
+  id: true,
+  questionText: true,
+  questionType: true,
+  difficulty: true,
+  correctOptionId: true,
+  explanation: true,
+  options: {
+    select: { id: true, text: true },
+  },
+} as const;
 
-    if (questions.length < dto.numberOfQuestions) {
-      logger.warn(`Not enough questions available. Found: ${questions.length}, Requested: ${dto.numberOfQuestions}`);
-    }
+// =====================================================
+// HELPER FUNCTIONS (Pure, no side effects)
+// =====================================================
 
-    // Randomly select and shuffle questions
-    const shuffledQuestions = shuffleArray(questions).slice(0, dto.numberOfQuestions);
+const shuffleArray = <T>(array: T[]): T[] => {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+};
 
-    // Calculate expiry time
-    const expiresAt = new Date(Date.now() + dto.timeLimit * 60 * 1000);
+const getSessionStatus = (completedAt: Date | null, expiresAt: Date): SessionStatus => {
+  if (completedAt) return 'completed';
+  return Date.now() > expiresAt.getTime() ? 'expired' : 'in_progress';
+};
 
-    // Create session with questions
-    const session = await prisma.aptitudePracticeSession.create({
-      data: {
-        userId,
-        difficulty: dto.difficulty,
-        questionTypes: dto.questionTypes,
-        numberOfQuestions: shuffledQuestions.length,
-        timeLimit: dto.timeLimit,
-        expiresAt,
-        sessionQuestions: {
-          create: shuffledQuestions.map((q, index) => ({
-            questionId: q.id,
-            order: index + 1,
-          })),
+const calculateTimeRemaining = (expiresAt: Date): number => 
+  Math.max(0, Math.floor((expiresAt.getTime() - Date.now()) / 1000));
+
+const formatTimeRemaining = (seconds: number): string => {
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
+};
+
+const calculatePercentage = (value: number, total: number): number =>
+  total > 0 ? Math.round((value / total) * 100) : 0;
+
+const calculateTimeTaken = (startedAt: Date, completedAt: Date): number =>
+  Math.floor((completedAt.getTime() - startedAt.getTime()) / 60000);
+
+// =====================================================
+// SERVICE CLASS
+// =====================================================
+
+class AptitudeService {
+  // -------------------------------------------------
+  // SESSION CREATION (OPTIMIZED)
+  // -------------------------------------------------
+
+  async createSession(userId: string, dto: CreateSessionDto) {
+    const { numberOfQuestions, timeLimit, difficulty, questionTypes } = dto;
+
+    // Single transaction for all operations
+    return prisma.$transaction(async (tx) => {
+      // Check for active session
+      const activeSession = await tx.aptitudePracticeSession.findFirst({
+        where: {
+          userId,
+          completedAt: null,
+          expiresAt: { gt: new Date() },
         },
-      },
-      include: {
-        sessionQuestions: {
-          include: {
-            question: {
-              include: {
-                options: true,
-              },
+        select: { id: true, expiresAt: true },
+      });
+
+      if (activeSession) {
+        throw new SessionInProgressError(activeSession.id, activeSession.expiresAt);
+      }
+
+      // Fetch only required fields, limit to what we need
+      const questions = await tx.aptitudeQuestion.findMany({
+        where: {
+          isActive: true,
+          difficulty,
+          questionType: { in: questionTypes },
+        },
+        select: { id: true },
+        take: numberOfQuestions * 2, // Fetch extra for better randomization
+      });
+
+      // FIX: Throw error if insufficient questions
+      if (questions.length < numberOfQuestions) {
+        logger.warn(
+          `Insufficient questions. Found: ${questions.length}, Requested: ${numberOfQuestions}`,
+          { difficulty, questionTypes }
+        );
+        throw new InsufficientQuestionsError(questions.length, numberOfQuestions);
+      }
+
+      const selectedQuestions = shuffleArray(questions).slice(0, numberOfQuestions);
+      const now = Date.now();
+      const expiresAt = new Date(now + timeLimit * 60 * 1000);
+      const startedAt = new Date(now);
+
+      // Create session with questions in one operation
+      const session = await tx.aptitudePracticeSession.create({
+        data: {
+          userId,
+          difficulty,
+          questionTypes,
+          numberOfQuestions,
+          timeLimit,
+          startedAt,
+          expiresAt,
+          sessionQuestions: {
+            createMany: {
+              data: selectedQuestions.map((q, index) => ({
+                questionId: q.id,
+                order: index + 1,
+              })),
             },
           },
-          orderBy: { order: 'asc' },
         },
-      },
-    });
+        select: {
+          id: true,
+          difficulty: true,
+          questionTypes: true,
+          numberOfQuestions: true,
+          timeLimit: true,
+          startedAt: true,
+          expiresAt: true,
+          createdAt: true,
+        },
+      });
 
-    return {
-      id: session.id,
-      userId: session.userId,
-      difficulty: session.difficulty,
-      questionTypes: session.questionTypes,
-      numberOfQuestions: session.numberOfQuestions,
-      timeLimit: session.timeLimit,
-      startedAt: session.startedAt,
-      expiresAt: session.expiresAt,
-      completedAt: session.completedAt,
-      totalScore: session.totalScore,
-      totalCorrect: session.totalCorrect,
-      totalWrong: session.totalWrong,
-      totalUnanswered: session.totalUnanswered,
-      createdAt: session.createdAt,
-    };
+      return {
+        ...session,
+        completedAt: null,
+        totalScore: null,
+        totalCorrect: null,
+        totalWrong: null,
+        totalUnanswered: null,
+      };
+    });
   }
 
-  /**
-   * Get list of user's sessions with pagination and filters
-   */
+  // -------------------------------------------------
+  // SESSION LISTING (OPTIMIZED)
+  // -------------------------------------------------
+
   async listSessions(userId: string, filters: SessionListFilters) {
-    const { page, limit, status, difficulty, sortBy, sortOrder } = filters;
+    const { page, limit, sortBy, sortOrder, status, difficulty } = filters;
     const skip = (page - 1) * limit;
+    const where = this.buildSessionWhereClause(userId, { status, difficulty });
 
-    // Build where clause
-    const where: Prisma.AptitudePracticeSessionWhereInput = { userId };
+    // Parallel queries
+    const [totalItems, sessions] = await Promise.all([
+      prisma.aptitudePracticeSession.count({ where }),
+      prisma.aptitudePracticeSession.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { [sortBy]: sortOrder },
+        select: SESSION_SELECT_FIELDS,
+      }),
+    ]);
 
-    if (difficulty) {
-      where.difficulty = difficulty;
-    }
-
-    if (status && status !== 'all') {
-      const now = new Date();
-      if (status === 'completed') {
-        where.completedAt = { not: null };
-      } else if (status === 'in_progress') {
-        where.completedAt = null;
-        where.expiresAt = { gt: now };
-      } else if (status === 'expired') {
-        where.completedAt = null;
-        where.expiresAt = { lte: now };
-      }
-    }
-
-    // Get total count
-    const totalItems = await prisma.aptitudePracticeSession.count({ where });
-
-    // Get sessions
-    const sessions = await prisma.aptitudePracticeSession.findMany({
-      where,
-      skip,
-      take: limit,
-      orderBy: { [sortBy]: sortOrder },
-      select: {
-        id: true,
-        difficulty: true,
-        questionTypes: true,
-        numberOfQuestions: true,
-        timeLimit: true,
-        startedAt: true,
-        completedAt: true,
-        expiresAt: true,
-        totalScore: true,
-        totalCorrect: true,
-        totalWrong: true,
-        totalUnanswered: true,
-      },
-    });
-
-    // Add status to each session
-    const sessionsWithStatus = sessions.map((session) => ({
-      ...session,
-      status: getSessionStatus(session.completedAt, session.expiresAt),
-    }));
+    const totalPages = Math.ceil(totalItems / limit);
 
     return {
-      sessions: sessionsWithStatus,
+      sessions: sessions.map((s) => ({
+        ...s,
+        status: getSessionStatus(s.completedAt, s.expiresAt),
+      })),
       pagination: {
         currentPage: page,
-        totalPages: Math.ceil(totalItems / limit),
+        totalPages,
         totalItems,
         itemsPerPage: limit,
-        hasNextPage: page < Math.ceil(totalItems / limit),
+        hasNextPage: page < totalPages,
         hasPreviousPage: page > 1,
       },
     };
   }
 
-  /**
-   * Get session details
-   */
+  private buildSessionWhereClause(
+    userId: string,
+    filters: Pick<SessionListFilters, 'status' | 'difficulty'>
+  ): Prisma.AptitudePracticeSessionWhereInput {
+    const where: Prisma.AptitudePracticeSessionWhereInput = { userId };
+    const now = new Date();
+
+    if (filters.difficulty) {
+      where.difficulty = filters.difficulty;
+    }
+
+    switch (filters.status) {
+      case 'completed':
+        where.completedAt = { not: null };
+        break;
+      case 'in_progress':
+        where.completedAt = null;
+        where.expiresAt = { gt: now };
+        break;
+      case 'expired':
+        where.completedAt = null;
+        where.expiresAt = { lte: now };
+        break;
+    }
+
+    return where;
+  }
+
+  // -------------------------------------------------
+  // SESSION DETAILS (OPTIMIZED)
+  // -------------------------------------------------
+
   async getSessionDetails(userId: string, sessionId: string) {
     const session = await prisma.aptitudePracticeSession.findFirst({
-      where: {
-        id: sessionId,
-        userId,
-      },
-      include: {
-        sessionQuestions: {
+      where: { id: sessionId, userId },
+      select: {
+        ...SESSION_SELECT_FIELDS,
+        updatedAt: true,
+        _count: {
           select: {
-            selectedOptionId: true,
+            sessionQuestions: { where: { selectedOptionId: { not: null } } },
           },
+        },
+        sessionQuestions: {
+          select: { id: true },
+          take: 1, // Just to get total count efficiently
         },
       },
     });
 
-    if (!session) {
-      throw new NotFoundError('Session');
-    }
+    if (!session) throw new NotFoundError('Session');
 
     const status = getSessionStatus(session.completedAt, session.expiresAt);
-    const timeRemaining = calculateTimeRemaining(session.expiresAt);
-    const answered = session.sessionQuestions.filter((q) => q.selectedOptionId !== null).length;
+    const answered = session._count.sessionQuestions;
 
     const response: Record<string, unknown> = {
       id: session.id,
-      userId: session.userId,
       difficulty: session.difficulty,
       questionTypes: session.questionTypes,
       numberOfQuestions: session.numberOfQuestions,
@@ -221,64 +283,61 @@ export class AptitudeService {
       startedAt: session.startedAt,
       expiresAt: session.expiresAt,
       completedAt: session.completedAt,
+      totalScore: session.totalScore,
       status,
-      timeRemaining,
+      timeRemaining: calculateTimeRemaining(session.expiresAt),
       progress: {
         answered,
         unanswered: session.numberOfQuestions - answered,
         total: session.numberOfQuestions,
       },
-      totalScore: session.totalScore,
-      totalCorrect: session.totalCorrect,
-      totalWrong: session.totalWrong,
-      totalUnanswered: session.totalUnanswered,
-      createdAt: session.createdAt,
       updatedAt: session.updatedAt,
     };
 
     if (status === 'completed' && session.completedAt) {
-      const timeTaken = Math.floor(
-        (session.completedAt.getTime() - session.startedAt.getTime()) / 60000
-      );
-      response.timeTaken = timeTaken;
+      response.timeTaken = calculateTimeTaken(session.startedAt, session.completedAt);
       response.scorePercentage = session.totalScore;
     }
 
     return response;
   }
 
-  /**
-   * Get all questions for a session
-   */
+  // -------------------------------------------------
+  // QUESTIONS (OPTIMIZED)
+  // -------------------------------------------------
+
   async getSessionQuestions(userId: string, sessionId: string) {
     const session = await prisma.aptitudePracticeSession.findFirst({
-      where: {
-        id: sessionId,
-        userId,
-      },
-      include: {
+      where: { id: sessionId, userId },
+      select: {
+        id: true,
+        numberOfQuestions: true,
+        completedAt: true,
+        expiresAt: true,
         sessionQuestions: {
-          include: {
-            question: {
-              include: {
-                options: true,
-              },
-            },
+          select: {
+            id: true,
+            order: true,
+            selectedOptionId: true,
+            answeredAt: true,
+            isCorrect: true,
+            question: { select: QUESTION_SELECT_FIELDS },
           },
           orderBy: { order: 'asc' },
         },
       },
     });
 
-    if (!session) {
-      throw new NotFoundError('Session');
-    }
+    if (!session) throw new NotFoundError('Session');
 
     const status = getSessionStatus(session.completedAt, session.expiresAt);
     const isCompleted = status === 'completed';
 
-    const questions: SessionQuestion[] = session.sessionQuestions.map((sq) => {
-      const question: SessionQuestion = {
+    let answeredCount = 0;
+    const questions = session.sessionQuestions.map((sq) => {
+      if (sq.selectedOptionId) answeredCount++;
+      
+      return {
         id: sq.question.id,
         order: sq.order,
         questionText: sq.question.questionText,
@@ -291,17 +350,12 @@ export class AptitudeService {
         })),
         selectedOptionId: sq.selectedOptionId,
         answeredAt: sq.answeredAt,
+        ...(isCompleted && {
+          correctOptionId: sq.question.correctOptionId,
+          isCorrect: sq.isCorrect,
+        }),
       };
-
-      if (isCompleted) {
-        question.correctOptionId = sq.question.correctOptionId;
-        question.isCorrect = sq.isCorrect;
-      }
-
-      return question;
     });
-
-    const answeredCount = session.sessionQuestions.filter((q) => q.selectedOptionId !== null).length;
 
     return {
       sessionId: session.id,
@@ -312,401 +366,308 @@ export class AptitudeService {
     };
   }
 
-  /**
-   * Get a specific question in a session
-   */
   async getQuestion(userId: string, sessionId: string, questionId: string) {
-    const session = await prisma.aptitudePracticeSession.findFirst({
+    // Optimized: Single query with all needed data
+    const sessionQuestion = await prisma.aptitudeSessionQuestion.findFirst({
       where: {
-        id: sessionId,
-        userId,
+        questionId,
+        session: { id: sessionId, userId },
       },
-      include: {
-        sessionQuestions: {
-          include: {
-            question: {
-              include: {
-                options: true,
-              },
-            },
+      select: {
+        id: true,
+        order: true,
+        selectedOptionId: true,
+        answeredAt: true,
+        question: { select: QUESTION_SELECT_FIELDS },
+        session: {
+          select: {
+            id: true,
+            numberOfQuestions: true,
+            completedAt: true,
+            expiresAt: true,
           },
-          orderBy: { order: 'asc' },
         },
       },
     });
 
-    if (!session) {
-      throw new NotFoundError('Session');
-    }
+    if (!sessionQuestion) throw new NotFoundError('Question');
 
-    const sessionQuestion = session.sessionQuestions.find(
-      (sq) => sq.question.id === questionId
-    );
-
-    if (!sessionQuestion) {
-      throw new NotFoundError('Question');
-    }
-
+    const { session, question } = sessionQuestion;
     const status = getSessionStatus(session.completedAt, session.expiresAt);
-    const currentIndex = session.sessionQuestions.findIndex(
-      (sq) => sq.question.id === questionId
-    );
 
-    const question: SessionQuestion = {
-      id: sessionQuestion.question.id,
-      order: sessionQuestion.order,
-      questionText: sessionQuestion.question.questionText,
-      questionType: sessionQuestion.question.questionType,
-      difficulty: sessionQuestion.question.difficulty,
-      options: sessionQuestion.question.options.map((opt) => ({
-        id: opt.id,
-        text: opt.text,
-      })),
-      selectedOptionId: sessionQuestion.selectedOptionId,
-      answeredAt: sessionQuestion.answeredAt,
-    };
+    // Get adjacent question IDs efficiently
+    const [prevQuestion, nextQuestion] = await Promise.all([
+      sessionQuestion.order > 1
+        ? prisma.aptitudeSessionQuestion.findFirst({
+            where: { sessionId, order: sessionQuestion.order - 1 },
+            select: { questionId: true },
+          })
+        : null,
+      sessionQuestion.order < session.numberOfQuestions
+        ? prisma.aptitudeSessionQuestion.findFirst({
+            where: { sessionId, order: sessionQuestion.order + 1 },
+            select: { questionId: true },
+          })
+        : null,
+    ]);
 
     return {
       sessionId: session.id,
       sessionStatus: status,
       question: {
-        ...question,
+        id: question.id,
         sessionQuestionId: sessionQuestion.id,
+        order: sessionQuestion.order,
+        questionText: question.questionText,
+        questionType: question.questionType,
+        difficulty: question.difficulty,
+        options: question.options,
+        selectedOptionId: sessionQuestion.selectedOptionId,
+        answeredAt: sessionQuestion.answeredAt,
       },
       navigation: {
-        previousQuestionId: currentIndex > 0 
-          ? session.sessionQuestions[currentIndex - 1].question.id 
-          : null,
-        nextQuestionId: currentIndex < session.sessionQuestions.length - 1
-          ? session.sessionQuestions[currentIndex + 1].question.id
-          : null,
-        currentPosition: currentIndex + 1,
+        previousQuestionId: prevQuestion?.questionId ?? null,
+        nextQuestionId: nextQuestion?.questionId ?? null,
+        currentPosition: sessionQuestion.order,
         totalQuestions: session.numberOfQuestions,
       },
     };
   }
 
-  /**
-   * Save answer for a question
-   */
+  // -------------------------------------------------
+  // ANSWER HANDLING (OPTIMIZED)
+  // -------------------------------------------------
+
   async saveAnswer(userId: string, sessionId: string, dto: SaveAnswerDto) {
-    const session = await prisma.aptitudePracticeSession.findFirst({
-      where: {
-        id: sessionId,
-        userId,
-      },
-      include: {
-        sessionQuestions: {
-          include: {
-            question: {
-              include: {
-                options: true,
+    const { questionId, selectedOptionId } = dto;
+
+    return prisma.$transaction(async (tx) => {
+      // Get session question with validation data in one query
+      const sessionQuestion = await tx.aptitudeSessionQuestion.findFirst({
+        where: {
+          questionId,
+          session: { id: sessionId, userId },
+        },
+        select: {
+          id: true,
+          session: {
+            select: {
+              id: true,
+              numberOfQuestions: true,
+              completedAt: true,
+              expiresAt: true,
+            },
+          },
+          question: {
+            select: {
+              correctOptionId: true,
+              options: { select: { id: true } },
+            },
+          },
+        },
+      });
+
+      if (!sessionQuestion) throw new NotFoundError('Question in this session');
+
+      const { session, question } = sessionQuestion;
+
+      // Validate session state
+      if (session.completedAt) {
+        throw new SessionAlreadyCompletedError(session.completedAt);
+      }
+      if (Date.now() > session.expiresAt.getTime()) {
+        throw new SessionExpiredError(session.expiresAt);
+      }
+
+      // Validate option
+      if (selectedOptionId !== null) {
+        const validOption = question.options.some((opt) => opt.id === selectedOptionId);
+        if (!validOption) throw new InvalidOptionError();
+      }
+
+      const now = new Date();
+      const isCorrect = selectedOptionId ? selectedOptionId === question.correctOptionId : null;
+
+      // Update answer and get count in parallel
+      const [, answeredCount] = await Promise.all([
+        tx.aptitudeSessionQuestion.update({
+          where: { id: sessionQuestion.id },
+          data: {
+            selectedOptionId,
+            answeredAt: selectedOptionId ? now : null,
+            isCorrect,
+          },
+        }),
+        tx.aptitudeSessionQuestion.count({
+          where: {
+            sessionId,
+            selectedOptionId: { not: null },
+            // Include current if we're setting an answer
+            ...(selectedOptionId && { NOT: { id: sessionQuestion.id } }),
+          },
+        }),
+      ]);
+
+      const totalAnswered = selectedOptionId ? answeredCount + 1 : answeredCount;
+
+      return {
+        sessionId,
+        questionId,
+        selectedOptionId,
+        answeredAt: selectedOptionId ? now : null,
+        progress: {
+          answered: totalAnswered,
+          unanswered: session.numberOfQuestions - totalAnswered,
+          total: session.numberOfQuestions,
+        },
+      };
+    });
+  }
+
+  // -------------------------------------------------
+  // SUBMISSION & RESULTS (OPTIMIZED)
+  // -------------------------------------------------
+
+  async submitSession(userId: string, sessionId: string) {
+    return prisma.$transaction(async (tx) => {
+      const session = await tx.aptitudePracticeSession.findFirst({
+        where: { id: sessionId, userId },
+        select: {
+          id: true,
+          numberOfQuestions: true,
+          startedAt: true,
+          completedAt: true,
+          sessionQuestions: {
+            select: {
+              selectedOptionId: true,
+              isCorrect: true,
+              question: {
+                select: { questionType: true },
               },
             },
           },
         },
-      },
-    });
+      });
 
-    if (!session) {
-      throw new NotFoundError('Session');
-    }
+      if (!session) throw new NotFoundError('Session');
+      if (session.completedAt) throw new SessionAlreadyCompletedError(session.completedAt);
 
-    // Check if session is already completed
-    if (session.completedAt) {
-      throw new SessionAlreadyCompletedError(session.completedAt);
-    }
+      // Calculate results in memory (no additional queries)
+      const results = this.calculateResults(session.sessionQuestions);
+      const totalScore = calculatePercentage(results.totalCorrect, session.numberOfQuestions);
+      const completedAt = new Date();
 
-    // Check if session has expired
-    if (new Date() > session.expiresAt) {
-      throw new SessionExpiredError(session.expiresAt);
-    }
-
-    // Find the session question
-    const sessionQuestion = session.sessionQuestions.find(
-      (sq) => sq.question.id === dto.questionId
-    );
-
-    if (!sessionQuestion) {
-      throw new NotFoundError('Question in this session');
-    }
-
-    // Validate option if provided
-    if (dto.selectedOptionId !== null) {
-      const validOption = sessionQuestion.question.options.find(
-        (opt) => opt.id === dto.selectedOptionId
-      );
-
-      if (!validOption) {
-        throw new InvalidOptionError();
-      }
-    }
-
-    // Update the answer
-    await prisma.aptitudeSessionQuestion.update({
-      where: { id: sessionQuestion.id },
-      data: {
-        selectedOptionId: dto.selectedOptionId,
-        answeredAt: dto.selectedOptionId ? new Date() : null,
-        isCorrect: dto.selectedOptionId 
-          ? dto.selectedOptionId === sessionQuestion.question.correctOptionId
-          : null,
-      },
-    });
-
-    // Get updated progress
-    const updatedSession = await prisma.aptitudePracticeSession.findUnique({
-      where: { id: sessionId },
-      include: {
-        sessionQuestions: {
-          select: { selectedOptionId: true },
+      await tx.aptitudePracticeSession.update({
+        where: { id: sessionId },
+        data: {
+          completedAt,
+          totalScore,
+          totalCorrect: results.totalCorrect,
+          totalWrong: results.totalWrong,
+          totalUnanswered: results.totalUnanswered,
         },
-      },
-    });
+      });
 
-    const answered = updatedSession!.sessionQuestions.filter(
-      (q) => q.selectedOptionId !== null
-    ).length;
-
-    return {
-      sessionId,
-      questionId: dto.questionId,
-      selectedOptionId: dto.selectedOptionId,
-      answeredAt: dto.selectedOptionId ? new Date() : null,
-      progress: {
-        answered,
-        unanswered: session.numberOfQuestions - answered,
-        total: session.numberOfQuestions,
-      },
-    };
-  }
-
-  /**
-   * Submit test for scoring
-   */
-  async submitSession(userId: string, sessionId: string) {
-    const session = await prisma.aptitudePracticeSession.findFirst({
-      where: {
-        id: sessionId,
-        userId,
-      },
-      include: {
-        sessionQuestions: {
-          include: {
-            question: true,
-          },
-        },
-      },
-    });
-
-    if (!session) {
-      throw new NotFoundError('Session');
-    }
-
-    if (session.completedAt) {
-      throw new SessionAlreadyCompletedError(session.completedAt);
-    }
-
-    // Calculate results
-    let totalCorrect = 0;
-    let totalWrong = 0;
-    let totalUnanswered = 0;
-
-    const breakdownByType: Record<string, TypeBreakdown> = {};
-
-    for (const sq of session.sessionQuestions) {
-      const type = sq.question.questionType;
-
-      if (!breakdownByType[type]) {
-        breakdownByType[type] = { correct: 0, wrong: 0, unanswered: 0, total: 0 };
-      }
-
-      breakdownByType[type].total++;
-
-      if (sq.selectedOptionId === null) {
-        totalUnanswered++;
-        breakdownByType[type].unanswered++;
-      } else if (sq.selectedOptionId === sq.question.correctOptionId) {
-        totalCorrect++;
-        breakdownByType[type].correct++;
-      } else {
-        totalWrong++;
-        breakdownByType[type].wrong++;
-      }
-    }
-
-    const totalScore = calculateScore(totalCorrect, session.numberOfQuestions);
-    const completedAt = new Date();
-    const timeTaken = Math.floor(
-      (completedAt.getTime() - session.startedAt.getTime()) / 60000
-    );
-
-    // Update session with results
-    await prisma.aptitudePracticeSession.update({
-      where: { id: sessionId },
-      data: {
+      return {
+        sessionId,
+        status: 'completed' as const,
         completedAt,
-        totalScore,
-        totalCorrect,
-        totalWrong,
-        totalUnanswered,
-      },
+        timeTaken: calculateTimeTaken(session.startedAt, completedAt),
+        results: {
+          totalScore,
+          ...results,
+          totalQuestions: session.numberOfQuestions,
+          scorePercentage: totalScore,
+        },
+      };
     });
-
-    return {
-      sessionId,
-      status: 'completed',
-      completedAt,
-      timeTaken,
-      results: {
-        totalScore,
-        totalCorrect,
-        totalWrong,
-        totalUnanswered,
-        totalQuestions: session.numberOfQuestions,
-        scorePercentage: totalScore,
-        breakdown: breakdownByType,
-      },
-    };
   }
 
-  /**
-   * Get session status
-   */
   async getSessionStatus(userId: string, sessionId: string) {
     const session = await prisma.aptitudePracticeSession.findFirst({
-      where: {
-        id: sessionId,
-        userId,
-      },
-      include: {
+      where: { id: sessionId, userId },
+      select: {
+        id: true,
+        numberOfQuestions: true,
+        startedAt: true,
+        completedAt: true,
+        expiresAt: true,
+        _count: {
+          select: {
+            sessionQuestions: { where: { selectedOptionId: { not: null } } },
+          },
+        },
         sessionQuestions: {
-          select: { selectedOptionId: true, updatedAt: true },
+          where: { selectedOptionId: { not: null } },
+          select: { updatedAt: true },
           orderBy: { updatedAt: 'desc' },
           take: 1,
         },
       },
     });
 
-    if (!session) {
-      throw new NotFoundError('Session');
-    }
+    if (!session) throw new NotFoundError('Session');
 
-    const status = getSessionStatus(session.completedAt, session.expiresAt);
+    const answered = session._count.sessionQuestions;
+    const total = session.numberOfQuestions;
     const timeRemaining = calculateTimeRemaining(session.expiresAt);
-    
-    const allQuestions = await prisma.aptitudeSessionQuestion.count({
-      where: { sessionId },
-    });
-    
-    const answeredQuestions = await prisma.aptitudeSessionQuestion.count({
-      where: {
-        sessionId,
-        selectedOptionId: { not: null },
-      },
-    });
 
     return {
-      sessionId,
-      status,
+      sessionId: session.id,
+      status: getSessionStatus(session.completedAt, session.expiresAt),
       timeRemaining,
       timeRemainingFormatted: formatTimeRemaining(timeRemaining),
       startedAt: session.startedAt,
       expiresAt: session.expiresAt,
       progress: {
-        answered: answeredQuestions,
-        unanswered: allQuestions - answeredQuestions,
-        total: allQuestions,
-        percentageComplete: Math.round((answeredQuestions / allQuestions) * 100),
+        answered,
+        unanswered: total - answered,
+        total,
+        percentageComplete: calculatePercentage(answered, total),
       },
-      lastActivityAt: session.sessionQuestions[0]?.updatedAt || session.startedAt,
+      lastActivityAt: session.sessionQuestions[0]?.updatedAt ?? session.startedAt,
     };
   }
 
-  /**
-   * Get session results (after completion)
-   */
   async getSessionResults(userId: string, sessionId: string) {
     const session = await prisma.aptitudePracticeSession.findFirst({
-      where: {
-        id: sessionId,
-        userId,
-      },
-      include: {
+      where: { id: sessionId, userId, completedAt: { not: null } },
+      select: {
+        id: true,
+        difficulty: true,
+        numberOfQuestions: true,
+        timeLimit: true,
+        startedAt: true,
+        completedAt: true,
+        totalScore: true,
+        totalCorrect: true,
+        totalWrong: true,
+        totalUnanswered: true,
         sessionQuestions: {
-          include: {
-            question: true,
+          select: {
+            selectedOptionId: true,
+            isCorrect: true,
+            question: {
+              select: { questionType: true, difficulty: true },
+            },
           },
         },
       },
     });
 
-    if (!session) {
-      throw new NotFoundError('Session');
-    }
+    if (!session) throw new NotFoundError('Session');
+    if (!session.completedAt) throw new SessionNotCompletedError();
 
-    if (!session.completedAt) {
-      throw new SessionNotCompletedError();
-    }
-
-    // Calculate breakdowns
-    const breakdownByType: Record<string, TypeBreakdown> = {};
-    const breakdownByDifficulty: Record<string, TypeBreakdown> = {};
-
-    for (const sq of session.sessionQuestions) {
-      const type = sq.question.questionType;
-      const difficulty = sq.question.difficulty;
-
-      // Initialize if not exists
-      if (!breakdownByType[type]) {
-        breakdownByType[type] = { correct: 0, wrong: 0, unanswered: 0, total: 0 };
-      }
-      if (!breakdownByDifficulty[difficulty]) {
-        breakdownByDifficulty[difficulty] = { correct: 0, wrong: 0, unanswered: 0, total: 0 };
-      }
-
-      breakdownByType[type].total++;
-      breakdownByDifficulty[difficulty].total++;
-
-      if (sq.selectedOptionId === null) {
-        breakdownByType[type].unanswered++;
-        breakdownByDifficulty[difficulty].unanswered++;
-      } else if (sq.isCorrect) {
-        breakdownByType[type].correct++;
-        breakdownByDifficulty[difficulty].correct++;
-      } else {
-        breakdownByType[type].wrong++;
-        breakdownByDifficulty[difficulty].wrong++;
-      }
-    }
-
-    // Calculate accuracy for each breakdown
-    for (const key of Object.keys(breakdownByType)) {
-      const b = breakdownByType[key];
-      b.accuracy = calculateAccuracy(b.correct, b.correct + b.wrong);
-    }
-
-    const timeTaken = Math.floor(
-      (session.completedAt.getTime() - session.startedAt.getTime()) / 60000
-    );
-
+    const breakdowns = this.calculateDetailedBreakdown(session.sessionQuestions);
     const attempted = session.totalCorrect! + session.totalWrong!;
-    const accuracy = calculateAccuracy(session.totalCorrect!, attempted);
-    const attemptRate = Math.round((attempted / session.numberOfQuestions) * 100);
-
-    // Performance evaluation
-    const performance = this.evaluatePerformance(
-      session.totalScore!,
-      accuracy,
-      attemptRate,
-      session.difficulty
-    );
+    const accuracy = calculatePercentage(session.totalCorrect!, attempted);
+    const attemptRate = calculatePercentage(attempted, session.numberOfQuestions);
 
     return {
-      sessionId,
-      status: 'completed',
+      sessionId: session.id,
+      status: 'completed' as const,
       completedAt: session.completedAt,
-      timeTaken,
+      timeTaken: calculateTimeTaken(session.startedAt, session.completedAt),
       timeLimit: session.timeLimit,
       difficulty: session.difficulty,
       summary: {
@@ -719,29 +680,39 @@ export class AptitudeService {
         accuracy,
         attemptRate,
       },
-      breakdown: {
-        byType: breakdownByType,
-        byDifficulty: breakdownByDifficulty,
-      },
-      performance,
+      breakdown: breakdowns,
+      performance: this.evaluatePerformance(
+        session.totalScore!,
+        accuracy,
+        attemptRate,
+        session.difficulty
+      ),
     };
   }
 
-  /**
-   * Get solutions after completion
-   */
-  async getSolutions(userId: string, sessionId: string, filter: string) {
+  async getSolutions(userId: string, sessionId: string, filter: SolutionFilter) {
     const session = await prisma.aptitudePracticeSession.findFirst({
-      where: {
-        id: sessionId,
-        userId,
-      },
-      include: {
+      where: { id: sessionId, userId, completedAt: { not: null } },
+      select: {
+        id: true,
+        totalCorrect: true,
+        totalWrong: true,
+        totalUnanswered: true,
         sessionQuestions: {
-          include: {
+          where: this.buildSolutionFilter(filter),
+          select: {
+            order: true,
+            selectedOptionId: true,
+            isCorrect: true,
             question: {
-              include: {
-                options: true,
+              select: {
+                id: true,
+                questionText: true,
+                questionType: true,
+                difficulty: true,
+                correctOptionId: true,
+                explanation: true,
+                options: { select: { id: true, text: true } },
               },
             },
           },
@@ -750,46 +721,26 @@ export class AptitudeService {
       },
     });
 
-    if (!session) {
-      throw new NotFoundError('Session');
-    }
-
-    if (!session.completedAt) {
-      throw new SessionNotCompletedError();
-    }
-
-    let filteredQuestions = session.sessionQuestions;
-
-    if (filter !== 'all') {
-      filteredQuestions = session.sessionQuestions.filter((sq) => {
-        if (filter === 'correct') return sq.isCorrect === true;
-        if (filter === 'wrong') return sq.isCorrect === false && sq.selectedOptionId !== null;
-        if (filter === 'unanswered') return sq.selectedOptionId === null;
-        return true;
-      });
-    }
-
-    const solutions = filteredQuestions.map((sq) => ({
-      order: sq.order,
-      questionId: sq.question.id,
-      questionText: sq.question.questionText,
-      questionType: sq.question.questionType,
-      difficulty: sq.question.difficulty,
-      options: sq.question.options.map((opt) => ({
-        id: opt.id,
-        text: opt.text,
-        isCorrect: opt.id === sq.question.correctOptionId,
-      })),
-      selectedOptionId: sq.selectedOptionId,
-      correctOptionId: sq.question.correctOptionId,
-      isCorrect: sq.isCorrect,
-      explanation: sq.question.explanation,
-    }));
+    if (!session) throw new NotFoundError('Session');
 
     return {
-      sessionId,
-      status: 'completed',
-      solutions,
+      sessionId: session.id,
+      status: 'completed' as const,
+      solutions: session.sessionQuestions.map((sq) => ({
+        order: sq.order,
+        questionId: sq.question.id,
+        questionText: sq.question.questionText,
+        questionType: sq.question.questionType,
+        difficulty: sq.question.difficulty,
+        options: sq.question.options.map((opt) => ({
+          ...opt,
+          isCorrect: opt.id === sq.question.correctOptionId,
+        })),
+        selectedOptionId: sq.selectedOptionId,
+        correctOptionId: sq.question.correctOptionId,
+        isCorrect: sq.isCorrect,
+        explanation: sq.question.explanation,
+      })),
       summary: {
         totalCorrect: session.totalCorrect,
         totalWrong: session.totalWrong,
@@ -798,35 +749,117 @@ export class AptitudeService {
     };
   }
 
-  /**
-   * Evaluate performance and provide suggestions
-   */
+  // Build filter at database level instead of in memory
+  private buildSolutionFilter(
+    filter: SolutionFilter
+  ): Prisma.AptitudeSessionQuestionWhereInput | undefined {
+    switch (filter) {
+      case 'correct':
+        return { isCorrect: true };
+      case 'wrong':
+        return { isCorrect: false, selectedOptionId: { not: null } };
+      case 'unanswered':
+        return { selectedOptionId: null };
+      default:
+        return undefined;
+    }
+  }
+
+  // -------------------------------------------------
+  // CALCULATION HELPERS
+  // -------------------------------------------------
+
+  private calculateResults(
+    questions: Array<{
+      selectedOptionId: string | null;
+      isCorrect: boolean | null;
+      question: { questionType: string };
+    }>
+  ) {
+    let totalCorrect = 0;
+    let totalWrong = 0;
+    let totalUnanswered = 0;
+    const breakdownByType: Record<string, TypeBreakdown> = {};
+
+    for (const sq of questions) {
+      const type = sq.question.questionType;
+      breakdownByType[type] ??= { correct: 0, wrong: 0, unanswered: 0, total: 0 };
+      breakdownByType[type].total++;
+
+      if (sq.selectedOptionId === null) {
+        totalUnanswered++;
+        breakdownByType[type].unanswered++;
+      } else if (sq.isCorrect) {
+        totalCorrect++;
+        breakdownByType[type].correct++;
+      } else {
+        totalWrong++;
+        breakdownByType[type].wrong++;
+      }
+    }
+
+    return { totalCorrect, totalWrong, totalUnanswered, breakdownByType };
+  }
+
+  private calculateDetailedBreakdown(
+    questions: Array<{
+      selectedOptionId: string | null;
+      isCorrect: boolean | null;
+      question: { questionType: string; difficulty: DifficultyLevel };
+    }>
+  ) {
+    const byType: Record<string, TypeBreakdown> = {};
+    const byDifficulty: Record<string, TypeBreakdown> = {};
+
+    for (const sq of questions) {
+      const { questionType, difficulty } = sq.question;
+
+      byType[questionType] ??= { correct: 0, wrong: 0, unanswered: 0, total: 0 };
+      byDifficulty[difficulty] ??= { correct: 0, wrong: 0, unanswered: 0, total: 0 };
+
+      byType[questionType].total++;
+      byDifficulty[difficulty].total++;
+
+      if (sq.selectedOptionId === null) {
+        byType[questionType].unanswered++;
+        byDifficulty[difficulty].unanswered++;
+      } else if (sq.isCorrect) {
+        byType[questionType].correct++;
+        byDifficulty[difficulty].correct++;
+      } else {
+        byType[questionType].wrong++;
+        byDifficulty[difficulty].wrong++;
+      }
+    }
+
+    // Calculate accuracy
+    for (const breakdown of Object.values(byType)) {
+      const attempted = breakdown.correct + breakdown.wrong;
+      breakdown.accuracy = calculatePercentage(breakdown.correct, attempted);
+    }
+
+    return { byType, byDifficulty };
+  }
+
   private evaluatePerformance(
     score: number,
     accuracy: number,
     attemptRate: number,
     difficulty: DifficultyLevel
   ): PerformanceEvaluation {
+    const thresholds = PERFORMANCE_THRESHOLDS[difficulty];
     const suggestions: string[] = [];
+
     let rank: PerformanceEvaluation['rank'];
     let message: string;
 
-    // Adjust thresholds based on difficulty
-    const thresholds = {
-      EASY: { excellent: 90, good: 75, average: 60 },
-      MEDIUM: { excellent: 85, good: 70, average: 55 },
-      HARD: { excellent: 80, good: 65, average: 50 },
-    };
-
-    const t = thresholds[difficulty];
-
-    if (score >= t.excellent) {
+    if (score >= thresholds.excellent) {
       rank = 'EXCELLENT';
       message = 'Outstanding performance! You have mastered this difficulty level.';
-    } else if (score >= t.good) {
+    } else if (score >= thresholds.good) {
       rank = 'GOOD';
       message = 'Great job! You scored above average.';
-    } else if (score >= t.average) {
+    } else if (score >= thresholds.average) {
       rank = 'AVERAGE';
       message = 'Good effort! There is room for improvement.';
     } else {
@@ -834,19 +867,15 @@ export class AptitudeService {
       message = 'Keep practicing! Focus on understanding the concepts better.';
     }
 
-    // Add suggestions based on metrics
     if (attemptRate < 90) {
       suggestions.push('Focus on time management to attempt all questions');
     }
-
     if (accuracy < 70) {
       suggestions.push('Review incorrect answers and understand the concepts');
     }
-
-    if (score < t.average) {
+    if (score < thresholds.average) {
       suggestions.push('Consider practicing with easier difficulty first');
     }
-
     if (suggestions.length === 0) {
       suggestions.push('Try challenging yourself with harder difficulty');
     }

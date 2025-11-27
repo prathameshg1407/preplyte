@@ -1,5 +1,6 @@
 import bcrypt from 'bcryptjs';
-import { SignJWT } from 'jose';
+import { SignJWT, jwtVerify } from 'jose';
+import crypto from 'crypto';
 import { RegisterDto, LoginDto } from './auth.controller';
 import { prisma } from '../../lib/db';
 import {
@@ -7,47 +8,81 @@ import {
   UnauthorizedError,
   ValidationError,
   NotFoundError,
-} from '../../lib/errors';
+  InstituteInactiveError,
+} from '../../utils/errors';
 import { logger } from '../../utils/logger';
 
-// Validate JWT_SECRET at startup
+// ============================================
+// Configuration
+// ============================================
+
 const jwtSecret = process.env.JWT_SECRET;
 if (!jwtSecret) {
   throw new Error('JWT_SECRET must be defined in environment variables');
 }
-const JWT_SECRET = new TextEncoder().encode(jwtSecret);
 
-const ACCESS_TOKEN_EXPIRY = '24h';
+const JWT_SECRET = new TextEncoder().encode(jwtSecret);
+const REFRESH_SECRET = new TextEncoder().encode(jwtSecret + '_refresh');
+
+const ACCESS_TOKEN_EXPIRY = process.env.ACCESS_TOKEN_EXPIRY || '15m';
+const REFRESH_TOKEN_EXPIRY = process.env.REFRESH_TOKEN_EXPIRY || '7d';
 const BCRYPT_ROUNDS = 12;
 
-export class AuthService {
+// ============================================
+// Types
+// ============================================
+
+const USER_SELECT = {
+  id: true,
+  email: true,
+  name: true,
+  role: true,
+  instituteId: true,
+  isActive: true,
+  createdAt: true,
+  lastLoginAt: true,
+  institute: {
+    select: {
+      id: true,
+      name: true,
+      domain: true,
+    },
+  },
+} as const;
+
+// ============================================
+// Auth Service
+// ============================================
+
+class AuthService {
   async register(data: RegisterDto) {
     const { email, password, name } = data;
 
-    // Check for existing user
     const existingUser = await prisma.user.findUnique({
       where: { email },
+      select: { id: true },
     });
 
     if (existingUser) {
       throw new ConflictError('User with this email already exists');
     }
 
-    // Extract domain and find institute
     const domain = email.split('@')[1];
-
     if (!domain) {
       throw new ValidationError('Invalid email format');
     }
 
     const institute = await prisma.institute.findUnique({
       where: { domain },
+      select: { id: true, isActive: true, name: true },
     });
 
-    // Hash password
+    if (institute && !institute.isActive) {
+      throw new InstituteInactiveError(institute.name);
+    }
+
     const hashedPassword = await bcrypt.hash(password, BCRYPT_ROUNDS);
 
-    // Create user
     const user = await prisma.user.create({
       data: {
         email,
@@ -55,29 +90,12 @@ export class AuthService {
         name: name || null,
         role: 'USER',
         instituteId: institute?.id || null,
+        tokenVersion: 0,
       },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        role: true,
-        instituteId: true,
-        isActive: true,
-        createdAt: true,
-        institute: {
-          select: {
-            id: true,
-            name: true,
-            domain: true,
-          },
-        },
-      },
+      select: USER_SELECT,
     });
 
-    logger.info(`New user registered: ${user.email}`, {
-      userId: user.id,
-      instituteId: user.instituteId,
-    });
+    logger.info(`User registered: ${user.email}`, { userId: user.id });
 
     return user;
   }
@@ -85,166 +103,214 @@ export class AuthService {
   async login(data: LoginDto) {
     const { email, password } = data;
 
-    // Find user with institute
     const user = await prisma.user.findUnique({
       where: { email },
       include: {
         institute: {
-          select: {
-            id: true,
-            name: true,
-            domain: true,
-            isActive: true,
-          },
+          select: { id: true, name: true, domain: true, isActive: true },
         },
       },
     });
 
-    if (!user) {
-      // Use same error message to prevent user enumeration
+    if (!user || !(await bcrypt.compare(password, user.password))) {
       throw new UnauthorizedError('Invalid email or password');
     }
 
-    // Verify password
-    const isValid = await bcrypt.compare(password, user.password);
-    if (!isValid) {
-      logger.warn(`Failed login attempt for user: ${email}`);
-      throw new UnauthorizedError('Invalid email or password');
-    }
-
-    // Check if user is active
     if (!user.isActive) {
-      throw new UnauthorizedError('Account is inactive. Please contact support.');
+      throw new UnauthorizedError('Account is inactive');
     }
 
-    // Check if institute is active (if user belongs to one)
     if (user.institute && !user.institute.isActive) {
-      throw new UnauthorizedError('Institute is inactive. Please contact support.');
+      throw new InstituteInactiveError(user.institute.name);
     }
 
-    // Generate JWT token
-    const token = await new SignJWT({
-      role: user.role,
-      instituteId: user.instituteId,
-    })
-      .setProtectedHeader({ alg: 'HS256' })
-      .setSubject(user.id)
-      .setIssuedAt()
-      .setExpirationTime(ACCESS_TOKEN_EXPIRY)
-      .setIssuer('preplyte-api')
-      .setAudience('preplyte-client')
-      .sign(JWT_SECRET);
+    const { accessToken, refreshToken } = await this.generateTokens(user);
 
-    // Update last login timestamp
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { lastLoginAt: new Date() },
-    });
+    await Promise.all([
+      prisma.refreshToken.create({
+        data: {
+          token: this.hashToken(refreshToken),
+          userId: user.id,
+          expiresAt: new Date(Date.now() + this.parseExpiry(REFRESH_TOKEN_EXPIRY)),
+        },
+      }),
+      prisma.user.update({
+        where: { id: user.id },
+        data: { lastLoginAt: new Date() },
+      }),
+    ]);
 
-    logger.info(`User logged in: ${user.email}`, {
-      userId: user.id,
-      instituteId: user.instituteId,
-    });
+    logger.info(`User logged in: ${user.email}`, { userId: user.id });
 
-    // Remove password from response
-    const { password: _, ...userWithoutPassword } = user;
+    const { password: _, tokenVersion: __, ...safeUser } = user;
 
     return {
-      user: userWithoutPassword,
-      token,
+      user: safeUser,
+      accessToken,
+      refreshToken,
       expiresIn: ACCESS_TOKEN_EXPIRY,
-      context: user.instituteId ? 'INSTITUTE' : 'PLATFORM',
     };
   }
 
-  async getProfile(userId: string) {
+  async refreshToken(token: string) {
+    try {
+      const { payload } = await jwtVerify(token, REFRESH_SECRET, {
+        issuer: 'preplyte-api',
+        audience: 'preplyte-client',
+      });
+
+      const userId = payload.sub as string;
+      const tokenVersion = (payload.tokenVersion as number) || 0;
+      const tokenHash = this.hashToken(token);
+
+      const [storedToken, user] = await Promise.all([
+        prisma.refreshToken.findFirst({
+          where: {
+            token: tokenHash,
+            userId,
+            expiresAt: { gt: new Date() },
+            revokedAt: null,
+          },
+        }),
+        prisma.user.findUnique({
+          where: { id: userId },
+          include: {
+            institute: {
+              select: { id: true, name: true, domain: true, isActive: true },
+            },
+          },
+        }),
+      ]);
+
+      if (!storedToken || !user?.isActive || user.tokenVersion !== tokenVersion) {
+        throw new UnauthorizedError('Invalid refresh token');
+      }
+
+      const { accessToken, refreshToken: newRefreshToken } = await this.generateTokens(user);
+
+      await Promise.all([
+        prisma.refreshToken.update({
+          where: { id: storedToken.id },
+          data: { revokedAt: new Date() },
+        }),
+        prisma.refreshToken.create({
+          data: {
+            token: this.hashToken(newRefreshToken),
+            userId: user.id,
+            expiresAt: new Date(Date.now() + this.parseExpiry(REFRESH_TOKEN_EXPIRY)),
+          },
+        }),
+      ]);
+
+      const { password: _, tokenVersion: __, ...safeUser } = user;
+
+      return {
+        user: safeUser,
+        accessToken,
+        refreshToken: newRefreshToken,
+        expiresIn: ACCESS_TOKEN_EXPIRY,
+      };
+    } catch (error) {
+      if (error instanceof UnauthorizedError) throw error;
+      logger.error('Refresh token error', error);
+      throw new UnauthorizedError('Invalid refresh token');
+    }
+  }
+
+  async logout(userId: string, refreshToken: string) {
+    await prisma.refreshToken.updateMany({
+      where: { token: this.hashToken(refreshToken), userId },
+      data: { revokedAt: new Date() },
+    });
+    logger.info(`User logged out: ${userId}`);
+  }
+
+  async logoutAll(userId: string) {
+    await Promise.all([
+      prisma.user.update({
+        where: { id: userId },
+        data: { tokenVersion: { increment: 1 } },
+      }),
+      prisma.refreshToken.updateMany({
+        where: { userId, revokedAt: null },
+        data: { revokedAt: new Date() },
+      }),
+    ]);
+    logger.info(`User logged out from all devices: ${userId}`);
+  }
+
+  async getUser(userId: string) {
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        role: true,
-        instituteId: true,
-        isActive: true,
-        createdAt: true,
-        lastLoginAt: true,
-        institute: {
-          select: {
-            id: true,
-            name: true,
-            domain: true,
-          },
-        },
-      },
+      select: USER_SELECT,
     });
 
     if (!user) {
-      throw new NotFoundError('User not found');
+      throw new NotFoundError('User');
     }
 
     return user;
   }
 
-  async updateProfile(userId: string, data: { name?: string }) {
-    const user = await prisma.user.update({
-      where: { id: userId },
-      data: {
-        name: data.name,
-      },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        role: true,
-        instituteId: true,
-        isActive: true,
-        createdAt: true,
-        lastLoginAt: true,
-        institute: {
-          select: {
-            id: true,
-            name: true,
-            domain: true,
-          },
-        },
-      },
-    });
+  // ============================================
+  // Private Helpers
+  // ============================================
 
-    return user;
+  private async generateTokens(user: {
+    id: string;
+    role: string;
+    instituteId: string | null;
+    tokenVersion?: number;
+  }) {
+    const commonOptions = {
+      issuer: 'preplyte-api',
+      audience: 'preplyte-client',
+    };
+
+    const [accessToken, refreshToken] = await Promise.all([
+      new SignJWT({
+        role: user.role,
+        instituteId: user.instituteId,
+        tokenVersion: user.tokenVersion || 0,
+      })
+        .setProtectedHeader({ alg: 'HS256' })
+        .setSubject(user.id)
+        .setIssuedAt()
+        .setExpirationTime(ACCESS_TOKEN_EXPIRY)
+        .setIssuer(commonOptions.issuer)
+        .setAudience(commonOptions.audience)
+        .sign(JWT_SECRET),
+
+      new SignJWT({ tokenVersion: user.tokenVersion || 0 })
+        .setProtectedHeader({ alg: 'HS256' })
+        .setSubject(user.id)
+        .setIssuedAt()
+        .setExpirationTime(REFRESH_TOKEN_EXPIRY)
+        .setIssuer(commonOptions.issuer)
+        .setAudience(commonOptions.audience)
+        .sign(REFRESH_SECRET),
+    ]);
+
+    return { accessToken, refreshToken };
   }
 
-  async changePassword(userId: string, currentPassword: string, newPassword: string) {
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        id: true,
-        password: true,
-      },
-    });
+  private hashToken(token: string): string {
+    return crypto.createHash('sha256').update(token).digest('hex');
+  }
 
-    if (!user) {
-      throw new NotFoundError('User not found');
-    }
+  private parseExpiry(expiry: string): number {
+    const match = expiry.match(/^(\d+)([smhd])$/);
+    if (!match) return 7 * 24 * 60 * 60 * 1000;
 
-    // Verify current password
-    const isValid = await bcrypt.compare(currentPassword, user.password);
-    if (!isValid) {
-      throw new UnauthorizedError('Current password is incorrect');
-    }
+    const value = parseInt(match[1], 10);
+    const multipliers: Record<string, number> = {
+      s: 1000,
+      m: 60 * 1000,
+      h: 60 * 60 * 1000,
+      d: 24 * 60 * 60 * 1000,
+    };
 
-    // Hash new password
-    const hashedPassword = await bcrypt.hash(newPassword, BCRYPT_ROUNDS);
-
-    // Update password
-    await prisma.user.update({
-      where: { id: userId },
-      data: { password: hashedPassword },
-    });
-
-    logger.info(`Password changed for user: ${userId}`);
-
-    return { success: true };
+    return value * (multipliers[match[2]] || multipliers.d);
   }
 }
 

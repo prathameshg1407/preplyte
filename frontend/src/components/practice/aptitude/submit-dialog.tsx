@@ -11,18 +11,11 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import {
-  AlertTriangle,
-  CheckCircle2,
-  Loader2,
-  Send,
-  Clock,
-} from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { formatTime } from '@/lib/constants/aptitude.constants';
+} from '../../ui/alert-dialog';
+import { Badge } from '../../ui/badge';
+import { Progress } from '../../ui/progress';
+import { AlertCircle, Check, Loader2, Send, Clock } from 'lucide-react';
+import { formatTime } from '../../../lib/constants/aptitude.constants';
 
 interface SubmitDialogProps {
   open: boolean;
@@ -52,34 +45,34 @@ export function SubmitDialog({
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent className="max-w-md">
         <AlertDialogHeader>
-          <AlertDialogTitle className="flex items-center gap-3 text-xl">
+          <AlertDialogTitle className="flex items-center gap-3">
             {allAnswered ? (
-              <div className="p-2 rounded-full bg-green-500/10">
-                <CheckCircle2 className="h-6 w-6 text-green-500" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-foreground">
+                <Check className="h-5 w-5 text-background" />
               </div>
             ) : (
-              <div className="p-2 rounded-full bg-yellow-500/10">
-                <AlertTriangle className="h-6 w-6 text-yellow-500" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-foreground">
+                <AlertCircle className="h-5 w-5" />
               </div>
             )}
-            Submit Test
+            <span>Submit Test</span>
           </AlertDialogTitle>
-          <AlertDialogDescription className="text-base pt-2">
+          <AlertDialogDescription className="pt-2">
             {allAnswered
-              ? 'Great job! You have answered all questions. Ready to submit?'
+              ? 'You have answered all questions. Ready to submit?'
               : `You have ${unanswered} unanswered question${
                   unanswered > 1 ? 's' : ''
                 }. Are you sure you want to submit?`}
           </AlertDialogDescription>
         </AlertDialogHeader>
 
-        <div className="py-6 space-y-6">
+        <div className="space-y-6 py-4">
           {/* Time Remaining */}
           {timeRemaining !== undefined && timeRemaining > 0 && (
-            <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-              <div className="flex items-center gap-2">
+            <div className="flex items-center justify-between rounded-lg bg-secondary p-3">
+              <div className="flex items-center gap-2 text-sm">
                 <Clock className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm">Time Remaining</span>
+                <span>Time Remaining</span>
               </div>
               <Badge variant="outline" className="font-mono">
                 {formatTime(timeRemaining)}
@@ -90,31 +83,29 @@ export function SubmitDialog({
           {/* Progress Summary */}
           <div className="space-y-3">
             <div className="flex items-center justify-between text-sm">
-              <span>Questions Answered</span>
+              <span className="text-muted-foreground">Questions Answered</span>
               <span className="font-medium">
                 {answeredCount} / {totalQuestions}
               </span>
             </div>
-            <Progress value={progressPercentage} className="h-2" />
+            <Progress value={progressPercentage} className="h-1.5" />
             <div className="flex justify-between text-xs text-muted-foreground">
               <span>{progressPercentage}% complete</span>
               {unanswered > 0 && (
-                <span className="text-yellow-500">
-                  {unanswered} unanswered
-                </span>
+                <span>{unanswered} unanswered</span>
               )}
             </div>
           </div>
 
           {/* Warning for unanswered */}
           {!allAnswered && (
-            <div className="flex items-start gap-3 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
-              <AlertTriangle className="h-5 w-5 text-yellow-500 flex-shrink-0 mt-0.5" />
-              <div className="text-sm">
-                <p className="font-medium text-yellow-600">
+            <div className="flex items-start gap-3 rounded-lg border border-border bg-secondary/50 p-4">
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+              <div className="space-y-1 text-sm">
+                <p className="font-medium">
                   Unanswered questions will be marked as incorrect.
                 </p>
-                <p className="text-muted-foreground mt-1">
+                <p className="text-muted-foreground">
                   You can go back and answer them before submitting.
                 </p>
               </div>
@@ -123,17 +114,10 @@ export function SubmitDialog({
         </div>
 
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={isSubmitting}>
-            Go Back
-          </AlertDialogCancel>
+          <AlertDialogCancel disabled={isSubmitting}>Go Back</AlertDialogCancel>
           <AlertDialogAction
             onClick={onConfirm}
             disabled={isSubmitting}
-            className={cn(
-              allAnswered
-                ? 'bg-green-500 hover:bg-green-600'
-                : 'bg-yellow-500 hover:bg-yellow-600'
-            )}
           >
             {isSubmitting ? (
               <>

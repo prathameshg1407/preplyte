@@ -1,3 +1,5 @@
+// src/app/practice/ai-interview/layout.tsx
+
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -10,9 +12,5 @@ export default function AIInterviewLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return (
-    <div className="min-h-screen bg-background">
-      {children}
-    </div>
-  );
+  return <>{children}</>;
 }

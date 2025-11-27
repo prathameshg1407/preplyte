@@ -35,20 +35,22 @@ export function MonacoEditor({
       minimap: { enabled: false },
       scrollBeyondLastLine: false,
       fontSize: 14,
-      fontFamily: "'JetBrains Mono', 'Fira Code', Consolas, monospace",
+      fontFamily: "var(--font-mono), 'JetBrains Mono', 'Fira Code', Consolas, monospace",
       fontLigatures: true,
       lineNumbers: "on",
-      renderLineHighlight: "all",
+      renderLineHighlight: "line",
       automaticLayout: true,
-      tabSize: 4,
+      tabSize: 2,
       insertSpaces: true,
       wordWrap: "on",
       folding: true,
-      bracketPairColorization: { enabled: true },
+      bracketPairColorization: { enabled: false },
       cursorBlinking: "smooth",
       cursorSmoothCaretAnimation: "on",
       smoothScrolling: true,
       padding: { top: 16, bottom: 16 },
+      lineHeight: 1.6,
+      letterSpacing: 0.5,
     });
 
     editor.focus();
@@ -71,9 +73,9 @@ export function MonacoEditor({
         onMount={handleEditorMount}
         theme={resolvedTheme === "dark" ? "vs-dark" : "light"}
         loading={
-          <div className="flex items-center justify-center h-full bg-muted/30">
-            <Loader2 className="h-6 w-6 animate-spin" />
-            <span className="ml-2">Loading editor...</span>
+          <div className="flex h-full items-center justify-center bg-secondary/30">
+            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            <span className="ml-2 text-sm text-muted-foreground">Loading editor...</span>
           </div>
         }
         options={{

@@ -6,7 +6,7 @@ import type {
   QuestionTypeConfig,
   DifficultyConfig,
   PerformanceRank,
-} from '@/types/aptitude.types';
+} from '../../types/aptitude.types';
 
 // =====================================================
 // QUESTION TYPE CONFIGURATION

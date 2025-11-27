@@ -1,6 +1,7 @@
 // src/types/auth.types.ts
 
 export type UserRole = 'PLATFORM_ADMIN' | 'INSTITUTE_ADMIN' | 'USER';
+export type AuthContext = 'PLATFORM' | 'INSTITUTE';
 
 export interface Institute {
   id: string;
@@ -17,13 +18,11 @@ export interface User {
   role: UserRole;
   isActive: boolean;
   instituteId: string | null;
+  institute: Institute | null;
   createdAt: string;
   updatedAt?: string;
   lastLoginAt: string | null;
-  institute: Institute | null;
 }
-
-export type AuthUser = User;
 
 export interface LoginCredentials {
   email: string;
@@ -36,34 +35,21 @@ export interface RegisterCredentials {
   name?: string;
 }
 
-// Matches backend auth.service.ts login response
-export interface LoginResponseData {
+// FIXED: Match actual API response
+export interface AuthData {
   user: User;
-  token: string;
+  accessToken: string;      // Changed from 'token'
+  refreshToken: string;     // Added
   expiresIn: string;
-  context: 'PLATFORM' | 'INSTITUTE';
-}
-
-export interface LoginResponse {
-  success: boolean;
-  message: string;
-  data: LoginResponseData;
-}
-
-// Matches backend auth.service.ts register response
-export interface RegisterResponse {
-  success: boolean;
-  message: string;
-  data: User;
+  context?: AuthContext;    // Made optional since API doesn't return it
 }
 
 export interface AuthState {
-  user: AuthUser | null;
+  user: User | null;
   token: string | null;
-  context: 'PLATFORM' | 'INSTITUTE' | null;
+  refreshToken: string | null;  // Added
+  context: AuthContext | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   isHydrated: boolean;
 }
-
-export type AuthContext = 'PLATFORM' | 'INSTITUTE';

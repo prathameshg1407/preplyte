@@ -2,17 +2,17 @@
 
 'use client';
 
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
-import { Loader2, CheckCircle2, XCircle } from 'lucide-react';
-import type { SessionQuestion } from '@/types/aptitude.types';
+import { Card, CardContent, CardHeader } from '../../ui/card';
+import { RadioGroup, RadioGroupItem } from '../../ui/radio-group';
+import { Label } from '../../ui/label';
+import { Badge } from '../../ui/badge';
+import { Loader2, Check, X } from 'lucide-react';
+import type { SessionQuestion } from '../../../types/aptitude.types';
 import {
   QUESTION_TYPE_CONFIG,
   DIFFICULTY_CONFIG,
-} from '@/lib/constants/aptitude.constants';
-import { cn } from '@/lib/utils';
+} from '../../../lib/constants/aptitude.constants';
+import { cn } from '../../../lib/utils';
 
 interface QuestionDisplayProps {
   question: SessionQuestion;
@@ -40,17 +40,17 @@ export function QuestionDisplay({
 
   const getOptionClassName = (optionId: string) => {
     const baseClasses =
-      'flex items-center gap-4 p-4 rounded-xl border-2 transition-all duration-200';
+      'flex items-center gap-4 p-4 rounded-lg border transition-colors';
 
     if (!showResult) {
       if (selectedAnswer === optionId) {
-        return cn(baseClasses, 'border-primary bg-primary/5 shadow-sm');
+        return cn(baseClasses, 'border-foreground bg-secondary');
       }
       return cn(
         baseClasses,
         disabled || isSaving
           ? 'border-border opacity-50 cursor-not-allowed'
-          : 'border-border hover:border-primary/50 hover:bg-muted/50 cursor-pointer'
+          : 'border-border hover:border-foreground/50 hover:bg-secondary/50 cursor-pointer'
       );
     }
 
@@ -59,12 +59,12 @@ export function QuestionDisplay({
     const isCorrect = option?.isCorrect;
 
     if (isCorrect) {
-      return cn(baseClasses, 'border-green-500 bg-green-500/10');
+      return cn(baseClasses, 'border-foreground bg-secondary');
     }
     if (selectedAnswer === optionId && !isCorrect) {
-      return cn(baseClasses, 'border-red-500 bg-red-500/10');
+      return cn(baseClasses, 'border-foreground/50 bg-secondary/50 border-dashed');
     }
-    return cn(baseClasses, 'border-border opacity-50');
+    return cn(baseClasses, 'border-border opacity-40');
   };
 
   const getOptionLetter = (index: number) => String.fromCharCode(65 + index);
@@ -76,16 +76,16 @@ export function QuestionDisplay({
   };
 
   return (
-    <Card className="border-2">
+    <Card>
       <CardHeader className="pb-4">
         {/* Question Meta */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Badge variant="secondary" className="text-sm font-medium px-3">
-              {questionNumber} / {totalQuestions}
-            </Badge>
+            <span className="text-sm font-medium text-muted-foreground">
+              Question {questionNumber} of {totalQuestions}
+            </span>
             {isSaving && (
-              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                 <Loader2 className="h-3 w-3 animate-spin" />
                 Saving...
               </div>
@@ -93,18 +93,12 @@ export function QuestionDisplay({
           </div>
           <div className="flex gap-2">
             {typeConfig && (
-              <Badge
-                variant="outline"
-                className={cn('px-3', typeConfig.color, 'border-current bg-current/10')}
-              >
+              <Badge variant="outline">
                 {typeConfig.label}
               </Badge>
             )}
             {difficultyConfig && (
-              <Badge
-                variant="outline"
-                className={cn('px-3', difficultyConfig.color, 'border-current bg-current/10')}
-              >
+              <Badge variant="secondary">
                 {difficultyConfig.label}
               </Badge>
             )}
@@ -114,10 +108,10 @@ export function QuestionDisplay({
 
       <CardContent className="space-y-6">
         {/* Question Text */}
-        <div className="bg-muted/50 rounded-xl p-6">
-          <h2 className="text-lg font-medium leading-relaxed whitespace-pre-wrap">
+        <div className="rounded-lg border border-border bg-secondary/30 p-6">
+          <p className="text-base leading-relaxed whitespace-pre-wrap">
             {question.questionText}
-          </h2>
+          </p>
         </div>
 
         {/* Options */}
@@ -125,7 +119,7 @@ export function QuestionDisplay({
           value={selectedAnswer}
           onValueChange={handleSelectAnswer}
           disabled={showResult || isSaving || disabled}
-          className="space-y-3"
+          className="space-y-2"
         >
           {question.options.map((option, index) => {
             const isCorrect = option.isCorrect;
@@ -152,17 +146,23 @@ export function QuestionDisplay({
               >
                 <div
                   className={cn(
-                    'flex items-center justify-center w-10 h-10 rounded-lg font-semibold text-sm',
+                    'flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-sm font-medium transition-colors',
                     isSelected && !showResult
-                      ? 'bg-primary text-primary-foreground'
+                      ? 'bg-foreground text-background'
                       : showResult && isCorrect
-                      ? 'bg-green-500 text-white'
+                      ? 'bg-foreground text-background'
                       : showResult && isSelected && !isCorrect
-                      ? 'bg-red-500 text-white'
-                      : 'bg-muted'
+                      ? 'bg-muted-foreground text-background'
+                      : 'bg-secondary'
                   )}
                 >
-                  {getOptionLetter(index)}
+                  {showResult && isCorrect ? (
+                    <Check className="h-4 w-4" />
+                  ) : showResult && isSelected && !isCorrect ? (
+                    <X className="h-4 w-4" />
+                  ) : (
+                    getOptionLetter(index)
+                  )}
                 </div>
 
                 <RadioGroupItem
@@ -175,8 +175,10 @@ export function QuestionDisplay({
                 <Label
                   htmlFor={option.id}
                   className={cn(
-                    'flex-1 text-base',
-                    showResult || isSaving || disabled ? 'cursor-default' : 'cursor-pointer'
+                    'flex-1 text-sm',
+                    showResult || isSaving || disabled ? 'cursor-default' : 'cursor-pointer',
+                    showResult && isCorrect && 'font-medium',
+                    showResult && isSelected && !isCorrect && 'text-muted-foreground'
                   )}
                 >
                   {option.text}
@@ -184,15 +186,34 @@ export function QuestionDisplay({
 
                 {/* Result Indicators */}
                 {showResult && isCorrect && (
-                  <CheckCircle2 className="h-5 w-5 text-green-500 flex-shrink-0" />
+                  <span className="shrink-0 text-xs font-medium">Correct</span>
                 )}
                 {showResult && isSelected && !isCorrect && (
-                  <XCircle className="h-5 w-5 text-red-500 flex-shrink-0" />
+                  <span className="shrink-0 text-xs text-muted-foreground">Incorrect</span>
                 )}
               </div>
             );
           })}
         </RadioGroup>
+
+        {/* Result Summary */}
+        {showResult && (
+          <div className="rounded-lg border border-border bg-secondary/30 p-4">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Your answer</span>
+              <span className={cn(
+                "font-medium",
+                question.options.find(o => o.id === selectedAnswer)?.isCorrect
+                  ? "text-foreground"
+                  : "text-muted-foreground"
+              )}>
+                {question.options.find(o => o.id === selectedAnswer)?.isCorrect
+                  ? "Correct"
+                  : "Incorrect"}
+              </span>
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

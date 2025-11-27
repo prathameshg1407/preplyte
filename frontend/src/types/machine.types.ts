@@ -167,6 +167,8 @@ export interface ListSessionsQuery {
   limit?: number;
   status?: 'all' | 'completed' | 'in_progress' | 'expired';
   difficulty?: DifficultyLevel;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
 }
 
 // GET /api/machine/sessions - Response Item

@@ -1,202 +1,322 @@
 // src/app.ts
 
-import express, { Application, Request, Response, NextFunction } from 'express';
+import express, { Application, Request, Response } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import compression from 'compression';
 import cookieParser from 'cookie-parser';
-import rateLimit from 'express-rate-limit';
+import { rateLimit, RateLimitRequestHandler } from 'express-rate-limit';
 
 // Route Imports
 import { authRoutes } from './module/auth/auth.routes';
 import practiceRoutes from './module/practice/practice.routes';
-// Utils
+import adminRoutes from './module/admin/admin.routes';
+import { profileRoutes } from './module/profile'; // Add this import
+
+// Middleware & Utils
+import { errorHandler, notFoundHandler } from './middleware/error.middleware';
+import { requestIdMiddleware } from './middleware/request-id.middleware';
 import { logger } from './utils/logger';
+import { AppError } from './utils/errors';
+
+// =====================================================
+// APP INITIALIZATION
+// =====================================================
 
 const app: Application = express();
 
 // =====================================================
-// 1. SECURITY & UTILITY MIDDLEWARE
+// CONFIGURATION
 // =====================================================
 
-// Set security HTTP headers
-app.use(helmet());
+const config = {
+  env: process.env.NODE_ENV || 'development',
+  isProduction: process.env.NODE_ENV === 'production',
+  isTest: process.env.NODE_ENV === 'test',
+  corsOrigins: process.env.CORS_ORIGIN?.split(',').map((o) => o.trim()) ?? ['http://localhost:3000'],
+  bodyLimit: process.env.BODY_LIMIT || '5mb',
+  rateLimits: {
+    general: {
+      windowMs: 15 * 60 * 1000, // 15 minutes
+      max: parseInt(process.env.RATE_LIMIT_GENERAL || '100', 10),
+    },
+    auth: {
+      windowMs: 15 * 60 * 1000,
+      max: parseInt(process.env.RATE_LIMIT_AUTH || '10', 10),
+    },
+    codeExecution: {
+      windowMs: 1 * 60 * 1000, // 1 minute
+      max: parseInt(process.env.RATE_LIMIT_CODE || '30', 10),
+    },
+    admin: {
+      windowMs: 15 * 60 * 1000,
+      max: parseInt(process.env.RATE_LIMIT_ADMIN || '200', 10),
+    },
+    profile: {
+      windowMs: 15 * 60 * 1000, // 15 minutes
+      max: parseInt(process.env.RATE_LIMIT_PROFILE || '50', 10),
+    },
+    upload: {
+      windowMs: 60 * 60 * 1000, // 1 hour
+      max: parseInt(process.env.RATE_LIMIT_UPLOAD || '10', 10),
+    },
+  },
+};
 
-// Enable CORS
-app.use(cors({
-  origin: process.env.CORS_ORIGIN || '*',
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-}));
+// =====================================================
+// 1. TRUST PROXY
+// =====================================================
 
-// HTTP Request Logger
-if (process.env.NODE_ENV !== 'test') {
-  app.use(morgan('dev'));
+app.set('trust proxy', config.isProduction ? 1 : false);
+
+// =====================================================
+// 2. SECURITY MIDDLEWARE
+// =====================================================
+
+app.use(
+  helmet({
+    contentSecurityPolicy: config.isProduction ? undefined : false,
+    crossOriginEmbedderPolicy: false,
+    referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+  })
+);
+
+// =====================================================
+// 3. CORS CONFIGURATION
+// =====================================================
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin) {
+        return callback(null, true);
+      }
+
+      if (config.corsOrigins.includes(origin) || config.corsOrigins.includes('*')) {
+        callback(null, true);
+      } else {
+        logger.warn(`CORS blocked origin: ${origin}`);
+        callback(new AppError('CORS_ERROR', 'Not allowed by CORS', 403));
+      }
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-ID', 'X-Client-Version'],
+    exposedHeaders: ['X-Request-ID', 'X-RateLimit-Limit', 'X-RateLimit-Remaining'],
+    maxAge: 86400,
+    optionsSuccessStatus: 204,
+  })
+);
+
+// =====================================================
+// 4. REQUEST PROCESSING MIDDLEWARE
+// =====================================================
+
+app.use(requestIdMiddleware);
+
+if (!config.isTest) {
+  app.use(
+    morgan(config.isProduction ? 'combined' : 'dev', {
+      stream: {
+        write: (message: string) => {
+          logger.info(message.trim());
+        },
+      },
+      skip: (req) => req.path === '/health',
+    })
+  );
 }
 
-// Compress response bodies
-app.use(compression());
+app.use(
+  compression({
+    level: 6,
+    threshold: 1024,
+    filter: (req, res) => {
+      if (req.headers['x-no-compression']) {
+        return false;
+      }
+      return compression.filter(req, res);
+    },
+  })
+);
 
-// Parse JSON bodies (increased limit for code submissions)
-app.use(express.json({ limit: '1mb' }));
-
-// Parse URL-encoded bodies
-app.use(express.urlencoded({ extended: true, limit: '1mb' }));
-
-// Parse Cookies
-app.use(cookieParser());
+app.use(express.json({ limit: config.bodyLimit }));
+app.use(express.urlencoded({ extended: true, limit: config.bodyLimit }));
+app.use(cookieParser(process.env.COOKIE_SECRET));
 
 // =====================================================
-// 2. RATE LIMITING
+// 5. RATE LIMITERS
 // =====================================================
 
-// General API Rate Limiting
-const generalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100,
-  message: {
-    success: false,
-    message: 'Too many requests from this IP, please try again later.',
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-  skip: () => process.env.NODE_ENV === 'test',
-});
+const createRateLimiter = (
+  windowMs: number,
+  max: number,
+  message: string
+): RateLimitRequestHandler => {
+  return rateLimit({
+    windowMs,
+    max,
+    message: {
+      success: false,
+      error: {
+        code: 'RATE_LIMITED',
+        message,
+      },
+    },
+    standardHeaders: true,
+    legacyHeaders: false,
+    skip: () => config.isTest,
+    keyGenerator: (req) => {
+      return (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || 
+             req.ip || 
+             'unknown';
+    },
+    handler: (req, res) => {
+      logger.warn('Rate limit exceeded', {
+        ip: req.ip,
+        path: req.path,
+        method: req.method,
+      });
+      res.status(429).json({
+        success: false,
+        error: {
+          code: 'RATE_LIMITED',
+          message,
+        },
+      });
+    },
+  });
+};
 
-// Stricter rate limiting for code execution endpoints
-const codeExecutionLimiter = rateLimit({
-  windowMs: 1 * 60 * 1000, // 1 minute
-  max: 30, // 30 code executions per minute
-  message: {
-    success: false,
-    message: 'Too many code executions. Please wait before trying again.',
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-  skip: () => process.env.NODE_ENV === 'test',
-});
+const generalLimiter = createRateLimiter(
+  config.rateLimits.general.windowMs,
+  config.rateLimits.general.max,
+  'Too many requests from this IP. Please try again later.'
+);
 
-// Auth rate limiting (prevent brute force)
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 10, // 10 attempts per 15 minutes
-  message: {
-    success: false,
-    message: 'Too many authentication attempts. Please try again later.',
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-  skip: () => process.env.NODE_ENV === 'test',
-});
+const authLimiter = createRateLimiter(
+  config.rateLimits.auth.windowMs,
+  config.rateLimits.auth.max,
+  'Too many authentication attempts. Please try again later.'
+);
+
+const codeExecutionLimiter = createRateLimiter(
+  config.rateLimits.codeExecution.windowMs,
+  config.rateLimits.codeExecution.max,
+  'Too many code executions. Please wait before trying again.'
+);
+
+const adminLimiter = createRateLimiter(
+  config.rateLimits.admin.windowMs,
+  config.rateLimits.admin.max,
+  'Too many admin requests. Please try again later.'
+);
+
+const profileLimiter = createRateLimiter(
+  config.rateLimits.profile.windowMs,
+  config.rateLimits.profile.max,
+  'Too many profile requests. Please try again later.'
+);
+
+const uploadLimiter = createRateLimiter(
+  config.rateLimits.upload.windowMs,
+  config.rateLimits.upload.max,
+  'Too many file uploads. Please try again later.'
+);
 
 // Apply general limiter to all API routes
 app.use('/api', generalLimiter);
 
-// Apply stricter limiter to code execution routes
-app.use('/api/machine/sessions/:sessionId/questions/:questionId/run', codeExecutionLimiter);
-app.use('/api/machine/sessions/:sessionId/questions/:questionId/submit', codeExecutionLimiter);
-
-// Apply auth limiter
-app.use('/api/auth/login', authLimiter);
-app.use('/api/auth/register', authLimiter);
-
 // =====================================================
-// 3. HEALTH CHECK
+// 6. HEALTH CHECK ROUTES
 // =====================================================
 
 app.get('/health', (_req: Request, res: Response) => {
   res.status(200).json({
     success: true,
-    status: 'ok',
+    status: 'healthy',
     timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-    environment: process.env.NODE_ENV || 'development',
+    uptime: Math.floor(process.uptime()),
+    environment: config.env,
+    version: process.env.npm_package_version || '1.0.0',
   });
 });
 
-// API Info endpoint
+app.get('/ready', async (_req: Request, res: Response) => {
+  try {
+    const { prisma } = await import('./lib/db');
+    await prisma.$queryRaw`SELECT 1`;
+    
+    res.status(200).json({
+      success: true,
+      status: 'ready',
+      timestamp: new Date().toISOString(),
+      services: {
+        database: 'connected',
+      },
+    });
+  } catch (error) {
+    res.status(503).json({
+      success: false,
+      status: 'not_ready',
+      timestamp: new Date().toISOString(),
+      services: {
+        database: 'disconnected',
+      },
+    });
+  }
+});
+
 app.get('/api', (_req: Request, res: Response) => {
   res.status(200).json({
     success: true,
     message: 'Practice Platform API',
-    version: '1.0.0',
-    endpoints: {
-      auth: '/api/auth',
-      aptitude: '/api/aptitude',
-      machine: '/api/machine',
-      languages: '/api/languages',
-      config: '/api/config',
-      enums: '/api/enums',
-    },
+    version: process.env.npm_package_version || '1.0.0',
     documentation: '/api/docs',
+    health: '/health',
   });
 });
 
 // =====================================================
-// 4. API ROUTES
+// 7. API ROUTES
 // =====================================================
 
-// Auth Routes
+// Auth routes with specific rate limiter
+app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/register', authLimiter);
 app.use('/api/auth', authRoutes);
 
-// Practice Routes (includes aptitude, machine, languages, config, enums)
+// Profile routes with specific rate limiters
+app.use('/api/profile/resumes', uploadLimiter); // Upload rate limit for resume endpoints
+app.use('/api/profile', profileLimiter, profileRoutes);
+
+// Practice routes
 app.use('/api', practiceRoutes);
 
+// Code execution rate limiting
+app.use(
+  '/api/machine/sessions/:sessionId/questions/:questionId/run',
+  codeExecutionLimiter
+);
+app.use(
+  '/api/machine/sessions/:sessionId/questions/:questionId/submit',
+  codeExecutionLimiter
+);
+
+// Admin routes with specific rate limiter
+app.use('/api/admin', adminLimiter, adminRoutes);
+
 // =====================================================
-// 5. ERROR HANDLING
+// 8. ERROR HANDLING
 // =====================================================
 
-// 404 Handler (Route Not Found)
-app.use((_req: Request, res: Response) => {
-  res.status(404).json({
-    success: false,
-    message: 'Route not found',
-    path: _req.originalUrl,
-  });
-});
+app.use(notFoundHandler);
+app.use(errorHandler);
 
-// Global Error Handler
-app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
-  // Log error
-  logger.error('Unhandled error', {
-    message: err.message,
-    stack: err.stack,
-    path: req.path,
-    method: req.method,
-    timestamp: new Date().toISOString(),
-  });
-
-  // Determine status code
-  const statusCode = err.statusCode || err.status || 500;
-  
-  // Determine error message
-  let message = err.message || 'Internal Server Error';
-  
-  // Handle specific error types
-  if (err.name === 'ValidationError') {
-    message = 'Validation failed';
-  } else if (err.name === 'UnauthorizedError' || err.name === 'JsonWebTokenError') {
-    message = 'Invalid or expired token';
-  } else if (err.code === 'P2002') {
-    // Prisma unique constraint error
-    message = 'A record with this data already exists';
-  } else if (err.code === 'P2025') {
-    // Prisma record not found
-    message = 'Record not found';
-  }
-
-  // Send error response
-  res.status(statusCode).json({
-    success: false,
-    message,
-    ...(err.errors && { errors: err.errors }),
-    ...(process.env.NODE_ENV === 'development' && {
-      stack: err.stack,
-      details: err.details,
-    }),
-  });
-});
+// =====================================================
+// EXPORT
+// =====================================================
 
 export default app;
+export { config };

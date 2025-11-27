@@ -4,21 +4,45 @@ import { prisma } from '../lib/db';
 import { sendError } from '../utils/response';
 import { logger } from '../utils/logger';
 
-// Validate JWT_SECRET at startup
+// ============================================
+// Configuration
+// ============================================
+
 const jwtSecret = process.env.JWT_SECRET;
 if (!jwtSecret) {
   throw new Error('JWT_SECRET must be defined in environment variables');
 }
 const JWT_SECRET = new TextEncoder().encode(jwtSecret);
 
-export interface AuthenticatedRequest extends Request {
-  user?: {
-    id: string;
-    email: string;
-    role: string;
-    instituteId: string | null;
-  };
+// ============================================
+// Types
+// ============================================
+
+export interface AuthUser {
+  id: string;
+  email: string;
+  role: string;
+  instituteId: string | null;
+  tokenVersion: number;
 }
+
+export interface AuthenticatedRequest extends Request {
+  user?: AuthUser;
+}
+
+// User select fields for consistent queries
+const userSelectFields = {
+  id: true,
+  email: true,
+  role: true,
+  instituteId: true,
+  isActive: true,
+  tokenVersion: true,
+} as const;
+
+// ============================================
+// Authentication Middleware
+// ============================================
 
 export const authenticate = async (
   req: AuthenticatedRequest,
@@ -29,11 +53,21 @@ export const authenticate = async (
     const authHeader = req.headers.authorization;
 
     if (!authHeader?.startsWith('Bearer ')) {
-      sendError(res, 'UNAUTHORIZED', 'Authentication required. Please provide a valid token.', 401);
+      sendError(
+        res,
+        'UNAUTHORIZED',
+        'Authentication required. Please provide a valid token.',
+        401
+      );
       return;
     }
 
     const token = authHeader.substring(7);
+
+    if (!token) {
+      sendError(res, 'UNAUTHORIZED', 'Token is required', 401);
+      return;
+    }
 
     try {
       const { payload } = await jose.jwtVerify(token, JWT_SECRET, {
@@ -41,19 +75,28 @@ export const authenticate = async (
         audience: 'preplyte-client',
       });
 
+      const userId = payload.sub as string;
+      const tokenVersion = (payload.tokenVersion as number) || 0;
+
+      // Fetch user from database
       const user = await prisma.user.findUnique({
-        where: { id: payload.sub as string },
-        select: {
-          id: true,
-          email: true,
-          role: true,
-          instituteId: true,
-          isActive: true,
-        },
+        where: { id: userId },
+        select: userSelectFields,
       });
 
-      if (!user || !user.isActive) {
-        sendError(res, 'UNAUTHORIZED', 'User not found or inactive', 401);
+      if (!user) {
+        sendError(res, 'UNAUTHORIZED', 'User not found', 401);
+        return;
+      }
+
+      if (!user.isActive) {
+        sendError(res, 'UNAUTHORIZED', 'Account is inactive', 401);
+        return;
+      }
+
+      // Check token version for logout-all functionality
+      if (user.tokenVersion !== tokenVersion) {
+        sendError(res, 'UNAUTHORIZED', 'Session has been revoked. Please login again.', 401);
         return;
       }
 
@@ -62,6 +105,7 @@ export const authenticate = async (
         email: user.email,
         role: user.role,
         instituteId: user.instituteId,
+        tokenVersion: user.tokenVersion,
       };
 
       next();
@@ -84,6 +128,10 @@ export const authenticate = async (
   }
 };
 
+// ============================================
+// Optional Authentication Middleware
+// ============================================
+
 export const optionalAuth = async (
   req: AuthenticatedRequest,
   _res: Response,
@@ -98,39 +146,46 @@ export const optionalAuth = async (
 
   try {
     const token = authHeader.substring(7);
+    
+    if (!token) {
+      next();
+      return;
+    }
+
     const { payload } = await jose.jwtVerify(token, JWT_SECRET, {
       issuer: 'preplyte-api',
       audience: 'preplyte-client',
     });
 
+    const userId = payload.sub as string;
+    const tokenVersion = (payload.tokenVersion as number) || 0;
+
     const user = await prisma.user.findUnique({
-      where: { id: payload.sub as string },
-      select: {
-        id: true,
-        email: true,
-        role: true,
-        instituteId: true,
-        isActive: true,
-      },
+      where: { id: userId },
+      select: userSelectFields,
     });
 
-    if (user?.isActive) {
+    if (user?.isActive && user.tokenVersion === tokenVersion) {
       req.user = {
         id: user.id,
         email: user.email,
         role: user.role,
         instituteId: user.instituteId,
+        tokenVersion: user.tokenVersion,
       };
     }
   } catch (error) {
     // Silently continue without user - auth is optional
-    logger.debug('Optional auth failed, continuing without user', error);
+    logger.debug('Optional auth failed, continuing without user');
   }
 
   next();
 };
 
-// Role-based authorization middleware
+// ============================================
+// Authorization Middleware
+// ============================================
+
 export const authorize = (...allowedRoles: string[]) => {
   return (req: AuthenticatedRequest, res: Response, next: NextFunction): void => {
     if (!req.user) {
@@ -147,7 +202,10 @@ export const authorize = (...allowedRoles: string[]) => {
   };
 };
 
-// Institute-specific authorization middleware
+// ============================================
+// Institute Authorization Middleware
+// ============================================
+
 export const authorizeInstitute = (
   req: AuthenticatedRequest,
   res: Response,
@@ -164,4 +222,54 @@ export const authorizeInstitute = (
   }
 
   next();
+};
+
+// ============================================
+// Institute Admin Authorization Middleware
+// ============================================
+
+export const authorizeInstituteAdmin = (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+): void => {
+  if (!req.user) {
+    sendError(res, 'UNAUTHORIZED', 'Authentication required', 401);
+    return;
+  }
+
+  if (!req.user.instituteId) {
+    sendError(res, 'FORBIDDEN', 'This action requires institute membership', 403);
+    return;
+  }
+
+  if (!['ADMIN', 'INSTITUTE_ADMIN'].includes(req.user.role)) {
+    sendError(res, 'FORBIDDEN', 'This action requires admin privileges', 403);
+    return;
+  }
+
+  next();
+};
+
+// ============================================
+// Resource Owner Authorization Middleware
+// ============================================
+
+export const authorizeOwnerOrAdmin = (userIdParam: string = 'userId') => {
+  return (req: AuthenticatedRequest, res: Response, next: NextFunction): void => {
+    if (!req.user) {
+      sendError(res, 'UNAUTHORIZED', 'Authentication required', 401);
+      return;
+    }
+
+    const resourceUserId = req.params[userIdParam];
+
+    // Allow if user is admin or owner of the resource
+    if (req.user.role === 'ADMIN' || req.user.id === resourceUserId) {
+      next();
+      return;
+    }
+
+    sendError(res, 'FORBIDDEN', 'You do not have permission to access this resource', 403);
+  };
 };

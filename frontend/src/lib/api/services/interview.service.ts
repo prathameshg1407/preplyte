@@ -1,21 +1,18 @@
 // src/lib/api/services/interview.service.ts
 
 import { apiClient } from "../axios-instance";
-import { INTERVIEW_ENDPOINTS } from "../endpoints";
-import { parseApiError } from "../error-handler";
+import { API_ENDPOINTS } from "../endpoints";
 import {
   StartInterviewRequest,
-  SubmitAnswerRequest,
-  InterviewSessionResponse,
-  SessionStateResponse,
-  SubmitAnswerResponse,
-  InterviewFeedbackResponse,
-  UserSessionSummaryDto,
-  UserSessionStatsResponse,
+  SubmitResponseDto,
+  SessionResponse,
+  SubmitResponseResult,
+  FeedbackResponse,
+  SessionSummary,
+  PaginatedSessionsResponse,
+  SessionStats,
   AiInterviewQuestionCategory,
-  ApiResponse,
-  NextQuestionResponse,
-  QuestionCompletionResponse,
+  GetSessionsParams,
 } from "@/types/aiInterview.types";
 
 // ============= API Response Type =============
@@ -23,140 +20,154 @@ import {
 interface ServiceResponse<T> {
   success: boolean;
   data: T;
+  message?: string;
 }
 
 // ============= API Functions =============
 
+/**
+ * Start a new interview session
+ * POST /practice/interview/start
+ */
 export async function startInterviewSession(
   data: StartInterviewRequest
-): Promise<InterviewSessionResponse> {
-  const response = await apiClient.post<ServiceResponse<InterviewSessionResponse>>(
-    INTERVIEW_ENDPOINTS.START,
+): Promise<SessionResponse> {
+  const response = await apiClient.post<ServiceResponse<SessionResponse>>(
+    API_ENDPOINTS.INTERVIEW.START,
     data
   );
   return response.data.data;
 }
 
+/**
+ * Get interview session details
+ * GET /practice/interview/:id
+ */
 export async function getInterviewSession(
   sessionId: string
-): Promise<SessionStateResponse> {
-  const response = await apiClient.get<ServiceResponse<SessionStateResponse>>(
-    INTERVIEW_ENDPOINTS.SESSION(sessionId)
+): Promise<SessionResponse> {
+  const response = await apiClient.get<ServiceResponse<SessionResponse>>(
+    API_ENDPOINTS.INTERVIEW.SESSION(sessionId)
   );
   return response.data.data;
 }
 
-export async function getNextQuestion(
-  sessionId: string
-): Promise<NextQuestionResponse | QuestionCompletionResponse> {
-  const response = await apiClient.get<
-    ServiceResponse<NextQuestionResponse | QuestionCompletionResponse>
-  >(INTERVIEW_ENDPOINTS.NEXT_QUESTION(sessionId));
-  return response.data.data;
-}
-
+/**
+ * Submit response for current question
+ * POST /practice/interview/:id/respond
+ */
 export async function submitInterviewAnswer(
   sessionId: string,
-  data: SubmitAnswerRequest
-): Promise<SubmitAnswerResponse> {
-  const response = await apiClient.post<ServiceResponse<SubmitAnswerResponse>>(
-    INTERVIEW_ENDPOINTS.SUBMIT_ANSWER(sessionId),
+  data: SubmitResponseDto
+): Promise<SubmitResponseResult> {
+  const response = await apiClient.post<ServiceResponse<SubmitResponseResult>>(
+    API_ENDPOINTS.INTERVIEW.RESPOND(sessionId),
     data
   );
   return response.data.data;
 }
 
-export async function getInterviewFeedback(
-  sessionId: string
-): Promise<InterviewFeedbackResponse> {
-  const response = await apiClient.get<ServiceResponse<InterviewFeedbackResponse>>(
-    INTERVIEW_ENDPOINTS.FEEDBACK(sessionId)
+/**
+ * End interview session early
+ * POST /practice/interview/:id/end
+ */
+export async function endSession(sessionId: string): Promise<FeedbackResponse> {
+  const response = await apiClient.post<ServiceResponse<FeedbackResponse>>(
+    API_ENDPOINTS.INTERVIEW.END(sessionId)
   );
   return response.data.data;
 }
 
-// FIX: Added try/catch to return empty array on failure
-export async function getUserSessions(): Promise<UserSessionSummaryDto[]> {
+/**
+ * Get interview feedback/results
+ * GET /practice/interview/:id/feedback
+ */
+export async function getInterviewFeedback(
+  sessionId: string
+): Promise<FeedbackResponse> {
+  const response = await apiClient.get<ServiceResponse<FeedbackResponse>>(
+    API_ENDPOINTS.INTERVIEW.FEEDBACK(sessionId)
+  );
+  return response.data.data;
+}
+
+/**
+ * Get user's interview sessions with pagination
+ * GET /practice/interview/sessions
+ */
+export async function getUserSessions(
+  params: GetSessionsParams = {}
+): Promise<PaginatedSessionsResponse> {
+  const { page = 1, limit = 20 } = params;
+
   try {
-    const response = await apiClient.get<ServiceResponse<UserSessionSummaryDto[]>>(
-      INTERVIEW_ENDPOINTS.SESSIONS
-    );
-    return response.data.data || [];
+    const response = await apiClient.get<
+      ServiceResponse<PaginatedSessionsResponse>
+    >(API_ENDPOINTS.INTERVIEW.SESSIONS, {
+      params: { page, limit },
+    });
+    return response.data.data;
   } catch (error) {
-    console.warn("Could not fetch sessions (API might be down or unreachable):", error);
-    return [];
+    console.warn("Could not fetch sessions:", error);
+    return {
+      sessions: [],
+      total: 0,
+      page: 1,
+      totalPages: 0,
+    };
   }
 }
 
-// FIX: Added try/catch to return null/default stats on failure
-export async function getUserSessionStats(): Promise<UserSessionStatsResponse> {
+/**
+ * Get user's interview statistics
+ * GET /practice/interview/stats
+ */
+export async function getUserSessionStats(): Promise<SessionStats> {
   try {
-    const response = await apiClient.get<ServiceResponse<UserSessionStatsResponse>>(
-      INTERVIEW_ENDPOINTS.STATS
+    const response = await apiClient.get<ServiceResponse<SessionStats>>(
+      API_ENDPOINTS.INTERVIEW.STATS
     );
     return response.data.data;
   } catch (error) {
-    console.warn("Could not fetch stats (API might be down or unreachable):", error);
-    // Return a safe fallback (casted to any to avoid type errors if fields differ)
+    console.warn("Could not fetch stats:", error);
     return {
-      totalInterviews: 0,
+      totalSessions: 0,
+      completedSessions: 0,
       averageScore: 0,
-      totalDuration: 0,
-      completedInterviews: 0,
-    } as unknown as UserSessionStatsResponse;
+      totalQuestionsAnswered: 0,
+      topCategories: [],
+    };
   }
 }
 
-export async function cancelSession(sessionId: string): Promise<void> {
-  await apiClient.post(INTERVIEW_ENDPOINTS.CANCEL(sessionId));
-}
-
+/**
+ * Delete an interview session
+ * DELETE /practice/interview/:id
+ */
 export async function deleteSession(sessionId: string): Promise<void> {
-  await apiClient.delete(INTERVIEW_ENDPOINTS.DELETE(sessionId));
-}
-
-export async function testTTS(): Promise<unknown> {
-  const response = await apiClient.get<ServiceResponse<unknown>>(
-    INTERVIEW_ENDPOINTS.TEST_TTS
-  );
-  return response.data.data;
+  await apiClient.delete(API_ENDPOINTS.INTERVIEW.DELETE(sessionId));
 }
 
 // ============= Helper Functions =============
 
-export function createAnswerRequest(
-  question: string,
-  category: AiInterviewQuestionCategory,
-  answer: string,
-  questionIndex?: number,
-  timeTakenSeconds?: number,
-  isTranscribed: boolean = true
-): SubmitAnswerRequest {
-  return {
-    question,
-    answer,
-    category,
-    questionIndex,
-    isTranscribed,
-    timeTakenSeconds,
-  };
-}
-
-export function validateAnswer(answer: string): { valid: boolean; error?: string } {
+export function validateAnswer(answer: string): {
+  valid: boolean;
+  error?: string;
+} {
   const trimmed = answer.trim();
-  
+
   if (!trimmed) {
     return { valid: false, error: "Answer cannot be empty" };
   }
-  
-  if (trimmed.length < 10) {
+
+  if (trimmed.length < 3) {
     return { valid: false, error: "Please provide a more detailed answer" };
   }
-  
+
   if (trimmed.length > 10000) {
     return { valid: false, error: "Answer is too long (max 10000 characters)" };
   }
-  
+
   return { valid: true };
 }
 
@@ -185,7 +196,10 @@ export function getCategoryColors(category: AiInterviewQuestionCategory): {
   textClass: string;
   badgeClass: string;
 } {
-  const colors: Record<AiInterviewQuestionCategory, { bgClass: string; textClass: string; badgeClass: string }> = {
+  const colors: Record<
+    AiInterviewQuestionCategory,
+    { bgClass: string; textClass: string; badgeClass: string }
+  > = {
     [AiInterviewQuestionCategory.INTRODUCTORY]: {
       bgClass: "bg-blue-100 dark:bg-blue-900/30",
       textClass: "text-blue-600 dark:text-blue-400",
@@ -196,6 +210,16 @@ export function getCategoryColors(category: AiInterviewQuestionCategory): {
       textClass: "text-purple-600 dark:text-purple-400",
       badgeClass: "bg-purple-500",
     },
+    [AiInterviewQuestionCategory.BEHAVIORAL]: {
+      bgClass: "bg-amber-100 dark:bg-amber-900/30",
+      textClass: "text-amber-600 dark:text-amber-400",
+      badgeClass: "bg-amber-500",
+    },
+    [AiInterviewQuestionCategory.SITUATIONAL]: {
+      bgClass: "bg-teal-100 dark:bg-teal-900/30",
+      textClass: "text-teal-600 dark:text-teal-400",
+      badgeClass: "bg-teal-500",
+    },
     [AiInterviewQuestionCategory.CLOSING]: {
       bgClass: "bg-green-100 dark:bg-green-900/30",
       textClass: "text-green-600 dark:text-green-400",
@@ -203,7 +227,13 @@ export function getCategoryColors(category: AiInterviewQuestionCategory): {
     },
   };
 
-  return colors[category];
+  return (
+    colors[category] || {
+      bgClass: "bg-gray-100 dark:bg-gray-900/30",
+      textClass: "text-gray-600 dark:text-gray-400",
+      badgeClass: "bg-gray-500",
+    }
+  );
 }
 
 export function getScoreRating(score: number): {
@@ -252,10 +282,56 @@ export function getStatusBadge(status: string): {
 } {
   const badges: Record<string, { label: string; colorClass: string }> = {
     STARTED: { label: "Started", colorClass: "bg-blue-100 text-blue-800" },
-    IN_PROGRESS: { label: "In Progress", colorClass: "bg-yellow-100 text-yellow-800" },
+    IN_PROGRESS: {
+      label: "In Progress",
+      colorClass: "bg-yellow-100 text-yellow-800",
+    },
     COMPLETED: { label: "Completed", colorClass: "bg-green-100 text-green-800" },
     CANCELLED: { label: "Cancelled", colorClass: "bg-gray-100 text-gray-800" },
   };
 
   return badges[status] || badges.STARTED;
 }
+
+// ============= Interview Service Class =============
+
+class InterviewService {
+  async startSession(data: StartInterviewRequest): Promise<SessionResponse> {
+    return startInterviewSession(data);
+  }
+
+  async getSession(sessionId: string): Promise<SessionResponse> {
+    return getInterviewSession(sessionId);
+  }
+
+  async submitResponse(
+    sessionId: string,
+    data: SubmitResponseDto
+  ): Promise<SubmitResponseResult> {
+    return submitInterviewAnswer(sessionId, data);
+  }
+
+  async endSession(sessionId: string): Promise<FeedbackResponse> {
+    return endSession(sessionId);
+  }
+
+  async getFeedback(sessionId: string): Promise<FeedbackResponse> {
+    return getInterviewFeedback(sessionId);
+  }
+
+  async getSessions(
+    params?: GetSessionsParams
+  ): Promise<PaginatedSessionsResponse> {
+    return getUserSessions(params);
+  }
+
+  async getStats(): Promise<SessionStats> {
+    return getUserSessionStats();
+  }
+
+  async deleteSession(sessionId: string): Promise<void> {
+    return deleteSession(sessionId);
+  }
+}
+
+export const interviewService = new InterviewService();

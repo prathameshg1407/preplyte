@@ -1,20 +1,26 @@
 // src/types/api.types.ts
 
-// Standard API Response (matches backend)
+/**
+ * Standard API Response wrapper - matches backend format
+ */
 export interface ApiResponse<T = unknown> {
   success: boolean;
   data?: T;
   message?: string;
-  error?: {
-    code: string;
-    message: string;
-    details?: Array<{
-      field: string;
-      message: string;
-      code?: string;
-    }>;
-  };
+  error?: ApiError;
   meta?: PaginationMeta;
+}
+
+export interface ApiError {
+  code: string;
+  message: string;
+  details?: ValidationDetail[];
+}
+
+export interface ValidationDetail {
+  field: string;
+  message: string;
+  code?: string;
 }
 
 export interface PaginationMeta {
@@ -28,7 +34,6 @@ export interface PaginatedResponse<T> extends ApiResponse<T[]> {
   meta: PaginationMeta;
 }
 
-// Query parameters for list endpoints
 export interface PaginationParams {
   page?: number;
   limit?: number;
@@ -36,7 +41,6 @@ export interface PaginationParams {
   sortOrder?: 'asc' | 'desc';
 }
 
-// Generic list query params
 export interface ListQueryParams extends PaginationParams {
   search?: string;
   filter?: Record<string, string | number | boolean>;

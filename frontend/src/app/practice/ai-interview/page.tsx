@@ -1,3 +1,5 @@
+// src/app/practice/ai-interview/page.tsx
+
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
@@ -8,10 +10,10 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ScrollArea } from "@/components/ui/scroll-area";
+} from "../../../components/ui/card";
+import { Button } from "../../../components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../../components/ui/tabs";
+import { ScrollArea } from "../../../components/ui/scroll-area";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,20 +23,17 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+} from "../../../components/ui/alert-dialog";
 import {
-  History,
-  BarChart3,
   Loader2,
   Plus,
-  TrendingUp,
-  Target,
-  CheckCircle2,
+  Mic,
+  ArrowRight,
 } from "lucide-react";
-import { InterviewConfigForm } from "@/components/practice/ai-interview/interview-config-form";
-import { SessionCard } from "@/components/practice/ai-interview/session-card";
-import { useInterview } from "@/lib/hooks/use-interview";
-import { profileService } from "@/lib/api/services/profile.service";
+import { InterviewConfigForm } from "../../../components/practice/ai-interview/interview-config-form";
+import { SessionCard } from "../../../components/practice/ai-interview/session-card";
+import { useInterview } from "../../../lib/hooks/use-interview";
+import { profileService } from "../../../lib/api/services/profile.service";
 
 interface Resume {
   id: number;
@@ -48,39 +47,38 @@ export default function AIInterviewPage() {
     loading,
     error,
     sessions,
+    sessionsPagination,
     stats,
     startSession,
     fetchUserSessions,
     fetchUserStats,
     deleteSession,
-    setError,
   } = useInterview();
 
   const [activeTab, setActiveTab] = useState("start");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [sessionToDelete, setSessionToDelete] = useState<string | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
 
-  // Fetch data on mount
   useEffect(() => {
-    fetchUserSessions();
+    fetchUserSessions({ page: 1, limit: 20 });
     fetchUserStats();
-  }, [fetchUserSessions, fetchUserStats]);
-
-  // Fetch resumes callback for config form
-  const fetchResumes = useCallback(async (): Promise<Resume[]> => {
-    try {
-      // Assuming you have a profile service
-      const resumes = await profileService.getResumes();
-      return resumes.map((r: any) => ({
-        id: r.id,
-        fileName: r.fileName,
-        isDefault: r.isDefault,
-      }));
-    } catch {
-      return [];
-    }
   }, []);
+
+ const fetchResumes = useCallback(async (): Promise<Resume[]> => {
+  try {
+    const response = await profileService.getResumes();
+    // Access the array property - adjust 'resumes' to match your actual response structure
+    return response.resumes.map((r: any) => ({
+      id: r.id,
+      fileName: r.fileName,
+      isDefault: r.isDefault,
+    }));
+  } catch {
+    return [];
+  }
+}, []);
 
   const handleDeleteClick = (sessionId: string) => {
     setSessionToDelete(sessionId);
@@ -89,7 +87,6 @@ export default function AIInterviewPage() {
 
   const handleDeleteConfirm = async () => {
     if (!sessionToDelete) return;
-
     setDeleteLoading(true);
     try {
       await deleteSession(sessionToDelete);
@@ -108,87 +105,59 @@ export default function AIInterviewPage() {
     router.push(`/practice/ai-interview/results/${sessionId}`);
   };
 
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    fetchUserSessions({ page, limit: 20 });
+  };
+
   return (
-    <div className="container mx-auto py-8 px-4 max-w-6xl">
+    <div className="container mx-auto py-8 px-4 max-w-4xl">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">AI Interview Practice</h1>
+        <div className="flex items-center gap-3 mb-2">
+          <div className="h-10 w-10 rounded-full border border-border flex items-center justify-center">
+            <Mic className="h-5 w-5" />
+          </div>
+          <h1 className="text-2xl font-semibold tracking-tight">AI Interview</h1>
+        </div>
         <p className="text-muted-foreground">
-          Practice your interview skills with our AI-powered interviewer and get
-          instant feedback
+          Practice with an AI interviewer and get instant feedback
         </p>
       </div>
 
-      {/* Stats Cards */}
+      {/* Stats */}
       {stats && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Total Sessions</p>
-                  <p className="text-2xl font-bold">{stats.totalSessions}</p>
-                </div>
-                <BarChart3 className="w-8 h-8 text-muted-foreground" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Completed</p>
-                  <p className="text-2xl font-bold">{stats.completedSessions}</p>
-                </div>
-                <CheckCircle2 className="w-8 h-8 text-green-500" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Avg. Score</p>
-                  <p className="text-2xl font-bold">{stats.averageScore}%</p>
-                </div>
-                <TrendingUp className="w-8 h-8 text-blue-500" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Questions</p>
-                  <p className="text-2xl font-bold">
-                    {stats.totalQuestionsAnswered}
-                  </p>
-                </div>
-                <Target className="w-8 h-8 text-purple-500" />
-              </div>
-            </CardContent>
-          </Card>
+        <div className="grid grid-cols-4 gap-4 mb-8 p-4 border border-border rounded-lg bg-card">
+          <div className="text-center">
+            <div className="text-2xl font-semibold tabular-nums">{stats.totalSessions}</div>
+            <div className="text-xs text-muted-foreground">Sessions</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-semibold tabular-nums">{stats.completedSessions}</div>
+            <div className="text-xs text-muted-foreground">Completed</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-semibold tabular-nums">{stats.averageScore}%</div>
+            <div className="text-xs text-muted-foreground">Avg Score</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-semibold tabular-nums">{stats.totalQuestionsAnswered}</div>
+            <div className="text-xs text-muted-foreground">Questions</div>
+          </div>
         </div>
       )}
 
-      {/* Main Content Tabs */}
+      {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="mb-6">
-          <TabsTrigger value="start" className="gap-2">
-            <Plus className="w-4 h-4" />
-            New Interview
-          </TabsTrigger>
-          <TabsTrigger value="history" className="gap-2">
-            <History className="w-4 h-4" />
-            History ({sessions.length})
+        <TabsList className="w-full mb-6 grid grid-cols-2">
+          <TabsTrigger value="start">New Interview</TabsTrigger>
+          <TabsTrigger value="history">
+            History {sessionsPagination.total > 0 && `(${sessionsPagination.total})`}
           </TabsTrigger>
         </TabsList>
 
-        {/* New Interview Tab */}
-        <TabsContent value="start">
+        {/* New Interview */}
+        <TabsContent value="start" className="mt-0">
           <InterviewConfigForm
             onStart={startSession}
             loading={loading}
@@ -197,72 +166,93 @@ export default function AIInterviewPage() {
           />
         </TabsContent>
 
-        {/* History Tab */}
-        <TabsContent value="history">
-          <Card>
-            <CardHeader>
-              <CardTitle>Interview History</CardTitle>
-              <CardDescription>
-                View your past interview sessions and their results
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {sessions.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <History className="w-12 h-12 text-muted-foreground mb-4" />
-                  <h3 className="text-lg font-medium mb-2">No interviews yet</h3>
-                  <p className="text-muted-foreground mb-4">
-                    Start your first AI interview practice session
-                  </p>
-                  <Button onClick={() => setActiveTab("start")}>
-                    <Plus className="w-4 h-4 mr-2" />
+        {/* History */}
+        <TabsContent value="history" className="mt-0">
+          {sessions.length === 0 ? (
+            <Card className="border-border">
+              <CardContent className="py-16">
+                <div className="text-center space-y-4">
+                  <div className="h-12 w-12 rounded-full border border-border flex items-center justify-center mx-auto">
+                    <Mic className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="font-medium">No interviews yet</p>
+                    <p className="text-sm text-muted-foreground">
+                      Start your first practice session
+                    </p>
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setActiveTab("start")}
+                  >
                     Start Interview
+                    <ArrowRight className="h-4 w-4 ml-2" />
                   </Button>
                 </div>
-              ) : (
-                <ScrollArea className="h-[500px] pr-4">
-                  <div className="space-y-4">
-                    {sessions.map((session) => (
-                      <SessionCard
-                        key={session.id}
-                        session={session}
-                        onContinue={handleContinue}
-                        onViewResults={handleViewResults}
-                        onDelete={handleDeleteClick}
-                        isDeleting={deleteLoading && sessionToDelete === session.id}
-                      />
-                    ))}
-                  </div>
-                </ScrollArea>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-3">
+              {sessions.map((session) => (
+                <SessionCard
+                  key={session.id}
+                  session={session}
+                  onContinue={handleContinue}
+                  onViewResults={handleViewResults}
+                  onDelete={handleDeleteClick}
+                  isDeleting={deleteLoading && sessionToDelete === session.id}
+                />
+              ))}
+
+              {/* Pagination */}
+              {sessionsPagination.totalPages > 1 && (
+                <div className="flex items-center justify-between pt-4">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage <= 1}
+                  >
+                    Previous
+                  </Button>
+                  <span className="text-sm text-muted-foreground tabular-nums">
+                    {sessionsPagination.page} / {sessionsPagination.totalPages}
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage >= sessionsPagination.totalPages}
+                  >
+                    Next
+                  </Button>
+                </div>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          )}
         </TabsContent>
       </Tabs>
 
-      {/* Delete Confirmation Dialog */}
+      {/* Delete Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
+        <AlertDialogContent className="max-w-sm">
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Session</AlertDialogTitle>
+            <AlertDialogTitle>Delete session?</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this interview session? This action
-              cannot be undone and all data including feedback will be permanently
-              removed.
+              This will permanently delete this interview session and all its data.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleteLoading}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={deleteLoading}>
+              Cancel
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteConfirm}
               disabled={deleteLoading}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {deleteLoading ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Deleting...
-                </>
+                <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
                 "Delete"
               )}

@@ -8,44 +8,34 @@ import {
   ResizableHandle,
   ResizablePanel,
   ResizablePanelGroup,
-} from "@/components/ui/resizable";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+} from "../../../../../components/ui/resizable";
+import { Button } from "../../../../../components/ui/button";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { useMachine, useMachineConfigInit } from "@/lib/hooks/use-machine";
-import { useMachineStore, DEFAULT_CODE_TEMPLATES } from "@/lib/store/machine-store";
-import { MonacoEditor } from "@/components/practice/machine/monaco-editor";
-import { ProblemDescription } from "@/components/practice/machine/problem-description";
-import { ExecutionPanel } from "@/components/practice/machine/execution-panel";
-import { QuestionTabs } from "@/components/practice/machine/question-tabs";
-import { TestTimer } from "@/components/practice/machine/test-timer";
-import { SubmitDialog } from "@/components/practice/machine/submit-dialog";
-import type { DifficultyLevel, ActiveTab } from "@/types/machine.types";
-import { Loader2, Send, RotateCcw } from "lucide-react";
+} from "../../../../../components/ui/select";
+import { useMachine, useMachineConfigInit } from "../../../../../lib/hooks/use-machine";
+import { useMachineStore, DEFAULT_CODE_TEMPLATES } from "../../../../../lib/store/machine-store";
+import { MonacoEditor } from "../../../../../components/practice/machine/monaco-editor";
+import { ProblemDescription } from "../../../../../components/practice/machine/problem-description";
+import { ExecutionPanel } from "../../../../../components/practice/machine/execution-panel";
+import { QuestionTabs } from "../../../../../components/practice/machine/question-tabs";
+import { TestTimer } from "../../../../../components/practice/machine/test-timer";
+import { SubmitDialog } from "../../../../../components/practice/machine/submit-dialog";
+import type { ActiveTab } from "../../../../../types/machine.types";
+import { Loader2, Flag, RotateCcw, Code2 } from "lucide-react";
 import { toast } from "sonner";
-
-// Difficulty colors mapping
-const DIFFICULTY_COLORS: Record<DifficultyLevel, string> = {
-  EASY: "text-green-500 border-green-500/30 bg-green-500/10",
-  MEDIUM: "text-yellow-500 border-yellow-500/30 bg-yellow-500/10",
-  HARD: "text-red-500 border-red-500/30 bg-red-500/10",
-};
 
 export default function MachineTestPage() {
   const params = useParams();
   const router = useRouter();
   const sessionId = params.sessionId as string;
 
-  // Use config init hook for proper initialization
-  const { isReady: configReady, hasHydrated } = useMachineConfigInit();
+  const { hasHydrated } = useMachineConfigInit();
 
-  // Get state from store - using correct property names
   const {
     difficulty,
     questions,
@@ -58,14 +48,13 @@ export default function MachineTestPage() {
     runResult,
     submitResult,
     submitResults,
-    solvedQuestionIds, // Changed from solvedQuestions
+    solvedQuestionIds,
     isLoading,
     activeTab,
     expiresAt,
     sessionId: storeSessionId,
   } = useMachineStore();
 
-  // Get actions from hook
   const {
     resumeSession,
     fetchQuestion,
@@ -79,7 +68,6 @@ export default function MachineTestPage() {
     startTimer,
   } = useMachine();
 
-  // Get store actions directly
   const setCode = useMachineStore((state) => state.setCode);
   const goToQuestion = useMachineStore((state) => state.goToQuestion);
   const setActiveTab = useMachineStore((state) => state.setActiveTab);
@@ -98,37 +86,23 @@ export default function MachineTestPage() {
 
   // Initialize session
   useEffect(() => {
-    // Wait for hydration
-    if (!hasHydrated) {
-      return;
-    }
-
-    // If already initialized for this session, skip
-    if (initialized && storeSessionId === sessionId) {
-      return;
-    }
+    if (!hasHydrated) return;
+    if (initialized && storeSessionId === sessionId) return;
 
     const init = async () => {
-      // Check if we need to resume or if session is already loaded
       if (questions.length > 0 && storeSessionId === sessionId) {
-        // Session already in store, just start timer
         startTimer();
         setInitialized(true);
         return;
       }
 
-      // Need to resume session
       try {
         const success = await resumeSession(sessionId);
-        if (!success) {
-          // resumeSession handles redirect for completed/expired sessions
-          return;
-        }
+        if (!success) return;
         setInitialized(true);
       } catch (error: any) {
         console.error("Failed to resume session:", error);
         setInitError(error.message || "Failed to load session");
-        // Redirect after short delay
         setTimeout(() => {
           router.push("/practice/machine");
         }, 2000);
@@ -136,18 +110,9 @@ export default function MachineTestPage() {
     };
 
     init();
-  }, [
-    hasHydrated,
-    sessionId,
-    storeSessionId,
-    questions.length,
-    initialized,
-    resumeSession,
-    startTimer,
-    router,
-  ]);
+  }, [hasHydrated, sessionId, storeSessionId, questions.length, initialized, resumeSession, startTimer, router]);
 
-  // Fetch question detail when question changes
+  // Fetch question detail
   useEffect(() => {
     if (initialized && currentQuestionData && !currentQuestion) {
       fetchQuestion(currentQuestionData.id);
@@ -215,36 +180,37 @@ export default function MachineTestPage() {
     [setActiveTab]
   );
 
-  // Show error state
+  // Error state
   if (initError) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex min-h-screen items-center justify-center">
         <div className="text-center">
-          <p className="text-destructive mb-4">{initError}</p>
-          <p className="text-muted-foreground">Redirecting...</p>
+          <p className="mb-2 text-sm text-muted-foreground">{initError}</p>
+          <p className="text-xs text-muted-foreground">Redirecting...</p>
         </div>
       </div>
     );
   }
 
-  // Show loading state
+  // Loading state
   if (!hasHydrated || !initialized || isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex min-h-screen items-center justify-center">
         <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-          <p className="text-muted-foreground">Loading session...</p>
+          <Loader2 className="mx-auto mb-4 h-6 w-6 animate-spin text-muted-foreground" />
+          <p className="text-sm text-muted-foreground">Loading session...</p>
         </div>
       </div>
     );
   }
 
+  // No questions state
   if (!currentQuestionData) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex min-h-screen items-center justify-center">
         <div className="text-center">
-          <p className="text-muted-foreground mb-4">No questions available</p>
-          <Button onClick={() => router.push("/practice/machine")}>
+          <p className="mb-4 text-sm text-muted-foreground">No questions available</p>
+          <Button variant="outline" onClick={() => router.push("/practice/machine")}>
             Go Back
           </Button>
         </div>
@@ -255,28 +221,33 @@ export default function MachineTestPage() {
   const sampleInput = currentQuestion?.sampleTestCases?.[0]?.input || "";
 
   return (
-    <div className="h-screen flex flex-col">
+    <div className="flex h-screen flex-col">
       {/* Header */}
-      <header className="flex items-center justify-between px-4 py-2 border-b bg-background">
+      <header className="flex items-center justify-between border-b border-border bg-card px-4 py-3">
         <div className="flex items-center gap-4">
-          <h1 className="font-semibold text-lg">Machine Coding</h1>
-          <Badge variant="outline" className={DIFFICULTY_COLORS[difficulty]}>
-            {difficulty}
-          </Badge>
-          <span className="text-sm text-muted-foreground">
-            {getSolvedCount()}/{questions.length} solved
-          </span>
+          <div className="flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-secondary">
+              <Code2 className="h-4 w-4" />
+            </div>
+            <div>
+              <h1 className="text-sm font-semibold">Machine Coding</h1>
+              <p className="text-xs text-muted-foreground">
+                {getSolvedCount()}/{questions.length} solved · {difficulty}
+              </p>
+            </div>
+          </div>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           <TestTimer expiresAt={expiresAt} onExpire={handleTimeExpire} />
 
-          <div className="hidden md:flex items-center gap-2">
+          {/* Language Selector - Desktop */}
+          <div className="hidden items-center gap-2 md:flex">
             <Select
               value={selectedLanguageId.toString()}
               onValueChange={(v) => setSelectedLanguageId(parseInt(v))}
             >
-              <SelectTrigger className="w-[150px]">
+              <SelectTrigger className="h-9 w-[140px]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -292,13 +263,14 @@ export default function MachineTestPage() {
           </div>
 
           <Button
-            variant="destructive"
+            variant="outline"
             size="sm"
             onClick={() => setShowSubmitDialog(true)}
             disabled={isCompleting}
+            className="gap-2"
           >
-            <Send className="h-4 w-4 mr-2" />
-            Complete
+            <Flag className="h-4 w-4" />
+            <span className="hidden sm:inline">Complete</span>
           </Button>
         </div>
       </header>
@@ -308,7 +280,7 @@ export default function MachineTestPage() {
         questions={questions}
         currentIndex={currentQuestionIndex}
         submitResults={submitResults}
-        solvedQuestionIds={solvedQuestionIds} // Changed from solvedQuestions
+        solvedQuestionIds={solvedQuestionIds}
         onSelect={handleQuestionSelect}
       />
 
@@ -320,8 +292,8 @@ export default function MachineTestPage() {
             {currentQuestion ? (
               <ProblemDescription question={currentQuestion} />
             ) : (
-              <div className="flex items-center justify-center h-full">
-                <Loader2 className="h-6 w-6 animate-spin" />
+              <div className="flex h-full items-center justify-center">
+                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
               </div>
             )}
           </ResizablePanel>
@@ -333,25 +305,23 @@ export default function MachineTestPage() {
             <ResizablePanelGroup direction="vertical">
               {/* Editor */}
               <ResizablePanel defaultSize={60} minSize={30}>
-                <div className="h-full flex flex-col">
+                <div className="flex h-full flex-col">
                   {/* Editor Toolbar */}
-                  <div className="flex items-center justify-between px-3 py-2 border-b bg-muted/30">
+                  <div className="flex items-center justify-between border-b border-border bg-card px-3 py-2">
+                    {/* Language Selector - Mobile */}
                     <div className="flex items-center gap-2 md:hidden">
                       <Select
                         value={selectedLanguageId.toString()}
                         onValueChange={(v) => setSelectedLanguageId(parseInt(v))}
                       >
-                        <SelectTrigger className="w-[120px] h-8">
+                        <SelectTrigger className="h-8 w-[120px]">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
                           {languages
                             .filter((l) => l.isActive)
                             .map((lang) => (
-                              <SelectItem
-                                key={lang.id}
-                                value={lang.judge0Id.toString()}
-                              >
+                              <SelectItem key={lang.id} value={lang.judge0Id.toString()}>
                                 {lang.name}
                               </SelectItem>
                             ))}
@@ -359,9 +329,9 @@ export default function MachineTestPage() {
                       </Select>
                     </div>
                     <div className="flex-1" />
-                    <Button variant="ghost" size="sm" onClick={handleResetCode}>
-                      <RotateCcw className="h-4 w-4 mr-2" />
-                      Reset
+                    <Button variant="ghost" size="sm" onClick={handleResetCode} className="gap-2">
+                      <RotateCcw className="h-4 w-4" />
+                      <span className="hidden sm:inline">Reset</span>
                     </Button>
                   </div>
 

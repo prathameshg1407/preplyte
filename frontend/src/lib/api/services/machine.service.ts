@@ -1,20 +1,13 @@
 // src/lib/api/services/machine.service.ts
 
 import { apiClient } from '../axios-instance';
-import {
-  MACHINE_ENDPOINTS,
-  LANGUAGES_ENDPOINTS,
-  CONFIG_ENDPOINTS,
-  ENUMS_ENDPOINTS,
-} from '../endpoints';
-import type { ApiResponse } from '@/types/api.types';
+import { API_ENDPOINTS } from '../endpoints';
+import type { ApiResponse } from '../../../types/api.types';
 import type {
-  // Request Types
   CreateSessionRequest,
   ListSessionsQuery,
   RunCodeRequest,
   SubmitCodeRequest,
-  // Response Types
   CreateSessionResponse,
   ListSessionsResponse,
   SessionDetailsResponse,
@@ -27,115 +20,204 @@ import type {
   SessionResultsResponse,
   SubmissionHistoryResponse,
   SubmissionDetailResponse,
-  // Common Types
   LanguagesResponse,
   ConfigResponse,
   DifficultyLevelsResponse,
   QuestionTypesResponse,
   ProgrammingLanguage,
-} from '@/types/machine.types';
+} from '../../../types/machine.types';
+
+// =====================================================
+// CACHE UTILITY
+// =====================================================
+
+interface CacheEntry<T> {
+  data: T;
+  expiresAt: number;
+}
+
+class RequestCache {
+  private cache = new Map<string, CacheEntry<unknown>>();
+  private pendingRequests = new Map<string, Promise<unknown>>();
+
+  get<T>(key: string): T | null {
+    const entry = this.cache.get(key);
+    if (!entry) return null;
+    if (Date.now() > entry.expiresAt) {
+      this.cache.delete(key);
+      return null;
+    }
+    return entry.data as T;
+  }
+
+  set<T>(key: string, data: T, ttlMs: number): void {
+    this.cache.set(key, {
+      data,
+      expiresAt: Date.now() + ttlMs,
+    });
+  }
+
+  // Deduplicate concurrent requests
+  async dedupe<T>(key: string, request: () => Promise<T>): Promise<T> {
+    const pending = this.pendingRequests.get(key);
+    if (pending) return pending as Promise<T>;
+
+    const promise = request().finally(() => {
+      this.pendingRequests.delete(key);
+    });
+
+    this.pendingRequests.set(key, promise);
+    return promise;
+  }
+
+  invalidate(pattern?: string): void {
+    if (!pattern) {
+      this.cache.clear();
+      return;
+    }
+    for (const key of this.cache.keys()) {
+      if (key.includes(pattern)) {
+        this.cache.delete(key);
+      }
+    }
+  }
+}
+
+const cache = new RequestCache();
+
+// =====================================================
+// CONSTANTS
+// =====================================================
+
+const CACHE_TTL = {
+  STATIC: 5 * 60 * 1000,      // 5 minutes for static data
+  SESSION: 30 * 1000,          // 30 seconds for session data
+  LANGUAGES: 10 * 60 * 1000,   // 10 minutes for languages
+} as const;
+
+const { MACHINE, COMMON } = API_ENDPOINTS;
+
+// =====================================================
+// MACHINE SERVICE
+// =====================================================
 
 class MachineService {
-  // =====================================================
+  // -------------------------------------------------
   // SESSION MANAGEMENT
-  // =====================================================
+  // -------------------------------------------------
 
-  /**
-   * Create a new machine coding session
-   * POST /api/machine/sessions
-   * Backend: machineController.createSession -> machineService.createSession
-   */
   async createSession(
     data: CreateSessionRequest
   ): Promise<ApiResponse<CreateSessionResponse>> {
-    const response = await apiClient.post(MACHINE_ENDPOINTS.SESSIONS, data);
+    const response = await apiClient.post<ApiResponse<CreateSessionResponse>>(
+      MACHINE.SESSIONS,
+      data
+    );
+    
+    // Invalidate session list cache
+    cache.invalidate('sessions');
+    
     return response.data;
   }
 
-  /**
-   * List user's sessions with filters and pagination
-   * GET /api/machine/sessions
-   * Backend: machineController.listSessions -> machineService.listSessions
-   */
   async listSessions(
     query: ListSessionsQuery = {}
   ): Promise<ApiResponse<ListSessionsResponse>> {
-    const response = await apiClient.get(MACHINE_ENDPOINTS.SESSIONS, {
-      params: {
-        page: query.page || 1,
-        limit: query.limit || 10,
-        status: query.status || 'all',
-        difficulty: query.difficulty,
-      },
-    });
+    const params = {
+      page: query.page ?? 1,
+      limit: Math.min(query.limit ?? 10, 50),
+      status: query.status ?? 'all',
+      difficulty: query.difficulty,
+      sortBy: query.sortBy ?? 'createdAt',
+      sortOrder: query.sortOrder ?? 'desc',
+    };
+
+    // Remove undefined values
+    const cleanParams = Object.fromEntries(
+      Object.entries(params).filter(([, v]) => v !== undefined)
+    );
+
+    const cacheKey = `sessions:${JSON.stringify(cleanParams)}`;
+
+    // Check cache for list requests
+    const cached = cache.get<ApiResponse<ListSessionsResponse>>(cacheKey);
+    if (cached) return cached;
+
+    const response = await cache.dedupe(cacheKey, () =>
+      apiClient.get<ApiResponse<ListSessionsResponse>>(MACHINE.SESSIONS, {
+        params: cleanParams,
+      })
+    );
+
+    cache.set(cacheKey, response.data, CACHE_TTL.SESSION);
     return response.data;
   }
 
-  /**
-   * Get session details
-   * GET /api/machine/sessions/:id
-   * Backend: machineController.getSession -> machineService.getSessionDetails
-   */
   async getSession(
     sessionId: string
   ): Promise<ApiResponse<SessionDetailsResponse>> {
-    const response = await apiClient.get(MACHINE_ENDPOINTS.SESSION(sessionId));
-    return response.data;
+    const cacheKey = `session:${sessionId}`;
+
+    return cache.dedupe(cacheKey, async () => {
+      const response = await apiClient.get<ApiResponse<SessionDetailsResponse>>(
+        MACHINE.SESSION(sessionId)
+      );
+      return response.data;
+    });
   }
 
-  // =====================================================
+  // -------------------------------------------------
   // QUESTIONS
-  // =====================================================
+  // -------------------------------------------------
 
-  /**
-   * Get all questions in a session
-   * GET /api/machine/sessions/:id/questions
-   * Backend: machineController.getSessionQuestions -> machineService.getSessionQuestions
-   */
   async getSessionQuestions(
     sessionId: string
   ): Promise<ApiResponse<SessionQuestionsResponse>> {
-    const response = await apiClient.get(
-      MACHINE_ENDPOINTS.SESSION_QUESTIONS(sessionId)
+    const cacheKey = `session:${sessionId}:questions`;
+
+    const cached = cache.get<ApiResponse<SessionQuestionsResponse>>(cacheKey);
+    if (cached) return cached;
+
+    const response = await cache.dedupe(cacheKey, () =>
+      apiClient.get<ApiResponse<SessionQuestionsResponse>>(
+        MACHINE.QUESTIONS(sessionId)
+      )
     );
+
+    cache.set(cacheKey, response.data, CACHE_TTL.SESSION);
     return response.data;
   }
 
-  /**
-   * Get specific question with details and sample test cases
-   * GET /api/machine/sessions/:id/questions/:questionId
-   * Backend: machineController.getQuestion -> machineService.getQuestion
-   */
   async getQuestion(
     sessionId: string,
     questionId: string
   ): Promise<ApiResponse<QuestionDetailResponse>> {
-    const response = await apiClient.get(
-      MACHINE_ENDPOINTS.SESSION_QUESTION(sessionId, questionId)
+    const cacheKey = `session:${sessionId}:question:${questionId}`;
+
+    const cached = cache.get<ApiResponse<QuestionDetailResponse>>(cacheKey);
+    if (cached) return cached;
+
+    const response = await cache.dedupe(cacheKey, () =>
+      apiClient.get<ApiResponse<QuestionDetailResponse>>(
+        MACHINE.QUESTION(sessionId, questionId)
+      )
     );
+
+    cache.set(cacheKey, response.data, CACHE_TTL.SESSION);
     return response.data;
   }
 
-  // =====================================================
+  // -------------------------------------------------
   // CODE EXECUTION
-  // =====================================================
+  // -------------------------------------------------
 
-  /**
-   * Run code against sample test cases or custom input
-   * POST /api/machine/sessions/:sessionId/questions/:questionId/run
-   * Backend: machineController.runCode -> machineService.runCode
-   *
-   * Two modes:
-   * 1. customInput provided -> runs with custom input, returns RunCodeResponseCustomInput
-   * 2. no customInput -> runs against sample test cases, returns RunCodeResponseSampleTestCases
-   */
   async runCode(
     sessionId: string,
     questionId: string,
     data: RunCodeRequest
   ): Promise<ApiResponse<RunCodeResponse>> {
-    const response = await apiClient.post(
-      MACHINE_ENDPOINTS.RUN_CODE(sessionId, questionId),
+    const response = await apiClient.post<ApiResponse<RunCodeResponse>>(
+      MACHINE.RUN(sessionId, questionId),
       {
         code: data.code,
         languageId: data.languageId,
@@ -145,224 +227,211 @@ class MachineService {
     return response.data;
   }
 
-  /**
-   * Submit code for full evaluation against all test cases (SAMPLE + HIDDEN)
-   * POST /api/machine/sessions/:sessionId/questions/:questionId/submit
-   * Backend: machineController.submitCode -> machineService.submitCode
-   */
   async submitCode(
     sessionId: string,
     questionId: string,
     data: SubmitCodeRequest
   ): Promise<ApiResponse<SubmitCodeResponse>> {
-    const response = await apiClient.post(
-      MACHINE_ENDPOINTS.SUBMIT_CODE(sessionId, questionId),
+    const response = await apiClient.post<ApiResponse<SubmitCodeResponse>>(
+      MACHINE.SUBMIT(sessionId, questionId),
       {
         code: data.code,
         languageId: data.languageId,
       }
     );
+
+    // Invalidate question cache to reflect new submission
+    cache.invalidate(`session:${sessionId}:question:${questionId}`);
+
     return response.data;
   }
 
-  // =====================================================
+  // -------------------------------------------------
   // SESSION CONTROL
-  // =====================================================
+  // -------------------------------------------------
 
-  /**
-   * Get current session status
-   * GET /api/machine/sessions/:id/status
-   * Backend: machineController.getSessionStatus -> machineService.getSessionStatus
-   */
   async getSessionStatus(
     sessionId: string
   ): Promise<ApiResponse<SessionStatusResponse>> {
-    const response = await apiClient.get(
-      MACHINE_ENDPOINTS.SESSION_STATUS(sessionId)
+    // Don't cache status - always fetch fresh
+    const response = await apiClient.get<ApiResponse<SessionStatusResponse>>(
+      `${MACHINE.SESSION(sessionId)}/status`
     );
     return response.data;
   }
 
-  /**
-   * Complete/End session manually
-   * POST /api/machine/sessions/:id/complete
-   * Backend: machineController.completeSession -> machineService.completeSession
-   */
   async completeSession(
     sessionId: string
   ): Promise<ApiResponse<CompleteSessionResponse>> {
-    const response = await apiClient.post(
-      MACHINE_ENDPOINTS.COMPLETE_SESSION(sessionId)
+    const response = await apiClient.post<ApiResponse<CompleteSessionResponse>>(
+      MACHINE.COMPLETE(sessionId)
     );
+
+    // Invalidate all session-related caches
+    cache.invalidate(`session:${sessionId}`);
+    cache.invalidate('sessions');
+
     return response.data;
   }
 
-  /**
-   * Get session results (only for completed sessions)
-   * GET /api/machine/sessions/:id/results
-   * Backend: machineController.getSessionResults -> machineService.getSessionResults
-   * Throws SessionNotCompletedError if session is not completed
-   */
   async getSessionResults(
     sessionId: string
   ): Promise<ApiResponse<SessionResultsResponse>> {
-    const response = await apiClient.get(
-      MACHINE_ENDPOINTS.SESSION_RESULTS(sessionId)
+    const cacheKey = `session:${sessionId}:results`;
+
+    // Results don't change - cache longer
+    const cached = cache.get<ApiResponse<SessionResultsResponse>>(cacheKey);
+    if (cached) return cached;
+
+    const response = await apiClient.get<ApiResponse<SessionResultsResponse>>(
+      MACHINE.RESULTS(sessionId)
     );
+
+    cache.set(cacheKey, response.data, CACHE_TTL.STATIC);
     return response.data;
   }
 
-  // =====================================================
+  // -------------------------------------------------
   // SUBMISSIONS
-  // =====================================================
+  // -------------------------------------------------
 
-  /**
-   * Get submission history for a question
-   * GET /api/machine/sessions/:sessionId/questions/:questionId/submissions
-   * Backend: machineController.getSubmissionHistory -> machineService.getSubmissionHistory
-   */
   async getSubmissionHistory(
     sessionId: string,
     questionId: string,
-    page: number = 1,
-    limit: number = 10
+    page = 1,
+    limit = 10
   ): Promise<ApiResponse<SubmissionHistoryResponse>> {
-    const response = await apiClient.get(
-      MACHINE_ENDPOINTS.QUESTION_SUBMISSIONS(sessionId, questionId),
-      {
-        params: { page, limit },
-      }
+    const response = await apiClient.get<ApiResponse<SubmissionHistoryResponse>>(
+      `${MACHINE.QUESTION(sessionId, questionId)}/submissions`,
+      { params: { page, limit } }
     );
     return response.data;
   }
 
-  /**
-   * Get specific submission details
-   * GET /api/machine/submissions/:id
-   * Backend: machineController.getSubmissionDetails -> machineService.getSubmissionDetails
-   */
   async getSubmissionDetail(
     submissionId: string
   ): Promise<ApiResponse<SubmissionDetailResponse>> {
-    const response = await apiClient.get(
-      MACHINE_ENDPOINTS.SUBMISSION_DETAIL(submissionId)
+    const cacheKey = `submission:${submissionId}`;
+
+    const cached = cache.get<ApiResponse<SubmissionDetailResponse>>(cacheKey);
+    if (cached) return cached;
+
+    const response = await apiClient.get<ApiResponse<SubmissionDetailResponse>>(
+      `/api/machine/submissions/${submissionId}`
     );
+
+    cache.set(cacheKey, response.data, CACHE_TTL.STATIC);
     return response.data;
   }
 
-  // =====================================================
-  // COMMON APIs
-  // =====================================================
+  // -------------------------------------------------
+  // STATIC DATA (Heavily Cached)
+  // -------------------------------------------------
 
-  /**
-   * Get all programming languages
-   * GET /api/languages
-   * Backend: languagesController.getAllLanguages -> languagesService.getAllLanguages
-   */
   async getLanguages(
-    activeOnly: boolean = true
+    activeOnly = true
   ): Promise<ApiResponse<LanguagesResponse>> {
-    const response = await apiClient.get(LANGUAGES_ENDPOINTS.LIST, {
-      params: { active: activeOnly },
-    });
+    const cacheKey = `languages:${activeOnly}`;
+
+    const cached = cache.get<ApiResponse<LanguagesResponse>>(cacheKey);
+    if (cached) return cached;
+
+    const response = await cache.dedupe(cacheKey, () =>
+      apiClient.get<ApiResponse<LanguagesResponse>>(COMMON.LANGUAGES, {
+        params: { active: activeOnly },
+      })
+    );
+
+    cache.set(cacheKey, response.data, CACHE_TTL.LANGUAGES);
     return response.data;
   }
 
-  /**
-   * Get language details with template
-   * GET /api/languages/:id
-   * Backend: languagesController.getLanguageById -> languagesService.getLanguageById
-   */
   async getLanguageDetail(
     id: string
   ): Promise<ApiResponse<ProgrammingLanguage>> {
-    const response = await apiClient.get(LANGUAGES_ENDPOINTS.DETAIL(id));
+    const cacheKey = `language:${id}`;
+
+    const cached = cache.get<ApiResponse<ProgrammingLanguage>>(cacheKey);
+    if (cached) return cached;
+
+    const response = await apiClient.get<ApiResponse<ProgrammingLanguage>>(
+      `${COMMON.LANGUAGES}/${id}`
+    );
+
+    cache.set(cacheKey, response.data, CACHE_TTL.LANGUAGES);
     return response.data;
   }
 
-  /**
-   * Get time limits configuration
-   * GET /api/config/time-limits
-   * Backend: configController.getTimeLimits -> configService.getTimeLimits
-   */
   async getConfig(): Promise<ApiResponse<ConfigResponse>> {
-    const response = await apiClient.get(CONFIG_ENDPOINTS.TIME_LIMITS);
+    const cacheKey = 'config:time-limits';
+
+    const cached = cache.get<ApiResponse<ConfigResponse>>(cacheKey);
+    if (cached) return cached;
+
+    const response = await cache.dedupe(cacheKey, () =>
+      apiClient.get<ApiResponse<ConfigResponse>>(COMMON.TIME_LIMITS)
+    );
+
+    cache.set(cacheKey, response.data, CACHE_TTL.STATIC);
     return response.data;
   }
 
-  /**
-   * Get difficulty levels
-   * GET /api/enums/difficulty-levels
-   * Backend: enumsController.getDifficultyLevels
-   */
   async getDifficultyLevels(): Promise<ApiResponse<DifficultyLevelsResponse>> {
-    const response = await apiClient.get(ENUMS_ENDPOINTS.DIFFICULTY_LEVELS);
+    const cacheKey = 'enums:difficulty-levels';
+
+    const cached = cache.get<ApiResponse<DifficultyLevelsResponse>>(cacheKey);
+    if (cached) return cached;
+
+    const response = await cache.dedupe(cacheKey, () =>
+      apiClient.get<ApiResponse<DifficultyLevelsResponse>>(
+        COMMON.DIFFICULTY_LEVELS
+      )
+    );
+
+    cache.set(cacheKey, response.data, CACHE_TTL.STATIC);
     return response.data;
   }
 
-  /**
-   * Get question types and tags
-   * GET /api/enums/question-types
-   * Backend: enumsController.getQuestionTypes
-   */
   async getQuestionTypes(): Promise<ApiResponse<QuestionTypesResponse>> {
-    const response = await apiClient.get(ENUMS_ENDPOINTS.QUESTION_TYPES);
+    const cacheKey = 'enums:question-types';
+
+    const cached = cache.get<ApiResponse<QuestionTypesResponse>>(cacheKey);
+    if (cached) return cached;
+
+    const response = await cache.dedupe(cacheKey, () =>
+      apiClient.get<ApiResponse<QuestionTypesResponse>>(COMMON.QUESTION_TYPES)
+    );
+
+    cache.set(cacheKey, response.data, CACHE_TTL.STATIC);
     return response.data;
   }
 
-  // =====================================================
+  // -------------------------------------------------
   // HELPER METHODS
-  // =====================================================
+  // -------------------------------------------------
 
-  /**
-   * Check if user has an active (in-progress) session
-   */
-  async getActiveSession(): Promise<ApiResponse<SessionDetailsResponse | null>> {
+  async getActiveSession(): Promise<SessionDetailsResponse | null> {
     try {
       const response = await this.listSessions({
         status: 'in_progress',
         limit: 1,
       });
 
-      // Check if response is successful and has data
-      if (!response.success || !response.data) {
-        return {
-          success: true,
-          data: null,
-          message: 'No active session found',
-        };
-      }
+      const sessions = response.data?.sessions;
+      if (!sessions?.length) return null;
 
-      // Check if sessions array exists and has items
-      const sessions = response.data.sessions;
-      if (!sessions || sessions.length === 0) {
-        return {
-          success: true,
-          data: null,
-          message: 'No active session found',
-        };
-      }
-
-      // Fetch full details of the active session
-      const activeSession = sessions[0];
-      const detailResponse = await this.getSession(activeSession.id);
-      return detailResponse;
-    } catch (error) {
-      return {
-        success: false,
-        data: null,
-        message: 'Failed to check active session',
-      };
+      const detailResponse = await this.getSession(sessions[0].id);
+      return detailResponse.data ?? null;
+    } catch {
+      return null;
     }
   }
 
-  /**
-   * Validate if session is still active (not expired, not completed)
-   */
   async validateSessionActive(sessionId: string): Promise<{
     isActive: boolean;
-    status: string;
+    status: 'in_progress' | 'completed' | 'expired' | 'error';
     message: string;
+    timeRemaining?: number;
   }> {
     try {
       const response = await this.getSessionStatus(sessionId);
@@ -397,14 +466,30 @@ class MachineService {
         isActive: true,
         status: 'in_progress',
         message: 'Session is active',
+        timeRemaining,
       };
-    } catch (error) {
+    } catch {
       return {
         isActive: false,
         status: 'error',
         message: 'Failed to validate session',
       };
     }
+  }
+
+  // Prefetch common data for better UX
+  async prefetchStaticData(): Promise<void> {
+    await Promise.allSettled([
+      this.getLanguages(),
+      this.getConfig(),
+      this.getDifficultyLevels(),
+      this.getQuestionTypes(),
+    ]);
+  }
+
+  // Clear all caches (useful on logout)
+  clearCache(): void {
+    cache.invalidate();
   }
 }
 

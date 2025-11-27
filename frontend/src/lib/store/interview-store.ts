@@ -7,17 +7,19 @@ import {
   InterviewUIStatus,
   TranscriptMessage,
   QuestionItem,
-  InterviewFeedbackResponse,
-  UserSessionSummaryDto,
-  UserSessionStatsResponse,
+  FeedbackResponse,
+  SessionSummary,
+  SessionStats,
   AiInterviewQuestionCategory,
   AiInterviewSessionStatus,
-} from "@/types/aiInterview.types";
+  Progress,
+  PaginatedSessionsResponse,
+} from "../../types/aiInterview.types";
 
 // ============= Constants =============
 
 const SILENCE_TIMEOUT_SECONDS = 7;
-const MAX_QUESTIONS = 10;
+const MAX_QUESTIONS = 15;
 
 // ============= State Interface =============
 
@@ -38,11 +40,16 @@ interface InterviewState {
   currentTranscript: string;
 
   // Feedback
-  feedback: InterviewFeedbackResponse | null;
+  feedback: FeedbackResponse | null;
 
   // User data (persisted)
-  sessions: UserSessionSummaryDto[];
-  stats: UserSessionStatsResponse | null;
+  sessions: SessionSummary[];
+  sessionsPagination: {
+    total: number;
+    page: number;
+    totalPages: number;
+  };
+  stats: SessionStats | null;
 
   // UI state
   loading: boolean;
@@ -52,10 +59,16 @@ interface InterviewState {
 
   // Computed
   currentQuestion: QuestionItem | null;
-  progress: number;
+  progress: Progress | null;
   isRecording: boolean;
   isAiSpeaking: boolean;
   isProcessing: boolean;
+
+  // Context
+  context: {
+    jobTitle: string;
+    companyName?: string;
+  } | null;
 }
 
 // ============= Actions Interface =============
@@ -71,24 +84,28 @@ interface InterviewActions {
   setTotalQuestions: (total: number) => void;
   addToTranscript: (message: Omit<TranscriptMessage, "id">) => void;
   setCurrentTranscript: (text: string) => void;
-  setFeedback: (feedback: InterviewFeedbackResponse | null) => void;
-  setSessions: (sessions: UserSessionSummaryDto[]) => void;
-  setStats: (stats: UserSessionStatsResponse | null) => void;
+  setFeedback: (feedback: FeedbackResponse | null) => void;
+  setSessions: (data: PaginatedSessionsResponse) => void;
+  setStats: (stats: SessionStats | null) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
   setMicPermission: (permission: boolean | null) => void;
   setSilenceTimer: (timer: number) => void;
   decrementSilenceTimer: () => void;
   resetSilenceTimer: () => void;
+  setContext: (context: { jobTitle: string; companyName?: string } | null) => void;
 
   // Session management
   initSession: (data: {
     sessionId: string;
-    questions: QuestionItem[];
+    currentQuestion: QuestionItem;
     currentQuestionIndex: number;
     totalQuestions: number;
+    progress: Progress;
+    context: { jobTitle: string; companyName?: string };
   }) => void;
-  advanceQuestion: (nextQuestion: QuestionItem) => void;
+  advanceQuestion: (nextQuestion: QuestionItem, progress: Progress) => void;
+  updateProgress: (progress: Progress) => void;
   completeSession: () => void;
 
   // Reset
@@ -112,16 +129,22 @@ const initialState: InterviewState = {
   currentTranscript: "",
   feedback: null,
   sessions: [],
+  sessionsPagination: {
+    total: 0,
+    page: 1,
+    totalPages: 0,
+  },
   stats: null,
   loading: false,
   error: null,
   micPermission: null,
   silenceTimer: SILENCE_TIMEOUT_SECONDS,
   currentQuestion: null,
-  progress: 0,
+  progress: null,
   isRecording: false,
   isAiSpeaking: false,
   isProcessing: false,
+  context: null,
 };
 
 // ============= Store =============
@@ -133,9 +156,9 @@ export const useInterviewStore = create<InterviewStore>()(
 
       // Setters
       setSessionId: (id) => set({ sessionId: id }),
-      
+
       setPhase: (phase) => set({ phase }),
-      
+
       setStatus: (status) =>
         set({
           status,
@@ -143,28 +166,23 @@ export const useInterviewStore = create<InterviewStore>()(
           isAiSpeaking: status === "AI_SPEAKING",
           isProcessing: status === "PROCESSING_ANSWER",
         }),
-      
+
       setSessionStatus: (sessionStatus) => set({ sessionStatus }),
-      
+
       setQuestions: (questions) =>
         set({
           questions,
           currentQuestion: questions[get().currentQuestionIndex] || null,
         }),
-      
+
       setCurrentQuestionIndex: (index) =>
         set((state) => ({
           currentQuestionIndex: index,
           currentQuestion: state.questions[index] || null,
-          progress: ((index + 1) / state.totalQuestions) * 100,
         })),
-      
-      setTotalQuestions: (total) =>
-        set((state) => ({
-          totalQuestions: total,
-          progress: ((state.currentQuestionIndex + 1) / total) * 100,
-        })),
-      
+
+      setTotalQuestions: (total) => set({ totalQuestions: total }),
+
       addToTranscript: (message) =>
         set((state) => ({
           transcript: [
@@ -172,59 +190,85 @@ export const useInterviewStore = create<InterviewStore>()(
             { ...message, id: crypto.randomUUID() },
           ],
         })),
-      
+
       setCurrentTranscript: (text) => set({ currentTranscript: text }),
-      
+
       setFeedback: (feedback) => set({ feedback }),
-      
-      setSessions: (sessions) => set({ sessions }),
-      
+
+      setSessions: (data) =>
+        set({
+          sessions: data.sessions,
+          sessionsPagination: {
+            total: data.total,
+            page: data.page,
+            totalPages: data.totalPages,
+          },
+        }),
+
       setStats: (stats) => set({ stats }),
-      
+
       setLoading: (loading) => set({ loading }),
-      
+
       setError: (error) => set({ error }),
-      
+
       setMicPermission: (permission) => set({ micPermission: permission }),
-      
+
       setSilenceTimer: (timer) => set({ silenceTimer: timer }),
-      
+
       decrementSilenceTimer: () =>
         set((state) => ({
           silenceTimer: Math.max(0, state.silenceTimer - 1),
         })),
-      
+
       resetSilenceTimer: () => set({ silenceTimer: SILENCE_TIMEOUT_SECONDS }),
 
+      setContext: (context) => set({ context }),
+
+      updateProgress: (progress) =>
+        set({
+          progress,
+          totalQuestions: progress.estimatedTotal,
+        }),
+
       // Session management
-      initSession: ({ sessionId, questions, currentQuestionIndex, totalQuestions }) =>
+      initSession: ({
+        sessionId,
+        currentQuestion,
+        currentQuestionIndex,
+        totalQuestions,
+        progress,
+        context,
+      }) =>
         set({
           sessionId,
-          questions,
+          questions: [currentQuestion],
           currentQuestionIndex,
           totalQuestions,
-          currentQuestion: questions[currentQuestionIndex] || null,
-          progress: ((currentQuestionIndex + 1) / totalQuestions) * 100,
+          currentQuestion,
+          progress,
+          context,
           phase: "interview",
           status: "INITIALIZING",
+          sessionStatus: AiInterviewSessionStatus.STARTED,
           error: null,
           transcript: [],
           currentTranscript: "",
         }),
 
-      advanceQuestion: (nextQuestion) =>
+      advanceQuestion: (nextQuestion, progress) =>
         set((state) => {
           const newIndex = state.currentQuestionIndex + 1;
-          const newQuestions = [...state.questions];
-          newQuestions[newIndex] = nextQuestion;
-          
+          const newQuestions = [...state.questions, nextQuestion];
+
           return {
             questions: newQuestions,
             currentQuestionIndex: newIndex,
             currentQuestion: nextQuestion,
-            progress: ((newIndex + 1) / state.totalQuestions) * 100,
+            progress,
+            totalQuestions: progress.estimatedTotal,
             currentTranscript: "",
             silenceTimer: SILENCE_TIMEOUT_SECONDS,
+            sessionStatus: AiInterviewSessionStatus.IN_PROGRESS,
           };
         }),
 
@@ -245,7 +289,8 @@ export const useInterviewStore = create<InterviewStore>()(
           questions: [],
           currentQuestionIndex: 0,
           currentQuestion: null,
-          progress: 0,
+          progress: null,
+          context: null,
           transcript: [],
           currentTranscript: "",
           feedback: null,
@@ -269,6 +314,7 @@ export const useInterviewStore = create<InterviewStore>()(
       }),
       partialize: (state) => ({
         sessions: state.sessions,
+        sessionsPagination: state.sessionsPagination,
         stats: state.stats,
       }),
     }
@@ -282,6 +328,7 @@ export const useInterviewSession = () =>
     sessionId: state.sessionId,
     phase: state.phase,
     status: state.status,
+    context: state.context,
   }));
 
 export const useInterviewQuestions = () =>
@@ -313,6 +360,7 @@ export const useInterviewUI = () =>
 export const useUserInterviewData = () =>
   useInterviewStore((state) => ({
     sessions: state.sessions,
+    sessionsPagination: state.sessionsPagination,
     stats: state.stats,
     feedback: state.feedback,
   }));

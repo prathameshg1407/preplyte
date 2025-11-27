@@ -43,6 +43,8 @@
     "clsx": "^2.1.1",
     "cmdk": "^1.0.4",
     "date-fns": "^4.1.0",
+    "geist": "^1.5.1",
+    "jwt-decode": "^4.0.0",
     "lucide-react": "^0.468.0",
     "monaco-editor": "^0.52.2",
     "nanoid": "^5.0.9",

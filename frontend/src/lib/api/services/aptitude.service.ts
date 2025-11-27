@@ -1,7 +1,7 @@
 // src/lib/api/services/aptitude.service.ts
 
 import { apiClient } from '../axios-instance';
-import { APTITUDE_ENDPOINTS, CONFIG_ENDPOINTS, ENUMS_ENDPOINTS } from '../endpoints';
+import { API_ENDPOINTS } from '../endpoints';
 import type {
   ApiResponse,
   CreateSessionRequest,
@@ -35,7 +35,7 @@ class AptitudeService {
   async createSession(
     data: CreateSessionRequest
   ): Promise<ApiResponse<CreateSessionResponse>> {
-    const response = await apiClient.post(APTITUDE_ENDPOINTS.SESSIONS, data);
+    const response = await apiClient.post(API_ENDPOINTS.APTITUDE.SESSIONS, data);
     return response.data;
   }
 
@@ -46,7 +46,7 @@ class AptitudeService {
   async listSessions(
     params?: ListSessionsParams
   ): Promise<ApiResponse<ListSessionsResponse>> {
-    const response = await apiClient.get(APTITUDE_ENDPOINTS.SESSIONS, {
+    const response = await apiClient.get(API_ENDPOINTS.APTITUDE.SESSIONS, {
       params: {
         page: params?.page ?? 1,
         limit: params?.limit ?? 10,
@@ -66,7 +66,7 @@ class AptitudeService {
   async getSession(
     sessionId: string
   ): Promise<ApiResponse<SessionDetailsResponse>> {
-    const response = await apiClient.get(APTITUDE_ENDPOINTS.SESSION(sessionId));
+    const response = await apiClient.get(API_ENDPOINTS.APTITUDE.SESSION(sessionId));
     return response.data;
   }
 
@@ -82,7 +82,7 @@ class AptitudeService {
     sessionId: string
   ): Promise<ApiResponse<GetSessionQuestionsResponse>> {
     const response = await apiClient.get(
-      APTITUDE_ENDPOINTS.SESSION_QUESTIONS(sessionId)
+      API_ENDPOINTS.APTITUDE.QUESTIONS(sessionId)
     );
     return response.data;
   }
@@ -96,7 +96,7 @@ class AptitudeService {
     questionId: string
   ): Promise<ApiResponse<GetQuestionResponse>> {
     const response = await apiClient.get(
-      APTITUDE_ENDPOINTS.SESSION_QUESTION(sessionId, questionId)
+      `${API_ENDPOINTS.APTITUDE.QUESTIONS(sessionId)}/${questionId}`
     );
     return response.data;
   }
@@ -114,7 +114,7 @@ class AptitudeService {
     data: SaveAnswerRequest
   ): Promise<ApiResponse<SaveAnswerResponse>> {
     const response = await apiClient.post(
-      APTITUDE_ENDPOINTS.SAVE_ANSWER(sessionId),
+      API_ENDPOINTS.APTITUDE.ANSWER(sessionId),
       data
     );
     return response.data;
@@ -128,7 +128,7 @@ class AptitudeService {
     sessionId: string
   ): Promise<ApiResponse<SubmitSessionResponse>> {
     const response = await apiClient.post(
-      APTITUDE_ENDPOINTS.SUBMIT_SESSION(sessionId)
+      API_ENDPOINTS.APTITUDE.SUBMIT(sessionId)
     );
     return response.data;
   }
@@ -145,7 +145,7 @@ class AptitudeService {
     sessionId: string
   ): Promise<ApiResponse<SessionStatusResponse>> {
     const response = await apiClient.get(
-      APTITUDE_ENDPOINTS.SESSION_STATUS(sessionId)
+      API_ENDPOINTS.APTITUDE.STATUS(sessionId)
     );
     return response.data;
   }
@@ -158,7 +158,7 @@ class AptitudeService {
     sessionId: string
   ): Promise<ApiResponse<SessionResultsResponse>> {
     const response = await apiClient.get(
-      APTITUDE_ENDPOINTS.SESSION_RESULTS(sessionId)
+      API_ENDPOINTS.APTITUDE.RESULTS(sessionId)
     );
     return response.data;
   }
@@ -172,7 +172,7 @@ class AptitudeService {
     params?: GetSolutionsParams
   ): Promise<ApiResponse<GetSolutionsResponse>> {
     const response = await apiClient.get(
-      APTITUDE_ENDPOINTS.SESSION_SOLUTIONS(sessionId),
+      `${API_ENDPOINTS.APTITUDE.SESSION(sessionId)}/solutions`,
       {
         params: {
           filter: params?.filter ?? 'all',
@@ -191,7 +191,7 @@ class AptitudeService {
    * GET /api/config/time-limits
    */
   async getTimeLimits(): Promise<ApiResponse<TimeLimitsResponse>> {
-    const response = await apiClient.get(CONFIG_ENDPOINTS.TIME_LIMITS);
+    const response = await apiClient.get(API_ENDPOINTS.COMMON.TIME_LIMITS);
     return response.data;
   }
 
@@ -200,7 +200,7 @@ class AptitudeService {
    * GET /api/enums/difficulty-levels
    */
   async getDifficultyLevels(): Promise<ApiResponse<DifficultyLevelsResponse>> {
-    const response = await apiClient.get(ENUMS_ENDPOINTS.DIFFICULTY_LEVELS);
+    const response = await apiClient.get(API_ENDPOINTS.COMMON.DIFFICULTY_LEVELS);
     return response.data;
   }
 
@@ -209,7 +209,7 @@ class AptitudeService {
    * GET /api/enums/question-types
    */
   async getQuestionTypes(): Promise<ApiResponse<QuestionTypesResponse>> {
-    const response = await apiClient.get(ENUMS_ENDPOINTS.QUESTION_TYPES);
+    const response = await apiClient.get(`/api/enums/question-types`);
     return response.data;
   }
 }

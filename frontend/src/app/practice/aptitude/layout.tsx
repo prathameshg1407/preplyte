@@ -16,7 +16,9 @@ interface AptitudeLayoutProps {
 
 export default function AptitudeLayout({ children }: AptitudeLayoutProps) {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
+    <div className="min-h-screen bg-background">
+      {/* Subtle top gradient */}
+      <div className="absolute inset-x-0 top-0 h-64 bg-gradient-to-b from-secondary/50 to-transparent -z-10" />
       {children}
     </div>
   );

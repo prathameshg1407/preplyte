@@ -1,7 +1,7 @@
 // src/utils/json-parser.ts
 
 import { logger } from './logger';
-import { ValidationError } from '../lib/errors';
+import { ValidationError } from '../utils/errors';
 
 export class JsonParser {
   /**

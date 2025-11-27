@@ -4,24 +4,24 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '../../../../components/ui/card';
+import { Button } from '../../../../components/ui/button';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { SessionCard } from '@/components/practice/aptitude';
-import { useAptitude } from '@/lib/hooks/use-aptitude';
+} from '../../../../components/ui/select';
+import { SessionCard } from '../../../../components/practice/aptitude';
+import { useAptitude } from '../../../../lib/hooks/use-aptitude';
 import type {
   ListSessionsResponse,
   ListSessionsParams,
   SessionStatus,
   DifficultyLevel,
   SessionSortBy,
-} from '@/types/aptitude.types';
+} from '../../../../types/aptitude.types';
 import {
   Loader2,
   History,
@@ -29,6 +29,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Plus,
+  FileText,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -86,42 +87,46 @@ export default function AptitudeHistoryPage() {
   };
 
   const handleFilterChange = () => {
-    setPage(1); // Reset to first page when filters change
+    setPage(1);
   };
 
   return (
-    <div className="container max-w-4xl py-8">
+    <div className="container max-w-3xl py-12 lg:py-16">
       {/* Page Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="mb-10 flex items-start justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
-            <History className="h-8 w-8 text-primary" />
-            Practice History
-          </h1>
-          <p className="text-muted-foreground mt-2">
+          <div className="mb-4 flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-secondary">
+              <History className="h-5 w-5" />
+            </div>
+            <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+              Practice History
+            </h1>
+          </div>
+          <p className="text-muted-foreground">
             View and manage your past practice sessions
           </p>
         </div>
         <Button asChild>
           <Link href="/practice/aptitude">
-            <Plus className="h-4 w-4 mr-2" />
+            <Plus className="mr-2 h-4 w-4" />
             New Practice
           </Link>
         </Button>
       </div>
 
       {/* Filters */}
-      <Card className="border-2 mb-6">
+      <Card className="mb-6 border-border">
         <CardHeader className="pb-4">
-          <CardTitle className="text-base flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2 text-sm font-medium">
             <Filter className="h-4 w-4" />
             Filters
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap gap-4">
-            <div className="space-y-1">
-              <label className="text-sm text-muted-foreground">Status</label>
+            <div className="space-y-1.5">
+              <label className="text-xs text-muted-foreground">Status</label>
               <Select
                 value={status}
                 onValueChange={(v) => {
@@ -129,7 +134,7 @@ export default function AptitudeHistoryPage() {
                   handleFilterChange();
                 }}
               >
-                <SelectTrigger className="w-[150px]">
+                <SelectTrigger className="w-[140px]">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -141,8 +146,8 @@ export default function AptitudeHistoryPage() {
               </Select>
             </div>
 
-            <div className="space-y-1">
-              <label className="text-sm text-muted-foreground">Difficulty</label>
+            <div className="space-y-1.5">
+              <label className="text-xs text-muted-foreground">Difficulty</label>
               <Select
                 value={difficulty}
                 onValueChange={(v) => {
@@ -150,7 +155,7 @@ export default function AptitudeHistoryPage() {
                   handleFilterChange();
                 }}
               >
-                <SelectTrigger className="w-[150px]">
+                <SelectTrigger className="w-[140px]">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -162,8 +167,8 @@ export default function AptitudeHistoryPage() {
               </Select>
             </div>
 
-            <div className="space-y-1">
-              <label className="text-sm text-muted-foreground">Sort By</label>
+            <div className="space-y-1.5">
+              <label className="text-xs text-muted-foreground">Sort By</label>
               <Select
                 value={sortBy}
                 onValueChange={(v) => {
@@ -171,7 +176,7 @@ export default function AptitudeHistoryPage() {
                   handleFilterChange();
                 }}
               >
-                <SelectTrigger className="w-[150px]">
+                <SelectTrigger className="w-[140px]">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -187,11 +192,11 @@ export default function AptitudeHistoryPage() {
 
       {/* Sessions List */}
       {isLoading ? (
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <div className="flex items-center justify-center py-16">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
         </div>
       ) : sessionsData && sessionsData.sessions.length > 0 ? (
-        <div className="space-y-4">
+        <div className="space-y-3">
           {sessionsData.sessions.map((session) => (
             <SessionCard
               key={session.id}
@@ -203,11 +208,9 @@ export default function AptitudeHistoryPage() {
 
           {/* Pagination */}
           {sessionsData.pagination.totalPages > 1 && (
-            <div className="flex items-center justify-between pt-4">
+            <div className="flex items-center justify-between border-t border-border pt-6">
               <p className="text-sm text-muted-foreground">
-                Page {sessionsData.pagination.currentPage} of{' '}
-                {sessionsData.pagination.totalPages} ({sessionsData.pagination.totalItems}{' '}
-                total)
+                Page {sessionsData.pagination.currentPage} of {sessionsData.pagination.totalPages}
               </p>
               <div className="flex gap-2">
                 <Button
@@ -216,7 +219,7 @@ export default function AptitudeHistoryPage() {
                   onClick={() => setPage((p) => p - 1)}
                   disabled={!sessionsData.pagination.hasPreviousPage}
                 >
-                  <ChevronLeft className="h-4 w-4" />
+                  <ChevronLeft className="mr-1 h-4 w-4" />
                   Previous
                 </Button>
                 <Button
@@ -226,18 +229,20 @@ export default function AptitudeHistoryPage() {
                   disabled={!sessionsData.pagination.hasNextPage}
                 >
                   Next
-                  <ChevronRight className="h-4 w-4" />
+                  <ChevronRight className="ml-1 h-4 w-4" />
                 </Button>
               </div>
             </div>
           )}
         </div>
       ) : (
-        <Card className="border-2">
-          <CardContent className="py-12 text-center">
-            <History className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No Sessions Found</h3>
-            <p className="text-muted-foreground mb-6">
+        <Card className="border-border">
+          <CardContent className="py-16 text-center">
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-secondary">
+              <FileText className="h-6 w-6 text-muted-foreground" />
+            </div>
+            <h3 className="mb-2 font-semibold">No Sessions Found</h3>
+            <p className="mb-8 text-sm text-muted-foreground">
               {status !== 'all' || difficulty !== 'all'
                 ? 'No sessions match your filters. Try adjusting them.'
                 : "You haven't started any practice sessions yet."}

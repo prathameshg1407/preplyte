@@ -1,7 +1,7 @@
 // src/app/(auth)/login/page.tsx
 import { Suspense } from 'react';
-import { LoginForm } from '@/components/auth/login-form';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import Link from 'next/link';
+import { LoginForm } from '../../../components/auth/login-form';
 
 export const metadata = {
   title: 'Login | Preplyte',
@@ -10,20 +10,49 @@ export const metadata = {
 
 export default function LoginPage() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12">
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold">Welcome back</CardTitle>
-          <CardDescription>
+    <div className="flex min-h-[calc(100vh-4rem)] flex-col items-center justify-center px-4 py-12">
+      <div className="w-full max-w-sm">
+        {/* Header */}
+        <div className="mb-8 text-center">
+          <Link href="/" className="mb-8 inline-flex items-center gap-2">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-foreground text-background font-semibold">
+              P
+            </div>
+          </Link>
+          <h1 className="mt-6 text-2xl font-semibold tracking-tight">
+            Welcome back
+          </h1>
+          <p className="mt-2 text-sm text-muted-foreground">
             Enter your credentials to access your account
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Suspense fallback={<div>Loading...</div>}>
-            <LoginForm />
-          </Suspense>
-        </CardContent>
-      </Card>
+          </p>
+        </div>
+
+        {/* Form */}
+        <Suspense fallback={<FormSkeleton />}>
+          <LoginForm />
+        </Suspense>
+
+        {/* Footer */}
+        <p className="mt-8 text-center text-sm text-muted-foreground">
+          Don't have an account?{' '}
+          <Link
+            href="/register"
+            className="font-medium text-foreground underline-offset-4 hover:underline"
+          >
+            Sign up
+          </Link>
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function FormSkeleton() {
+  return (
+    <div className="space-y-4">
+      <div className="h-10 w-full animate-pulse rounded-md bg-secondary" />
+      <div className="h-10 w-full animate-pulse rounded-md bg-secondary" />
+      <div className="h-10 w-full animate-pulse rounded-md bg-secondary" />
     </div>
   );
 }

@@ -1,11 +1,13 @@
+// src/app/practice/ai-interview/[sessionId]/page.tsx
+
 "use client";
 
 import { useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Loader2, AlertCircle, ArrowLeft } from "lucide-react";
-import { InterviewSession } from "@/components/practice/ai-interview/interview-session";
-import { useInterview } from "@/lib/hooks/use-interview";
-import { Button } from "@/components/ui/button";
+import { InterviewSession } from "../../../../components/practice/ai-interview/interview-session";
+import { useInterview } from "../../../../lib/hooks/use-interview";
+import { Button } from "../../../../components/ui/button";
 
 export default function InterviewSessionPage() {
   const params = useParams();
@@ -27,54 +29,55 @@ export default function InterviewSessionPage() {
     isProcessing,
     micPermission,
     totalQuestions,
+    progress,
+    context,
     stopRecording,
     startRecording,
     submitAnswer,
-    cancelSession,
+    endSession,
   } = useInterview();
 
-  // Redirect if no sessionId
   useEffect(() => {
     if (!sessionId) {
       router.push("/practice/ai-interview");
     }
   }, [sessionId, router]);
 
-  // Loading state
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen">
-        <Loader2 className="w-12 h-12 animate-spin text-primary mb-4" />
-        <p className="text-lg text-muted-foreground">Loading interview session...</p>
-        <p className="text-sm text-muted-foreground mt-2">
-          Session ID: {sessionId}
-        </p>
+        <div className="h-12 w-12 rounded-full border border-border flex items-center justify-center mb-4">
+          <Loader2 className="h-5 w-5 animate-spin" />
+        </div>
+        <p className="text-sm text-muted-foreground">Loading session...</p>
       </div>
     );
   }
 
-  // Error state
   if (error && status === "ERROR") {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen">
-        <div className="text-center space-y-4 max-w-md">
-          <AlertCircle className="w-12 h-12 text-red-500 mx-auto" />
-          <h2 className="text-xl font-semibold">Session Error</h2>
-          <p className="text-red-600 dark:text-red-400">{error}</p>
+        <div className="text-center space-y-4 max-w-sm">
+          <div className="h-12 w-12 rounded-full border border-border flex items-center justify-center mx-auto">
+            <AlertCircle className="h-5 w-5" />
+          </div>
+          <div className="space-y-1">
+            <h2 className="font-semibold">Session Error</h2>
+            <p className="text-sm text-muted-foreground">{error}</p>
+          </div>
           <Button
             onClick={() => router.push("/practice/ai-interview")}
             variant="outline"
-            className="gap-2"
+            size="sm"
           >
-            <ArrowLeft className="w-4 h-4" />
-            Return to Interview Home
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Go Back
           </Button>
         </div>
       </div>
     );
   }
 
-  // Main interview session
   return (
     <div className="h-screen overflow-hidden">
       <InterviewSession
@@ -91,10 +94,12 @@ export default function InterviewSessionPage() {
         isAiSpeaking={isAiSpeaking}
         isProcessing={isProcessing}
         micPermission={micPermission}
+        progress={progress}
+        context={context}
         onStopRecording={stopRecording}
         onStartRecording={startRecording}
         onSubmitAnswer={submitAnswer}
-        onCancel={cancelSession}
+        onEndSession={endSession}
       />
     </div>
   );

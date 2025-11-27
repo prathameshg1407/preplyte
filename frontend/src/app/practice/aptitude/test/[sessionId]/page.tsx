@@ -4,16 +4,16 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '../../../../../components/ui/card';
+import { Button } from '../../../../../components/ui/button';
 import {
   QuestionDisplay,
   QuestionNavigator,
   TestTimer,
   SubmitDialog,
-} from '@/components/practice/aptitude';
-import { useAptitude } from '@/lib/hooks/use-aptitude';
-import { useAptitudeStore } from '@/lib/store/aptitude-store';
+} from '../../../../../components/practice/aptitude';
+import { useAptitude } from '../../../../../lib/hooks/use-aptitude';
+import { useAptitudeStore } from '../../../../../lib/store/aptitude-store';
 import {
   ChevronLeft,
   ChevronRight,
@@ -21,8 +21,8 @@ import {
   Loader2,
   SkipForward,
   AlertCircle,
+  Clock,
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
 
 export default function AptitudeTestPage() {
   const params = useParams();
@@ -39,7 +39,6 @@ export default function AptitudeTestPage() {
     isLoading,
     isSubmitting,
     isSavingAnswer,
-    progress,
     resumeSession,
     saveAnswer,
     submitSession,
@@ -68,7 +67,6 @@ export default function AptitudeTestPage() {
         return;
       }
 
-      // Check if we already have this session loaded
       const storeSessionId = useAptitudeStore.getState().sessionId;
 
       if (storeSessionId !== sessionId) {
@@ -141,21 +139,16 @@ export default function AptitudeTestPage() {
   // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Ignore if user is typing in an input
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
         return;
       }
 
       switch (e.key) {
         case 'ArrowLeft':
-          if (canGoPrevious()) {
-            previousQuestion();
-          }
+          if (canGoPrevious()) previousQuestion();
           break;
         case 'ArrowRight':
-          if (canGoNext()) {
-            nextQuestion();
-          }
+          if (canGoNext()) nextQuestion();
           break;
         case '1':
         case '2':
@@ -165,9 +158,7 @@ export default function AptitudeTestPage() {
           if (question) {
             const optionIndex = parseInt(e.key) - 1;
             const option = question.options[optionIndex];
-            if (option) {
-              handleSelectAnswer(option.id);
-            }
+            if (option) handleSelectAnswer(option.id);
           }
           break;
       }
@@ -175,24 +166,15 @@ export default function AptitudeTestPage() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [
-    canGoPrevious,
-    canGoNext,
-    previousQuestion,
-    nextQuestion,
-    getCurrentQuestion,
-    handleSelectAnswer,
-  ]);
+  }, [canGoPrevious, canGoNext, previousQuestion, nextQuestion, getCurrentQuestion, handleSelectAnswer]);
 
   // Loading state
   if (!isInitialized || isLoading || questions.length === 0) {
     return (
-      <div
-
-        className="flex items-center justify-center min-h-[60vh]">
-        <div className="text-center space-y-4">
-          <Loader2 className="h-10 w-10 animate-spin mx-auto text-primary" />
-          <p className="text-muted-foreground">Loading questions...</p>
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="mx-auto h-8 w-8 animate-spin text-muted-foreground" />
+          <p className="mt-4 text-sm text-muted-foreground">Loading questions...</p>
         </div>
       </div>
     );
@@ -204,11 +186,11 @@ export default function AptitudeTestPage() {
 
   if (!currentQuestion) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="text-center space-y-4">
-          <AlertCircle className="h-10 w-10 mx-auto text-muted-foreground" />
-          <p className="text-muted-foreground">No questions found</p>
-          <Button onClick={() => router.push('/practice/aptitude')}>
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <div className="text-center">
+          <AlertCircle className="mx-auto h-10 w-10 text-muted-foreground" />
+          <p className="mt-4 text-muted-foreground">No questions found</p>
+          <Button variant="outline" className="mt-6" onClick={() => router.push('/practice/aptitude')}>
             Go Back
           </Button>
         </div>
@@ -217,14 +199,13 @@ export default function AptitudeTestPage() {
   }
 
   return (
-    <div className="container max-w-7xl py-6">
+    <div className="container max-w-6xl py-6 lg:py-8">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Aptitude Test</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Question {currentQuestionIndex + 1} of {questions.length} •{' '}
-            {answeredCount} answered
+          <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">Aptitude Test</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Question {currentQuestionIndex + 1} of {questions.length} · {answeredCount} answered
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -236,21 +217,20 @@ export default function AptitudeTestPage() {
             showProgress
           />
           <Button
-            variant="destructive"
+            variant="outline"
             onClick={() => setShowSubmitDialog(true)}
             disabled={isSubmitting || isAutoSubmitting}
             className="gap-2"
           >
             <Flag className="h-4 w-4" />
-            <span className="hidden sm:inline">Submit Test</span>
-            <span className="sm:hidden">Submit</span>
+            <span className="hidden sm:inline">Submit</span>
           </Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      <div className="grid gap-6 lg:grid-cols-4">
         {/* Question Area */}
-        <div className="lg:col-span-3 space-y-4">
+        <div className="space-y-4 lg:col-span-3">
           <QuestionDisplay
             question={currentQuestion}
             questionNumber={currentQuestionIndex + 1}
@@ -262,11 +242,11 @@ export default function AptitudeTestPage() {
           />
 
           {/* Navigation Controls */}
-          <Card className="border-2">
+          <Card className="border-border">
             <CardContent className="py-4">
               <div className="flex items-center justify-between">
                 <Button
-                  variant="outline"
+                  variant="ghost"
                   onClick={previousQuestion}
                   disabled={!canGoPrevious() || isSubmitting || isAutoSubmitting}
                   className="gap-2"
@@ -291,6 +271,7 @@ export default function AptitudeTestPage() {
                 )}
 
                 <Button
+                  variant="ghost"
                   onClick={nextQuestion}
                   disabled={!canGoNext() || isSubmitting || isAutoSubmitting}
                   className="gap-2"
@@ -300,18 +281,19 @@ export default function AptitudeTestPage() {
                 </Button>
               </div>
 
-              {/* Keyboard Shortcuts Hint */}
-              <div className="hidden md:flex items-center justify-center gap-4 mt-4 pt-4 border-t text-xs text-muted-foreground">
+              {/* Keyboard Shortcuts */}
+              <div className="mt-4 hidden items-center justify-center gap-6 border-t border-border pt-4 text-xs text-muted-foreground md:flex">
                 <span>
-                  <kbd className="px-1.5 py-0.5 bg-muted rounded text-xs">←</kbd>{' '}
-                  <kbd className="px-1.5 py-0.5 bg-muted rounded text-xs">→</kbd>{' '}
-                  Navigate
+                  <kbd className="rounded bg-secondary px-1.5 py-0.5 font-mono text-xs">←</kbd>
+                  {' '}
+                  <kbd className="rounded bg-secondary px-1.5 py-0.5 font-mono text-xs">→</kbd>
+                  {' '}Navigate
                 </span>
                 <span>
-                  <kbd className="px-1.5 py-0.5 bg-muted rounded text-xs">1</kbd>
-                  -
-                  <kbd className="px-1.5 py-0.5 bg-muted rounded text-xs">4</kbd>{' '}
-                  Select Option
+                  <kbd className="rounded bg-secondary px-1.5 py-0.5 font-mono text-xs">1</kbd>
+                  {'-'}
+                  <kbd className="rounded bg-secondary px-1.5 py-0.5 font-mono text-xs">4</kbd>
+                  {' '}Select
                 </span>
               </div>
             </CardContent>
@@ -319,11 +301,10 @@ export default function AptitudeTestPage() {
         </div>
 
         {/* Sidebar */}
-        <div className="lg:col-span-1 space-y-4">
-          {/* Question Navigator */}
-          <Card className="border-2 sticky top-6">
+        <div className="space-y-4 lg:col-span-1">
+          <Card className="sticky top-6 border-border">
             <CardHeader className="pb-3">
-              <CardTitle className="text-base">Question Navigator</CardTitle>
+              <CardTitle className="text-sm font-medium">Question Navigator</CardTitle>
             </CardHeader>
             <CardContent>
               <QuestionNavigator
@@ -336,11 +317,10 @@ export default function AptitudeTestPage() {
             </CardContent>
           </Card>
 
-          {/* Quick Submit Card (Mobile Friendly) */}
-          <Card className="border-2 lg:hidden">
+          {/* Mobile Submit */}
+          <Card className="border-border lg:hidden">
             <CardContent className="py-4">
               <Button
-                variant="destructive"
                 className="w-full gap-2"
                 onClick={() => setShowSubmitDialog(true)}
                 disabled={isSubmitting || isAutoSubmitting}
@@ -355,15 +335,17 @@ export default function AptitudeTestPage() {
 
       {/* Auto-submit overlay */}
       {isAutoSubmitting && (
-        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
-          <Card className="border-2 max-w-sm mx-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+          <Card className="mx-4 max-w-sm border-border">
             <CardContent className="py-8 text-center">
-              <AlertCircle className="h-12 w-12 text-yellow-500 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">Time&apos;s Up!</h3>
-              <p className="text-muted-foreground mb-4">
+              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-secondary">
+                <Clock className="h-6 w-6" />
+              </div>
+              <h3 className="mb-2 text-lg font-semibold">Time&apos;s Up!</h3>
+              <p className="mb-6 text-sm text-muted-foreground">
                 Your test is being submitted automatically...
               </p>
-              <Loader2 className="h-6 w-6 animate-spin mx-auto text-primary" />
+              <Loader2 className="mx-auto h-5 w-5 animate-spin text-muted-foreground" />
             </CardContent>
           </Card>
         </div>

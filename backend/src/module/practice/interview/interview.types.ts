@@ -1,148 +1,32 @@
-// src/modules/interview/interview.types.ts
+// interview.types.ts
 
 import { AiInterviewQuestionCategory, AiInterviewSessionStatus } from '@prisma/client';
 
-// ============= Request Types =============
+// =====================================================
+// CORE TYPES
+// =====================================================
 
-export interface StartInterviewSessionRequest {
-  resumeId?: number;
-  jobTitle?: string;
-  companyName?: string;
-}
-
-export interface SubmitAnswerRequest {
-  question: string;
-  answer: string;
-  category: AiInterviewQuestionCategory;
-  questionIndex?: number;
-  isTranscribed?: boolean;
-  timeTakenSeconds?: number;
-}
-
-// ============= Response Types =============
-
-export interface QuestionItemDto {
-  category: AiInterviewQuestionCategory;
-  text: string;
-}
-
-export interface InterviewSessionResponse {
+export interface ConversationTurn {
   id: string;
-  userId: string;
-  status: AiInterviewSessionStatus;
-  questions: QuestionItemDto[];
-  currentQuestion: QuestionItemDto;
-  currentQuestionIndex: number;
-  totalQuestions: number;
-  audioUrl?: string;
-  createdAt: Date;
-}
-
-export interface NextQuestionResponse {
-  question: string;
+  role: 'interviewer' | 'candidate';
+  content: string;
   category: AiInterviewQuestionCategory;
-  index: number;
+  timestamp: Date;
   audioUrl?: string;
-  totalQuestions: number;
-  isComplete: false;
-}
-
-export interface QuestionCompletionResponse {
-  isComplete: true;
-  message: string;
-  audioUrl?: string;
-}
-
-export interface SubmitAnswerResponse {
-  nextQuestion?: {
-    category: AiInterviewQuestionCategory;
-    text: string;
+  isFollowUp: boolean;
+  metadata?: {
+    sentiment?: 'positive' | 'neutral' | 'negative';
+    confidence?: number;
+    topics?: string[];
+    timeTakenSeconds?: number;
   };
-  questionIndex?: number;
-  totalQuestions?: number;
-  isComplete: boolean;
-  message?: string;
-  audioUrl?: string;
 }
 
-export interface SessionStateResponse {
-  id: string;
-  userId: string;
-  status: AiInterviewSessionStatus;
-  questions: QuestionItemDto[];
-  currentQuestion: QuestionItemDto;
-  currentQuestionIndex: number;
-  totalQuestions: number;
-  audioUrl?: string;
-  responses?: ResponseSummary[];
-}
-
-export interface ResponseSummary {
-  questionIndex: number;
-  question: string;
-  category: AiInterviewQuestionCategory;
-  hasAnswer: boolean;
-}
-
-export interface ResponseScoreDto {
-  questionIndex?: number;
-  contentScore: number;
-  fluencyScore: number;
-  relevanceScore: number;
-  feedback: string;
-}
-
-export interface InterviewFeedbackResponse {
-  overallScore: number;
-  overallSummary: string;
-  keyStrengths: string[];
-  areasForImprovement: string[];
-  weakSections: string[];
-  perResponseScores: ResponseScoreDto[];
-}
-
-export interface UserSessionSummaryDto {
-  id: string;
+export interface SessionContext {
   jobTitle: string;
-  companyName: string | null;
-  resumeId: number | null;
-  status: AiInterviewSessionStatus;
-  totalQuestions: number;
-  answeredQuestions: number;
-  currentQuestionIndex: number;
-  overallScore: number | null;
-  createdAt: Date;
-  completedAt: Date | null;
-  hasFeedback: boolean;
-}
-
-export interface UserSessionStatsResponse {
-  totalSessions: number;
-  completedSessions: number;
-  inProgressSessions: number;
-  averageScore: number;
-  totalQuestionsAnswered: number;
-  highestScore?: number | null;
-  lowestScore?: number | null;
-}
-
-export interface ErrorResponse {
-  statusCode: number;
-  message: string;
-  code?: string;
-  error?: string;
-  timestamp?: string;
-  path?: string;
-}
-
-// ============= Internal Types =============
-
-export interface AnswerScore {
-  contentScore: number;
-  fluencyScore: number;
-  relevanceScore: number;
-  feedback: string;
-  weakSection?: string;
+  companyName?: string;
+  resumeText?: string;
+  difficulty: 'entry' | 'mid' | 'senior' | 'lead';
 }
 
 export interface QuestionItem {
@@ -150,55 +34,196 @@ export interface QuestionItem {
   text: string;
 }
 
-export interface Questions {
-  questions: QuestionItem[];
+export interface LiveSessionState {
+  sessionId: string;
+  userId: string;
+  context: SessionContext;
+  conversationHistory: ConversationTurn[];
+  currentQuestion: QuestionItem;
+  currentIsFollowUp: boolean;
+  currentTopic: InterviewTopic;
+  topicDepth: number;
+  coveredTopics: Set<string>;
+  questionCount: number;
+  startedAt: Date;
+  lastActivityAt: Date;
+  lastAnalysis?: ResponseAnalysis | null;
 }
 
-export interface SessionContext {
+export interface ResponseAnalysis {
+  quality: 'excellent' | 'good' | 'fair' | 'needs_improvement' | 'off_topic';
+  keyPoints: string[];
+  missingPoints: string[];
+  followUpOpportunities: string[];
+  scores: {
+    content: number;
+    relevance: number;
+    depth: number;
+    clarity: number;
+  };
+  shouldFollowUp: boolean;
+  followUpReason?: string;
+  suggestedNextTopic: string;
+  topics: string[];
+}
+
+export interface AnswerScore {
+  contentScore: number;
+  clarityScore: number;
+  relevanceScore: number;
+  depthScore: number;
+  overallScore: number;
+  feedback: string;
+}
+
+// =====================================================
+// REQUEST DTOs
+// =====================================================
+
+export interface StartSessionDto {
+  resumeId?: number;
+  jobTitle?: string;
+  companyName?: string;
+  difficulty?: 'entry' | 'mid' | 'senior' | 'lead';
+  focusAreas?: string[];
+}
+
+export interface SubmitResponseDto {
+  audioBlob?: string;
+  transcript?: string;
+}
+
+export interface GetSessionsDto {
+  page?: number;
+  limit?: number;
+}
+
+// =====================================================
+// RESPONSE DTOs
+// =====================================================
+
+export interface SessionResponse {
+  sessionId: string;
+  status: 'active' | 'completed';
+  currentQuestion: {
+    id: string;
+    text: string;
+    category: AiInterviewQuestionCategory;
+    audioUrl?: string;
+  };
+  progress: {
+    questionNumber: number;
+    estimatedTotal: number;
+    topicsCovered: string[];
+    percentComplete: number;
+  };
+  context: {
+    jobTitle: string;
+    companyName?: string;
+  };
+}
+
+export interface SubmitResponseResult {
+  responseReceived: {
+    id: string;
+    transcript: string;
+    scores: AnswerScore;
+  };
+  nextQuestion?: {
+    id: string;
+    text: string;
+    category: AiInterviewQuestionCategory;
+    audioUrl?: string;
+    isFollowUp: boolean;
+    transition?: string;
+  };
+  isComplete: boolean;
+  progress: {
+    questionNumber: number;
+    estimatedTotal: number;
+    topicsCovered: string[];
+    percentComplete: number;
+  };
+}
+
+export interface FeedbackResponse {
+  overallScore: number;
+  summary: string;
+  strengths: string[];
+  improvements: string[];
+  categoryScores: {
+    category: string;
+    score: number;
+    feedback: string;
+  }[];
+  recommendations: string[];
+}
+
+export interface SessionSummary {
+  id: string;
   jobTitle: string;
   companyName?: string;
-  resumeText?: string;
+  status: AiInterviewSessionStatus;
+  questionsAnswered: number;
+  overallScore?: number;
+  createdAt: Date;
+  completedAt?: Date;
 }
 
-export interface JwtUser {
-  sub: string;
-  email: string;
-  role?: string;
-  instituteId?: string | null;
-  iat?: number;
-  exp?: number;
+export interface PaginatedSessionsResponse {
+  sessions: SessionSummary[];
+  total: number;
+  page: number;
+  totalPages: number;
 }
 
-// ============= API Response Wrapper =============
-
-export interface ApiResponse<T = unknown> {
-  success: boolean;
-  data?: T;
-  error?: {
-    code: string;
-    message: string;
-    details?: unknown;
-  };
-  message?: string;
-  meta?: {
-    page?: number;
-    limit?: number;
-    total?: number;
-    totalPages?: number;
-  };
+export interface SessionStats {
+  totalSessions: number;
+  completedSessions: number;
+  averageScore: number;
+  totalQuestionsAnswered: number;
+  topCategories: { category: string; count: number }[];
 }
 
-// ============= TTS Types =============
+// =====================================================
+// CONSTANTS
+// =====================================================
 
-export interface TTSGenerateResult {
-  url: string;
-  duration?: number;
-}
+export const INTERVIEW_CONFIG = {
+  // Question limits
+  MIN_QUESTIONS: 5,
+  MAX_QUESTIONS: 15,
+  TARGET_QUESTIONS: 10,
 
-// ============= Groq Types =============
+  // Follow-up settings
+  MAX_TOPIC_DEPTH: 3,
+  MAX_CONSECUTIVE_FOLLOWUPS: 2,
+  MIN_ANSWER_LENGTH_FOR_FOLLOWUP: 20,
 
-export interface GroqApiOptions {
-  temperature?: number;
-  maxTokens?: number;
-  model?: string;
-}
+  // Topic settings
+  MIN_TOPICS_TO_COVER: 4,
+  REQUIRED_TOPICS: ['experience', 'technical', 'behavioral'],
+
+  // Timing
+  REQUEST_DEDUP_MS: 2000,
+  MAX_RESPONSE_WAIT_SECONDS: 120,
+
+  // Defaults
+  DEFAULT_JOB_TITLE: 'Software Engineer',
+  DEFAULT_DIFFICULTY: 'mid' as const,
+} as const;
+
+export const INTERVIEW_TOPICS = [
+  'introduction',
+  'experience',
+  'technical_skills',
+  'problem_solving',
+  'teamwork',
+  'challenges',
+  'system_design',
+  'career_goals',
+  'culture_fit',
+  'closing',
+] as const;
+
+export type InterviewTopic = (typeof INTERVIEW_TOPICS)[number];

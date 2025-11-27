@@ -3,10 +3,9 @@
 "use client";
 
 import { useEffect } from "react";
-import { Badge } from "@/components/ui/badge";
 import { Clock, AlertTriangle } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { useMachineTimer } from "@/lib/hooks/use-machine";
+import { cn } from "../../../lib/utils";
+import { useMachineTimer } from "../../../lib/hooks/use-machine";
 
 interface TestTimerProps {
   expiresAt?: string | null;
@@ -23,25 +22,26 @@ export function TestTimer({ expiresAt, onExpire }: TestTimerProps) {
   }, [isExpired, onExpire]);
 
   return (
-    <Badge
-      variant="outline"
+    <div
       className={cn(
-        "text-lg font-mono px-4 py-2 transition-colors",
-        isExpired && "bg-red-500 text-white border-red-500",
-        isCriticalTime &&
-          !isExpired &&
-          "bg-red-500/10 text-red-500 border-red-500 animate-pulse",
-        isLowTime &&
-          !isCriticalTime &&
-          "bg-yellow-500/10 text-yellow-500 border-yellow-500"
+        "inline-flex items-center gap-2 rounded-lg border px-4 py-2 font-mono text-sm transition-all",
+        isExpired
+          ? "border-foreground bg-foreground text-background"
+          : isCriticalTime
+          ? "animate-pulse border-foreground bg-secondary"
+          : isLowTime
+          ? "border-border bg-secondary"
+          : "border-border bg-card"
       )}
     >
       {isCriticalTime || isExpired ? (
-        <AlertTriangle className="h-4 w-4 mr-2" />
+        <AlertTriangle className="h-4 w-4" />
       ) : (
-        <Clock className="h-4 w-4 mr-2" />
+        <Clock className="h-4 w-4 text-muted-foreground" />
       )}
-      {isExpired ? "Time's Up!" : formattedTime}
-    </Badge>
+      <span className="font-semibold">
+        {isExpired ? "Time's Up!" : formattedTime}
+      </span>
+    </div>
   );
 }

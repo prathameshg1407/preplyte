@@ -2,18 +2,16 @@
 
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
+import { Card, CardContent, CardHeader, CardTitle } from "../../ui/card";
+import { Button } from "../../ui/button";
 import type {
   SessionResultsResponse,
   ResultQuestion,
   DifficultyLevel,
   PerformanceRank,
-} from "@/types/machine.types";
+} from "../../../types/machine.types";
 import {
-  CheckCircle,
+  CheckCircle2,
   XCircle,
   Clock,
   Target,
@@ -21,43 +19,24 @@ import {
   RotateCcw,
   Home,
   ChevronDown,
-  ChevronUp,
+  ChevronRight,
   Trophy,
   Lightbulb,
+  Send,
+  Timer,
+  Calendar,
+  Gauge,
 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
-import { cn } from "@/lib/utils";
-
-// Difficulty colors mapping
-const DIFFICULTY_COLORS: Record<DifficultyLevel, string> = {
-  EASY: "text-green-500 border-green-500/30 bg-green-500/10",
-  MEDIUM: "text-yellow-500 border-yellow-500/30 bg-yellow-500/10",
-  HARD: "text-red-500 border-red-500/30 bg-red-500/10",
-};
-
-const RANK_COLORS: Record<PerformanceRank, string> = {
-  EXCELLENT: "text-green-500",
-  GOOD: "text-blue-500",
-  AVERAGE: "text-yellow-500",
-  NEEDS_IMPROVEMENT: "text-red-500",
-};
-
-const RANK_ICONS: Record<PerformanceRank, string> = {
-  EXCELLENT: "🏆",
-  GOOD: "🎯",
-  AVERAGE: "📈",
-  NEEDS_IMPROVEMENT: "💪",
-};
+import { cn } from "../../../lib/utils";
 
 interface SessionResultProps {
   result: SessionResultsResponse;
 }
 
 export function SessionResult({ result }: SessionResultProps) {
-  const [expandedQuestions, setExpandedQuestions] = useState<Set<string>>(
-    new Set()
-  );
+  const [expandedQuestions, setExpandedQuestions] = useState<Set<string>>(new Set());
 
   const formatTime = (minutes: number) => {
     const hours = Math.floor(minutes / 60);
@@ -80,112 +59,107 @@ export function SessionResult({ result }: SessionResultProps) {
     });
   };
 
+  const getRankLabel = (rank: PerformanceRank) => {
+    const labels: Record<PerformanceRank, string> = {
+      EXCELLENT: "Excellent",
+      GOOD: "Good",
+      AVERAGE: "Average",
+      NEEDS_IMPROVEMENT: "Needs Improvement",
+    };
+    return labels[rank];
+  };
+
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="mx-auto max-w-3xl space-y-6">
       {/* Score Card */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="text-center mb-6">
-            <div
-              className={cn(
-                "text-6xl font-bold",
-                RANK_COLORS[result.performance.rank]
-              )}
-            >
-              {result.summary.solvedPercentage.toFixed(0)}%
+      <Card className="border-border">
+        <CardContent className="pt-8 pb-6">
+          <div className="mb-8 text-center">
+            <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full border-2 border-border bg-secondary">
+              <span className="text-3xl font-bold">
+                {result.summary.solvedPercentage.toFixed(0)}%
+              </span>
             </div>
-            <div className="flex items-center justify-center gap-2 text-xl text-muted-foreground mt-2">
-              <span>{RANK_ICONS[result.performance.rank]}</span>
-              <span>{result.performance.rank.replace(/_/g, " ")}</span>
-            </div>
-            <p className="text-sm text-muted-foreground mt-1">
+            <h2 className="text-xl font-semibold">{getRankLabel(result.performance.rank)}</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
               {result.performance.message}
             </p>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-            <div className="p-4 bg-green-500/10 rounded-lg">
-              <CheckCircle className="h-6 w-6 text-green-500 mx-auto mb-2" />
-              <div className="text-2xl font-bold text-green-500">
-                {result.summary.totalSolved}
-              </div>
-              <div className="text-sm text-muted-foreground">Solved</div>
-            </div>
-            <div className="p-4 bg-blue-500/10 rounded-lg">
-              <Target className="h-6 w-6 text-blue-500 mx-auto mb-2" />
-              <div className="text-2xl font-bold text-blue-500">
-                {result.summary.totalQuestions}
-              </div>
-              <div className="text-sm text-muted-foreground">Total</div>
-            </div>
-            <div className="p-4 bg-purple-500/10 rounded-lg">
-              <Trophy className="h-6 w-6 text-purple-500 mx-auto mb-2" />
-              <div className="text-2xl font-bold text-purple-500">
-                {result.summary.totalScore}
-              </div>
-              <div className="text-sm text-muted-foreground">Score</div>
-            </div>
-            <div className="p-4 bg-orange-500/10 rounded-lg">
-              <Code2 className="h-6 w-6 text-orange-500 mx-auto mb-2" />
-              <div className="text-2xl font-bold text-orange-500">
-                {result.summary.totalSubmissions}
-              </div>
-              <div className="text-sm text-muted-foreground">Submissions</div>
-            </div>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <StatCard
+              icon={CheckCircle2}
+              value={result.summary.totalSolved}
+              label="Solved"
+            />
+            <StatCard
+              icon={Target}
+              value={result.summary.totalQuestions}
+              label="Total"
+            />
+            <StatCard
+              icon={Trophy}
+              value={result.summary.totalScore}
+              label="Score"
+            />
+            <StatCard
+              icon={Send}
+              value={result.summary.totalSubmissions}
+              label="Submissions"
+            />
           </div>
         </CardContent>
       </Card>
 
-      {/* Stats Card */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Clock className="h-5 w-5" />
+      {/* Session Summary */}
+      <Card className="border-border">
+        <CardHeader className="pb-4">
+          <CardTitle className="flex items-center gap-2 text-base font-medium">
+            <Clock className="h-4 w-4 text-muted-foreground" />
             Session Summary
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <span>Time Taken</span>
-            <span className="font-medium">{formatTime(result.timeTaken)}</span>
-          </div>
-          <Separator />
-          <div className="flex items-center justify-between">
-            <span>Time Limit</span>
-            <span className="font-medium">{formatTime(result.timeLimit)}</span>
-          </div>
-          <Separator />
-          <div className="flex items-center justify-between">
-            <span>Difficulty</span>
-            <Badge variant="outline" className={DIFFICULTY_COLORS[result.difficulty]}>
-              {result.difficulty}
-            </Badge>
-          </div>
-          <Separator />
-          <div className="flex items-center justify-between">
-            <span>Completed</span>
-            <span className="font-medium">
-              {new Date(result.completedAt).toLocaleString()}
-            </span>
+        <CardContent>
+          <div className="space-y-0 divide-y divide-border">
+            <SummaryRow
+              icon={Timer}
+              label="Time Taken"
+              value={formatTime(result.timeTaken)}
+            />
+            <SummaryRow
+              icon={Clock}
+              label="Time Limit"
+              value={formatTime(result.timeLimit)}
+            />
+            <SummaryRow
+              icon={Gauge}
+              label="Difficulty"
+              value={result.difficulty}
+            />
+            <SummaryRow
+              icon={Calendar}
+              label="Completed"
+              value={new Date(result.completedAt).toLocaleString()}
+            />
           </div>
         </CardContent>
       </Card>
 
-      {/* Suggestions Card */}
+      {/* Suggestions */}
       {result.performance.suggestions.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Lightbulb className="h-5 w-5" />
+        <Card className="border-border">
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center gap-2 text-base font-medium">
+              <Lightbulb className="h-4 w-4 text-muted-foreground" />
               Suggestions
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <ul className="space-y-2">
+            <ul className="space-y-2.5">
               {result.performance.suggestions.map((suggestion, index) => (
-                <li key={index} className="flex items-start gap-2 text-sm">
-                  <span className="text-primary">•</span>
-                  <span>{suggestion}</span>
+                <li key={index} className="flex items-start gap-3 text-sm">
+                  <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-foreground" />
+                  <span className="text-muted-foreground">{suggestion}</span>
                 </li>
               ))}
             </ul>
@@ -194,11 +168,14 @@ export function SessionResult({ result }: SessionResultProps) {
       )}
 
       {/* Question Results */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Problem Results</CardTitle>
+      <Card className="border-border">
+        <CardHeader className="pb-4">
+          <CardTitle className="flex items-center gap-2 text-base font-medium">
+            <Code2 className="h-4 w-4 text-muted-foreground" />
+            Problem Results
+          </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3">
+        <CardContent className="space-y-2">
           {result.questions.map((question) => (
             <QuestionResultItem
               key={question.id}
@@ -211,7 +188,7 @@ export function SessionResult({ result }: SessionResultProps) {
       </Card>
 
       {/* Action Buttons */}
-      <div className="flex gap-4">
+      <div className="flex gap-3">
         <Button asChild variant="outline" className="flex-1">
           <Link href="/practice/machine">
             <RotateCcw className="mr-2 h-4 w-4" />
@@ -229,6 +206,46 @@ export function SessionResult({ result }: SessionResultProps) {
   );
 }
 
+// Stat Card Component
+function StatCard({
+  icon: Icon,
+  value,
+  label,
+}: {
+  icon: React.ElementType;
+  value: number;
+  label: string;
+}) {
+  return (
+    <div className="rounded-lg border border-border p-4 text-center">
+      <Icon className="mx-auto mb-2 h-5 w-5 text-muted-foreground" />
+      <div className="text-2xl font-semibold">{value}</div>
+      <div className="text-xs text-muted-foreground">{label}</div>
+    </div>
+  );
+}
+
+// Summary Row Component
+function SummaryRow({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: React.ElementType;
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="flex items-center justify-between py-3">
+      <span className="flex items-center gap-2 text-sm text-muted-foreground">
+        <Icon className="h-4 w-4" />
+        {label}
+      </span>
+      <span className="text-sm font-medium">{value}</span>
+    </div>
+  );
+}
+
 // Question Result Item Component
 function QuestionResultItem({
   question,
@@ -240,93 +257,88 @@ function QuestionResultItem({
   onToggle: () => void;
 }) {
   return (
-    <div className="border rounded-lg overflow-hidden">
+    <div className="overflow-hidden rounded-lg border border-border">
       <button
         onClick={onToggle}
-        className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors text-left"
+        className="flex w-full items-center justify-between p-4 text-left transition-colors hover:bg-secondary/50"
       >
         <div className="flex items-center gap-3">
           {question.isSolved ? (
-            <CheckCircle className="h-5 w-5 text-green-500" />
+            <CheckCircle2 className="h-5 w-5 shrink-0" />
           ) : (
-            <XCircle className="h-5 w-5 text-red-500" />
+            <XCircle className="h-5 w-5 shrink-0 text-muted-foreground" />
           )}
-          <div>
+          <div className="min-w-0">
             <span className="font-medium">
               Q{question.order}: {question.title}
             </span>
-            <div className="flex gap-2 mt-1">
-              <Badge
-                variant="outline"
-                className={cn("text-xs", DIFFICULTY_COLORS[question.difficulty])}
-              >
+            <div className="mt-1 flex flex-wrap gap-1.5">
+              <span className="rounded border border-border bg-secondary px-2 py-0.5 text-xs">
                 {question.difficulty}
-              </Badge>
+              </span>
               {question.tags.slice(0, 2).map((tag) => (
-                <Badge key={tag} variant="secondary" className="text-xs">
+                <span
+                  key={tag}
+                  className="rounded border border-border px-2 py-0.5 text-xs text-muted-foreground"
+                >
                   {tag}
-                </Badge>
+                </span>
               ))}
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-3">
-          <span className="text-sm text-muted-foreground">
-            {question.submissionCount} submission
-            {question.submissionCount !== 1 ? "s" : ""}
-          </span>
-          <span
-            className={cn(
-              "font-medium",
-              question.isSolved ? "text-green-500" : "text-red-500"
-            )}
-          >
-            {question.score} pts
-          </span>
+        <div className="flex items-center gap-4">
+          <div className="text-right">
+            <div className="text-sm font-medium">{question.score} pts</div>
+            <div className="text-xs text-muted-foreground">
+              {question.submissionCount} submission{question.submissionCount !== 1 ? "s" : ""}
+            </div>
+          </div>
           {isExpanded ? (
-            <ChevronUp className="h-4 w-4" />
+            <ChevronDown className="h-4 w-4 text-muted-foreground" />
           ) : (
-            <ChevronDown className="h-4 w-4" />
+            <ChevronRight className="h-4 w-4 text-muted-foreground" />
           )}
         </div>
       </button>
 
       {isExpanded && question.bestSubmission && (
-        <div className="p-4 border-t bg-muted/20">
-          <h4 className="text-sm font-medium mb-3">Best Submission</h4>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+        <div className="border-t border-border bg-secondary/30 p-4">
+          <h4 className="mb-3 text-xs font-medium text-muted-foreground">
+            Best Submission
+          </h4>
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
             <div>
               <div className="text-xs text-muted-foreground">Status</div>
-              <Badge
-                variant="outline"
-                className={cn(
-                  "mt-1",
-                  question.bestSubmission.status === "ACCEPTED"
-                    ? "text-green-500 border-green-500/30"
-                    : "text-red-500 border-red-500/30"
+              <div className="mt-1 flex items-center gap-1.5">
+                {question.bestSubmission.status === "ACCEPTED" ? (
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                ) : (
+                  <XCircle className="h-3.5 w-3.5" />
                 )}
-              >
-                {question.bestSubmission.status}
-              </Badge>
+                <span className="text-sm font-medium">
+                  {question.bestSubmission.status}
+                </span>
+              </div>
             </div>
             <div>
               <div className="text-xs text-muted-foreground">Language</div>
-              <div className="mt-1 font-medium">
+              <div className="mt-1 text-sm font-medium">
                 {question.bestSubmission.language}
               </div>
             </div>
             <div>
-              <div className="text-xs text-muted-foreground">Time</div>
-              <div className="mt-1 font-medium">
-                {question.bestSubmission.executionTime?.toFixed(2) || "N/A"} ms
+              <div className="text-xs text-muted-foreground">Runtime</div>
+              <div className="mt-1 text-sm font-medium">
+                {question.bestSubmission.executionTime?.toFixed(2) || "—"} ms
               </div>
             </div>
             <div>
               <div className="text-xs text-muted-foreground">Memory</div>
-              <div className="mt-1 font-medium">
+              <div className="mt-1 text-sm font-medium">
                 {question.bestSubmission.memoryUsed
                   ? (question.bestSubmission.memoryUsed / 1024).toFixed(1)
-                  : "N/A"}{" "}
+                  : "—"}{" "}
                 MB
               </div>
             </div>

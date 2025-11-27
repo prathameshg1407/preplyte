@@ -1,378 +1,323 @@
-// src/modules/interview/interview.service.ts
+// interview.service.ts
 
 import {
   AiInterviewSession,
   AiInterviewResponse,
+  AiInterviewFeedback,
   AiInterviewSessionStatus,
   AiInterviewQuestionCategory,
-  Prisma,
 } from '@prisma/client';
-
-import { CONSTANTS } from '../../../config/constants';
+import { v4 as uuidv4 } from 'uuid';
 import { GroqApiManager } from '../../../utils/groq-manager';
-import { TTSManager } from '../../../utils/tts-manager';
-import { JsonParser } from '../../../utils/json-parser';
+import { getTTSManager, TTSManager } from '../../../utils/tts-manager';
+import { STTManager } from '../../../utils/stt-manager';
 import { PrismaJsonHelper } from '../../../utils/prisma-helper';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ProfileService } from '../../profile/profile.service';
 import { logger } from '../../../utils/logger';
-
 import {
   NotFoundError,
   BadRequestError,
   ConflictError,
   InternalError,
-  ValidationError,
-} from '../../../lib/errors';
-
+} from '../../../utils/errors';
 import {
-  StartInterviewSessionRequest,
-  SubmitAnswerRequest,
-  InterviewSessionResponse,
-  InterviewFeedbackResponse,
-  QuestionItem,
-  Questions,
+  StartSessionDto,
+  SubmitResponseDto,
+  SessionResponse,
+  SubmitResponseResult,
+  FeedbackResponse,
+  SessionSummary,
+  SessionStats,
+  ConversationTurn,
+  LiveSessionState,
   SessionContext,
+  QuestionItem,
   AnswerScore,
-  UserSessionSummaryDto,
-  UserSessionStatsResponse,
-  SessionStateResponse,
-  NextQuestionResponse,
-  QuestionCompletionResponse,
-  SubmitAnswerResponse,
-  QuestionItemDto,
-  ResponseScoreDto,
+  INTERVIEW_CONFIG,
 } from './interview.types';
+import { InterviewAnalyzer, CategoryScore } from './interview.analyzer';
+import { InterviewGenerator } from './interview.generator';
+import {
+  MAX_AUDIO_SIZE_BYTES,
+  MAX_TRANSCRIPT_LENGTH,
+  MAX_SESSIONS_PER_PAGE,
+  sanitizeInput,
+  sanitizeStringArray,
+  formatConversation,
+  createLiveState,
+  createCandidateTurn,
+  calculateProgress,
+  shouldEndInterview,
+  categoryToTopic,
+  extractErrorMessage,
+} from './interview.utils';
+
+// =====================================================
+// INTERNAL TYPES
+// =====================================================
+
+interface DbSessionWithRelations extends AiInterviewSession {
+  responses: AiInterviewResponse[];
+  feedback: AiInterviewFeedback | null;
+  resume?: { id: number } | null;
+}
+
+interface PersistedQuestion {
+  text: string;
+  category: AiInterviewQuestionCategory;
+  isFollowUp: boolean;
+}
+
+interface FeedbackJson {
+  categoryScores?: CategoryScore[];
+  recommendations?: string[];
+}
+
+// =====================================================
+// SERVICE
+// =====================================================
 
 export class InterviewService {
   private readonly groqManager: GroqApiManager;
   private readonly ttsManager: TTSManager;
-  private readonly jsonParser: JsonParser;
-  private readonly requestDedup: Map<string, NodeJS.Timeout>;
-  private readonly activeLocks: Set<string>;
+  private readonly sttManager: STTManager;
+  private readonly analyzer: InterviewAnalyzer;
+  private readonly generator: InterviewGenerator;
+
+  // In-memory state for active sessions
+  private readonly activeSessions = new Map<string, LiveSessionState>();
+
+  // Request deduplication & locking
+  private readonly pendingRequests = new Map<string, NodeJS.Timeout>();
+  private readonly activeLocks = new Set<string>();
+
+  private isDestroyed = false;
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly profileService: ProfileService
   ) {
-    const apiKeys = [
-      process.env.GROQ_API_KEY_1,
-      process.env.GROQ_API_KEY_2,
-      process.env.GROQ_API_KEY_3,
-    ].filter(Boolean) as string[];
-
-    this.groqManager = new GroqApiManager(apiKeys);
-    this.ttsManager = new TTSManager();
-    this.jsonParser = new JsonParser();
-    this.requestDedup = new Map();
-    this.activeLocks = new Set();
-
-    this.initializeService();
+    this.groqManager = new GroqApiManager(this.getApiKeys());
+    this.ttsManager = getTTSManager();
+    this.sttManager = new STTManager();
+    this.analyzer = new InterviewAnalyzer(this.groqManager);
+    this.generator = new InterviewGenerator(this.groqManager);
+    this.initialize();
   }
 
-  private async initializeService(): Promise<void> {
-    try {
-      const ttsConnected = await this.ttsManager.testConnection();
-      if (!ttsConnected) {
-        logger.warn('[InterviewService] TTS connection test failed on startup');
-      }
-    } catch (error) {
-      logger.error('[InterviewService] Service initialization error', error);
-    }
-  }
+  // ===================================================
+  // PUBLIC API
+  // ===================================================
 
-  // ============= Public Methods =============
-
-  async startInterviewSession(
+  /**
+   * Start a new interview session
+   */
+  async startSession(
     userId: string,
-    dto: StartInterviewSessionRequest
-  ): Promise<InterviewSessionResponse> {
-    logger.info('[InterviewService] Starting session', {
-      userId,
-      jobTitle: dto.jobTitle,
-      companyName: dto.companyName,
-      resumeId: dto.resumeId,
-    });
+    dto: StartSessionDto
+  ): Promise<SessionResponse> {
+    this.ensureActive();
+    this.preventDuplicateRequest(`start:${userId}`);
 
-    const dedupKey = `start:${userId}:${dto.jobTitle || ''}:${dto.resumeId || 'none'}`;
-    if (this.isDuplicateRequest(dedupKey)) {
-      throw new ConflictError('Duplicate request detected. Please wait.');
-    }
+    logger.info('[InterviewService] Starting session', { userId, dto });
 
     try {
-      const context = await this.buildSessionContext(userId, dto);
-      const questions = await this.generateInitialQuestions(context);
-      const session = await this.createSession(userId, context, questions, dto.resumeId);
+      const context = await this.buildContext(userId, dto);
+      const openingQuestion = await this.generator.generateOpeningQuestion(context);
 
-      let audioUrl: string | undefined;
-      try {
-        audioUrl = await this.ttsManager.generateAudio(questions[0].text, session.id);
-      } catch (error) {
-        logger.warn('[InterviewService] Failed to generate initial audio', {
-          sessionId: session.id,
-          error: (error as Error).message,
-        });
-      }
-
-      logger.info('[InterviewService] Session created', {
-        sessionId: session.id,
-        userId,
-        questionCount: questions.length,
+      const dbSession = await this.prisma.aiInterviewSession.create({
+        data: {
+          user: { connect: { id: userId } },
+          resume: dto.resumeId ? { connect: { id: dto.resumeId } } : undefined,
+          jobTitle: context.jobTitle,
+          companyName: context.companyName,
+          questions: PrismaJsonHelper.toJson([]),
+          totalQuestions: INTERVIEW_CONFIG.TARGET_QUESTIONS,
+          currentQuestionIndex: 0,
+          status: AiInterviewSessionStatus.STARTED,
+        },
       });
 
-      return this.formatSessionResponse(session, questions, audioUrl);
+      const liveState = createLiveState(
+        dbSession.id,
+        userId,
+        context,
+        openingQuestion
+      );
+      this.activeSessions.set(dbSession.id, liveState);
+
+      await this.persistQuestions(dbSession.id, liveState);
+
+      const audioUrl = await this.safeGenerateAudio(
+        openingQuestion.text,
+        dbSession.id
+      );
+
+      logger.info('[InterviewService] Session started', {
+        sessionId: dbSession.id,
+      });
+
+      return this.formatSessionResponse(liveState, audioUrl);
     } catch (error) {
       logger.error('[InterviewService] Failed to start session', {
         userId,
-        error: (error as Error).message,
+        error: extractErrorMessage(error),
       });
       throw error;
     }
   }
 
-  async submitAnswer(
+  /**
+   * Submit a response to the current question
+   */
+  async submitResponse(
     sessionId: string,
     userId: string,
-    dto: SubmitAnswerRequest
-  ): Promise<SubmitAnswerResponse> {
-    logger.info('[InterviewService] Submitting answer', {
-      sessionId,
-      userId,
-      category: dto.category,
-    });
+    dto: SubmitResponseDto
+  ): Promise<SubmitResponseResult> {
+    this.ensureActive();
 
-    const lockKey = `submit:${sessionId}`;
+    const lockKey = `response:${sessionId}`;
     if (!this.acquireLock(lockKey)) {
-      throw new ConflictError('Another answer submission is in progress');
+      throw new ConflictError('Response already being processed');
     }
 
     try {
-      const session = await this.validateSession(sessionId, userId);
+      logger.info('[InterviewService] Processing response', { sessionId });
 
-      if (dto.questionIndex !== undefined && dto.questionIndex !== session.currentQuestionIndex) {
+      const dbSession = await this.getActiveSession(sessionId, userId);
+
+      let liveState = this.activeSessions.get(sessionId);
+      if (!liveState) {
+        liveState = await this.restoreLiveState(dbSession);
+        this.activeSessions.set(sessionId, liveState);
+      }
+
+      const transcript = await this.getTranscript(dto);
+      if (!transcript || transcript.trim().length < 3) {
         throw new BadRequestError(
-          `Expected question index ${session.currentQuestionIndex}, got ${dto.questionIndex}`
+          'Could not understand response. Please try again.'
         );
       }
 
-      const scores = await this.scoreAnswer(dto, session);
-      await this.saveResponse(sessionId, dto, scores, session);
+      const candidateTurn = this.addCandidateTurn(liveState, transcript);
 
-      return this.processNextStep(session, dto.answer);
+      const analysis = await this.analyzer.analyzeResponse(liveState, transcript);
+      liveState.lastAnalysis = analysis;
+
+      const scores = this.analyzer.calculateScores(analysis);
+
+      await this.saveResponse(
+        sessionId,
+        liveState.currentQuestion,
+        transcript,
+        scores,
+        liveState.currentIsFollowUp
+      );
+
+      analysis.topics.forEach((t) => liveState!.coveredTopics.add(t));
+
+      if (shouldEndInterview(liveState)) {
+        return this.completeInterview(sessionId, liveState, candidateTurn, scores);
+      }
+
+      const shouldFollowUp = this.analyzer.shouldFollowUp(liveState, analysis);
+      const { question, isFollowUp, transition } = await this.generator.generateNextQuestion(
+        liveState,
+        analysis,
+        shouldFollowUp
+      );
+
+      this.addInterviewerTurn(liveState, question, isFollowUp);
+
+      await this.persistQuestions(sessionId, liveState);
+
+      await this.prisma.aiInterviewSession.update({
+        where: { id: sessionId },
+        data: {
+          currentQuestionIndex: liveState.questionCount - 1,
+          status: AiInterviewSessionStatus.IN_PROGRESS,
+        },
+      });
+
+      const audioUrl = await this.safeGenerateAudio(question.text, sessionId);
+
+      return {
+        responseReceived: {
+          id: candidateTurn.id,
+          transcript,
+          scores,
+        },
+        nextQuestion: {
+          id: liveState.conversationHistory[liveState.conversationHistory.length - 1].id,
+          text: question.text,
+          category: question.category,
+          audioUrl,
+          isFollowUp,
+          transition,
+        },
+        isComplete: false,
+        progress: calculateProgress(liveState),
+      };
     } finally {
       this.releaseLock(lockKey);
     }
   }
 
-  async getInterviewFeedback(
+  /**
+   * Get feedback for a completed session
+   */
+  async getFeedback(
     sessionId: string,
     userId: string
-  ): Promise<InterviewFeedbackResponse> {
-    logger.info('[InterviewService] Getting feedback', { sessionId });
+  ): Promise<FeedbackResponse> {
+    this.ensureActive();
 
-    const session = await this.getCompletedSession(sessionId, userId);
-
-    if (session.feedback) {
-      logger.debug('[InterviewService] Returning cached feedback', { sessionId });
-      return this.formatExistingFeedback(session.feedback);
-    }
-
-    return this.generateAndSaveFeedback(session);
-  }
-
-  async getInterviewSession(
-    sessionId: string,
-    userId: string
-  ): Promise<SessionStateResponse> {
-    const session = await this.validateSessionForRead(sessionId, userId);
-    const questions = this.parseQuestions(session.questions);
-    const currentQuestion = questions[session.currentQuestionIndex];
-
-    let audioUrl: string | undefined;
-    try {
-      audioUrl = await this.ttsManager.generateAudio(currentQuestion.text, sessionId);
-    } catch (error) {
-      logger.warn('[InterviewService] Failed to generate audio for session state', {
-        sessionId,
-        error: (error as Error).message,
-      });
-    }
-
-    return {
-      id: session.id,
-      userId: session.userId,
-      status: session.status,
-      questions: questions.map((q) => ({
-        category: q.category,
-        text: q.text,
-      })),
-      currentQuestion: {
-        category: currentQuestion.category,
-        text: currentQuestion.text,
-      },
-      currentQuestionIndex: session.currentQuestionIndex,
-      totalQuestions: session.totalQuestions,
-      audioUrl,
-    };
-  }
-
-  async getNextQuestion(
-    sessionId: string,
-    userId: string
-  ): Promise<NextQuestionResponse | QuestionCompletionResponse> {
-    const dedupKey = `next:${sessionId}`;
-    if (this.isDuplicateRequest(dedupKey)) {
-      throw new ConflictError('Duplicate request detected');
-    }
-
-    const session = await this.validateSession(sessionId, userId);
-    const nextIndex = session.currentQuestionIndex + 1;
-
-    if (nextIndex >= session.totalQuestions) {
-      await this.completeSession(sessionId);
-      return {
-        isComplete: true,
-        message: 'Interview complete. You can now view your feedback.',
-      };
-    }
-
-    const questions = this.parseQuestions(session.questions);
-    const nextQuestion = questions[nextIndex];
-
-    let audioUrl: string | undefined;
-    try {
-      audioUrl = await this.ttsManager.generateAudio(nextQuestion.text, sessionId);
-    } catch (error) {
-      logger.warn('[InterviewService] Failed to generate audio', {
-        sessionId,
-        error: (error as Error).message,
-      });
-    }
-
-    return {
-      question: nextQuestion.text,
-      category: nextQuestion.category,
-      index: nextIndex,
-      audioUrl,
-      totalQuestions: session.totalQuestions,
-      isComplete: false,
-    };
-  }
-
-  async getUserSessions(userId: string): Promise<UserSessionSummaryDto[]> {
-    logger.debug('[InterviewService] Fetching sessions', { userId });
-
-    try {
-      const sessions = await this.prisma.aiInterviewSession.findMany({
-        where: { userId },
-        include: {
-          responses: { select: { id: true } },
-          feedback: { select: { overallScore: true } },
-          resume: { select: { id: true } },
-        },
-        orderBy: { createdAt: 'desc' },
-      });
-
-      return sessions.map((session) => ({
-        id: session.id,
-        jobTitle: session.jobTitle || CONSTANTS.DEFAULT_JOB_TITLE,
-        companyName: session.companyName,
-        resumeId: session.resume?.id || null,
-        status: session.status,
-        totalQuestions: session.totalQuestions,
-        answeredQuestions: session.responses.length,
-        currentQuestionIndex: session.currentQuestionIndex,
-        overallScore: session.feedback?.overallScore
-          ? Number(session.feedback.overallScore)
-          : null,
-        createdAt: session.createdAt,
-        completedAt: session.completedAt,
-        hasFeedback: !!session.feedback,
-      }));
-    } catch (error) {
-      logger.error('[InterviewService] Failed to fetch sessions', {
-        userId,
-        error: (error as Error).message,
-      });
-      throw new InternalError('Failed to fetch user sessions');
-    }
-  }
-
-  async getUserSessionStats(userId: string): Promise<UserSessionStatsResponse> {
-    logger.debug('[InterviewService] Fetching stats', { userId });
-
-    try {
-      const [sessions, feedbacks] = await Promise.all([
-        this.prisma.aiInterviewSession.findMany({
-          where: { userId },
-          select: {
-            id: true,
-            status: true,
-            _count: { select: { responses: true } },
-          },
-        }),
-        this.prisma.aiInterviewFeedback.findMany({
-          where: { userId },
-          select: { overallScore: true },
-        }),
-      ]);
-
-      const completedSessions = sessions.filter(
-        (s) => s.status === AiInterviewSessionStatus.COMPLETED
-      );
-
-      const inProgressSessions = sessions.filter(
-        (s) =>
-          s.status === AiInterviewSessionStatus.IN_PROGRESS ||
-          s.status === AiInterviewSessionStatus.STARTED
-      );
-
-      const scores = feedbacks
-        .map((f) => f.overallScore)
-        .filter((score): score is NonNullable<typeof score> => score !== null)
-        .map(Number);
-
-      const averageScore =
-        scores.length > 0
-          ? Math.round(scores.reduce((sum, score) => sum + score, 0) / scores.length)
-          : 0;
-
-      const totalQuestionsAnswered = sessions.reduce(
-        (sum, s) => sum + s._count.responses,
-        0
-      );
-
-      return {
-        totalSessions: sessions.length,
-        completedSessions: completedSessions.length,
-        inProgressSessions: inProgressSessions.length,
-        averageScore,
-        totalQuestionsAnswered,
-        highestScore: scores.length > 0 ? Math.max(...scores) : null,
-        lowestScore: scores.length > 0 ? Math.min(...scores) : null,
-      };
-    } catch (error) {
-      logger.error('[InterviewService] Failed to fetch stats', {
-        userId,
-        error: (error as Error).message,
-      });
-      throw new InternalError('Failed to fetch session statistics');
-    }
-  }
-
-  async cancelSession(sessionId: string, userId: string): Promise<void> {
-    logger.info('[InterviewService] Cancelling session', { sessionId });
-
-    const session = await this.prisma.aiInterviewSession.findFirst({
+    const dbSession = await this.prisma.aiInterviewSession.findFirst({
       where: { id: sessionId, userId },
+      include: { responses: true, feedback: true },
     });
 
-    if (!session) {
+    if (!dbSession) {
       throw new NotFoundError('Session');
     }
 
-    if (session.status === AiInterviewSessionStatus.COMPLETED) {
-      throw new BadRequestError('Cannot cancel a completed session');
+    if (dbSession.status !== AiInterviewSessionStatus.COMPLETED) {
+      throw new BadRequestError('Interview must be completed to get feedback');
+    }
+
+    if (dbSession.feedback) {
+      return this.formatFeedback(dbSession.feedback);
+    }
+
+    const liveState = this.activeSessions.get(sessionId);
+    return this.generateAndSaveFeedback(
+      dbSession as DbSessionWithRelations,
+      liveState
+    );
+  }
+
+  /**
+   * End session early
+   */
+  async endSession(
+    sessionId: string,
+    userId: string
+  ): Promise<FeedbackResponse> {
+    this.ensureActive();
+
+    const dbSession = await this.prisma.aiInterviewSession.findFirst({
+      where: { id: sessionId, userId },
+      include: { responses: true, feedback: true },
+    });
+
+    if (!dbSession) {
+      throw new NotFoundError('Session');
+    }
+
+    if (dbSession.status === AiInterviewSessionStatus.COMPLETED) {
+      return this.getFeedback(sessionId, userId);
     }
 
     await this.prisma.aiInterviewSession.update({
@@ -383,11 +328,156 @@ export class InterviewService {
       },
     });
 
-    logger.info('[InterviewService] Session cancelled', { sessionId });
+    this.activeSessions.delete(sessionId);
+
+    return this.generateAndSaveFeedback(
+      dbSession as DbSessionWithRelations,
+      undefined
+    );
   }
 
+  /**
+   * Get current session state
+   */
+  async getSession(
+    sessionId: string,
+    userId: string
+  ): Promise<SessionResponse> {
+    this.ensureActive();
+
+    const dbSession = await this.prisma.aiInterviewSession.findFirst({
+      where: { id: sessionId, userId },
+      include: { responses: true },
+    });
+
+    if (!dbSession) {
+      throw new NotFoundError('Session');
+    }
+
+    if (dbSession.status === AiInterviewSessionStatus.COMPLETED) {
+      throw new BadRequestError('Session is already completed');
+    }
+
+    let liveState = this.activeSessions.get(sessionId);
+    if (!liveState) {
+      liveState = await this.restoreLiveState(
+        dbSession as DbSessionWithRelations
+      );
+      this.activeSessions.set(sessionId, liveState);
+    }
+
+    const audioUrl = await this.safeGenerateAudio(
+      liveState.currentQuestion.text,
+      sessionId
+    );
+
+    return this.formatSessionResponse(liveState, audioUrl);
+  }
+
+  /**
+   * Get user's session history with pagination
+   */
+  async getUserSessions(
+    userId: string,
+    page: number = 1,
+    limit: number = 20
+  ): Promise<{ sessions: SessionSummary[]; total: number; page: number; totalPages: number }> {
+    this.ensureActive();
+
+    const sanitizedLimit = Math.min(Math.max(1, limit), MAX_SESSIONS_PER_PAGE);
+    const sanitizedPage = Math.max(1, page);
+    const skip = (sanitizedPage - 1) * sanitizedLimit;
+
+    const [sessions, total] = await Promise.all([
+      this.prisma.aiInterviewSession.findMany({
+        where: { userId },
+        include: {
+          responses: { select: { id: true } },
+          feedback: { select: { overallScore: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+        take: sanitizedLimit,
+        skip,
+      }),
+      this.prisma.aiInterviewSession.count({ where: { userId } }),
+    ]);
+
+    const sessionSummaries: SessionSummary[] = sessions.map((s) => ({
+      id: s.id,
+      jobTitle: s.jobTitle || INTERVIEW_CONFIG.DEFAULT_JOB_TITLE,
+      companyName: s.companyName || undefined,
+      status: s.status,
+      questionsAnswered: s.responses.length,
+      overallScore: s.feedback?.overallScore
+        ? Number(s.feedback.overallScore)
+        : undefined,
+      createdAt: s.createdAt,
+      completedAt: s.completedAt || undefined,
+    }));
+
+    return {
+      sessions: sessionSummaries,
+      total,
+      page: sanitizedPage,
+      totalPages: Math.ceil(total / sanitizedLimit),
+    };
+  }
+
+  /**
+   * Get user statistics
+   */
+  async getUserStats(userId: string): Promise<SessionStats> {
+    this.ensureActive();
+
+    const [sessions, feedbacks, responses] = await Promise.all([
+      this.prisma.aiInterviewSession.findMany({
+        where: { userId },
+        select: { id: true, status: true },
+      }),
+      this.prisma.aiInterviewFeedback.findMany({
+        where: { userId },
+        select: { overallScore: true },
+      }),
+      this.prisma.aiInterviewResponse.findMany({
+        where: { session: { userId } },
+        select: { category: true },
+      }),
+    ]);
+
+    const scores = feedbacks
+      .map((f) => Number(f.overallScore))
+      .filter((s) => !isNaN(s));
+
+    const categoryCounts = responses.reduce(
+      (acc, r) => {
+        acc[r.category] = (acc[r.category] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>
+    );
+
+    return {
+      totalSessions: sessions.length,
+      completedSessions: sessions.filter(
+        (s) => s.status === AiInterviewSessionStatus.COMPLETED
+      ).length,
+      averageScore:
+        scores.length > 0
+          ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length)
+          : 0,
+      totalQuestionsAnswered: responses.length,
+      topCategories: Object.entries(categoryCounts)
+        .map(([category, count]) => ({ category, count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 5),
+    };
+  }
+
+  /**
+   * Delete a session
+   */
   async deleteSession(sessionId: string, userId: string): Promise<void> {
-    logger.info('[InterviewService] Deleting session', { sessionId });
+    this.ensureActive();
 
     const session = await this.prisma.aiInterviewSession.findFirst({
       where: { id: sessionId, userId },
@@ -397,49 +487,552 @@ export class InterviewService {
       throw new NotFoundError('Session');
     }
 
-    await this.prisma.$transaction([
-      this.prisma.aiInterviewResponse.deleteMany({ where: { sessionId } }),
-      this.prisma.aiInterviewFeedback.deleteMany({ where: { sessionId } }),
-      this.prisma.aiInterviewSession.delete({ where: { id: sessionId } }),
-    ]);
+    await this.prisma.transaction(async (tx) => {
+      const sessionCheck = await tx.aiInterviewSession.findFirst({
+        where: { id: sessionId, userId },
+      });
 
+      if (!sessionCheck) {
+        throw new NotFoundError('Session');
+      }
+
+      await tx.aiInterviewResponse.deleteMany({
+        where: { sessionId, session: { userId } },
+      });
+      await tx.aiInterviewFeedback.deleteMany({
+        where: { sessionId, userId },
+      });
+      await tx.aiInterviewSession.delete({
+        where: { id: sessionId },
+      });
+    });
+
+    this.activeSessions.delete(sessionId);
     logger.info('[InterviewService] Session deleted', { sessionId });
   }
 
-  async testTTS(): Promise<object> {
-    const fs = await import('fs');
-    const path = await import('path');
-    const credPath = process.env.GOOGLE_APPLICATION_CREDENTIALS;
+  /**
+   * Cleanup resources
+   */
+  destroy(): void {
+    if (this.isDestroyed) return;
+    this.isDestroyed = true;
 
-    const connectionTest = await this.ttsManager.testConnection();
+    this.pendingRequests.forEach((timeout) => clearTimeout(timeout));
+    this.pendingRequests.clear();
+
+    this.activeLocks.clear();
+    this.activeSessions.clear();
+    this.ttsManager.destroy();
+
+    logger.info('[InterviewService] Destroyed');
+  }
+
+  // ===================================================
+  // PRIVATE: CONTEXT BUILDING
+  // ===================================================
+
+private async buildContext(
+  userId: string,
+  dto: StartSessionDto
+): Promise<SessionContext> {
+  let resumeText: string | undefined;
+
+  if (dto.resumeId) {
+    try {
+      const extractedData = await this.profileService.extractResumeText(
+        userId,
+        dto.resumeId
+      );
+      resumeText = extractedData.text; // Extract the text property
+    } catch (error) {
+      logger.warn('[InterviewService] Resume extraction failed', {
+        resumeId: dto.resumeId,
+      });
+    }
+  }
 
     return {
-      credentialsPath: credPath,
-      fileExists: credPath ? fs.existsSync(credPath) : false,
-      absolutePath: credPath ? path.resolve(credPath) : null,
-      connectionTest,
-      cacheSize: this.ttsManager.cacheSize,
-      environment: {
-        nodeEnv: process.env.NODE_ENV,
-        hasCredentials: !!credPath,
+      jobTitle: sanitizeInput(dto.jobTitle) || INTERVIEW_CONFIG.DEFAULT_JOB_TITLE,
+      companyName: sanitizeInput(dto.companyName),
+      resumeText: resumeText ? sanitizeInput(resumeText) : undefined,
+      difficulty: dto.difficulty || INTERVIEW_CONFIG.DEFAULT_DIFFICULTY,
+    };
+  }
+
+  // ===================================================
+  // PRIVATE: STATE MANAGEMENT
+  // ===================================================
+
+  private async persistQuestions(
+    sessionId: string,
+    liveState: LiveSessionState
+  ): Promise<void> {
+    const persistedQuestions: PersistedQuestion[] = liveState.conversationHistory
+      .filter((t): t is ConversationTurn & { role: 'interviewer' } => t.role === 'interviewer')
+      .map((t) => ({
+        text: t.content,
+        category: t.category,
+        isFollowUp: t.isFollowUp,
+      }));
+
+    await this.prisma.aiInterviewSession.update({
+      where: { id: sessionId },
+      data: {
+        questions: PrismaJsonHelper.toJson(persistedQuestions),
+      },
+    });
+  }
+
+  private async restoreLiveState(
+    dbSession: DbSessionWithRelations
+  ): Promise<LiveSessionState> {
+    const context: SessionContext = {
+      jobTitle: dbSession.jobTitle || INTERVIEW_CONFIG.DEFAULT_JOB_TITLE,
+      companyName: dbSession.companyName || undefined,
+      difficulty: INTERVIEW_CONFIG.DEFAULT_DIFFICULTY,
+    };
+
+    const savedQuestions = PrismaJsonHelper.fromJson<PersistedQuestion[]>(
+      dbSession.questions,
+      []
+    );
+
+    const conversationHistory: ConversationTurn[] = [];
+    const coveredTopics = new Set<string>();
+
+    for (const response of dbSession.responses) {
+      const interviewerTurn: ConversationTurn = {
+        id: uuidv4(),
+        role: 'interviewer',
+        content: response.question,
+        category: response.category,
+        timestamp: response.createdAt,
+        isFollowUp: response.isFollowup,
+      };
+      conversationHistory.push(interviewerTurn);
+
+      const candidateTurn: ConversationTurn = {
+        id: uuidv4(),
+        role: 'candidate',
+        content: response.answer,
+        category: response.category,
+        timestamp: response.createdAt,
+        isFollowUp: false,
+      };
+      conversationHistory.push(candidateTurn);
+
+      coveredTopics.add(categoryToTopic(response.category));
+    }
+
+    const responseCount = dbSession.responses.length;
+    if (
+      dbSession.currentQuestionIndex >= responseCount &&
+      responseCount < savedQuestions.length
+    ) {
+      const pendingQ = savedQuestions[responseCount];
+      if (pendingQ) {
+        const interviewerTurn: ConversationTurn = {
+          id: uuidv4(),
+          role: 'interviewer',
+          content: pendingQ.text,
+          category: pendingQ.category,
+          timestamp: new Date(),
+          isFollowUp: pendingQ.isFollowUp,
+        };
+        conversationHistory.push(interviewerTurn);
+        coveredTopics.add(categoryToTopic(pendingQ.category));
+      }
+    }
+
+    let currentQuestion: QuestionItem;
+    let currentIsFollowUp = false;
+    const lastInterviewerTurn = conversationHistory
+      .filter((t) => t.role === 'interviewer')
+      .pop();
+
+    if (lastInterviewerTurn) {
+      currentQuestion = {
+        text: lastInterviewerTurn.content,
+        category: lastInterviewerTurn.category,
+      };
+      currentIsFollowUp = lastInterviewerTurn.isFollowUp;
+    } else {
+      currentQuestion = await this.generator.generateOpeningQuestion(context);
+      currentIsFollowUp = false;
+    }
+
+    if (conversationHistory.length === 0) {
+      const now = new Date();
+      const openingTurn: ConversationTurn = {
+        id: uuidv4(),
+        role: 'interviewer',
+        content: currentQuestion.text,
+        category: currentQuestion.category,
+        timestamp: now,
+        isFollowUp: false,
+      };
+      conversationHistory.push(openingTurn);
+      coveredTopics.add('introduction');
+    }
+
+    const interviewerTurns = conversationHistory.filter(
+      (t) => t.role === 'interviewer'
+    );
+    let topicDepth = 0;
+    for (let i = interviewerTurns.length - 1; i >= 0; i--) {
+      if (interviewerTurns[i].isFollowUp) {
+        topicDepth++;
+      } else {
+        break;
+      }
+    }
+
+    return {
+      sessionId: dbSession.id,
+      userId: dbSession.userId,
+      context,
+      conversationHistory,
+      currentQuestion,
+      currentIsFollowUp,
+      currentTopic: categoryToTopic(currentQuestion.category),
+      topicDepth,
+      coveredTopics,
+      questionCount: interviewerTurns.length,
+      startedAt: dbSession.createdAt,
+      lastActivityAt: new Date(),
+      lastAnalysis: null,
+    };
+  }
+
+  private addCandidateTurn(
+    liveState: LiveSessionState,
+    transcript: string
+  ): ConversationTurn {
+    const turn = createCandidateTurn(transcript, liveState.currentQuestion.category);
+
+    liveState.conversationHistory.push(turn);
+    liveState.lastActivityAt = new Date();
+
+    return turn;
+  }
+
+  private addInterviewerTurn(
+    liveState: LiveSessionState,
+    question: QuestionItem,
+    isFollowUp: boolean
+  ): void {
+    const turn: ConversationTurn = {
+      id: uuidv4(),
+      role: 'interviewer',
+      content: question.text,
+      category: question.category,
+      timestamp: new Date(),
+      isFollowUp,
+    };
+
+    liveState.conversationHistory.push(turn);
+    liveState.currentQuestion = question;
+    liveState.currentIsFollowUp = isFollowUp;
+    liveState.questionCount++;
+    liveState.lastActivityAt = new Date();
+
+    if (isFollowUp) {
+      liveState.topicDepth++;
+    } else {
+      liveState.currentTopic = categoryToTopic(question.category);
+      liveState.topicDepth = 0;
+    }
+  }
+
+  // ===================================================
+  // PRIVATE: INTERVIEW FLOW
+  // ===================================================
+
+  private async completeInterview(
+    sessionId: string,
+    liveState: LiveSessionState,
+    lastResponse: ConversationTurn,
+    scores: AnswerScore
+  ): Promise<SubmitResponseResult> {
+    await this.prisma.aiInterviewSession.update({
+      where: { id: sessionId },
+      data: {
+        status: AiInterviewSessionStatus.COMPLETED,
+        completedAt: new Date(),
+      },
+    });
+
+    this.activeSessions.delete(sessionId);
+    logger.info('[InterviewService] Interview completed', { sessionId });
+
+    return {
+      responseReceived: {
+        id: lastResponse.id,
+        transcript: lastResponse.content,
+        scores,
+      },
+      isComplete: true,
+      progress: {
+        questionNumber: liveState.questionCount,
+        estimatedTotal: liveState.questionCount,
+        topicsCovered: Array.from(liveState.coveredTopics),
+        percentComplete: 100,
       },
     };
   }
 
-  // ============= Private Helper Methods =============
+  // ===================================================
+  // PRIVATE: FEEDBACK
+  // ===================================================
 
-  private isDuplicateRequest(key: string): boolean {
-    if (this.requestDedup.has(key)) {
-      return true;
+  private async generateAndSaveFeedback(
+    dbSession: DbSessionWithRelations,
+    liveState?: LiveSessionState
+  ): Promise<FeedbackResponse> {
+    logger.info('[InterviewService] Generating feedback', {
+      sessionId: dbSession.id,
+    });
+
+    if (dbSession.responses.length === 0) {
+      return this.getDefaultFeedback();
+    }
+
+    let transcript: string;
+    if (liveState?.conversationHistory.length) {
+      transcript = formatConversation(liveState.conversationHistory);
+    } else {
+      transcript = dbSession.responses
+        .map((r, i) => `Q${i + 1} [${r.category}]: ${r.question}\nA: ${r.answer}`)
+        .join('\n\n');
+    }
+
+    const feedback = await this.analyzer.generateFeedback(
+      dbSession.jobTitle || 'job',
+      transcript
+    );
+
+    await this.prisma.aiInterviewFeedback.create({
+      data: {
+        sessionId: dbSession.id,
+        userId: dbSession.userId,
+        overallScore: feedback.overallScore,
+        overallSummary: feedback.summary,
+        keyStrengths: feedback.strengths,
+        areasForImprovement: feedback.improvements,
+        feedbackJson: PrismaJsonHelper.toJson({
+          categoryScores: feedback.categoryScores,
+          recommendations: feedback.recommendations,
+        }),
+      },
+    });
+
+    return feedback;
+  }
+
+  private formatFeedback(feedback: AiInterviewFeedback): FeedbackResponse {
+    const json = PrismaJsonHelper.fromJson<FeedbackJson>(feedback.feedbackJson, {});
+
+    return {
+      overallScore: Number(feedback.overallScore) || 0,
+      summary: feedback.overallSummary || '',
+      strengths: sanitizeStringArray(feedback.keyStrengths as unknown[]),
+      improvements: sanitizeStringArray(feedback.areasForImprovement as unknown[]),
+      categoryScores: Array.isArray(json.categoryScores) ? json.categoryScores : [],
+      recommendations: Array.isArray(json.recommendations) ? json.recommendations : [],
+    };
+  }
+
+  private getDefaultFeedback(): FeedbackResponse {
+    return {
+      overallScore: 70,
+      summary:
+        'Thank you for completing the interview. Your responses have been recorded.',
+      strengths: ['Participation', 'Engagement'],
+      improvements: [
+        'Provide more specific examples',
+        'Elaborate on technical details',
+      ],
+      categoryScores: [],
+      recommendations: [
+        'Practice answering behavioral questions with the STAR method',
+        'Prepare specific examples from your experience',
+      ],
+    };
+  }
+
+  // ===================================================
+  // PRIVATE: AUDIO & TRANSCRIPTION
+  // ===================================================
+
+  private async getTranscript(dto: SubmitResponseDto): Promise<string> {
+    if (dto.transcript && dto.transcript.trim().length > 0) {
+      const transcript = dto.transcript.trim();
+
+      if (transcript.length > MAX_TRANSCRIPT_LENGTH) {
+        throw new BadRequestError(
+          `Transcript too long. Maximum ${MAX_TRANSCRIPT_LENGTH} characters allowed.`
+        );
+      }
+
+      return transcript;
+    }
+
+    if (dto.audioBlob) {
+      const audioSize = Buffer.byteLength(dto.audioBlob, 'base64');
+      if (audioSize > MAX_AUDIO_SIZE_BYTES) {
+        throw new BadRequestError(
+          `Audio file too large. Maximum ${MAX_AUDIO_SIZE_BYTES / 1024 / 1024}MB allowed.`
+        );
+      }
+
+      try {
+        const audioBuffer = Buffer.from(dto.audioBlob, 'base64');
+        const transcript = await this.sttManager.transcribe(audioBuffer);
+        return transcript.trim();
+      } catch (error) {
+        logger.error('[InterviewService] Transcription failed', {
+          error: extractErrorMessage(error),
+        });
+        throw new BadRequestError(
+          'Could not transcribe audio. Please try again or type your response.'
+        );
+      }
+    }
+
+    throw new BadRequestError('No response provided');
+  }
+
+  private async safeGenerateAudio(
+    text: string,
+    sessionId: string
+  ): Promise<string | undefined> {
+    try {
+      return await this.ttsManager.generateAudio(text, sessionId);
+    } catch (error) {
+      logger.warn('[InterviewService] Audio generation failed', {
+        error: extractErrorMessage(error),
+      });
+      return undefined;
+    }
+  }
+
+  // ===================================================
+  // PRIVATE: DATABASE
+  // ===================================================
+
+  private async getActiveSession(
+    sessionId: string,
+    userId: string
+  ): Promise<DbSessionWithRelations> {
+    const session = await this.prisma.aiInterviewSession.findFirst({
+      where: { id: sessionId, userId },
+      include: { responses: true, feedback: true, resume: true },
+    });
+
+    if (!session) {
+      throw new NotFoundError('Session');
+    }
+
+    if (session.status === AiInterviewSessionStatus.COMPLETED) {
+      throw new ConflictError('Session is already completed');
+    }
+
+    return session as DbSessionWithRelations;
+  }
+
+  private async saveResponse(
+    sessionId: string,
+    question: QuestionItem,
+    answer: string,
+    scores: AnswerScore,
+    isFollowup: boolean
+  ): Promise<void> {
+    await this.prisma.aiInterviewResponse.create({
+      data: {
+        sessionId,
+        category: question.category,
+        question: question.text,
+        answer,
+        isFollowup,
+        scoresJson: PrismaJsonHelper.toJson(scores),
+        feedbackText: scores.feedback,
+      },
+    });
+  }
+
+  // ===================================================
+  // PRIVATE: UTILITIES
+  // ===================================================
+
+  private getApiKeys(): string[] {
+    return [
+      process.env.GROQ_API_KEY_1,
+      process.env.GROQ_API_KEY_2,
+      process.env.GROQ_API_KEY_3,
+    ].filter((k): k is string => Boolean(k));
+  }
+
+  private async initialize(): Promise<void> {
+    try {
+      const connected = await this.ttsManager.testConnection();
+      if (!connected) {
+        logger.warn('[InterviewService] TTS connection test failed');
+      }
+    } catch (error) {
+      logger.warn('[InterviewService] TTS initialization failed', {
+        error: extractErrorMessage(error),
+      });
+    }
+  }
+
+  private ensureActive(): void {
+    if (this.isDestroyed) {
+      throw new InternalError('Service has been destroyed');
+    }
+  }
+
+  private formatSessionResponse(
+    liveState: LiveSessionState,
+    audioUrl?: string
+  ): SessionResponse {
+    const currentTurn = liveState.conversationHistory.find(
+      (t) =>
+        t.role === 'interviewer' &&
+        t.content === liveState.currentQuestion.text
+    );
+
+    return {
+      sessionId: liveState.sessionId,
+      status: 'active',
+      currentQuestion: {
+        id: currentTurn?.id || uuidv4(),
+        text: liveState.currentQuestion.text,
+        category: liveState.currentQuestion.category,
+        audioUrl,
+      },
+      progress: calculateProgress(liveState),
+      context: {
+        jobTitle: liveState.context.jobTitle,
+        companyName: liveState.context.companyName,
+      },
+    };
+  }
+
+  private preventDuplicateRequest(key: string): void {
+    if (this.pendingRequests.has(key)) {
+      throw new ConflictError('Please wait before making another request');
     }
 
     const timeout = setTimeout(() => {
-      this.requestDedup.delete(key);
-    }, CONSTANTS.DEDUP_TIMEOUT_MS);
+      this.pendingRequests.delete(key);
+    }, INTERVIEW_CONFIG.REQUEST_DEDUP_MS);
 
-    timeout.unref();
-    this.requestDedup.set(key, timeout);
-    return false;
+    if (timeout.unref) {
+      timeout.unref();
+    }
+
+    this.pendingRequests.set(key, timeout);
   }
 
   private acquireLock(key: string): boolean {
@@ -452,656 +1045,5 @@ export class InterviewService {
 
   private releaseLock(key: string): void {
     this.activeLocks.delete(key);
-  }
-
-  private async buildSessionContext(
-    userId: string,
-    dto: StartInterviewSessionRequest
-  ): Promise<SessionContext> {
-    let resumeText: string | undefined;
-
-    if (dto.resumeId) {
-      try {
-        resumeText = await this.profileService.extractResumeText(userId, dto.resumeId);
-      } catch (error) {
-        logger.warn('[InterviewService] Failed to extract resume text', {
-          userId,
-          resumeId: dto.resumeId,
-          error: (error as Error).message,
-        });
-      }
-    }
-
-    return {
-      jobTitle: dto.jobTitle?.trim() || CONSTANTS.DEFAULT_JOB_TITLE,
-      companyName: dto.companyName?.trim(),
-      resumeText,
-    };
-  }
-
-  private async generateInitialQuestions(context: SessionContext): Promise<QuestionItem[]> {
-    const prompt = this.buildQuestionsPrompt(context);
-
-    try {
-      const result = await this.groqManager.callApi(prompt);
-      const content = result.choices?.[0]?.message?.content || '';
-      const parsed = this.jsonParser.parse<Questions>(content, 'questions');
-
-      if (!parsed.questions || !Array.isArray(parsed.questions)) {
-        throw new Error('Invalid questions format');
-      }
-
-      return this.normalizeQuestions(parsed.questions);
-    } catch (error) {
-      logger.error('[InterviewService] Question generation failed', {
-        error: (error as Error).message,
-      });
-      return this.getFallbackQuestions(context.jobTitle);
-    }
-  }
-
-  private buildQuestionsPrompt(context: SessionContext): string {
-    const { jobTitle, companyName, resumeText } = context;
-    const roleContext = `${jobTitle}${companyName ? ` at ${companyName}` : ''}`;
-    const resumeContext = resumeText
-      ? resumeText.slice(0, CONSTANTS.MAX_PROMPT_LENGTH)
-      : 'No resume provided';
-
-    return `
-You are an expert technical interviewer. Generate exactly ${CONSTANTS.MAX_QUESTIONS} interview questions for a ${roleContext} position.
-
-Structure the questions as follows:
-- 1 INTRODUCTORY question (warm-up, about background)
-- ${CONSTANTS.MAX_QUESTIONS - 2} TECHNICAL questions (specific to the role, varying difficulty)
-- 1 CLOSING question (candidate's questions, next steps)
-
-${resumeText ? `Candidate's resume summary:\n"${resumeContext}"` : ''}
-
-Tailor questions to the candidate's experience level if resume is provided.
-
-Return ONLY valid JSON in this exact format:
-{
-  "questions": [
-    {"category": "INTRODUCTORY", "text": "question text here"},
-    {"category": "TECHNICAL", "text": "question text here"},
-    ...
-    {"category": "CLOSING", "text": "question text here"}
-  ]
-}
-`.trim();
-  }
-
-  private normalizeQuestions(questions: QuestionItem[]): QuestionItem[] {
-    const validCategories = Object.values(AiInterviewQuestionCategory);
-
-    const validQuestions = questions
-      .filter((q) => q.text && q.category)
-      .map((q) => ({
-        ...q,
-        category: validCategories.includes(q.category as AiInterviewQuestionCategory)
-          ? q.category
-          : AiInterviewQuestionCategory.TECHNICAL,
-      }));
-
-    const intro = validQuestions.find(
-      (q) => q.category === AiInterviewQuestionCategory.INTRODUCTORY
-    ) || {
-      category: AiInterviewQuestionCategory.INTRODUCTORY,
-      text: 'Tell me about yourself and your background.',
-    };
-
-    const tech = validQuestions
-      .filter((q) => q.category === AiInterviewQuestionCategory.TECHNICAL)
-      .slice(0, CONSTANTS.MAX_QUESTIONS - 2);
-
-    const defaultTechQuestions = this.getDefaultTechnicalQuestions();
-    while (tech.length < CONSTANTS.MAX_QUESTIONS - 2) {
-      tech.push(defaultTechQuestions[tech.length] || {
-        category: AiInterviewQuestionCategory.TECHNICAL,
-        text: 'Describe a challenging technical problem you solved recently.',
-      });
-    }
-
-    const closing = validQuestions.find(
-      (q) => q.category === AiInterviewQuestionCategory.CLOSING
-    ) || {
-      category: AiInterviewQuestionCategory.CLOSING,
-      text: 'Do you have any questions for us about the role or company?',
-    };
-
-    return [intro, ...tech, closing];
-  }
-
-  private getDefaultTechnicalQuestions(): QuestionItem[] {
-    return [
-      { category: AiInterviewQuestionCategory.TECHNICAL, text: 'What programming languages are you most proficient in and why?' },
-      { category: AiInterviewQuestionCategory.TECHNICAL, text: 'Describe your experience with data structures and algorithms.' },
-      { category: AiInterviewQuestionCategory.TECHNICAL, text: 'How do you approach debugging complex issues in production?' },
-      { category: AiInterviewQuestionCategory.TECHNICAL, text: 'Tell me about a challenging project you\'ve worked on.' },
-      { category: AiInterviewQuestionCategory.TECHNICAL, text: 'How do you ensure code quality in your projects?' },
-      { category: AiInterviewQuestionCategory.TECHNICAL, text: 'Describe your experience with version control and CI/CD pipelines.' },
-      { category: AiInterviewQuestionCategory.TECHNICAL, text: 'How do you stay updated with new technologies and best practices?' },
-      { category: AiInterviewQuestionCategory.TECHNICAL, text: 'What\'s your approach to system design and architecture?' },
-    ];
-  }
-
-  private getFallbackQuestions(jobTitle: string): QuestionItem[] {
-    return [
-      {
-        category: AiInterviewQuestionCategory.INTRODUCTORY,
-        text: `Tell me about yourself and your interest in the ${jobTitle} role.`,
-      },
-      ...this.getDefaultTechnicalQuestions().slice(0, CONSTANTS.MAX_QUESTIONS - 2),
-      {
-        category: AiInterviewQuestionCategory.CLOSING,
-        text: 'What questions do you have about our team or company?',
-      },
-    ];
-  }
-
-  private async createSession(
-    userId: string,
-    context: SessionContext,
-    questions: QuestionItem[],
-    resumeId?: number
-  ): Promise<AiInterviewSession> {
-    const sessionData: Prisma.AiInterviewSessionCreateInput = {
-      user: { connect: { id: userId } },
-      resume: resumeId ? { connect: { id: resumeId } } : undefined,
-      jobTitle: context.jobTitle,
-      companyName: context.companyName,
-      questions: PrismaJsonHelper.toJson({ questions }),
-      totalQuestions: CONSTANTS.MAX_QUESTIONS,
-      currentQuestionIndex: 0,
-      status: AiInterviewSessionStatus.STARTED,
-    };
-
-    return this.prisma.aiInterviewSession.create({ data: sessionData });
-  }
-
-  private formatSessionResponse(
-    session: AiInterviewSession,
-    questions: QuestionItem[],
-    audioUrl?: string
-  ): InterviewSessionResponse {
-    return {
-      id: session.id,
-      userId: session.userId,
-      status: session.status,
-      questions: questions.map((q) => ({
-        category: q.category,
-        text: q.text,
-      })),
-      currentQuestion: {
-        category: questions[0].category,
-        text: questions[0].text,
-      },
-      currentQuestionIndex: 0,
-      totalQuestions: session.totalQuestions,
-      audioUrl,
-      createdAt: session.createdAt,
-    };
-  }
-
-  private async validateSession(
-    sessionId: string,
-    userId: string
-  ): Promise<AiInterviewSession & { responses: AiInterviewResponse[]; resume: any }> {
-    const session = await this.prisma.aiInterviewSession.findFirst({
-      where: { id: sessionId, userId },
-      include: { responses: true, resume: true },
-    });
-
-    if (!session) {
-      throw new NotFoundError('Session');
-    }
-
-    if (session.status === AiInterviewSessionStatus.COMPLETED) {
-      throw new ConflictError('Session has already been completed');
-    }
-
-    return session;
-  }
-
-  private async validateSessionForRead(
-    sessionId: string,
-    userId: string
-  ): Promise<AiInterviewSession & { responses: AiInterviewResponse[]; resume: any }> {
-    const session = await this.prisma.aiInterviewSession.findFirst({
-      where: { id: sessionId, userId },
-      include: { responses: true, resume: true },
-    });
-
-    if (!session) {
-      throw new NotFoundError('Session');
-    }
-
-    return session;
-  }
-
-  private async scoreAnswer(
-    dto: SubmitAnswerRequest,
-    session: AiInterviewSession & { resume?: any }
-  ): Promise<AnswerScore> {
-    const resumeContent = session.resume?.content || 'Not provided';
-    const context = `Job: ${session.jobTitle}, Company: ${session.companyName || 'Not specified'}`;
-    const prompt = this.buildScoringPrompt(dto, context, resumeContent);
-
-    try {
-      const result = await this.groqManager.callApi(prompt);
-      const content = result.choices?.[0]?.message?.content || '';
-      const parsed = this.jsonParser.parse<AnswerScore>(content, 'score');
-
-      return {
-        contentScore: this.normalizeScore(parsed.contentScore),
-        fluencyScore: this.normalizeScore(parsed.fluencyScore),
-        relevanceScore: this.normalizeScore(parsed.relevanceScore),
-        feedback: parsed.feedback || 'Good response.',
-        weakSection: parsed.weakSection || '',
-      };
-    } catch (error) {
-      logger.error('[InterviewService] Scoring failed', {
-        sessionId: session.id,
-        error: (error as Error).message,
-      });
-      return this.getDefaultScore();
-    }
-  }
-
-  private normalizeScore(score: number | undefined): number {
-    if (score === undefined || score === null || isNaN(score)) {
-      return 5;
-    }
-    return Math.min(10, Math.max(0, Math.round(score)));
-  }
-
-  private buildScoringPrompt(
-    dto: SubmitAnswerRequest,
-    context: string,
-    resumeContent: string
-  ): string {
-    const transcribedNote = dto.isTranscribed
-      ? '(Note: This answer was transcribed from speech)'
-      : '';
-
-    return `
-You are an expert interview evaluator. Score the following interview answer.
-
-Context: ${context}
-Resume Summary: ${resumeContent.slice(0, 1000)}
-
-Question: "${dto.question}"
-Category: ${dto.category}
-Answer: "${dto.answer}" ${transcribedNote}
-
-Evaluate the answer on these criteria (0-10 scale):
-1. Content Score: Quality, depth, and accuracy
-2. Fluency Score: Clarity and structure
-3. Relevance Score: How well it addresses the question
-
-Return ONLY valid JSON:
-{
-  "contentScore": 0-10,
-  "fluencyScore": 0-10,
-  "relevanceScore": 0-10,
-  "feedback": "constructive feedback",
-  "weakSection": "area needing improvement or empty string"
-}
-`.trim();
-  }
-
-  private getDefaultScore(): AnswerScore {
-    return {
-      contentScore: 5,
-      fluencyScore: 5,
-      relevanceScore: 5,
-      feedback: 'Thank you for your response.',
-      weakSection: '',
-    };
-  }
-
-  private async saveResponse(
-    sessionId: string,
-    dto: SubmitAnswerRequest,
-    scores: AnswerScore,
-    session: AiInterviewSession
-  ): Promise<AiInterviewResponse> {
-    return this.prisma.aiInterviewResponse.create({
-      data: {
-        sessionId,
-        category: dto.category,
-        question: dto.question,
-        answer: dto.answer,
-        isFollowup: session.currentQuestionIndex > 0,
-        scoresJson: PrismaJsonHelper.toJson(scores),
-        feedbackText: scores.feedback,
-        timeTakenSeconds: dto.timeTakenSeconds,
-      },
-    });
-  }
-
-  private async processNextStep(
-    session: AiInterviewSession & { responses?: AiInterviewResponse[] },
-    lastAnswer: string
-  ): Promise<SubmitAnswerResponse> {
-    const nextIndex = session.currentQuestionIndex + 1;
-
-    if (nextIndex >= session.totalQuestions) {
-      await this.completeSession(session.id);
-
-      let audioUrl: string | undefined;
-      try {
-        audioUrl = await this.ttsManager.generateAudio(
-          'Thank you for completing the interview. Your feedback is now available.',
-          session.id
-        );
-      } catch {
-        // Audio is optional
-      }
-
-      return {
-        isComplete: true,
-        message: 'Interview completed successfully!',
-        audioUrl,
-      };
-    }
-
-    const questions = this.parseQuestions(session.questions);
-    const nextQuestion = await this.generateFollowupQuestion(
-      questions[session.currentQuestionIndex],
-      lastAnswer,
-      session
-    );
-
-    questions[nextIndex] = nextQuestion;
-
-    await this.prisma.aiInterviewSession.update({
-      where: { id: session.id },
-      data: {
-        questions: PrismaJsonHelper.toJson({ questions }),
-        currentQuestionIndex: nextIndex,
-        status: AiInterviewSessionStatus.IN_PROGRESS,
-      },
-    });
-
-    let audioUrl: string | undefined;
-    try {
-      audioUrl = await this.ttsManager.generateAudio(nextQuestion.text, session.id);
-    } catch (error) {
-      logger.warn('[InterviewService] Failed to generate audio', {
-        sessionId: session.id,
-        error: (error as Error).message,
-      });
-    }
-
-    return {
-      nextQuestion: {
-        category: nextQuestion.category,
-        text: nextQuestion.text,
-      },
-      questionIndex: nextIndex,
-      totalQuestions: session.totalQuestions,
-      isComplete: false,
-      audioUrl,
-    };
-  }
-
-  private async generateFollowupQuestion(
-    currentQuestion: QuestionItem,
-    answer: string,
-    session: AiInterviewSession
-  ): Promise<QuestionItem> {
-    const prompt = `
-You are an expert interviewer conducting a ${session.jobTitle} interview.
-
-Previous Question: "${currentQuestion.text}"
-Candidate's Answer: "${answer}"
-
-Generate a relevant follow-up question that:
-1. Builds on the candidate's response
-2. Explores a related technical area
-3. Is appropriate for the role
-
-Return ONLY valid JSON:
-{"question": "your follow-up question here"}
-`.trim();
-
-    try {
-      const result = await this.groqManager.callApi(prompt);
-      const content = result.choices?.[0]?.message?.content || '';
-      const parsed = this.jsonParser.parse<{ question: string }>(content, 'followup');
-
-      if (!parsed.question) {
-        throw new Error('No question in response');
-      }
-
-      return {
-        category: AiInterviewQuestionCategory.TECHNICAL,
-        text: parsed.question,
-      };
-    } catch (error) {
-      logger.warn('[InterviewService] Follow-up generation failed', {
-        sessionId: session.id,
-        error: (error as Error).message,
-      });
-
-      return {
-        category: AiInterviewQuestionCategory.TECHNICAL,
-        text: `Can you tell me more about your experience with ${session.jobTitle} responsibilities?`,
-      };
-    }
-  }
-
-  private async completeSession(sessionId: string): Promise<void> {
-    await this.prisma.aiInterviewSession.update({
-      where: { id: sessionId },
-      data: {
-        status: AiInterviewSessionStatus.COMPLETED,
-        completedAt: new Date(),
-      },
-    });
-
-    logger.info('[InterviewService] Session completed', { sessionId });
-  }
-
-  private parseQuestions(questionsData: any): QuestionItem[] {
-    try {
-      if (questionsData?.questions && Array.isArray(questionsData.questions)) {
-        return questionsData.questions;
-      }
-
-      const parsed = PrismaJsonHelper.fromJson<Questions>(questionsData);
-      if (parsed?.questions && Array.isArray(parsed.questions)) {
-        return parsed.questions;
-      }
-    } catch (error) {
-      logger.error('[InterviewService] Failed to parse questions', {
-        error: (error as Error).message,
-      });
-    }
-
-    return this.getFallbackQuestions(CONSTANTS.DEFAULT_JOB_TITLE);
-  }
-
-  private async getCompletedSession(
-    sessionId: string,
-    userId: string
-  ): Promise<AiInterviewSession & { responses: AiInterviewResponse[]; feedback: any }> {
-    const session = await this.prisma.aiInterviewSession.findFirst({
-      where: { id: sessionId, userId },
-      include: { responses: true, feedback: true },
-    });
-
-    if (!session) {
-      throw new NotFoundError('Session');
-    }
-
-    if (session.status !== AiInterviewSessionStatus.COMPLETED) {
-      throw new BadRequestError(
-        'Feedback is only available after the interview is completed'
-      );
-    }
-
-    return session;
-  }
-
-  private formatExistingFeedback(feedback: any): InterviewFeedbackResponse {
-    const json = PrismaJsonHelper.fromJson<any>(feedback.feedbackJson, {});
-
-    return {
-      overallScore: Number(feedback.overallScore) || 0,
-      overallSummary: feedback.overallSummary || '',
-      keyStrengths: feedback.keyStrengths || [],
-      areasForImprovement: feedback.areasForImprovement || [],
-      weakSections: json.weakSections || [],
-      perResponseScores: json.perResponseScores || [],
-    };
-  }
-
-  private async generateAndSaveFeedback(
-    session: AiInterviewSession & { responses: AiInterviewResponse[] }
-  ): Promise<InterviewFeedbackResponse> {
-    logger.info('[InterviewService] Generating feedback', { sessionId: session.id });
-
-    const feedbackData = await this.generateFeedback(session);
-
-    const saved = await this.prisma.aiInterviewFeedback.create({
-      data: {
-        sessionId: session.id,
-        userId: session.userId,
-        overallScore: feedbackData.overallScore,
-        overallSummary: feedbackData.overallSummary,
-        keyStrengths: feedbackData.keyStrengths,
-        areasForImprovement: feedbackData.areasForImprovement,
-        feedbackJson: PrismaJsonHelper.toJson({
-          weakSections: feedbackData.weakSections,
-          perResponseScores: feedbackData.perResponseScores,
-        }),
-      },
-    });
-
-    logger.info('[InterviewService] Feedback saved', { sessionId: session.id });
-
-    return this.formatExistingFeedback(saved);
-  }
-
-  private async generateFeedback(
-    session: AiInterviewSession & { responses: AiInterviewResponse[] }
-  ): Promise<InterviewFeedbackResponse> {
-    const prompt = this.buildFeedbackPrompt(session);
-
-    try {
-      const result = await this.groqManager.callApi(prompt);
-      const content = result.choices?.[0]?.message?.content || '';
-      const parsed = this.jsonParser.parse<any>(content, 'feedback');
-
-      return this.normalizeFeedback(parsed, session.responses);
-    } catch (error) {
-      logger.error('[InterviewService] Feedback generation failed', {
-        sessionId: session.id,
-        error: (error as Error).message,
-      });
-      return this.getDefaultFeedback(session.responses);
-    }
-  }
-
-  private buildFeedbackPrompt(
-    session: AiInterviewSession & { responses: AiInterviewResponse[] }
-  ): string {
-    const answers = session.responses
-      .map((r, i) => `Q${i + 1} [${r.category}]: ${r.question}\nA: ${r.answer}`)
-      .join('\n\n');
-
-    return `
-You are an expert interview coach. Analyze this complete interview for a ${session.jobTitle} position${session.companyName ? ` at ${session.companyName}` : ''}.
-
-Interview Transcript:
-${answers}
-
-Provide a comprehensive evaluation including:
-1. Overall score (0-100)
-2. Summary of performance
-3. Key strengths demonstrated
-4. Areas needing improvement
-5. Specific weak sections to focus on
-
-Return ONLY valid JSON:
-{
-  "overallScore": 0-100,
-  "overallSummary": "comprehensive summary",
-  "keyStrengths": ["strength1", "strength2", "strength3"],
-  "areasForImprovement": ["area1", "area2", "area3"],
-  "weakSections": ["topic or skill to improve"]
-}
-`.trim();
-  }
-
-  private normalizeFeedback(
-    raw: any,
-    responses: AiInterviewResponse[]
-  ): InterviewFeedbackResponse {
-    const perResponseScores: ResponseScoreDto[] = responses.map((r, index) => {
-      const scores = PrismaJsonHelper.fromJson<AnswerScore>(r.scoresJson, this.getDefaultScore());
-      return {
-        questionIndex: index,
-        contentScore: scores.contentScore,
-        fluencyScore: scores.fluencyScore,
-        relevanceScore: scores.relevanceScore,
-        feedback: scores.feedback,
-      };
-    });
-
-    const avgScore = perResponseScores.length > 0
-      ? perResponseScores.reduce(
-          (sum, s) => sum + (s.contentScore + s.fluencyScore + s.relevanceScore) / 3,
-          0
-        ) / perResponseScores.length
-      : 50;
-
-    const overallScore = raw.overallScore >= 0 && raw.overallScore <= 100
-      ? Math.round(raw.overallScore)
-      : Math.round(avgScore * 10);
-
-    return {
-      overallScore,
-      overallSummary: raw.overallSummary || 'Interview completed.',
-      keyStrengths: Array.isArray(raw.keyStrengths) ? raw.keyStrengths.slice(0, 5) : [],
-      areasForImprovement: Array.isArray(raw.areasForImprovement)
-        ? raw.areasForImprovement.slice(0, 5)
-        : [],
-      weakSections: Array.isArray(raw.weakSections) ? raw.weakSections.slice(0, 5) : [],
-      perResponseScores,
-    };
-  }
-
-  private getDefaultFeedback(responses: AiInterviewResponse[]): InterviewFeedbackResponse {
-    const perResponseScores: ResponseScoreDto[] = responses.map((_, i) => ({
-      questionIndex: i,
-      contentScore: 7,
-      fluencyScore: 7,
-      relevanceScore: 7,
-      feedback: 'Response recorded.',
-    }));
-
-    return {
-      overallScore: 70,
-      overallSummary: 'Thank you for completing the interview.',
-      keyStrengths: ['Communication', 'Engagement'],
-      areasForImprovement: ['Technical depth', 'Specific examples'],
-      weakSections: [],
-      perResponseScores,
-    };
-  }
-
-  // ============= Cleanup =============
-
-  destroy(): void {
-    for (const timeout of this.requestDedup.values()) {
-      clearTimeout(timeout);
-    }
-    this.requestDedup.clear();
-    this.activeLocks.clear();
-    this.ttsManager.destroy();
-    logger.info('[InterviewService] Service destroyed');
   }
 }

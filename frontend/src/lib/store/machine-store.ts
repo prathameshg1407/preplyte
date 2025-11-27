@@ -15,7 +15,7 @@ import type {
   DifficultyLevelInfo,
   ConfigResponse,
   ActiveTab,
-} from '@/types/machine.types';
+} from '../../types/machine.types';
 
 // =====================================================
 // CODE TEMPLATES

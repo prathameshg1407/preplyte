@@ -2,12 +2,12 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useMachineStore } from '@/lib/store/machine-store';
-import { machineService } from '@/lib/api/services/machine.service';
+import { useMachineStore } from '../store/machine-store';
+import { machineService } from '../api/services/machine.service';
 import type {
   CreateSessionRequest,
   ListSessionsQuery,
-} from '@/types/machine.types';
+} from '../../types/machine.types';
 import { toast } from 'sonner';
 
 // =====================================================
@@ -193,19 +193,15 @@ export function useMachine() {
   // =====================================================
   // SESSION MANAGEMENT
   // =====================================================
-
-  const checkActiveSession = useCallback(async () => {
-    try {
-      const response = await machineService.getActiveSession();
-      if (response.success && response.data) {
-        return response.data;
-      }
-      return null;
-    } catch (error) {
-      console.error('Failed to check active session:', error);
-      return null;
-    }
-  }, []);
+const checkActiveSession = useCallback(async () => {
+  try {
+    // getActiveSession returns data directly, not ApiResponse
+    return await machineService.getActiveSession();
+  } catch (error) {
+    console.error('Failed to check active session:', error);
+    return null;
+  }
+}, []);
 
   const createSession = useCallback(
     async (data: CreateSessionRequest) => {

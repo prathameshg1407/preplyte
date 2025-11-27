@@ -3,8 +3,8 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { useMachineStore } from '@/lib/store/machine-store';
-import { machineService } from '@/lib/api/services/machine.service';
+import { useMachineStore } from '../../lib/store/machine-store';
+import { machineService } from '../../lib/api/services/machine.service';
 
 // Global state to track initialization across all instances
 let globalInitPromise: Promise<void> | null = null;

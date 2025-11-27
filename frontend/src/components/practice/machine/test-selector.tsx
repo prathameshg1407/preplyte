@@ -9,45 +9,53 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+} from "../../ui/card";
+import { Button } from "../../ui/button";
+import { Label } from "../../ui/label";
+import { RadioGroup, RadioGroupItem } from "../../ui/radio-group";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Slider } from "@/components/ui/slider";
-import { Separator } from "@/components/ui/separator";
-import { useMachine, useMachineConfigInit } from "@/lib/hooks/use-machine";
-import { useMachineStore } from "@/lib/store/machine-store";
-import type { DifficultyLevel } from "@/types/machine.types";
-import { Code2, Clock, Loader2, Zap, Info } from "lucide-react";
+} from "../../ui/select";
+import { Slider } from "../../ui/slider";
+import { useMachine, useMachineConfigInit } from "../../../lib/hooks/use-machine";
+import { useMachineStore } from "../../../lib/store/machine-store";
+import type { DifficultyLevel } from "../../../types/machine.types";
+import {
+  Code2,
+  Clock,
+  Loader2,
+  Info,
+  ArrowRight,
+  Gauge,
+  Hash,
+  Timer,
+  Terminal,
+} from "lucide-react";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
+import { cn } from "../../../lib/utils";
 
-// Difficulty colors mapping
-const DIFFICULTY_COLORS: Record<DifficultyLevel, string> = {
-  EASY: "text-green-500 border-green-500/30 bg-green-500/10",
-  MEDIUM: "text-yellow-500 border-yellow-500/30 bg-yellow-500/10",
-  HARD: "text-red-500 border-red-500/30 bg-red-500/10",
-};
-
-const DIFFICULTY_DESCRIPTIONS: Record<DifficultyLevel, string> = {
-  EASY: "Basic problems suitable for beginners. Focus on fundamental concepts.",
-  MEDIUM: "Intermediate challenges requiring good problem-solving skills.",
-  HARD: "Advanced problems for experienced developers. Complex algorithms.",
+const DIFFICULTY_INFO: Record<DifficultyLevel, { label: string; description: string }> = {
+  EASY: {
+    label: "Easy",
+    description: "Basic problems focusing on fundamental concepts",
+  },
+  MEDIUM: {
+    label: "Medium",
+    description: "Intermediate challenges requiring problem-solving skills",
+  },
+  HARD: {
+    label: "Hard",
+    description: "Advanced problems with complex algorithms",
+  },
 };
 
 export function TestSelector() {
-  // Use the config init hook - this handles all initialization
   const { isReady, isLoading: configLoading, error: configError, hasHydrated } = useMachineConfigInit();
 
-  // Get state from store
   const {
     languages,
     selectedLanguageId,
@@ -56,7 +64,6 @@ export function TestSelector() {
     isLoading,
   } = useMachineStore();
 
-  // Get actions from hook
   const {
     setSelectedLanguageId,
     createSession,
@@ -69,11 +76,9 @@ export function TestSelector() {
   const [isStarting, setIsStarting] = useState(false);
   const [checkingSession, setCheckingSession] = useState(true);
 
-  // Check for active session once config is ready
+  // Check for active session
   useEffect(() => {
-    if (!isReady) {
-      return;
-    }
+    if (!isReady) return;
 
     const checkSession = async () => {
       try {
@@ -99,7 +104,7 @@ export function TestSelector() {
     checkSession();
   }, [isReady, checkActiveSession]);
 
-  // Update time limit when config loads or difficulty changes
+  // Update time limit when config loads
   useEffect(() => {
     if (config?.machine) {
       const recommended =
@@ -110,34 +115,21 @@ export function TestSelector() {
     }
   }, [config, selectedDifficulty]);
 
-  // Get config limits with defaults
   const questionLimits = useMemo(() => {
-    return config?.questionLimits?.machine || {
-      min: 1,
-      max: 10,
-      default: 3,
-    };
+    return config?.questionLimits?.machine || { min: 1, max: 10, default: 3 };
   }, [config]);
 
   const timeLimitConfig = useMemo(() => {
-    return config?.machine || {
-      minTimeLimit: 30,
-      maxTimeLimit: 180,
-      defaultTimeLimit: 90,
-    };
+    return config?.machine || { minTimeLimit: 30, maxTimeLimit: 180, defaultTimeLimit: 90 };
   }, [config]);
 
-  // Calculate estimated duration
   const estimatedDuration = useMemo(() => {
     const hours = Math.floor(timeLimit / 60);
     const minutes = timeLimit % 60;
-    if (hours > 0) {
-      return `${hours}h ${minutes}m`;
-    }
+    if (hours > 0) return `${hours}h ${minutes}m`;
     return `${minutes} min`;
   }, [timeLimit]);
 
-  // Validate selection
   const canStart = useMemo(() => {
     return (
       isReady &&
@@ -147,14 +139,7 @@ export function TestSelector() {
       timeLimit >= timeLimitConfig.minTimeLimit &&
       timeLimit <= timeLimitConfig.maxTimeLimit
     );
-  }, [
-    isReady,
-    selectedLanguageId,
-    numberOfQuestions,
-    timeLimit,
-    questionLimits,
-    timeLimitConfig,
-  ]);
+  }, [isReady, selectedLanguageId, numberOfQuestions, timeLimit, questionLimits, timeLimitConfig]);
 
   const handleStartTest = async () => {
     if (!canStart) {
@@ -169,25 +154,22 @@ export function TestSelector() {
         numberOfQuestions,
         timeLimit,
       });
-    } catch (error) {
+    } catch {
       // Error handled in hook
     } finally {
       setIsStarting(false);
     }
   };
 
-  // Get selected language info
-  const selectedLanguage = languages.find(
-    (l) => l.judge0Id === selectedLanguageId
-  );
+  const selectedLanguage = languages.find((l) => l.judge0Id === selectedLanguageId);
 
-  // Show loading state
+  // Loading state
   if (!hasHydrated || configLoading || (isReady && checkingSession)) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
+      <div className="flex min-h-[400px] items-center justify-center">
         <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-          <p className="text-muted-foreground">
+          <Loader2 className="mx-auto mb-4 h-6 w-6 animate-spin text-muted-foreground" />
+          <p className="text-sm text-muted-foreground">
             {!hasHydrated ? "Initializing..." : configLoading ? "Loading configuration..." : "Checking session..."}
           </p>
         </div>
@@ -195,13 +177,13 @@ export function TestSelector() {
     );
   }
 
-  // Show error state
+  // Error state
   if (configError) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
+      <div className="flex min-h-[400px] items-center justify-center">
         <div className="text-center">
-          <p className="text-destructive mb-4">{configError}</p>
-          <Button onClick={() => window.location.reload()}>
+          <p className="mb-4 text-sm text-muted-foreground">{configError}</p>
+          <Button variant="outline" onClick={() => window.location.reload()}>
             Retry
           </Button>
         </div>
@@ -210,240 +192,221 @@ export function TestSelector() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      {/* Step 1: Select Difficulty */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground text-sm">
-              1
-            </span>
-            Select Difficulty
-          </CardTitle>
-          <CardDescription>
-            Choose the difficulty level for your practice session
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <RadioGroup
-            value={selectedDifficulty}
-            onValueChange={(v) => setSelectedDifficulty(v as DifficultyLevel)}
-            className="grid gap-3 md:grid-cols-3"
-          >
-            {(["EASY", "MEDIUM", "HARD"] as DifficultyLevel[]).map((level) => {
-              const levelInfo = difficultyLevels.find((d) => d.value === level);
+    <div className="mx-auto max-w-3xl space-y-6">
+      {/* Step 1: Difficulty */}
+      <ConfigCard
+        step={1}
+        icon={Gauge}
+        title="Select Difficulty"
+        description="Choose the difficulty level for your practice session"
+      >
+        <RadioGroup
+          value={selectedDifficulty}
+          onValueChange={(v) => setSelectedDifficulty(v as DifficultyLevel)}
+          className="grid gap-3 sm:grid-cols-3"
+        >
+          {(["EASY", "MEDIUM", "HARD"] as DifficultyLevel[]).map((level) => {
+            const info = difficultyLevels.find((d) => d.value === level) || DIFFICULTY_INFO[level];
+            const isSelected = selectedDifficulty === level;
 
-              return (
-                <div key={level}>
-                  <RadioGroupItem
-                    value={level}
-                    id={`difficulty-${level}`}
-                    className="peer sr-only"
-                  />
-                  <Label
-                    htmlFor={`difficulty-${level}`}
-                    className={cn(
-                      "flex flex-col p-4 rounded-lg border-2 cursor-pointer transition-all h-full",
-                      "hover:bg-muted/50",
-                      selectedDifficulty === level
-                        ? "border-primary bg-primary/5"
-                        : "border-muted"
-                    )}
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <Badge variant="outline" className={DIFFICULTY_COLORS[level]}>
-                        {levelInfo?.label || level}
-                      </Badge>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      {levelInfo?.description || DIFFICULTY_DESCRIPTIONS[level]}
-                    </p>
-                  </Label>
-                </div>
-              );
-            })}
-          </RadioGroup>
-        </CardContent>
-      </Card>
+            return (
+              <div key={level}>
+                <RadioGroupItem value={level} id={`difficulty-${level}`} className="peer sr-only" />
+                <Label
+                  htmlFor={`difficulty-${level}`}
+                  className={cn(
+                    "flex h-full cursor-pointer flex-col rounded-lg border p-4 transition-colors",
+                    isSelected
+                      ? "border-foreground bg-secondary"
+                      : "border-border hover:bg-secondary/50"
+                  )}
+                >
+                  <span className="mb-1 text-sm font-medium">
+                    {info.label || level}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    {info.description || DIFFICULTY_INFO[level].description}
+                  </span>
+                </Label>
+              </div>
+            );
+          })}
+        </RadioGroup>
+      </ConfigCard>
 
       {/* Step 2: Number of Questions */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground text-sm">
-              2
-            </span>
-            Number of Questions
-          </CardTitle>
-          <CardDescription>
-            Choose how many questions you want to attempt (
-            {questionLimits.min}-{questionLimits.max})
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Questions</span>
-              <span className="text-2xl font-bold">{numberOfQuestions}</span>
-            </div>
-            <Slider
-              value={[numberOfQuestions]}
-              onValueChange={([value]) => setNumberOfQuestions(value)}
-              min={questionLimits.min}
-              max={questionLimits.max}
-              step={1}
-            />
-            <div className="flex justify-between text-xs text-muted-foreground">
-              <span>{questionLimits.min}</span>
-              <span>{questionLimits.max}</span>
-            </div>
+      <ConfigCard
+        step={2}
+        icon={Hash}
+        title="Number of Questions"
+        description={`Choose how many questions (${questionLimits.min}-${questionLimits.max})`}
+      >
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">Questions</span>
+            <span className="text-2xl font-semibold">{numberOfQuestions}</span>
           </div>
-        </CardContent>
-      </Card>
+          <Slider
+            value={[numberOfQuestions]}
+            onValueChange={([value]) => setNumberOfQuestions(value)}
+            min={questionLimits.min}
+            max={questionLimits.max}
+            step={1}
+          />
+          <div className="flex justify-between text-xs text-muted-foreground">
+            <span>{questionLimits.min}</span>
+            <span>{questionLimits.max}</span>
+          </div>
+        </div>
+      </ConfigCard>
 
       {/* Step 3: Time Limit */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground text-sm">
-              3
-            </span>
-            Time Limit
-          </CardTitle>
-          <CardDescription>
-            Set the time limit for your session (
-            {timeLimitConfig.minTimeLimit}-{timeLimitConfig.maxTimeLimit} minutes)
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Minutes</span>
-              <span className="text-2xl font-bold">{timeLimit}</span>
-            </div>
-            <Slider
-              value={[timeLimit]}
-              onValueChange={([value]) => setTimeLimit(value)}
-              min={timeLimitConfig.minTimeLimit}
-              max={timeLimitConfig.maxTimeLimit}
-              step={5}
-            />
-            <div className="flex justify-between text-xs text-muted-foreground">
-              <span>{timeLimitConfig.minTimeLimit} min</span>
-              <span>{timeLimitConfig.maxTimeLimit} min</span>
-            </div>
+      <ConfigCard
+        step={3}
+        icon={Timer}
+        title="Time Limit"
+        description={`Set session duration (${timeLimitConfig.minTimeLimit}-${timeLimitConfig.maxTimeLimit} min)`}
+      >
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">Minutes</span>
+            <span className="text-2xl font-semibold">{timeLimit}</span>
+          </div>
+          <Slider
+            value={[timeLimit]}
+            onValueChange={([value]) => setTimeLimit(value)}
+            min={timeLimitConfig.minTimeLimit}
+            max={timeLimitConfig.maxTimeLimit}
+            step={5}
+          />
+          <div className="flex justify-between text-xs text-muted-foreground">
+            <span>{timeLimitConfig.minTimeLimit} min</span>
+            <span>{timeLimitConfig.maxTimeLimit} min</span>
           </div>
 
-          <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
+          <div className="flex items-center gap-2 rounded-lg border border-border bg-secondary/50 p-3">
             <Clock className="h-4 w-4 text-muted-foreground" />
             <span className="text-sm">
-              Session duration:{" "}
-              <span className="font-medium">{estimatedDuration}</span>
+              Duration: <span className="font-medium">{estimatedDuration}</span>
             </span>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </ConfigCard>
 
-      {/* Step 4: Select Language */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground text-sm">
-              4
-            </span>
-            Select Language
-          </CardTitle>
-          <CardDescription>
-            Choose your preferred programming language
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Select
-            value={selectedLanguageId.toString()}
-            onValueChange={(v) => setSelectedLanguageId(parseInt(v))}
-          >
-            <SelectTrigger className="w-full md:w-[300px]">
-              <SelectValue placeholder="Select language" />
-            </SelectTrigger>
-            <SelectContent>
-              {languages
-                .filter((l) => l.isActive)
-                .map((lang) => (
-                  <SelectItem key={lang.id} value={lang.judge0Id.toString()}>
-                    {lang.name}
-                  </SelectItem>
-                ))}
-            </SelectContent>
-          </Select>
-        </CardContent>
-      </Card>
+      {/* Step 4: Language */}
+      <ConfigCard
+        step={4}
+        icon={Terminal}
+        title="Select Language"
+        description="Choose your preferred programming language"
+      >
+        <Select
+          value={selectedLanguageId.toString()}
+          onValueChange={(v) => setSelectedLanguageId(parseInt(v))}
+        >
+          <SelectTrigger className="w-full sm:w-[280px]">
+            <SelectValue placeholder="Select language" />
+          </SelectTrigger>
+          <SelectContent>
+            {languages
+              .filter((l) => l.isActive)
+              .map((lang) => (
+                <SelectItem key={lang.id} value={lang.judge0Id.toString()}>
+                  {lang.name}
+                </SelectItem>
+              ))}
+          </SelectContent>
+        </Select>
+      </ConfigCard>
 
       {/* Summary & Start */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Zap className="h-5 w-5" />
-            Ready to Start
+      <Card className="border-border">
+        <CardHeader className="pb-4">
+          <CardTitle className="flex items-center gap-2 text-base font-medium">
+            <Code2 className="h-4 w-4 text-muted-foreground" />
+            Session Summary
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="p-3 bg-muted/50 rounded-lg">
-              <div className="text-xs text-muted-foreground mb-1">
-                Difficulty
-              </div>
-              <Badge variant="outline" className={DIFFICULTY_COLORS[selectedDifficulty]}>
-                {selectedDifficulty}
-              </Badge>
-            </div>
-            <div className="p-3 bg-muted/50 rounded-lg">
-              <div className="text-xs text-muted-foreground mb-1">
-                Questions
-              </div>
-              <div className="font-medium">{numberOfQuestions}</div>
-            </div>
-            <div className="p-3 bg-muted/50 rounded-lg">
-              <div className="text-xs text-muted-foreground mb-1">Duration</div>
-              <div className="font-medium">{estimatedDuration}</div>
-            </div>
-            <div className="p-3 bg-muted/50 rounded-lg">
-              <div className="text-xs text-muted-foreground mb-1">Language</div>
-              <div className="font-medium truncate">
-                {selectedLanguage?.name || "Not selected"}
-              </div>
-            </div>
+          {/* Summary Grid */}
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <SummaryItem label="Difficulty" value={DIFFICULTY_INFO[selectedDifficulty].label} />
+            <SummaryItem label="Questions" value={numberOfQuestions.toString()} />
+            <SummaryItem label="Duration" value={estimatedDuration} />
+            <SummaryItem label="Language" value={selectedLanguage?.name || "Not selected"} />
           </div>
 
-          <Separator />
-
-          <div className="flex items-start gap-2 text-sm text-muted-foreground">
-            <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />
-            <p>
+          {/* Info */}
+          <div className="flex items-start gap-2 rounded-lg border border-border bg-secondary/30 p-3">
+            <Info className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+            <p className="text-xs text-muted-foreground">
               Once you start, the timer will begin. Make sure you have a stable
               internet connection and enough time to complete the session.
             </p>
           </div>
 
+          {/* Start Button */}
           <Button
-            className="w-full"
+            className="w-full gap-2"
             size="lg"
             onClick={handleStartTest}
             disabled={!canStart || isStarting || isLoading}
           >
             {isStarting ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Loader2 className="h-4 w-4 animate-spin" />
                 Starting Session...
               </>
             ) : (
               <>
-                <Code2 className="mr-2 h-4 w-4" />
                 Start Coding Session
+                <ArrowRight className="h-4 w-4" />
               </>
             )}
           </Button>
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+// Config Card Component
+function ConfigCard({
+  step,
+  icon: Icon,
+  title,
+  description,
+  children,
+}: {
+  step: number;
+  icon: React.ElementType;
+  title: string;
+  description: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <Card className="border-border">
+      <CardHeader className="pb-4">
+        <CardTitle className="flex items-center gap-3 text-base font-medium">
+          <span className="flex h-6 w-6 items-center justify-center rounded-full border border-border bg-secondary text-xs font-semibold">
+            {step}
+          </span>
+          <Icon className="h-4 w-4 text-muted-foreground" />
+          {title}
+        </CardTitle>
+        <CardDescription>{description}</CardDescription>
+      </CardHeader>
+      <CardContent>{children}</CardContent>
+    </Card>
+  );
+}
+
+// Summary Item Component
+function SummaryItem({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-lg border border-border bg-secondary/50 p-3">
+      <div className="mb-1 text-xs text-muted-foreground">{label}</div>
+      <div className="truncate text-sm font-medium">{value}</div>
     </div>
   );
 }

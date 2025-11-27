@@ -4,9 +4,12 @@
 
 import { useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useMachine } from "@/lib/hooks/use-machine";
-import { SessionResult } from "@/components/practice/machine/session-result";
-import { Loader2 } from "lucide-react";
+import { useMachine } from "../../../../../lib/hooks/use-machine";
+import { SessionResult } from "../../../../../components/practice/machine/session-result";
+import { Button } from "../../../../../components/ui/button";
+import { Card, CardContent } from "../../../../../components/ui/card";
+import { Loader2, AlertCircle, ArrowLeft } from "lucide-react";
+import Link from "next/link";
 
 export default function MachineResultPage() {
   const params = useParams();
@@ -29,41 +32,57 @@ export default function MachineResultPage() {
     };
   }, [resetSession]);
 
-  if (isLoading) {
+  // Loading state
+  if (isLoading || !result) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex min-h-[60vh] items-center justify-center">
         <div className="text-center">
-          <p className="text-red-500 mb-4">{error}</p>
-          <button
-            onClick={() => router.push("/practice/machine")}
-            className="text-primary hover:underline"
-          >
-            Go back to practice
-          </button>
+          <Loader2 className="mx-auto h-6 w-6 animate-spin text-muted-foreground" />
+          <p className="mt-4 text-sm text-muted-foreground">Loading results...</p>
         </div>
       </div>
     );
   }
 
-  if (!result) {
+  // Error state
+  if (error) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin" />
+      <div className="container max-w-md py-20">
+        <Card className="border-border">
+          <CardContent className="py-12 text-center">
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-secondary">
+              <AlertCircle className="h-6 w-6 text-muted-foreground" />
+            </div>
+            <h2 className="mb-2 text-lg font-semibold">Error Loading Results</h2>
+            <p className="mb-6 text-sm text-muted-foreground">{error}</p>
+            <Button asChild variant="outline">
+              <Link href="/practice/machine">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to Practice
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="container py-8">
-      <SessionResult result={result} />
+    <div className="min-h-screen bg-background">
+      {/* Background gradient */}
+      <div className="absolute inset-x-0 top-0 -z-10 h-64 bg-gradient-to-b from-secondary/50 to-transparent" />
+
+      <div className="container py-12 lg:py-16">
+        {/* Page Header */}
+        <div className="mb-10 text-center">
+          <h1 className="mb-2 text-3xl font-semibold tracking-tight">Session Complete</h1>
+          <p className="text-muted-foreground">
+            Here&apos;s a detailed breakdown of your performance
+          </p>
+        </div>
+
+        <SessionResult result={result} />
+      </div>
     </div>
   );
 }

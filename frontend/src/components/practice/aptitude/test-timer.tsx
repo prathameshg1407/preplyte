@@ -3,11 +3,11 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { Clock, AlertTriangle, Timer } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { formatTime } from '@/lib/constants/aptitude.constants';
+import { Badge } from '../../ui/badge';
+import { Progress } from '../../ui/progress';
+import { Clock, AlertCircle } from 'lucide-react';
+import { cn } from '../../../lib/utils';
+import { formatTime } from '../../../lib/constants/aptitude.constants';
 
 interface TestTimerProps {
   expiresAt: string | null;
@@ -87,31 +87,22 @@ export function TestTimer({
 
   const getTimerStyles = () => {
     if (isExpired) {
-      return 'bg-red-500 text-white border-red-500';
+      return 'bg-foreground text-background border-foreground';
     }
     if (isCritical) {
-      return 'bg-red-500/10 text-red-500 border-red-500 animate-pulse';
+      return 'border-foreground bg-secondary animate-pulse';
     }
     if (isWarning) {
-      return 'bg-yellow-500/10 text-yellow-500 border-yellow-500';
+      return 'border-foreground/50 bg-secondary';
     }
-    return 'bg-muted';
+    return 'bg-secondary';
   };
 
   const getIcon = () => {
-    if (isExpired || isCritical) {
-      return <AlertTriangle className="h-4 w-4" />;
-    }
-    if (isWarning) {
-      return <Timer className="h-4 w-4" />;
+    if (isExpired || isCritical || isWarning) {
+      return <AlertCircle className="h-4 w-4" />;
     }
     return <Clock className="h-4 w-4" />;
-  };
-
-  const getProgressColor = () => {
-    if (isCritical) return '[&>div]:bg-red-500';
-    if (isWarning) return '[&>div]:bg-yellow-500';
-    return '';
   };
 
   return (
@@ -119,7 +110,7 @@ export function TestTimer({
       <Badge
         variant="outline"
         className={cn(
-          'text-lg font-mono px-4 py-2 transition-all duration-300',
+          'px-4 py-2 font-mono text-base transition-all duration-300',
           getTimerStyles()
         )}
       >
@@ -133,15 +124,13 @@ export function TestTimer({
         <div className="space-y-1">
           <Progress
             value={percentage}
-            className={cn('h-1.5', getProgressColor())}
+            className={cn(
+              'h-1.5',
+              isCritical && '[&>div]:animate-pulse'
+            )}
           />
           {(isWarning || isCritical) && (
-            <p
-              className={cn(
-                'text-xs font-medium',
-                isCritical ? 'text-red-500' : 'text-yellow-500'
-              )}
-            >
+            <p className="text-xs font-medium text-muted-foreground">
               {isCritical
                 ? `Less than ${criticalThreshold} seconds remaining!`
                 : `Less than ${Math.ceil(warningThreshold / 60)} minutes remaining`}

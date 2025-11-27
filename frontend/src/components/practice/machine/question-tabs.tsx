@@ -2,10 +2,9 @@
 
 "use client";
 
-import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
-import type { QuestionListItem, SubmitCodeResponse } from "@/types/machine.types";
-import { CheckCircle, Circle, XCircle, AlertCircle } from "lucide-react";
+import { cn } from "../../../lib/utils";
+import type { QuestionListItem, SubmitCodeResponse } from "../../../types/machine.types";
+import { CheckCircle2, Circle, XCircle, AlertCircle } from "lucide-react";
 
 interface QuestionTabsProps {
   questions: QuestionListItem[];
@@ -15,6 +14,8 @@ interface QuestionTabsProps {
   onSelect: (index: number) => void;
 }
 
+type QuestionStatus = "solved" | "partial" | "failed" | "unattempted";
+
 export function QuestionTabs({
   questions,
   currentIndex,
@@ -23,56 +24,67 @@ export function QuestionTabs({
   onSelect,
 }: QuestionTabsProps) {
   // Convert to Set if array
-  const solvedSet = solvedQuestionIds instanceof Set 
-    ? solvedQuestionIds 
-    : new Set(solvedQuestionIds);
+  const solvedSet =
+    solvedQuestionIds instanceof Set ? solvedQuestionIds : new Set(solvedQuestionIds);
 
-  const getStatusIcon = (question: QuestionListItem) => {
+  const getStatus = (question: QuestionListItem): QuestionStatus => {
     // Check if solved (from store or question itself)
     if (solvedSet.has(question.id) || question.isSolved) {
-      return <CheckCircle className="h-4 w-4 text-green-500" />;
+      return "solved";
     }
 
     // Check submit results
     const result = submitResults[question.id];
     if (result) {
-      if (result.isSolved) {
-        return <CheckCircle className="h-4 w-4 text-green-500" />;
-      }
-      if (result.testCasesPassed > 0) {
-        return <AlertCircle className="h-4 w-4 text-yellow-500" />;
-      }
-      return <XCircle className="h-4 w-4 text-red-500" />;
+      if (result.isSolved) return "solved";
+      if (result.testCasesPassed > 0) return "partial";
+      return "failed";
     }
 
     // Check if has any submissions from question data
     if (question.submissionCount > 0) {
-      if (question.bestSubmission?.status === "ACCEPTED") {
-        return <CheckCircle className="h-4 w-4 text-green-500" />;
-      }
-      return <AlertCircle className="h-4 w-4 text-yellow-500" />;
+      if (question.bestSubmission?.status === "ACCEPTED") return "solved";
+      return "partial";
     }
 
-    return <Circle className="h-4 w-4 text-muted-foreground" />;
+    return "unattempted";
+  };
+
+  const StatusIcon = ({ status }: { status: QuestionStatus }) => {
+    switch (status) {
+      case "solved":
+        return <CheckCircle2 className="h-4 w-4" />;
+      case "partial":
+        return <AlertCircle className="h-4 w-4" />;
+      case "failed":
+        return <XCircle className="h-4 w-4" />;
+      default:
+        return <Circle className="h-4 w-4 text-muted-foreground" />;
+    }
   };
 
   return (
-    <div className="flex items-center gap-1 p-2 bg-muted/30 border-b overflow-x-auto">
-      {questions.map((question, index) => (
-        <button
-          key={question.id}
-          onClick={() => onSelect(index)}
-          className={cn(
-            "flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap",
-            currentIndex === index
-              ? "bg-background shadow-sm border"
-              : "hover:bg-muted"
-          )}
-        >
-          {getStatusIcon(question)}
-          <span>Q{question.order}</span>
-        </button>
-      ))}
+    <div className="flex items-center gap-1 overflow-x-auto border-b border-border bg-card px-3 py-2">
+      {questions.map((question, index) => {
+        const status = getStatus(question);
+        const isActive = currentIndex === index;
+
+        return (
+          <button
+            key={question.id}
+            onClick={() => onSelect(index)}
+            className={cn(
+              "flex shrink-0 items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+              isActive
+                ? "border border-border bg-secondary shadow-sm"
+                : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
+            )}
+          >
+            <StatusIcon status={status} />
+            <span>Q{question.order}</span>
+          </button>
+        );
+      })}
     </div>
   );
 }

@@ -2,14 +2,14 @@
 
 import { useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAptitudeStore } from '@/lib/store/aptitude-store';
-import { aptitudeService } from '@/lib/api/services/aptitude.service';
+import { useAptitudeStore } from '../store/aptitude-store';
+import { aptitudeService } from '../api/services/aptitude.service';
 import type {
   CreateSessionRequest,
   ListSessionsParams,
   GetSolutionsParams,
   DifficultyLevel,
-} from '@/types/aptitude.types';
+} from '../../types/aptitude.types';
 import { toast } from 'sonner';
 
 // =====================================================

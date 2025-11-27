@@ -4,7 +4,7 @@ import { TextToSpeechClient, protos } from '@google-cloud/text-to-speech';
 import { uploadAudio } from './cloudinary';
 import { logger } from './logger';
 import { CONSTANTS } from '../config/constants';
-import { InternalError } from '../lib/errors';
+import { InternalError } from '../utils/errors';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -237,6 +237,3 @@ export const getTTSManager = (): TTSManager => {
   }
   return ttsManagerInstance;
 };
-
-// For backwards compatibility
-export const ttsManager = new TTSManager();
