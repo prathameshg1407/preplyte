@@ -1,3 +1,37 @@
-node_modules
+# Dependencies
+/node_modules
 
-.next
+# Build output
+/.next
+/out
+/.vercel
+
+# Env files
+.env
+.env*.local
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+**/log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Cache
+.cache
+.next/cache
+
+# Editor configs
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+
+# Static generated export
+/export
+
+# Typescript build
+*.tsbuildinfo
