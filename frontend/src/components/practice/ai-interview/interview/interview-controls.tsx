@@ -2,7 +2,7 @@
 
 'use client';
 
-import { Mic, MicOff, Pause, Play, PhoneOff } from 'lucide-react';
+import { Mic, MicOff, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
@@ -22,8 +22,24 @@ export function InterviewControls({
   onToggleRecording,
   disabled,
 }: InterviewControlsProps) {
+  const canRecord = !disabled && !isAISpeaking && !isProcessing;
+
+  const getStatusText = (): string => {
+    if (isAISpeaking) return 'AI is speaking...';
+    if (isProcessing) return 'Processing your response...';
+    if (isRecording) return 'Recording... Click to stop';
+    return 'Click the mic to respond';
+  };
+
+  const getStatusColor = (): string => {
+    if (isAISpeaking) return 'text-blue-500';
+    if (isProcessing) return 'text-yellow-500';
+    if (isRecording) return 'text-green-500';
+    return 'text-muted-foreground';
+  };
+
   return (
-    <div className="flex items-center justify-center gap-4">
+    <div className="flex items-center justify-center gap-6">
       {/* Recording Button */}
       <Tooltip>
         <TooltipTrigger asChild>
@@ -31,13 +47,16 @@ export function InterviewControls({
             size="lg"
             variant={isRecording ? 'destructive' : 'default'}
             className={cn(
-              'w-16 h-16 rounded-full transition-all',
-              isRecording && 'animate-pulse'
+              'w-16 h-16 rounded-full transition-all shadow-lg',
+              isRecording && 'animate-pulse shadow-red-500/25',
+              !canRecord && 'opacity-50 cursor-not-allowed'
             )}
             onClick={onToggleRecording}
-            disabled={disabled || isAISpeaking || isProcessing}
+            disabled={!canRecord}
           >
-            {isRecording ? (
+            {isProcessing ? (
+              <Loader2 className="h-6 w-6 animate-spin" />
+            ) : isRecording ? (
               <MicOff className="h-6 w-6" />
             ) : (
               <Mic className="h-6 w-6" />
@@ -50,19 +69,13 @@ export function InterviewControls({
       </Tooltip>
 
       {/* Status Text */}
-      <div className="text-center min-w-[150px]">
-        {isAISpeaking && (
-          <p className="text-sm text-blue-500 font-medium">AI is speaking...</p>
-        )}
-        {isProcessing && (
-          <p className="text-sm text-yellow-500 font-medium">Processing...</p>
-        )}
-        {isRecording && !isAISpeaking && !isProcessing && (
-          <p className="text-sm text-green-500 font-medium">Recording...</p>
-        )}
-        {!isRecording && !isAISpeaking && !isProcessing && (
-          <p className="text-sm text-muted-foreground">
-            Click the mic to respond
+      <div className="text-center min-w-[180px]">
+        <p className={cn('text-sm font-medium transition-colors', getStatusColor())}>
+          {getStatusText()}
+        </p>
+        {isRecording && (
+          <p className="text-xs text-muted-foreground mt-1">
+            Speak clearly into your microphone
           </p>
         )}
       </div>

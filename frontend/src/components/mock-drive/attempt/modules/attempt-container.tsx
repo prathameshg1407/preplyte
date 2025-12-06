@@ -5,15 +5,15 @@
 import { FC, useEffect, useCallback, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
-import { AttemptHeader } from './attempt-header';
-import { ModuleProgress } from './module-progress';
-import { ModuleInstructions } from './module-instructions';
-import { ModuleComplete } from './module-complete';
+import { AttemptHeader } from '../attempt-header';
+import { ModuleProgress } from '../module-progress';
+import { ModuleInstructions } from '../module-instructions';
+import { ModuleComplete } from '../module-complete';
 import { AttemptComplete } from './attempt-complete';
-import { AutoSubmitWarning } from './auto-submit-warning';
-import { AptitudeModule } from './modules/aptitude-module';
-import { MachineModule } from './modules/machine-module';
-import { InterviewModule } from './modules/interview-module';
+import { AutoSubmitWarning } from '../auto-submit-warning';
+import { AptitudeModule } from './aptitude-module';
+import { MachineModule } from './machine-module';
+import { InterviewModule } from './interview-module';
 import { useModuleTimer } from '@/lib/hooks/mock-drive/use-module-timer';
 import {
   useAttemptState,
@@ -22,8 +22,7 @@ import {
 } from '@/lib/hooks/mock-drive/use-attempt';
 import { useAttemptStore } from '@/lib/store/mock-drive/attempt-store';
 import {
-  CurrentModuleState,
-  ModuleAttemptState,
+  MockDriveModuleAttemptStatus,
   SubmitModuleResponse,
 } from '@/types/mockdrive.types';
 
@@ -89,7 +88,7 @@ export const AttemptContainer: FC<AttemptContainerProps> = ({ driveId, driveTitl
           onSuccess: (data) => {
             setCurrentModule({
               ...currentModule,
-              status: 'IN_PROGRESS',
+status: MockDriveModuleAttemptStatus.IN_PROGRESS,
               startedAt: data.startedAt,
               expiresAt: data.expiresAt,
               timeRemainingSeconds: data.timeRemainingSeconds,

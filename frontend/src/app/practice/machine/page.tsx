@@ -1,5 +1,3 @@
-// src/app/practice/machine/page.tsx
-
 import { Metadata } from "next";
 import { TestSelector } from "../../../components/practice/machine/test-selector";
 
@@ -10,13 +8,14 @@ export const metadata: Metadata = {
 
 export default function MachinePracticePage() {
   return (
-    <div className="relative min-h-screen bg-background">
+    <div className="relative min-h-screen flex items-center justify-center bg-background px-4">
       {/* Background effects */}
       <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
         <div className="absolute -top-1/2 left-1/2 h-[800px] w-[800px] -translate-x-1/2 rounded-full bg-gradient-to-b from-primary/5 to-transparent blur-3xl" />
       </div>
 
-      <div className="container py-12 lg:py-16">
+      {/* Centered Content */}
+      <div className="w-full max-w-4xl py-12 lg:py-16">
         <TestSelector />
       </div>
     </div>

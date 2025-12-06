@@ -4,7 +4,6 @@
 export {
   useAttemptStore,
   useCurrentModule,
-  useAttemptState,
   useLocalModuleData,
   useIsModuleInProgress,
 } from './attempt-store';

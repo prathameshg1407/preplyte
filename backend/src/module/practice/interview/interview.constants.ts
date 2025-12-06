@@ -164,6 +164,7 @@ export const WS_EVENTS = {
     RESUME: 'resume',
     SKIP_QUESTION: 'skip_question',
     PING: 'ping',
+    PONG: 'pong',
   },
   // Server -> Client
   SERVER: {
@@ -178,9 +179,19 @@ export const WS_EVENTS = {
     QUESTION_START: 'question_start',
     INTERVIEW_ENDED: 'interview_ended',
     ERROR: 'error',
+    PING: 'ping',
     PONG: 'pong',
     SESSION_STATE: 'session_state',
   },
+} as const;
+
+// =====================================================
+// HEARTBEAT CONFIGURATION
+// =====================================================
+
+export const HEARTBEAT_CONFIG = {
+  INTERVAL_MS: 30000, // Send ping every 30 seconds
+  TIMEOUT_MS: 10000, // Wait 10 seconds for pong before considering dead
 } as const;
 
 // =====================================================

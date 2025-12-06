@@ -14,7 +14,8 @@ import { Loader2, Eye, EyeOff, AlertCircle, Mail, Lock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export function LoginForm() {
-  const { login, isLoading } = useAuth();
+  // Enable redirect param since this component is wrapped in Suspense
+  const { login, isLoading } = useAuth({ enableRedirectParam: true });
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

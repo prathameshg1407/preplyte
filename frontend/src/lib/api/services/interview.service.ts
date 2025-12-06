@@ -1,14 +1,16 @@
 // src/lib/api/services/interview.service.ts
 
 import { apiClient } from '../axios-instance';
-import { API_ENDPOINTS } from '../endpoints';
 import type {
+  ApiResponse,
   CreateSessionInput,
   InterviewSession,
   SessionListResponse,
   SessionDetailResponse,
   InterviewFeedback,
   StartSessionResponse,
+  EndSessionResponse,
+  InterviewSessionStatus,
   SubmitResponseResult,
 } from '@/types/interview.types';
 
@@ -16,17 +18,61 @@ import type {
 // ENDPOINTS
 // =====================================================
 
-const INTERVIEW_ENDPOINTS = {
-  SESSIONS: '/practice/interview/sessions',
-  SESSION: (id: string) => `/practice/interview/sessions/${id}`,
-  SESSION_DETAIL: (id: string) => `/practice/interview/sessions/${id}/detail`,
-  START: (id: string) => `/practice/interview/sessions/${id}/start`,
-  CANCEL: (id: string) => `/practice/interview/sessions/${id}/cancel`,
-  END: (id: string) => `/practice/interview/sessions/${id}/end`,
-  RESPOND: (id: string) => `/practice/interview/sessions/${id}/respond`,
-  FEEDBACK: (id: string) => `/practice/interview/sessions/${id}/feedback`,
-  REGENERATE_FEEDBACK: (id: string) => `/practice/interview/sessions/${id}/feedback/regenerate`,
-};
+const ENDPOINTS = {
+  SESSIONS: '/api/practice/interview/sessions',
+  SESSION: (id: string) => `/api/practice/interview/sessions/${id}`,
+  SESSION_DETAIL: (id: string) => `/api/practice/interview/sessions/${id}/detail`,
+  START: (id: string) => `/api/practice/interview/sessions/${id}/start`,
+  CANCEL: (id: string) => `/api/practice/interview/sessions/${id}/cancel`,
+  END: (id: string) => `/api/practice/interview/sessions/${id}/end`,
+  RESPOND: (id: string) => `/api/practice/interview/sessions/${id}/respond`,
+  FEEDBACK: (id: string) => `/api/practice/interview/sessions/${id}/feedback`,
+  REGENERATE_FEEDBACK: (id: string) => `/api/practice/interview/sessions/${id}/feedback/regenerate`,
+} as const;
+
+// =====================================================
+// ERROR CLASS
+// =====================================================
+
+export class InterviewServiceError extends Error {
+  constructor(
+    message: string,
+    public code: string,
+    public statusCode?: number,
+    public recoverable: boolean = true
+  ) {
+    super(message);
+    this.name = 'InterviewServiceError';
+  }
+}
+
+// =====================================================
+// ERROR HANDLER
+// =====================================================
+
+function handleApiError(error: unknown): never {
+  if (error && typeof error === 'object' && 'response' in error) {
+    const axiosError = error as {
+      response?: {
+        status?: number;
+        data?: { message?: string; code?: string };
+      };
+      message?: string;
+    };
+
+    const message = axiosError.response?.data?.message || axiosError.message || 'Unknown error';
+    const code = axiosError.response?.data?.code || 'UNKNOWN_ERROR';
+    const statusCode = axiosError.response?.status;
+    const recoverable = statusCode ? statusCode < 500 : true;
+
+    throw new InterviewServiceError(message, code, statusCode, recoverable);
+  }
+
+  throw new InterviewServiceError(
+    error instanceof Error ? error.message : 'Unknown error',
+    'UNKNOWN_ERROR'
+  );
+}
 
 // =====================================================
 // SERVICE CLASS
@@ -37,114 +83,164 @@ class InterviewService {
   // SESSION MANAGEMENT
   // ===================================================
 
-  /**
-   * Create a new interview session
-   */
   async createSession(input: CreateSessionInput): Promise<InterviewSession> {
-    const response = await apiClient.post(INTERVIEW_ENDPOINTS.SESSIONS, input);
-    return response.data.data;
+    try {
+      // Sanitize input - convert null/empty to undefined, matching backend expectations
+      const sanitizedInput: CreateSessionInput = {
+        jobTitle: input.jobTitle?.trim() || undefined,
+        companyName: input.companyName?.trim() || undefined,
+        difficulty: input.difficulty || 'MID',
+        focusAreas: input.focusAreas?.length ? input.focusAreas : undefined,
+        targetQuestions: input.targetQuestions || 10,
+        resumeId: input.resumeId && input.resumeId !== 'none' ? input.resumeId : undefined,
+      };
+
+      const response = await apiClient.post<ApiResponse<InterviewSession>>(
+        ENDPOINTS.SESSIONS,
+        sanitizedInput
+      );
+      return response.data.data;
+    } catch (error) {
+      handleApiError(error);
+    }
   }
 
-  /**
-   * List user's interview sessions
-   */
   async listSessions(params?: {
     page?: number;
     pageSize?: number;
-    status?: string;
+    status?: InterviewSessionStatus;
+    sortBy?: 'createdAt' | 'completedAt' | 'overallScore';
+    sortOrder?: 'asc' | 'desc';
   }): Promise<SessionListResponse> {
-    const response = await apiClient.get(INTERVIEW_ENDPOINTS.SESSIONS, { params });
-    return response.data.data;
+    try {
+      const response = await apiClient.get<ApiResponse<SessionListResponse>>(
+        ENDPOINTS.SESSIONS,
+        { params }
+      );
+      return response.data.data;
+    } catch (error) {
+      handleApiError(error);
+    }
   }
 
-  /**
-   * Get session by ID
-   */
   async getSession(sessionId: string): Promise<InterviewSession> {
-    const response = await apiClient.get(INTERVIEW_ENDPOINTS.SESSION(sessionId));
-    return response.data.data;
+    try {
+      const response = await apiClient.get<ApiResponse<InterviewSession>>(
+        ENDPOINTS.SESSION(sessionId)
+      );
+      return response.data.data;
+    } catch (error) {
+      handleApiError(error);
+    }
   }
 
-  /**
-   * Get session with full details
-   */
   async getSessionDetail(sessionId: string): Promise<SessionDetailResponse> {
-    const response = await apiClient.get(INTERVIEW_ENDPOINTS.SESSION_DETAIL(sessionId));
-    return response.data.data;
+    try {
+      const response = await apiClient.get<ApiResponse<SessionDetailResponse>>(
+        ENDPOINTS.SESSION_DETAIL(sessionId)
+      );
+      return response.data.data;
+    } catch (error) {
+      handleApiError(error);
+    }
   }
 
-  /**
-   * Start an interview session
-   */
   async startSession(sessionId: string): Promise<StartSessionResponse> {
-    const response = await apiClient.post(INTERVIEW_ENDPOINTS.START(sessionId));
-    return response.data.data;
+    try {
+      const response = await apiClient.post<ApiResponse<StartSessionResponse>>(
+        ENDPOINTS.START(sessionId)
+      );
+      return response.data.data;
+    } catch (error) {
+      handleApiError(error);
+    }
   }
 
-  /**
-   * Cancel an active session
-   */
   async cancelSession(sessionId: string): Promise<void> {
-    await apiClient.post(INTERVIEW_ENDPOINTS.CANCEL(sessionId));
+    try {
+      await apiClient.post(ENDPOINTS.CANCEL(sessionId));
+    } catch (error) {
+      handleApiError(error);
+    }
   }
 
-  /**
-   * End session and get feedback
-   */
-  async endSession(sessionId: string): Promise<{ feedback: InterviewFeedback }> {
-    const response = await apiClient.post(INTERVIEW_ENDPOINTS.END(sessionId));
-    return response.data.data;
+  async endSession(sessionId: string): Promise<EndSessionResponse> {
+    try {
+      const response = await apiClient.post<ApiResponse<EndSessionResponse>>(
+        ENDPOINTS.END(sessionId)
+      );
+      return response.data.data;
+    } catch (error) {
+      handleApiError(error);
+    }
   }
 
-  // ===================================================
-  // RESPONSES
-  // ===================================================
-
-  /**
-   * Submit a response (for REST-based flow)
-   */
   async submitResponse(
     sessionId: string,
+    questionId: string,
     answer: string,
     timeTakenSeconds?: number
   ): Promise<SubmitResponseResult> {
-    const response = await apiClient.post(INTERVIEW_ENDPOINTS.RESPOND(sessionId), {
-      answer,
-      timeTakenSeconds,
-    });
-    return response.data.data;
+    try {
+      const response = await apiClient.post<ApiResponse<SubmitResponseResult>>(
+        ENDPOINTS.RESPOND(sessionId),
+        { questionId, answer, timeTakenSeconds }
+      );
+      return response.data.data;
+    } catch (error) {
+      handleApiError(error);
+    }
   }
 
   // ===================================================
   // FEEDBACK
   // ===================================================
 
-  /**
-   * Get feedback for a completed session
-   */
   async getFeedback(sessionId: string): Promise<InterviewFeedback> {
-    const response = await apiClient.get(INTERVIEW_ENDPOINTS.FEEDBACK(sessionId));
-    return response.data.data;
+    try {
+      const response = await apiClient.get<ApiResponse<InterviewFeedback>>(
+        ENDPOINTS.FEEDBACK(sessionId)
+      );
+      return response.data.data;
+    } catch (error) {
+      handleApiError(error);
+    }
   }
 
-  /**
-   * Regenerate feedback
-   */
   async regenerateFeedback(sessionId: string): Promise<InterviewFeedback> {
-    const response = await apiClient.post(INTERVIEW_ENDPOINTS.REGENERATE_FEEDBACK(sessionId));
-    return response.data.data;
+    try {
+      const response = await apiClient.post<ApiResponse<InterviewFeedback>>(
+        ENDPOINTS.REGENERATE_FEEDBACK(sessionId)
+      );
+      return response.data.data;
+    } catch (error) {
+      handleApiError(error);
+    }
   }
 
   // ===================================================
   // WEBSOCKET URL
   // ===================================================
 
-  /**
-   * Get WebSocket URL for session
-   */
   getWebSocketUrl(sessionId: string, token: string): string {
-    const wsBase = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:3001';
-    return `${wsBase}/ws/interview/${sessionId}?token=${token}`;
+    const wsBaseUrl = process.env.NEXT_PUBLIC_WS_URL;
+    
+    if (wsBaseUrl) {
+      // Use configured WS URL
+      const cleanUrl = wsBaseUrl.replace(/\/$/, '');
+      return `${cleanUrl}/ws/interview/${sessionId}?token=${encodeURIComponent(token)}`;
+    }
+    
+    // Fallback: derive from current location
+    if (typeof window !== 'undefined') {
+      const isSecure = window.location.protocol === 'https:';
+      const wsProtocol = isSecure ? 'wss:' : 'ws:';
+      const host = window.location.host;
+      return `${wsProtocol}//${host}/ws/interview/${sessionId}?token=${encodeURIComponent(token)}`;
+    }
+    
+    // Server-side fallback
+    return `ws://localhost:3001/ws/interview/${sessionId}?token=${encodeURIComponent(token)}`;
   }
 }
 

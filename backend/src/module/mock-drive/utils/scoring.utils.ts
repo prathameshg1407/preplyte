@@ -62,7 +62,9 @@ export function calculateInterviewScore(
   data: AiInterviewModuleData
 ): { score: number; maxScore: number; percentage: number } {
   const maxScore = 100; // AI Interview is scored out of 100
-  const score = data.summary.overallScore;
+  
+  // Handle undefined summary
+  const score = data.summary?.overallScore ?? 0;
   const percentage = (score / maxScore) * 100;
   
   return { score, maxScore, percentage };

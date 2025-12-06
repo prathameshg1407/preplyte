@@ -176,93 +176,110 @@ export class ResultsService {
     }
   }
 
-  private generateAptitudeAnalysis(data: AptitudeModuleData): AptitudeAnalysis {
-    const { questions, summary } = data;
+  // src/module/mock-drive/results/results.service.ts
 
-    const totalTime = questions.reduce((sum, q) => sum + q.timeSpentSeconds, 0);
-    const answeredQuestions = questions.filter((q) => q.selectedOptionId !== null);
-    const timeValues = questions.map((q) => q.timeSpentSeconds).filter((t) => t > 0);
+private generateAptitudeAnalysis(data: AptitudeModuleData): AptitudeAnalysis | null {
+  const { questions, summary } = data;
 
-    return {
-      totalQuestions: summary.totalQuestions,
-      correct: summary.totalCorrect,
-      wrong: summary.totalWrong,
-      unanswered: summary.totalUnanswered,
-      accuracy: summary.totalCorrect + summary.totalWrong > 0
-        ? (summary.totalCorrect / (summary.totalCorrect + summary.totalWrong)) * 100
-        : 0,
-      questionTypeAnalysis: [], // Would need question type data
-      timeAnalysis: {
-        averageTimePerQuestion: answeredQuestions.length > 0
-          ? totalTime / answeredQuestions.length
-          : 0,
-        fastestQuestion: timeValues.length > 0 ? Math.min(...timeValues) : 0,
-        slowestQuestion: timeValues.length > 0 ? Math.max(...timeValues) : 0,
-      },
-    };
+  // Return null if summary doesn't exist
+  if (!summary) {
+    return null;
   }
 
-  private generateMachineAnalysis(data: MachineModuleData): MachineAnalysis {
-    const { questions, summary } = data;
+  const totalTime = questions.reduce((sum, q) => sum + q.timeSpentSeconds, 0);
+  const answeredQuestions = questions.filter((q) => q.selectedOptionId !== null);
+  const timeValues = questions.map((q) => q.timeSpentSeconds).filter((t) => t > 0);
 
-    const languagesUsed = new Set<string>();
-    let totalSubmissions = 0;
+  return {
+    totalQuestions: summary.totalQuestions,
+    correct: summary.totalCorrect,
+    wrong: summary.totalWrong,
+    unanswered: summary.totalUnanswered,
+    accuracy: summary.totalCorrect + summary.totalWrong > 0
+      ? (summary.totalCorrect / (summary.totalCorrect + summary.totalWrong)) * 100
+      : 0,
+    questionTypeAnalysis: [],
+    timeAnalysis: {
+      averageTimePerQuestion: answeredQuestions.length > 0
+        ? totalTime / answeredQuestions.length
+        : 0,
+      fastestQuestion: timeValues.length > 0 ? Math.min(...timeValues) : 0,
+      slowestQuestion: timeValues.length > 0 ? Math.max(...timeValues) : 0,
+    },
+  };
+}
 
-    const questionAnalysis = questions.map((q) => {
-      q.submissions.forEach((s) => {
-        languagesUsed.add(s.languageName);
-        totalSubmissions++;
-      });
+private generateMachineAnalysis(data: MachineModuleData): MachineAnalysis | null {
+  const { questions, summary } = data;
 
-      return {
-        questionId: q.machineQuestionId,
-        title: '', // Would need to fetch from question
-        solved: q.isSolved,
-        bestScore: q.bestScore,
-        maxScore: 100, // From config
-        submissionCount: q.submissions.length,
-      };
+  // Return null if summary doesn't exist
+  if (!summary) {
+    return null;
+  }
+
+  const languagesUsed = new Set<string>();
+  let totalSubmissions = 0;
+
+  const questionAnalysis = questions.map((q) => {
+    q.submissions.forEach((s) => {
+      languagesUsed.add(s.languageName);
+      totalSubmissions++;
     });
 
     return {
-      totalQuestions: summary.totalQuestions,
-      solved: summary.totalSolved,
-      partial: summary.totalPartial,
-      unattempted: summary.totalUnattempted,
-      totalSubmissions,
-      languagesUsed: Array.from(languagesUsed),
-      questionAnalysis,
+      questionId: q.machineQuestionId,
+      title: '',
+      solved: q.isSolved,
+      bestScore: q.bestScore,
+      maxScore: 100,
+      submissionCount: q.submissions.length,
     };
+  });
+
+  return {
+    totalQuestions: summary.totalQuestions,
+    solved: summary.totalSolved,
+    partial: summary.totalPartial,
+    unattempted: summary.totalUnattempted,
+    totalSubmissions,
+    languagesUsed: Array.from(languagesUsed),
+    questionAnalysis,
+  };
+}
+
+private generateInterviewAnalysis(data: AiInterviewModuleData): InterviewAnalysis | null {
+  const { responses, summary } = data;
+
+  // Return null if summary doesn't exist
+  if (!summary) {
+    return null;
   }
 
-  private generateInterviewAnalysis(data: AiInterviewModuleData): InterviewAnalysis {
-    const { responses, summary } = data;
+  const skipped = responses.filter((r) => r.answer === '[SKIPPED]').length;
+  const technicalResponses = responses.filter((r) => r.category === 'TECHNICAL');
+  const technicalScore = technicalResponses.length > 0
+    ? technicalResponses.reduce((sum, r) => sum + r.scores.overall, 0) / technicalResponses.length
+    : 0;
 
-    const skipped = responses.filter((r) => r.answer === '[SKIPPED]').length;
-    const technicalResponses = responses.filter((r) => r.category === 'TECHNICAL');
-    const technicalScore = technicalResponses.length > 0
-      ? technicalResponses.reduce((sum, r) => sum + r.scores.overall, 0) / technicalResponses.length
-      : 0;
+  const communicationScores = responses
+    .filter((r) => r.answer !== '[SKIPPED]')
+    .map((r) => r.scores.clarity);
+  const communicationScore = communicationScores.length > 0
+    ? communicationScores.reduce((a, b) => a + b, 0) / communicationScores.length
+    : 0;
 
-    const communicationScores = responses
-      .filter((r) => r.answer !== '[SKIPPED]')
-      .map((r) => r.scores.clarity);
-    const communicationScore = communicationScores.length > 0
-      ? communicationScores.reduce((a, b) => a + b, 0) / communicationScores.length
-      : 0;
-
-    return {
-      totalQuestions: summary.totalQuestions,
-      answered: summary.questionsAnswered,
-      skipped,
-      overallScore: summary.overallScore,
-      categoryScores: summary.categoryScores,
-      communicationScore: communicationScore * 10, // Scale to 100
-      technicalScore: technicalScore * 10,
-      keyStrengths: summary.keyStrengths,
-      areasForImprovement: summary.areasForImprovement,
-    };
-  }
+  return {
+    totalQuestions: summary.totalQuestions,
+    answered: summary.questionsAnswered,
+    skipped,
+    overallScore: summary.overallScore,
+    categoryScores: summary.categoryScores,
+    communicationScore: communicationScore * 10,
+    technicalScore: technicalScore * 10,
+    keyStrengths: summary.keyStrengths,
+    areasForImprovement: summary.areasForImprovement,
+  };
+}
 
   private generateModuleFeedback(moduleType: string, analysis: any, percentage: number): string {
     if (!analysis) return 'No detailed analysis available.';

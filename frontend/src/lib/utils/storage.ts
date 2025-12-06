@@ -1,85 +1,84 @@
+// lib/utils/storage.ts
+import { logger } from './logger';
+
+export const AUTH_STORAGE_KEYS = {
+  ACCESS_TOKEN: 'preplyte_access_token',
+  REFRESH_TOKEN: 'preplyte_refresh_token',
+  STORE: 'preplyte_auth_store',
+} as const;
+
 const isClient = typeof window !== 'undefined';
 
-/**
- * SSR-safe localStorage wrapper with error handling
- */
 export const storage = {
-  get<T = string>(key: string): T | null {
+  set: (key: string, value: string): void => {
+    if (!isClient) return;
+    try {
+      localStorage.setItem(key, value);
+      logger.debug(`[Storage] Set ${key}`);
+    } catch (error) {
+      logger.error(`[Storage] Failed to set ${key}`, error);
+    }
+  },
+
+  getRaw: (key: string): string | null => {
     if (!isClient) return null;
     try {
-      const item = localStorage.getItem(key);
-      if (!item) return null;
-
-      try {
-        return JSON.parse(item) as T;
-      } catch {
-        return item as unknown as T;
-      }
+      const value = localStorage.getItem(key);
+      return value;
     } catch (error) {
-      console.warn(`[Storage] Failed to get key: ${key}`, error);
+      logger.error(`[Storage] Failed to get ${key}`, error);
       return null;
     }
   },
 
-  getRaw(key: string): string | null {
+  get: <T>(key: string): T | null => {
     if (!isClient) return null;
     try {
-      return localStorage.getItem(key);
+      const value = localStorage.getItem(key);
+      if (!value) return null;
+      return JSON.parse(value) as T;
     } catch (error) {
-      console.warn(`[Storage] Failed to get raw key: ${key}`, error);
+      logger.error(`[Storage] Failed to parse ${key}`, error);
       return null;
     }
   },
 
-  set(key: string, value: unknown): boolean {
-    if (!isClient) return false;
-    try {
-      const serialized = typeof value === 'string' ? value : JSON.stringify(value);
-      localStorage.setItem(key, serialized);
-      return true;
-    } catch (error) {
-      console.warn(`[Storage] Failed to save key: ${key}`, error);
-      return false;
-    }
-  },
-
-  remove(key: string): boolean {
-    if (!isClient) return false;
+  remove: (key: string): void => {
+    if (!isClient) return;
     try {
       localStorage.removeItem(key);
-      return true;
+      logger.debug(`[Storage] Removed ${key}`);
     } catch (error) {
-      console.warn(`[Storage] Failed to remove key: ${key}`, error);
-      return false;
+      logger.error(`[Storage] Failed to remove ${key}`, error);
     }
   },
 
-  clear(keys: string[]): void {
-    keys.forEach((key) => this.remove(key));
-  },
-
-  clearAll(): void {
+  clear: (): void => {
     if (!isClient) return;
     try {
       localStorage.clear();
+      logger.debug('[Storage] Cleared all');
     } catch (error) {
-      console.warn('[Storage] Failed to clear all', error);
+      logger.error('[Storage] Failed to clear', error);
     }
   },
 };
 
-// Auth-specific storage keys
-export const AUTH_STORAGE_KEYS = {
-  ACCESS_TOKEN: 'auth_access_token',
-  REFRESH_TOKEN: 'auth_refresh_token',
-  STORE: 'auth-storage',
-} as const;
-
-// Clear all auth-related storage
 export const clearAuthStorage = (): void => {
-  storage.clear([
-    AUTH_STORAGE_KEYS.ACCESS_TOKEN,
-    AUTH_STORAGE_KEYS.REFRESH_TOKEN,
-    AUTH_STORAGE_KEYS.STORE,
-  ]);
+  if (!isClient) return;
+  
+  logger.debug('[Storage] Clearing auth storage');
+  
+  Object.values(AUTH_STORAGE_KEYS).forEach((key) => {
+    storage.remove(key);
+  });
+};
+
+// Verify tokens exist and are valid format
+export const hasValidTokens = (): boolean => {
+  const accessToken = storage.getRaw(AUTH_STORAGE_KEYS.ACCESS_TOKEN);
+  const refreshToken = storage.getRaw(AUTH_STORAGE_KEYS.REFRESH_TOKEN);
+  
+  return !!(accessToken && refreshToken && 
+    accessToken.length > 10 && refreshToken.length > 10);
 };

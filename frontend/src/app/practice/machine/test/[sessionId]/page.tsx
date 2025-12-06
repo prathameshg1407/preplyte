@@ -183,10 +183,10 @@ export default function MachineTestPage() {
   // Error state
   if (initError) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
+      <div className="flex h-[calc(100vh-4rem)] items-center justify-center bg-background">
         <div className="text-center">
-          <p className="mb-2 text-sm text-muted-foreground">{initError}</p>
-          <p className="text-xs text-muted-foreground">Redirecting...</p>
+          <p className="mb-2 text-destructive">{initError}</p>
+          <p className="text-sm text-muted-foreground">Redirecting...</p>
         </div>
       </div>
     );
@@ -195,10 +195,10 @@ export default function MachineTestPage() {
   // Loading state
   if (!hasHydrated || !initialized || isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
+      <div className="flex h-[calc(100vh-4rem)] items-center justify-center bg-background">
         <div className="text-center">
-          <Loader2 className="mx-auto mb-4 h-6 w-6 animate-spin text-muted-foreground" />
-          <p className="text-sm text-muted-foreground">Loading session...</p>
+          <Loader2 className="mx-auto mb-4 h-8 w-8 animate-spin text-primary" />
+          <p className="text-muted-foreground">Loading session...</p>
         </div>
       </div>
     );
@@ -207,10 +207,10 @@ export default function MachineTestPage() {
   // No questions state
   if (!currentQuestionData) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
+      <div className="flex h-[calc(100vh-4rem)] items-center justify-center bg-background">
         <div className="text-center">
-          <p className="mb-4 text-sm text-muted-foreground">No questions available</p>
-          <Button variant="outline" onClick={() => router.push("/practice/machine")}>
+          <p className="mb-6 text-muted-foreground">No questions available</p>
+          <Button onClick={() => router.push("/practice/machine")}>
             Go Back
           </Button>
         </div>
@@ -221,122 +221,113 @@ export default function MachineTestPage() {
   const sampleInput = currentQuestion?.sampleTestCases?.[0]?.input || "";
 
   return (
-    <div className="flex h-screen flex-col">
+    <div className="flex h-[calc(100vh-4rem)] w-full flex-col overflow-hidden bg-background">
       {/* Header */}
-      <header className="flex items-center justify-between border-b border-border bg-card px-4 py-3">
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-secondary">
-              <Code2 className="h-4 w-4" />
-            </div>
-            <div>
-              <h1 className="text-sm font-semibold">Machine Coding</h1>
-              <p className="text-xs text-muted-foreground">
-                {getSolvedCount()}/{questions.length} solved · {difficulty}
-              </p>
-            </div>
+      <header className="flex h-14 shrink-0 items-center justify-between border-b bg-card px-4">
+        {/* Left */}
+        <div className="flex items-center gap-3">
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
+            <Code2 className="h-5 w-5 text-primary" />
+          </div>
+          <div className="hidden sm:block">
+            <h1 className="font-semibold leading-none">Machine Coding</h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {getSolvedCount()}/{questions.length} solved • {difficulty}
+            </p>
           </div>
         </div>
 
+        {/* Right */}
         <div className="flex items-center gap-3">
           <TestTimer expiresAt={expiresAt} onExpire={handleTimeExpire} />
 
-          {/* Language Selector - Desktop */}
-          <div className="hidden items-center gap-2 md:flex">
-            <Select
-              value={selectedLanguageId.toString()}
-              onValueChange={(v) => setSelectedLanguageId(parseInt(v))}
-            >
-              <SelectTrigger className="h-9 w-[140px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {languages
-                  .filter((l) => l.isActive)
-                  .map((lang) => (
-                    <SelectItem key={lang.id} value={lang.judge0Id.toString()}>
-                      {lang.name}
-                    </SelectItem>
-                  ))}
-              </SelectContent>
-            </Select>
-          </div>
+          <Select
+            value={selectedLanguageId.toString()}
+            onValueChange={(v) => setSelectedLanguageId(parseInt(v))}
+          >
+            <SelectTrigger className="h-9 w-[130px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {languages
+                .filter((l) => l.isActive)
+                .map((lang) => (
+                  <SelectItem key={lang.id} value={lang.judge0Id.toString()}>
+                    {lang.name}
+                  </SelectItem>
+                ))}
+            </SelectContent>
+          </Select>
 
           <Button
-            variant="outline"
-            size="sm"
             onClick={() => setShowSubmitDialog(true)}
             disabled={isCompleting}
+            size="sm"
             className="gap-2"
           >
-            <Flag className="h-4 w-4" />
-            <span className="hidden sm:inline">Complete</span>
+            {isCompleting ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Flag className="h-4 w-4" />
+            )}
+            <span className="hidden sm:inline">Finish</span>
           </Button>
         </div>
       </header>
 
       {/* Question Tabs */}
-      <QuestionTabs
-        questions={questions}
-        currentIndex={currentQuestionIndex}
-        submitResults={submitResults}
-        solvedQuestionIds={solvedQuestionIds}
-        onSelect={handleQuestionSelect}
-      />
+      <div className="shrink-0 border-b bg-muted/30">
+        <QuestionTabs
+          questions={questions}
+          currentIndex={currentQuestionIndex}
+          submitResults={submitResults}
+          solvedQuestionIds={solvedQuestionIds}
+          onSelect={handleQuestionSelect}
+        />
+      </div>
 
       {/* Main Content */}
-      <div className="flex-1 overflow-hidden">
-        <ResizablePanelGroup direction="horizontal">
+      <div className="min-h-0 flex-1">
+        <ResizablePanelGroup direction="horizontal" className="h-full">
           {/* Problem Description */}
-          <ResizablePanel defaultSize={35} minSize={25}>
-            {currentQuestion ? (
-              <ProblemDescription question={currentQuestion} />
-            ) : (
-              <div className="flex h-full items-center justify-center">
-                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-              </div>
-            )}
+          <ResizablePanel defaultSize={40} minSize={25} maxSize={60}>
+            <div className="h-full overflow-hidden">
+              {currentQuestion ? (
+                <ProblemDescription question={currentQuestion} />
+              ) : (
+                <div className="flex h-full items-center justify-center">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
+              )}
+            </div>
           </ResizablePanel>
 
           <ResizableHandle withHandle />
 
           {/* Code Editor & Execution */}
-          <ResizablePanel defaultSize={65} minSize={40}>
-            <ResizablePanelGroup direction="vertical">
+          <ResizablePanel defaultSize={60} minSize={35}>
+            <ResizablePanelGroup direction="vertical" className="h-full">
               {/* Editor */}
               <ResizablePanel defaultSize={60} minSize={30}>
                 <div className="flex h-full flex-col">
                   {/* Editor Toolbar */}
-                  <div className="flex items-center justify-between border-b border-border bg-card px-3 py-2">
-                    {/* Language Selector - Mobile */}
-                    <div className="flex items-center gap-2 md:hidden">
-                      <Select
-                        value={selectedLanguageId.toString()}
-                        onValueChange={(v) => setSelectedLanguageId(parseInt(v))}
-                      >
-                        <SelectTrigger className="h-8 w-[120px]">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {languages
-                            .filter((l) => l.isActive)
-                            .map((lang) => (
-                              <SelectItem key={lang.id} value={lang.judge0Id.toString()}>
-                                {lang.name}
-                              </SelectItem>
-                            ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="flex-1" />
-                    <Button variant="ghost" size="sm" onClick={handleResetCode} className="gap-2">
-                      <RotateCcw className="h-4 w-4" />
-                      <span className="hidden sm:inline">Reset</span>
+                  <div className="flex h-10 shrink-0 items-center justify-between border-b bg-muted/50 px-3">
+                    <span className="text-sm text-muted-foreground">
+                      {languages.find((l) => l.judge0Id === selectedLanguageId)?.name}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleResetCode}
+                      className="h-7 gap-2 text-xs"
+                    >
+                      <RotateCcw className="h-3.5 w-3.5" />
+                      Reset
                     </Button>
                   </div>
 
                   {/* Monaco Editor */}
-                  <div className="flex-1">
+                  <div className="min-h-0 flex-1">
                     <MonacoEditor
                       value={currentCode}
                       onChange={handleCodeChange}

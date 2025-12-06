@@ -2,7 +2,7 @@
 
 'use client';
 
-import { useEffect, useCallback } from 'react';
+import { Suspense, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -13,7 +13,7 @@ import {
 } from '@/lib/store/institute-admin/mockdrive-store';
 import { useCreateMockDrive } from '@/lib/hooks/institute-admin/use-mockdrive';
 import { CreateMockDriveInput } from '@/types/admin.mockdrive.types';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Loader2 } from 'lucide-react';
 
 /**
  * Transform wizard form data to API input format
@@ -38,7 +38,17 @@ function transformFormDataToInput(formData: WizardFormData): CreateMockDriveInpu
   };
 }
 
-export default function NewMockDrivePage() {
+// Loading fallback component
+function WizardLoading() {
+  return (
+    <div className="flex items-center justify-center py-12">
+      <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+    </div>
+  );
+}
+
+// Separate component that uses client-side hooks
+function NewMockDriveContent() {
   const router = useRouter();
   const reset = useCreateWizardStore((state) => state.reset);
   const getFormData = useCreateWizardStore((state) => state.getFormData);
@@ -74,6 +84,16 @@ export default function NewMockDrivePage() {
   }, [getFormData, createMutation, router]);
 
   return (
+    <WizardContainer
+      onSubmit={handleSubmit}
+      isSubmitting={createMutation.isPending}
+      submitLabel="Create Mock Drive"
+    />
+  );
+}
+
+export default function NewMockDrivePage() {
+  return (
     <div className="mx-auto max-w-4xl space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
@@ -91,12 +111,10 @@ export default function NewMockDrivePage() {
         </div>
       </div>
 
-      {/* Wizard */}
-      <WizardContainer
-        onSubmit={handleSubmit}
-        isSubmitting={createMutation.isPending}
-        submitLabel="Create Mock Drive"
-      />
+      {/* Wizard wrapped in Suspense */}
+      <Suspense fallback={<WizardLoading />}>
+        <NewMockDriveContent />
+      </Suspense>
     </div>
   );
 }

@@ -1,6 +1,8 @@
+// lib/store/auth-store.ts
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { AUTH_STORAGE_KEYS, clearAuthStorage, storage } from '@/lib/utils/storage';
+import { resetApiClient } from '@/lib/api/axios-instance';
 import { logger } from '@/lib/utils/logger';
 import type { User, AuthContext, AuthState } from '@/types/auth.types';
 
@@ -13,6 +15,7 @@ interface AuthActions {
   ) => void;
   logout: () => void;
   updateUser: (data: Partial<User>) => void;
+  updateTokens: (accessToken: string, refreshToken: string) => void;
   setLoading: (loading: boolean) => void;
   setHydrated: (hydrated: boolean) => void;
 }
@@ -29,24 +32,35 @@ const initialState: AuthState = {
   isHydrated: false,
 };
 
-const syncTokensToStorage = (accessToken: string | null, refreshToken: string | null): void => {
+const syncTokensToStorage = (
+  accessToken: string | null, 
+  refreshToken: string | null
+): void => {
   if (typeof window === 'undefined') return;
 
   if (accessToken && refreshToken) {
     storage.set(AUTH_STORAGE_KEYS.ACCESS_TOKEN, accessToken);
     storage.set(AUTH_STORAGE_KEYS.REFRESH_TOKEN, refreshToken);
+    logger.debug('[AuthStore] Tokens synced to storage');
   } else {
     clearAuthStorage();
+    logger.debug('[AuthStore] Storage cleared');
   }
 };
 
 export const useAuthStore = create<AuthStore>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       ...initialState,
 
       setAuth: (user, accessToken, refreshToken, context) => {
-        logger.debug('[AuthStore] setAuth called');
+        logger.debug('[AuthStore] setAuth called', { 
+          userId: user.id,
+          hasAccessToken: !!accessToken,
+          hasRefreshToken: !!refreshToken,
+        });
+        
+        // Sync to localStorage immediately
         syncTokensToStorage(accessToken, refreshToken);
 
         set({
@@ -59,9 +73,24 @@ export const useAuthStore = create<AuthStore>()(
         });
       },
 
+      updateTokens: (accessToken, refreshToken) => {
+        logger.debug('[AuthStore] updateTokens called');
+        syncTokensToStorage(accessToken, refreshToken);
+        
+        set({
+          accessToken,
+          refreshToken,
+        });
+      },
+
       logout: () => {
         logger.debug('[AuthStore] logout called');
+        
+        // Clear storage first
         syncTokensToStorage(null, null);
+        
+        // Reset API client state
+        resetApiClient();
 
         set({
           ...initialState,
@@ -92,18 +121,25 @@ export const useAuthStore = create<AuthStore>()(
       onRehydrateStorage: () => (state, error) => {
         if (error) {
           logger.error('[AuthStore] Hydration error:', error);
+          clearAuthStorage();
           return;
         }
 
         if (state) {
-          logger.debug('[AuthStore] Hydrated', {
+          logger.debug('[AuthStore] Hydration complete', {
             hasUser: !!state.user,
-            hasToken: !!state.accessToken,
+            hasAccessToken: !!state.accessToken,
+            hasRefreshToken: !!state.refreshToken,
           });
 
-          // Sync tokens from store to direct storage
+          // Validate and sync tokens
           if (state.accessToken && state.refreshToken) {
             syncTokensToStorage(state.accessToken, state.refreshToken);
+          } else if (state.isAuthenticated) {
+            // Inconsistent state - clear everything
+            logger.warn('[AuthStore] Inconsistent state detected, clearing');
+            state.logout();
+            return;
           }
 
           state.setHydrated(true);
@@ -119,6 +155,7 @@ export const useAuthStore = create<AuthStore>()(
 
 export const useUser = () => useAuthStore((s) => s.user);
 export const useAccessToken = () => useAuthStore((s) => s.accessToken);
+export const useRefreshToken = () => useAuthStore((s) => s.refreshToken);
 export const useIsAuthenticated = () => useAuthStore((s) => s.isAuthenticated);
 export const useAuthLoading = () => useAuthStore((s) => s.isLoading);
 export const useAuthContext = () => useAuthStore((s) => s.context);

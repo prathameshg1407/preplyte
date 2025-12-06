@@ -1,6 +1,9 @@
 // src/lib/constants/mockdrive.constants.ts
 
-import { MockDriveStatus, MockDriveModuleType, MockDriveAttemptStatus, MockDriveModuleAttemptStatus, MockDriveRegistrationStatus } from '@prisma/client';
+import { MockDriveStatus, MockDriveModuleType, MockDriveAttemptStatus, MockDriveRegistrationStatus } from "@/types/admin.mockdrive.types";
+import { MockDriveModuleAttemptStatus } from "@/types/mockdrive.types";
+
+
 
 export const MOCKDRIVE_STATUS_CONFIG: Record<MockDriveStatus, { label: string; color: string; bgColor: string }> = {
   DRAFT: { label: 'Draft', color: 'text-gray-600', bgColor: 'bg-gray-100' },

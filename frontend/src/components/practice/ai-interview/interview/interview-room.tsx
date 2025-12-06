@@ -2,8 +2,10 @@
 
 'use client';
 
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+
+// Local component imports - use relative paths to avoid circular dependencies
 import { AIAvatar } from './ai-avatar';
 import { AudioVisualizer } from './audio-visualizer';
 import { TranscriptDisplay } from './transcript-display';
@@ -11,119 +13,273 @@ import { InterviewControls } from './interview-controls';
 import { ProgressBar } from './progress-bar';
 import { ConnectionStatus } from './connection-status';
 import { EndInterviewDialog } from './end-interview-dialog';
+
+// Store and hooks
 import { useInterviewStore } from '@/lib/store/interview-store';
-import { useInterviewWebSocket } from '@/lib/hooks/use-interview-websocket';
+import { useInterviewWebSocket } from '@/lib/contexts/interview-websocket-context';
 import { useAudioRecorder } from '@/lib/hooks/use-audio-recorder';
 import { useAudioPlayer } from '@/lib/hooks/use-audio-player';
-import { useStartSession } from '@/lib/hooks/use-interview';
+import { useStartSession, useInterviewSession } from '@/lib/hooks/use-interview';
+
+// UI components
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertCircle, Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { AlertCircle, Loader2, RefreshCw } from 'lucide-react';
+
+// =====================================================
+// TYPES
+// =====================================================
 
 interface InterviewRoomProps {
   sessionId: string;
 }
 
+// =====================================================
+// COMPONENT
+// =====================================================
+
 export function InterviewRoom({ sessionId }: InterviewRoomProps) {
   const router = useRouter();
+  const hasInitializedRef = useRef(false);
+
+  // Fetch session data
+  const { data: sessionData, isLoading: isSessionLoading } = useInterviewSession(sessionId);
 
   // Store
   const {
     currentSession,
     messages,
     progress,
-    ui: { isConnected, isConnecting, isRecording, isAISpeaking, isProcessing, currentTranscript, error },
+    ui: {
+      isRecording,
+      isAISpeaking,
+      isProcessing,
+      currentTranscript,
+      error,
+    },
+    setCurrentSession,
+    setError,
   } = useInterviewStore();
 
-  // Audio player
-  const { queueAudio, isPlaying } = useAudioPlayer();
+  // WebSocket from context
+  const ws = useInterviewWebSocket();
 
-  // WebSocket
+  // Audio player
   const {
-    connect,
-    disconnect,
-    sendAudio,
-    startRecording: wsStartRecording,
-    stopRecording: wsStopRecording,
-    endInterview,
-  } = useInterviewWebSocket({
-    sessionId,
-    onAudioReceived: queueAudio,
-    onInterviewEnded: (feedbackUrl) => {
-      router.push(`/practice/ai-interview/results/${sessionId}`);
+    queueAudio,
+    playAccumulated,
+    isPlaying,
+    isBuffering,
+    clear: clearAudioQueue,
+  } = useAudioPlayer({
+    onPlaybackEnd: () => {
+      console.log('[InterviewRoom] Audio playback ended');
+    },
+    onError: (err) => {
+      console.error('[InterviewRoom] Audio player error:', err);
     },
   });
 
   // Audio recorder
-  const {
-    isRecording: isRecorderActive,
-    startRecording: startMicRecording,
-    stopRecording: stopMicRecording,
-    volume,
-    error: recorderError,
-  } = useAudioRecorder({
-    onAudioData: sendAudio,
-  });
+// In interview-room.tsx - update useAudioRecorder
 
+const {
+  isRecording: isRecorderActive,
+  startRecording: startMicRecording,
+  stopRecording: stopMicRecording,
+  volume,
+  error: recorderError,
+  requestPermission,
+  isSupported: isAudioSupported,
+} = useAudioRecorder({
+  onAudioData: (data) => {
+    // ADD THIS LOG
+    console.log('[InterviewRoom] Sending audio chunk, size:', data.byteLength);
+    ws.sendAudio(data);
+  },
+  onError: (err) => {
+    console.error('[InterviewRoom] Recorder error:', err);
+    setError(err);
+  },
+});
   // Start session mutation
   const { mutate: startSession, isPending: isStarting } = useStartSession();
 
-  // Connect on mount
+  // ===================================================
+  // REGISTER HANDLERS
+  // ===================================================
+
+  // Register audio handler - accumulate chunks
   useEffect(() => {
-    if (currentSession?.status === 'CREATED') {
-      startSession(sessionId);
+    const unsubscribe = ws.registerAudioHandler((data) => {
+      queueAudio(data);
+    });
+    return unsubscribe;
+  }, [ws, queueAudio]);
+
+  // Register AI done handler - trigger playback when AI finishes
+  useEffect(() => {
+    const unsubscribe = ws.registerAiDoneHandler(() => {
+      console.log('[InterviewRoom] AI done, playing accumulated audio');
+      playAccumulated();
+    });
+    return unsubscribe;
+  }, [ws, playAccumulated]);
+
+  // Register end handler
+  useEffect(() => {
+    const unsubscribe = ws.registerEndHandler(() => {
+      router.push(`/practice/ai-interview/results/${sessionId}`);
+    });
+    return unsubscribe;
+  }, [ws, router, sessionId]);
+
+  // Register error handler
+  useEffect(() => {
+    const unsubscribe = ws.registerErrorHandler((err) => {
+      console.error('[InterviewRoom] WebSocket error:', err);
+    });
+    return unsubscribe;
+  }, [ws]);
+
+  // ===================================================
+  // INITIALIZATION
+  // ===================================================
+
+  // Initialize session and connect
+  useEffect(() => {
+    if (sessionData && !hasInitializedRef.current) {
+      setCurrentSession(sessionData);
+      hasInitializedRef.current = true;
+
+      // Start session if it's in CREATED state
+      if (sessionData.status === 'CREATED') {
+        startSession(sessionId);
+      }
+
+      // Connect to WebSocket
+      ws.connect(sessionId);
     }
-    connect();
+  }, [sessionData, sessionId, setCurrentSession, startSession, ws]);
 
-    return () => {
-      disconnect();
-    };
-  }, [sessionId]);
-
-  // Sync recording state
+  // Cleanup on unmount
   useEffect(() => {
-    if (isRecording && !isRecorderActive && !isAISpeaking) {
+    return () => {
+      clearAudioQueue();
+    };
+  }, [clearAudioQueue]);
+
+  // ===================================================
+  // RECORDING SYNC
+  // ===================================================
+
+  // Sync recording state with WebSocket state
+  useEffect(() => {
+    const shouldRecord = isRecording && !isAISpeaking && !isProcessing && !isPlaying;
+    
+    if (shouldRecord && !isRecorderActive) {
       startMicRecording();
-    } else if (!isRecording && isRecorderActive) {
+    } else if (!shouldRecord && isRecorderActive) {
       stopMicRecording();
     }
-  }, [isRecording, isRecorderActive, isAISpeaking]);
+  }, [isRecording, isRecorderActive, isAISpeaking, isProcessing, isPlaying, startMicRecording, stopMicRecording]);
+
+  // ===================================================
+  // HANDLERS
+  // ===================================================
 
   // Handle recording toggle
-  const handleToggleRecording = useCallback(() => {
+  const handleToggleRecording = useCallback(async () => {
     if (isRecording) {
       stopMicRecording();
-      wsStopRecording();
+      ws.stopRecording();
     } else {
-      startMicRecording();
-      wsStartRecording();
+      const hasPermission = await requestPermission();
+      if (hasPermission) {
+        await startMicRecording();
+        ws.startRecording();
+      }
     }
-  }, [isRecording, startMicRecording, stopMicRecording, wsStartRecording, wsStopRecording]);
+  }, [isRecording, startMicRecording, stopMicRecording, ws, requestPermission]);
 
   // Handle end interview
   const handleEndInterview = useCallback(() => {
     stopMicRecording();
-    endInterview('completed');
-  }, [stopMicRecording, endInterview]);
+    clearAudioQueue();
+    ws.endInterview('completed');
+  }, [stopMicRecording, clearAudioQueue, ws]);
+
+  // Handle reconnect
+  const handleReconnect = useCallback(() => {
+    setError(null);
+    ws.connect(sessionId);
+  }, [ws, sessionId, setError]);
+
+  // ===================================================
+  // RENDER STATES
+  // ===================================================
 
   // Loading state
-  if (isStarting || isConnecting) {
+  if (isSessionLoading || isStarting) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen gap-4">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
         <p className="text-lg text-muted-foreground">
-          {isStarting ? 'Starting interview...' : 'Connecting...'}
+          {isSessionLoading ? 'Loading session...' : 'Starting interview...'}
         </p>
       </div>
     );
   }
+
+  // Connecting state
+  if (ws.isConnecting) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen gap-4">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        <p className="text-lg text-muted-foreground">Connecting to interview...</p>
+        {ws.connectionAttempts > 0 && (
+          <p className="text-sm text-muted-foreground">
+            Attempt {ws.connectionAttempts} of 5
+          </p>
+        )}
+      </div>
+    );
+  }
+
+  // Audio not supported
+  if (!isAudioSupported) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen gap-4 p-8">
+        <AlertCircle className="h-12 w-12 text-destructive" />
+        <h1 className="text-xl font-semibold">Audio Not Supported</h1>
+        <p className="text-muted-foreground text-center max-w-md">
+          Your browser doesn&apos;t support audio recording. Please use a modern browser like Chrome,
+          Firefox, or Safari.
+        </p>
+        <Button onClick={() => router.push('/practice/ai-interview')}>Go Back</Button>
+      </div>
+    );
+  }
+
+  // ===================================================
+  // MAIN RENDER
+  // ===================================================
 
   return (
     <div className="flex flex-col h-screen bg-background">
       {/* Header */}
       <header className="flex items-center justify-between px-6 py-4 border-b">
         <div className="flex items-center gap-4">
-          <ConnectionStatus isConnected={isConnected} />
-          <h1 className="text-lg font-semibold">AI Interview</h1>
+          <ConnectionStatus isConnected={ws.isConnected} />
+          <div>
+            <h1 className="text-lg font-semibold">AI Interview</h1>
+            {currentSession?.config.jobTitle && (
+              <p className="text-sm text-muted-foreground">
+                {currentSession.config.jobTitle}
+                {currentSession.config.companyName && ` at ${currentSession.config.companyName}`}
+              </p>
+            )}
+          </div>
         </div>
         <EndInterviewDialog onConfirm={handleEndInterview} />
       </header>
@@ -139,50 +295,73 @@ export function InterviewRoom({ sessionId }: InterviewRoomProps) {
       {(error || recorderError) && (
         <Alert variant="destructive" className="mx-6 mt-4">
           <AlertCircle className="h-4 w-4" />
-          <AlertDescription>{error || recorderError}</AlertDescription>
+          <AlertDescription className="flex items-center justify-between">
+            <span>{error || recorderError}</span>
+            {!ws.isConnected && (
+              <Button variant="outline" size="sm" onClick={handleReconnect}>
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Reconnect
+              </Button>
+            )}
+          </AlertDescription>
         </Alert>
       )}
 
       {/* Main Content */}
-      <div className="flex-1 flex">
+      <div className="flex-1 flex overflow-hidden">
         {/* AI Avatar Section */}
         <div className="flex-1 flex flex-col items-center justify-center p-8">
           <AIAvatar
             isSpeaking={isAISpeaking || isPlaying}
-            isListening={isRecording}
+            isListening={isRecording && !isPlaying}
             isProcessing={isProcessing}
           />
-          
+
           <AudioVisualizer
-            isActive={isRecording || isAISpeaking}
+            isActive={isRecording || isAISpeaking || isPlaying}
             volume={isRecording ? volume : 0}
             className="mt-8"
           />
 
+          {/* Buffering indicator */}
+          {isBuffering && (
+            <div className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span>Receiving audio...</span>
+            </div>
+          )}
+
           {/* Current Transcript */}
           {currentTranscript && (
-            <div className="mt-4 p-4 bg-muted rounded-lg max-w-md">
-              <p className="text-sm text-muted-foreground italic">
-                "{currentTranscript}"
+            <div className="mt-4 p-4 bg-muted rounded-lg max-w-md animate-in fade-in">
+              <p className="text-sm text-muted-foreground italic">&quot;{currentTranscript}&quot;</p>
+            </div>
+          )}
+
+          {/* Status indicator when not connected */}
+          {!ws.isConnected && !ws.isConnecting && (
+            <div className="mt-4 p-4 bg-destructive/10 rounded-lg">
+              <p className="text-sm text-destructive">
+                Connection lost. Click reconnect or refresh the page.
               </p>
             </div>
           )}
         </div>
 
         {/* Transcript Sidebar */}
-        <div className="w-96 border-l">
+        <div className="w-96 border-l hidden lg:block">
           <TranscriptDisplay messages={messages} />
         </div>
       </div>
 
       {/* Controls */}
-      <footer className="px-6 py-4 border-t">
+      <footer className="px-6 py-4 border-t bg-background">
         <InterviewControls
           isRecording={isRecording}
-          isAISpeaking={isAISpeaking}
+          isAISpeaking={isAISpeaking || isPlaying}
           isProcessing={isProcessing}
           onToggleRecording={handleToggleRecording}
-          disabled={!isConnected || isAISpeaking}
+          disabled={!ws.isConnected || isAISpeaking || isPlaying || isProcessing}
         />
       </footer>
     </div>

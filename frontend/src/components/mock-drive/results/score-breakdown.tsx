@@ -4,11 +4,39 @@
 
 import { FC } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ModuleReport } from '@/types/mockdrive.types';
+import { 
+  ModuleReport, 
+  AptitudeAnalysis, 
+  MachineAnalysis, 
+  InterviewAnalysis,
+  MockDriveModuleType 
+} from '@/types/mockdrive.types';
 import { MODULE_TYPE_CONFIG } from '@/lib/constants/mockdrive.constants';
 
 interface ScoreBreakdownProps {
   moduleReports: ModuleReport[];
+}
+
+// Type guards for detailed analysis
+function isAptitudeAnalysis(
+  analysis: AptitudeAnalysis | MachineAnalysis | InterviewAnalysis | null,
+  moduleType: MockDriveModuleType
+): analysis is AptitudeAnalysis {
+  return moduleType === MockDriveModuleType.APTITUDE && analysis !== null;
+}
+
+function isMachineAnalysis(
+  analysis: AptitudeAnalysis | MachineAnalysis | InterviewAnalysis | null,
+  moduleType: MockDriveModuleType
+): analysis is MachineAnalysis {
+  return moduleType === MockDriveModuleType.MACHINE_CODING && analysis !== null;
+}
+
+function isInterviewAnalysis(
+  analysis: AptitudeAnalysis | MachineAnalysis | InterviewAnalysis | null,
+  moduleType: MockDriveModuleType
+): analysis is InterviewAnalysis {
+  return moduleType === MockDriveModuleType.AI_INTERVIEW && analysis !== null;
 }
 
 export const ScoreBreakdown: FC<ScoreBreakdownProps> = ({ moduleReports }) => {
@@ -30,8 +58,8 @@ export const ScoreBreakdown: FC<ScoreBreakdownProps> = ({ moduleReports }) => {
                   </span>
                 </div>
 
-                {/* Module-specific analysis */}
-                {report.moduleType === 'APTITUDE' && report.detailedAnalysis && (
+                {/* Aptitude Module Analysis */}
+                {isAptitudeAnalysis(report.detailedAnalysis, report.moduleType) && (
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                     <div className="p-3 bg-green-50 rounded-lg text-center">
                       <p className="text-2xl font-bold text-green-600">
@@ -60,7 +88,8 @@ export const ScoreBreakdown: FC<ScoreBreakdownProps> = ({ moduleReports }) => {
                   </div>
                 )}
 
-                {report.moduleType === 'MACHINE_CODING' && report.detailedAnalysis && (
+                {/* Machine Coding Module Analysis */}
+                {isMachineAnalysis(report.detailedAnalysis, report.moduleType) && (
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                     <div className="p-3 bg-green-50 rounded-lg text-center">
                       <p className="text-2xl font-bold text-green-600">
@@ -89,7 +118,8 @@ export const ScoreBreakdown: FC<ScoreBreakdownProps> = ({ moduleReports }) => {
                   </div>
                 )}
 
-                {report.moduleType === 'AI_INTERVIEW' && report.detailedAnalysis && (
+                {/* AI Interview Module Analysis */}
+                {isInterviewAnalysis(report.detailedAnalysis, report.moduleType) && (
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                     <div className="p-3 bg-blue-50 rounded-lg text-center">
                       <p className="text-2xl font-bold text-blue-600">

@@ -2,14 +2,13 @@
 
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { useCallback } from 'react';
-import { interviewService } from '@/lib/api/services/interview.service';
+import { useEffect } from 'react';
+import { interviewService, InterviewServiceError } from '@/lib/api/services/interview.service';
 import { useInterviewStore } from '@/lib/store/interview-store';
 import { useToast } from '@/components/ui/use-toast';
 import type {
   CreateSessionInput,
-  InterviewSession,
-  InterviewFeedback,
+  InterviewSessionStatus,
 } from '@/types/interview.types';
 
 // =====================================================
@@ -19,45 +18,66 @@ import type {
 export const interviewKeys = {
   all: ['interview'] as const,
   sessions: () => [...interviewKeys.all, 'sessions'] as const,
+  sessionsList: (filters?: { status?: InterviewSessionStatus }) =>
+    [...interviewKeys.sessions(), 'list', filters] as const,
   session: (id: string) => [...interviewKeys.all, 'session', id] as const,
-  sessionDetail: (id: string) => [...interviewKeys.all, 'session', id, 'detail'] as const,
+  sessionDetail: (id: string) => [...interviewKeys.session(id), 'detail'] as const,
   feedback: (id: string) => [...interviewKeys.all, 'feedback', id] as const,
 };
 
 // =====================================================
-// SESSION HOOKS
+// ERROR HANDLER
 // =====================================================
 
-/**
- * Hook for fetching paginated interview sessions with infinite scroll support
- */
-export function useInterviewSessions(pageSize = 10) {
-  const { setSessionHistory, appendSessionHistory, setHistoryLoading } = useInterviewStore();
+function getErrorMessage(error: unknown): string {
+  if (error instanceof InterviewServiceError) {
+    return error.message;
+  }
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return 'An unexpected error occurred';
+}
+
+// =====================================================
+// SESSION LIST HOOKS
+// =====================================================
+
+export function useInterviewSessions(
+  options: {
+    pageSize?: number;
+    status?: InterviewSessionStatus;
+    enabled?: boolean;
+  } = {}
+) {
+  const { pageSize = 10, status, enabled = true } = options;
+  const { setSessionHistory, setHistoryLoading } = useInterviewStore();
 
   const query = useInfiniteQuery({
-    queryKey: interviewKeys.sessions(),
+    queryKey: interviewKeys.sessionsList({ status }),
     queryFn: async ({ pageParam = 1 }) => {
       setHistoryLoading(true);
       try {
-        const data = await interviewService.listSessions({ 
-          page: pageParam, 
-          pageSize 
+        return await interviewService.listSessions({
+          page: pageParam,
+          pageSize,
+          status,
         });
-        return data;
       } finally {
         setHistoryLoading(false);
       }
     },
-    getNextPageParam: (lastPage, allPages) => {
+    getNextPageParam: (lastPage) => {
       if (!lastPage.hasMore) return undefined;
-      return allPages.length + 1;
+      return lastPage.page + 1;
     },
     initialPageParam: 1,
+    enabled,
     staleTime: 30000,
+    refetchOnWindowFocus: false,
   });
 
-  // Sync all pages to store whenever data changes
-  const syncToStore = useCallback(() => {
+  useEffect(() => {
     if (query.data) {
       const allSessions = query.data.pages.flatMap((page) => page.sessions);
       const hasMore = query.data.pages[query.data.pages.length - 1]?.hasMore ?? false;
@@ -65,13 +85,9 @@ export function useInterviewSessions(pageSize = 10) {
     }
   }, [query.data, setSessionHistory]);
 
-  // Sync on data change
-  if (query.data) {
-    syncToStore();
-  }
-
   return {
-    data: query.data,
+    sessions: query.data?.pages.flatMap((page) => page.sessions) ?? [],
+    total: query.data?.pages[0]?.total ?? 0,
     isLoading: query.isLoading,
     isError: query.isError,
     error: query.error,
@@ -83,59 +99,38 @@ export function useInterviewSessions(pageSize = 10) {
   };
 }
 
-/**
- * Alternative: Simple pagination hook (non-infinite)
- */
-export function useInterviewSessionsPaginated(page = 1, pageSize = 10) {
-  const store = useInterviewStore();
-  const { setSessionHistory, appendSessionHistory, setHistoryLoading } = store;
+// =====================================================
+// SESSION DETAIL HOOKS
+// =====================================================
 
-  const query = useQuery({
-    queryKey: [...interviewKeys.sessions(), page],
-    queryFn: async () => {
-      setHistoryLoading(true);
-      try {
-        const data = await interviewService.listSessions({ page, pageSize });
-        if (page === 1) {
-          setSessionHistory(data.sessions, data.hasMore);
-        } else {
-          appendSessionHistory(data.sessions, data.hasMore);
-        }
-        return data;
-      } finally {
-        setHistoryLoading(false);
-      }
-    },
-    staleTime: 30000,
-  });
-
-  return query;
-}
-
-export function useInterviewSession(sessionId: string) {
+export function useInterviewSession(sessionId: string | undefined) {
   const { setCurrentSession } = useInterviewStore();
 
   return useQuery({
-    queryKey: interviewKeys.session(sessionId),
+    queryKey: interviewKeys.session(sessionId!),
     queryFn: async () => {
-      const session = await interviewService.getSession(sessionId);
+      const session = await interviewService.getSession(sessionId!);
       setCurrentSession(session);
       return session;
     },
     enabled: !!sessionId,
+    staleTime: 10000,
+    retry: 2,
   });
 }
 
-export function useInterviewSessionDetail(sessionId: string) {
+export function useInterviewSessionDetail(sessionId: string | undefined) {
   return useQuery({
-    queryKey: interviewKeys.sessionDetail(sessionId),
-    queryFn: () => interviewService.getSessionDetail(sessionId),
+    queryKey: interviewKeys.sessionDetail(sessionId!),
+    queryFn: () => interviewService.getSessionDetail(sessionId!),
     enabled: !!sessionId,
+    staleTime: 10000,
+    retry: 2,
   });
 }
 
 // =====================================================
-// MUTATION HOOKS
+// SESSION MUTATION HOOKS
 // =====================================================
 
 export function useCreateSession() {
@@ -155,10 +150,10 @@ export function useCreateSession() {
       });
       router.push(`/practice/ai-interview/${session.id}`);
     },
-    onError: (error: Error & { response?: { data?: { message?: string } } }) => {
+    onError: (error: unknown) => {
       toast({
-        title: 'Error',
-        description: error.response?.data?.message || 'Failed to create session',
+        title: 'Error Creating Session',
+        description: getErrorMessage(error),
         variant: 'destructive',
       });
     },
@@ -167,17 +162,18 @@ export function useCreateSession() {
 
 export function useStartSession() {
   const queryClient = useQueryClient();
-  const { setCurrentSession, addMessage } = useInterviewStore();
+  const { setCurrentSession, addMessage, setProgress } = useInterviewStore();
   const { toast } = useToast();
 
   return useMutation({
     mutationFn: (sessionId: string) => interviewService.startSession(sessionId),
     onSuccess: (data, sessionId) => {
       setCurrentSession(data.session);
-      
-      // Add opening message to conversation
+      setProgress(data.session.progress);
+
+      // Add opening message from AI
       addMessage({
-        id: `ai-${Date.now()}`,
+        id: `ai-opening-${Date.now()}`,
         role: 'assistant',
         content: data.openingMessage,
         timestamp: new Date(),
@@ -186,10 +182,10 @@ export function useStartSession() {
 
       queryClient.invalidateQueries({ queryKey: interviewKeys.session(sessionId) });
     },
-    onError: (error: Error & { response?: { data?: { message?: string } } }) => {
+    onError: (error: unknown) => {
       toast({
-        title: 'Error',
-        description: error.response?.data?.message || 'Failed to start session',
+        title: 'Error Starting Session',
+        description: getErrorMessage(error),
         variant: 'destructive',
       });
     },
@@ -204,19 +200,20 @@ export function useCancelSession() {
 
   return useMutation({
     mutationFn: (sessionId: string) => interviewService.cancelSession(sessionId),
-    onSuccess: () => {
+    onSuccess: (_, sessionId) => {
       reset();
       queryClient.invalidateQueries({ queryKey: interviewKeys.sessions() });
+      queryClient.removeQueries({ queryKey: interviewKeys.session(sessionId) });
       toast({
         title: 'Session Cancelled',
         description: 'Your interview session has been cancelled.',
       });
       router.push('/practice/ai-interview');
     },
-    onError: (error: Error & { response?: { data?: { message?: string } } }) => {
+    onError: (error: unknown) => {
       toast({
-        title: 'Error',
-        description: error.response?.data?.message || 'Failed to cancel session',
+        title: 'Error Cancelling Session',
+        description: getErrorMessage(error),
         variant: 'destructive',
       });
     },
@@ -235,16 +232,17 @@ export function useEndSession() {
       setFeedback(data.feedback);
       updateSessionStatus('COMPLETED');
       queryClient.invalidateQueries({ queryKey: interviewKeys.sessions() });
+      queryClient.setQueryData(interviewKeys.feedback(sessionId), data.feedback);
       toast({
         title: 'Interview Complete',
-        description: 'Your feedback is ready.',
+        description: 'Your feedback is ready to view.',
       });
       router.push(`/practice/ai-interview/results/${sessionId}`);
     },
-    onError: (error: Error & { response?: { data?: { message?: string } } }) => {
+    onError: (error: unknown) => {
       toast({
-        title: 'Error',
-        description: error.response?.data?.message || 'Failed to end session',
+        title: 'Error Ending Session',
+        description: getErrorMessage(error),
         variant: 'destructive',
       });
     },
@@ -255,15 +253,15 @@ export function useEndSession() {
 // FEEDBACK HOOKS
 // =====================================================
 
-export function useInterviewFeedback(sessionId: string) {
+export function useInterviewFeedback(sessionId: string | undefined) {
   const { setFeedback, setFeedbackLoading } = useInterviewStore();
 
   return useQuery({
-    queryKey: interviewKeys.feedback(sessionId),
+    queryKey: interviewKeys.feedback(sessionId!),
     queryFn: async () => {
       setFeedbackLoading(true);
       try {
-        const feedback = await interviewService.getFeedback(sessionId);
+        const feedback = await interviewService.getFeedback(sessionId!);
         setFeedback(feedback);
         return feedback;
       } finally {
@@ -271,30 +269,83 @@ export function useInterviewFeedback(sessionId: string) {
       }
     },
     enabled: !!sessionId,
+    staleTime: 60000,
+    retry: 2,
   });
 }
 
 export function useRegenerateFeedback() {
   const queryClient = useQueryClient();
-  const { setFeedback } = useInterviewStore();
+  const { setFeedback, setFeedbackLoading } = useInterviewStore();
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: (sessionId: string) => interviewService.regenerateFeedback(sessionId),
+    mutationFn: async (sessionId: string) => {
+      setFeedbackLoading(true);
+      try {
+        return await interviewService.regenerateFeedback(sessionId);
+      } finally {
+        setFeedbackLoading(false);
+      }
+    },
     onSuccess: (feedback, sessionId) => {
       setFeedback(feedback);
-      queryClient.invalidateQueries({ queryKey: interviewKeys.feedback(sessionId) });
+      queryClient.setQueryData(interviewKeys.feedback(sessionId), feedback);
       toast({
         title: 'Feedback Regenerated',
-        description: 'Your feedback has been updated.',
+        description: 'Your feedback has been updated with new insights.',
       });
     },
-    onError: (error: Error & { response?: { data?: { message?: string } } }) => {
+    onError: (error: unknown) => {
       toast({
-        title: 'Error',
-        description: error.response?.data?.message || 'Failed to regenerate feedback',
+        title: 'Error Regenerating Feedback',
+        description: getErrorMessage(error),
         variant: 'destructive',
       });
     },
   });
+}
+
+// =====================================================
+// COMBINED INTERVIEW HOOK
+// =====================================================
+
+export function useInterview(sessionId: string) {
+  const store = useInterviewStore();
+  const session = useInterviewSession(sessionId);
+  const feedback = useInterviewFeedback(
+    store.currentSession?.status === 'COMPLETED' ? sessionId : undefined
+  );
+  const startSession = useStartSession();
+  const cancelSession = useCancelSession();
+  const endSession = useEndSession();
+
+  return {
+    // Data
+    session: store.currentSession,
+    isLoading: session.isLoading,
+    isError: session.isError,
+    error: session.error,
+    messages: store.messages,
+    currentQuestion: store.currentQuestion,
+    progress: store.progress,
+    feedback: store.feedback,
+    feedbackLoading: store.feedbackLoading,
+    ui: store.ui,
+    
+    // Actions
+    startSession: () => startSession.mutate(sessionId),
+    cancelSession: () => cancelSession.mutate(sessionId),
+    endSession: () => endSession.mutate(sessionId),
+    
+    // Loading states
+    isStarting: startSession.isPending,
+    isCancelling: cancelSession.isPending,
+    isEnding: endSession.isPending,
+    
+    // Store actions
+    addMessage: store.addMessage,
+    setError: store.setError,
+    reset: store.reset,
+  };
 }

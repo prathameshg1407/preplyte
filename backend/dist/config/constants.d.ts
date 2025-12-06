@@ -1,0 +1,74 @@
+export declare const CONSTANTS: {
+    readonly MIN_RESUME_LENGTH: 50;
+    readonly MAX_RESUME_SIZE: number;
+    readonly MAX_QUESTIONS: 10;
+    readonly DEFAULT_JOB_TITLE: "Software Developer";
+    readonly MAX_TIME_SECONDS: 600;
+    readonly MAX_PROMPT_LENGTH: 4000;
+    readonly FOLLOWUP_MIN_ANSWER_LENGTH: 20;
+    readonly FOLLOWUP_MIN_SCORE: 10;
+    readonly FOLLOWUP_MAX_SCORE: 60;
+    readonly DEDUP_TIMEOUT_MS: 1000;
+    readonly MAX_RETRIES: 3;
+    readonly RETRY_DELAY_MS: 1000;
+    readonly API_TIMEOUT_MS: 60000;
+    readonly MIN_REQUEST_INTERVAL_MS: 100;
+    readonly GROQ_MODEL: "llama-3.3-70b-versatile";
+    readonly GROQ_TEMPERATURE: 0.7;
+    readonly GROQ_MAX_TOKENS: 4096;
+    readonly GROQ_SCORING_TEMPERATURE: 0.3;
+    readonly GROQ_FEEDBACK_TEMPERATURE: 0.5;
+    readonly TTS_LANGUAGE: "en-US";
+    readonly TTS_VOICE_GENDER: "NEUTRAL";
+    readonly TTS_AUDIO_ENCODING: "MP3";
+    readonly AUDIO_DIR: "../../audio";
+    readonly AUDIO_CACHE_MAX_SIZE: 100;
+    readonly AUDIO_CACHE_TTL_MS: number;
+    readonly MIN_SCORE: 0;
+    readonly MAX_SCORE: 10;
+    readonly DEFAULT_SCORE: 5;
+    readonly OVERALL_SCORE_MULTIPLIER: 10;
+};
+export declare const HTTP_STATUS: {
+    readonly OK: 200;
+    readonly CREATED: 201;
+    readonly NO_CONTENT: 204;
+    readonly BAD_REQUEST: 400;
+    readonly UNAUTHORIZED: 401;
+    readonly FORBIDDEN: 403;
+    readonly NOT_FOUND: 404;
+    readonly CONFLICT: 409;
+    readonly UNPROCESSABLE_ENTITY: 422;
+    readonly TOO_MANY_REQUESTS: 429;
+    readonly INTERNAL_ERROR: 500;
+    readonly SERVICE_UNAVAILABLE: 503;
+};
+export declare const ALLOWED_RESUME_TYPES: readonly ["application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"];
+export declare const QUESTION_CATEGORIES: {
+    readonly INTRODUCTORY: "INTRODUCTORY";
+    readonly TECHNICAL: "TECHNICAL";
+    readonly CLOSING: "CLOSING";
+};
+export declare const SESSION_STATUS: {
+    readonly STARTED: "STARTED";
+    readonly IN_PROGRESS: "IN_PROGRESS";
+    readonly COMPLETED: "COMPLETED";
+    readonly CANCELLED: "CANCELLED";
+};
+export declare const ERROR_CODES: {
+    readonly VALIDATION_ERROR: "VALIDATION_ERROR";
+    readonly NOT_FOUND: "NOT_FOUND";
+    readonly UNAUTHORIZED: "UNAUTHORIZED";
+    readonly FORBIDDEN: "FORBIDDEN";
+    readonly CONFLICT: "CONFLICT";
+    readonly RATE_LIMITED: "RATE_LIMITED";
+    readonly INTERNAL_ERROR: "INTERNAL_ERROR";
+    readonly SERVICE_UNAVAILABLE: "SERVICE_UNAVAILABLE";
+};
+export type Constants = typeof CONSTANTS;
+export type HttpStatus = typeof HTTP_STATUS;
+export type AllowedResumeType = (typeof ALLOWED_RESUME_TYPES)[number];
+export type QuestionCategory = (typeof QUESTION_CATEGORIES)[keyof typeof QUESTION_CATEGORIES];
+export type SessionStatus = (typeof SESSION_STATUS)[keyof typeof SESSION_STATUS];
+export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];
+//# sourceMappingURL=constants.d.ts.map

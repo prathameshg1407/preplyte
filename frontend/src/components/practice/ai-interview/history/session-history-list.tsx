@@ -4,7 +4,7 @@
 
 import { useRouter } from 'next/navigation';
 import { formatDistanceToNow } from 'date-fns';
-import { Clock, Target, MessageSquare, ChevronRight } from 'lucide-react';
+import { Clock, Target, MessageSquare, ChevronRight, Mic } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -21,14 +21,14 @@ interface SessionHistoryListProps {
 
 const STATUS_CONFIG: Record<
   InterviewSessionStatus,
-  { label: string; color: string }
+  { label: string; color: string; bgColor: string }
 > = {
-  CREATED: { label: 'Created', color: 'bg-gray-500' },
-  STARTED: { label: 'In Progress', color: 'bg-blue-500' },
-  IN_PROGRESS: { label: 'In Progress', color: 'bg-blue-500' },
-  COMPLETED: { label: 'Completed', color: 'bg-green-500' },
-  CANCELLED: { label: 'Cancelled', color: 'bg-red-500' },
-  FAILED: { label: 'Failed', color: 'bg-red-500' },
+  CREATED: { label: 'Ready', color: 'text-gray-600', bgColor: 'bg-gray-500' },
+  STARTED: { label: 'In Progress', color: 'text-blue-600', bgColor: 'bg-blue-500' },
+  IN_PROGRESS: { label: 'In Progress', color: 'text-blue-600', bgColor: 'bg-blue-500' },
+  COMPLETED: { label: 'Completed', color: 'text-green-600', bgColor: 'bg-green-500' },
+  CANCELLED: { label: 'Cancelled', color: 'text-red-600', bgColor: 'bg-red-500' },
+  FAILED: { label: 'Failed', color: 'text-red-600', bgColor: 'bg-red-500' },
 };
 
 export function SessionHistoryList({
@@ -53,13 +53,13 @@ export function SessionHistoryList({
     return (
       <Card>
         <CardContent className="py-12 text-center">
-          <MessageSquare className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-lg font-medium mb-2">No Interview Sessions</h3>
+          <Mic className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+          <h3 className="text-lg font-medium mb-2">No Interview Sessions Yet</h3>
           <p className="text-muted-foreground mb-4">
-            Start your first AI interview practice session
+            Start your first AI interview practice session to see your history here
           </p>
           <Button onClick={() => router.push('/practice/ai-interview')}>
-            Start Interview
+            Start Your First Interview
           </Button>
         </CardContent>
       </Card>
@@ -73,7 +73,7 @@ export function SessionHistoryList({
       ))}
 
       {hasMore && (
-        <div className="text-center">
+        <div className="text-center pt-4">
           <Button variant="outline" onClick={onLoadMore} disabled={isLoading}>
             {isLoading ? 'Loading...' : 'Load More'}
           </Button>
@@ -95,28 +95,33 @@ function SessionHistoryCard({ session }: { session: InterviewSessionSummary }) {
     }
   };
 
+  const isClickable = ['CREATED', 'STARTED', 'IN_PROGRESS', 'COMPLETED'].includes(session.status);
+
   return (
     <Card
-      className="cursor-pointer hover:bg-muted/50 transition-colors"
-      onClick={handleClick}
+      className={cn(
+        'transition-colors',
+        isClickable && 'cursor-pointer hover:bg-muted/50'
+      )}
+      onClick={isClickable ? handleClick : undefined}
     >
       <CardContent className="p-4">
         <div className="flex items-center justify-between">
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
+          <div className="space-y-2 flex-1">
+            <div className="flex items-center gap-2 flex-wrap">
               <h3 className="font-medium">{session.jobTitle}</h3>
               <Badge variant="outline" className="text-xs">
                 {session.difficulty}
               </Badge>
               <div className="flex items-center gap-1">
-                <div className={cn('w-2 h-2 rounded-full', statusConfig.color)} />
-                <span className="text-xs text-muted-foreground">
+                <div className={cn('w-2 h-2 rounded-full', statusConfig.bgColor)} />
+                <span className={cn('text-xs', statusConfig.color)}>
                   {statusConfig.label}
                 </span>
               </div>
             </div>
 
-            <div className="flex items-center gap-4 text-sm text-muted-foreground">
+            <div className="flex items-center gap-4 text-sm text-muted-foreground flex-wrap">
               <div className="flex items-center gap-1">
                 <MessageSquare className="h-4 w-4" />
                 <span>
@@ -126,7 +131,7 @@ function SessionHistoryCard({ session }: { session: InterviewSessionSummary }) {
               {session.overallScore !== null && (
                 <div className="flex items-center gap-1">
                   <Target className="h-4 w-4" />
-                  <span>{session.overallScore.toFixed(1)}/10</span>
+                  <span className="font-medium">{session.overallScore.toFixed(1)}/10</span>
                 </div>
               )}
               <div className="flex items-center gap-1">
@@ -140,7 +145,9 @@ function SessionHistoryCard({ session }: { session: InterviewSessionSummary }) {
             </div>
           </div>
 
-          <ChevronRight className="h-5 w-5 text-muted-foreground" />
+          {isClickable && (
+            <ChevronRight className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+          )}
         </div>
       </CardContent>
     </Card>

@@ -2,14 +2,24 @@
 
 'use client';
 
-import { Wifi, WifiOff } from 'lucide-react';
+import { Wifi, WifiOff, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface ConnectionStatusProps {
   isConnected: boolean;
+  isConnecting?: boolean;
 }
 
-export function ConnectionStatus({ isConnected }: ConnectionStatusProps) {
+export function ConnectionStatus({ isConnected, isConnecting }: ConnectionStatusProps) {
+  if (isConnecting) {
+    return (
+      <div className="flex items-center gap-2 px-3 py-1.5 rounded-full text-sm bg-yellow-500/10 text-yellow-700">
+        <Loader2 className="h-4 w-4 animate-spin" />
+        <span>Connecting...</span>
+      </div>
+    );
+  }
+
   return (
     <div
       className={cn(

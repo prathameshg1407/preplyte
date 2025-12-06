@@ -15,6 +15,7 @@ import adminRoutes from './module/admin/admin.routes';
 import { profileRoutes } from './module/profile';
 import { mockDriveRoutes } from './module/instituteadmin/mock-drive';
 import { createMockDriveRoutes } from './module/mock-drive';
+import { dashboardRoutes } from './module/dashboard';
 
 // Middleware & Utils
 import { errorHandler, notFoundHandler } from './middleware/error.middleware';
@@ -22,19 +23,12 @@ import { requestIdMiddleware } from './middleware/request-id.middleware';
 import { logger } from './utils/logger';
 import { AppError } from './utils/errors';
 import { prisma } from './lib/db';
-import { dashboardRoutes } from './module/dashboard';
-
-
-import { interviewGateway } from './module/practice/interview';
-import { createServer } from 'http';
 
 // =====================================================
 // APP INITIALIZATION
 // =====================================================
 
 const app: Application = express();
-const httpServer = createServer(app);
-
 
 // =====================================================
 // CONFIGURATION
@@ -48,7 +42,7 @@ const config = {
   bodyLimit: process.env.BODY_LIMIT || '5mb',
   rateLimits: {
     general: {
-      windowMs: 15 * 60 * 1000, // 15 minutes
+      windowMs: 15 * 60 * 1000,
       max: parseInt(process.env.RATE_LIMIT_GENERAL || '100', 10),
     },
     auth: {
@@ -56,7 +50,7 @@ const config = {
       max: parseInt(process.env.RATE_LIMIT_AUTH || '10', 10),
     },
     codeExecution: {
-      windowMs: 1 * 60 * 1000, // 1 minute
+      windowMs: 1 * 60 * 1000,
       max: parseInt(process.env.RATE_LIMIT_CODE || '30', 10),
     },
     admin: {
@@ -64,15 +58,15 @@ const config = {
       max: parseInt(process.env.RATE_LIMIT_ADMIN || '200', 10),
     },
     profile: {
-      windowMs: 15 * 60 * 1000, // 15 minutes
+      windowMs: 15 * 60 * 1000,
       max: parseInt(process.env.RATE_LIMIT_PROFILE || '50', 10),
     },
     upload: {
-      windowMs: 60 * 60 * 1000, // 1 hour
+      windowMs: 60 * 60 * 1000,
       max: parseInt(process.env.RATE_LIMIT_UPLOAD || '10', 10),
     },
     mockDrive: {
-      windowMs: 15 * 60 * 1000, // 15 minutes
+      windowMs: 15 * 60 * 1000,
       max: parseInt(process.env.RATE_LIMIT_MOCK_DRIVE || '100', 10),
     },
   },
@@ -137,7 +131,8 @@ if (!config.isTest) {
           logger.info(message.trim());
         },
       },
-      skip: (req) => req.path === '/health',
+      // Skip logging for health checks and WebSocket upgrade attempts
+      skip: (req) => req.path === '/health' || req.path.startsWith('/ws/'),
     })
   );
 }
@@ -180,7 +175,8 @@ const createRateLimiter = (
     },
     standardHeaders: true,
     legacyHeaders: false,
-    skip: () => config.isTest,
+    // Skip rate limiting for tests and WebSocket paths
+    skip: (req) => config.isTest || req.path.startsWith('/ws/'),
     keyGenerator: (req) => {
       return (
         (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ||
@@ -309,25 +305,26 @@ app.use('/api/auth/register', authLimiter);
 app.use('/api/auth', authRoutes);
 
 // Profile routes with specific rate limiters
-app.use('/api/profile/resumes', uploadLimiter); // Upload rate limit for resume endpoints
+app.use('/api/profile/resumes', uploadLimiter);
 app.use('/api/profile', profileLimiter, profileRoutes);
 
 // Institute admin mock drive routes
 app.use('/api/institute/mock-drive', mockDriveRoutes);
 
-// Student mock drive routes (discovery, attempt, results, leaderboard)
+// Student mock drive routes
 app.use('/api/mock-drives', mockDriveLimiter, createMockDriveRoutes(prisma));
 
-// Practice routes
-app.use('/api', practiceRoutes);
+// Practice routes - mounted at /api/practice
+// Includes: /api/practice/aptitude, /api/practice/machine, /api/practice/interview
+app.use('/api/practice', practiceRoutes);
 
 // Code execution rate limiting
 app.use(
-  '/api/machine/sessions/:sessionId/questions/:questionId/run',
+  '/api/practice/machine/sessions/:sessionId/questions/:questionId/run',
   codeExecutionLimiter
 );
 app.use(
-  '/api/machine/sessions/:sessionId/questions/:questionId/submit',
+  '/api/practice/machine/sessions/:sessionId/questions/:questionId/submit',
   codeExecutionLimiter
 );
 
@@ -341,14 +338,20 @@ app.use(
 app.use('/api/admin', adminLimiter, adminRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 
-
 // =====================================================
 // 8. ERROR HANDLING
 // =====================================================
 
-app.use(notFoundHandler);
+// Note: Don't handle /ws/ paths in Express - they're handled by WebSocket upgrade
+app.use((req, res, next) => {
+  // WebSocket upgrade requests shouldn't reach here, but if they do, skip them
+  if (req.headers.upgrade === 'websocket') {
+    return next();
+  }
+  notFoundHandler(req, res);
+});
+
 app.use(errorHandler);
-interviewGateway.initialize(httpServer);
 
 // =====================================================
 // EXPORT

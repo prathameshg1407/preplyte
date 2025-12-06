@@ -19,19 +19,12 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
 import { Badge } from '@/components/ui/badge';
 import { ResumeSelector } from './resume-selector';
 import { DifficultySelector } from './difficulty-selector';
 import { useCreateSession } from '@/lib/hooks/use-interview';
-import type { InterviewDifficulty } from '@/types/interview.types';
+import { FOCUS_AREA_OPTIONS, type InterviewDifficulty } from '@/types/interview.types';
 
 // =====================================================
 // SCHEMA
@@ -40,30 +33,13 @@ import type { InterviewDifficulty } from '@/types/interview.types';
 const createSessionSchema = z.object({
   resumeId: z.string().optional(),
   jobTitle: z.string().min(2, 'Job title must be at least 2 characters').max(100).optional(),
-  companyName: z.string().max(100).optional(),
+  companyName: z.string().max(100).optional().nullable(),
   difficulty: z.enum(['ENTRY', 'MID', 'SENIOR', 'LEAD']).default('MID'),
   focusAreas: z.array(z.string()).max(5).default([]),
   targetQuestions: z.number().min(5).max(15).default(10),
 });
 
 type FormData = z.infer<typeof createSessionSchema>;
-
-// =====================================================
-// FOCUS AREAS
-// =====================================================
-
-const FOCUS_AREA_OPTIONS = [
-  'Data Structures',
-  'Algorithms',
-  'System Design',
-  'Frontend',
-  'Backend',
-  'Database',
-  'DevOps',
-  'Leadership',
-  'Communication',
-  'Problem Solving',
-];
 
 // =====================================================
 // COMPONENT
@@ -87,6 +63,9 @@ export function CreateSessionForm() {
     createSession({
       ...data,
       focusAreas: selectedFocusAreas,
+      // Convert empty string to undefined for optional fields
+      resumeId: data.resumeId || undefined,
+      companyName: data.companyName || undefined,
     });
   };
 
@@ -132,7 +111,7 @@ export function CreateSessionForm() {
                     />
                   </FormControl>
                   <FormDescription>
-                    Select a resume for personalized questions
+                    Select a resume for personalized questions based on your experience
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -165,8 +144,15 @@ export function CreateSessionForm() {
                 <FormItem>
                   <FormLabel>Company Name (Optional)</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g., Google, Amazon" {...field} />
+                    <Input 
+                      placeholder="e.g., Google, Amazon" 
+                      {...field} 
+                      value={field.value || ''} 
+                    />
                   </FormControl>
+                  <FormDescription>
+                    Questions may be tailored to the company culture
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -184,7 +170,7 @@ export function CreateSessionForm() {
                   </FormLabel>
                   <FormControl>
                     <DifficultySelector
-                      value={field.value}
+                      value={field.value as InterviewDifficulty}
                       onChange={field.onChange}
                     />
                   </FormControl>
@@ -234,7 +220,7 @@ export function CreateSessionForm() {
                     />
                   </FormControl>
                   <FormDescription>
-                    Interview will have approximately {field.value} questions
+                    Interview will have approximately {field.value} questions (~{field.value * 2} minutes)
                   </FormDescription>
                   <FormMessage />
                 </FormItem>

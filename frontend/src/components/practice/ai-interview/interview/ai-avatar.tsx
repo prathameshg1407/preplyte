@@ -49,13 +49,13 @@ export function AIAvatar({
             <Bot className="h-12 w-12 text-primary" />
           )}
         </div>
-      </div>// src/components/practice/ai-interview/interview/ai-avatar.tsx (continued)
+      </div>
 
       {/* Status Indicator */}
       <div className="absolute -bottom-2 left-1/2 -translate-x-1/2">
         <div
           className={cn(
-            'px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1.5 transition-colors',
+            'px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1.5 transition-colors whitespace-nowrap',
             isSpeaking && 'bg-blue-500 text-white',
             isListening && 'bg-green-500 text-white',
             isProcessing && 'bg-yellow-500 text-white',
@@ -71,13 +71,13 @@ export function AIAvatar({
               Speaking...
             </>
           )}
-          {isListening && (
+          {isListening && !isSpeaking && (
             <>
               <Mic className="h-3 w-3" />
               Listening...
             </>
           )}
-          {isProcessing && (
+          {isProcessing && !isSpeaking && !isListening && (
             <>
               <Loader2 className="h-3 w-3 animate-spin" />
               Thinking...

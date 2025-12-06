@@ -20,8 +20,10 @@ export function AudioVisualizer({ isActive, volume, className }: AudioVisualizer
         const delay = index * 0.1;
         const baseHeight = 8;
         const maxAdditionalHeight = 32;
+        // Add some randomness for visual effect
+        const randomFactor = 0.5 + Math.sin(Date.now() / 200 + index) * 0.5;
         const height = isActive
-          ? baseHeight + volume * maxAdditionalHeight * (0.5 + Math.random() * 0.5)
+          ? baseHeight + volume * maxAdditionalHeight * randomFactor
           : baseHeight;
 
         return (
@@ -32,7 +34,7 @@ export function AudioVisualizer({ isActive, volume, className }: AudioVisualizer
               isActive ? 'bg-primary' : 'bg-muted'
             )}
             style={{
-              height: `${height}px`,
+              height: `${Math.max(baseHeight, height)}px`,
               transitionDelay: `${delay}s`,
             }}
           />
@@ -49,7 +51,8 @@ export function CanvasAudioVisualizer({
   className,
 }: AudioVisualizerProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const animationRef = useRef<number | undefined>(undefined); // Fixed: Added type and initial value
+  const animationRef = useRef<number | undefined>(undefined);
+  const barsRef = useRef<number[]>([]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -62,30 +65,36 @@ export function CanvasAudioVisualizer({
     const height = canvas.height;
     const barCount = 32;
     const barWidth = width / barCount - 2;
-    const bars: number[] = new Array(barCount).fill(0);
+    
+    // Initialize bars if empty
+    if (barsRef.current.length === 0) {
+      barsRef.current = new Array(barCount).fill(4);
+    }
 
     const animate = () => {
       ctx.clearRect(0, 0, width, height);
 
-      bars.forEach((_, i) => {
+      barsRef.current.forEach((barHeight, i) => {
         if (isActive) {
-          bars[i] = Math.max(
-            4,
-            bars[i] * 0.9 + volume * height * Math.random() * 0.3
-          );
+          // Smoothly animate towards target height
+          const target = Math.max(4, volume * height * (0.3 + Math.random() * 0.3));
+          barsRef.current[i] = barHeight * 0.85 + target * 0.15;
         } else {
-          bars[i] *= 0.95;
+          // Decay when inactive
+          barsRef.current[i] = Math.max(4, barHeight * 0.92);
         }
 
         const x = i * (barWidth + 2);
-        const barHeight = Math.max(4, bars[i]);
-        const y = (height - barHeight) / 2;
+        const currentHeight = Math.max(4, barsRef.current[i]);
+        const y = (height - currentHeight) / 2;
 
+        // Get CSS variable color
         ctx.fillStyle = isActive
-          ? `hsl(var(--primary))`
-          : `hsl(var(--muted-foreground))`;
+          ? 'hsl(var(--primary))'
+          : 'hsl(var(--muted-foreground))';
+        
         ctx.beginPath();
-        ctx.roundRect(x, y, barWidth, barHeight, 2);
+        ctx.roundRect(x, y, barWidth, currentHeight, 2);
         ctx.fill();
       });
 
@@ -95,7 +104,7 @@ export function CanvasAudioVisualizer({
     animate();
 
     return () => {
-      if (animationRef.current !== undefined) { // Updated check
+      if (animationRef.current !== undefined) {
         cancelAnimationFrame(animationRef.current);
       }
     };

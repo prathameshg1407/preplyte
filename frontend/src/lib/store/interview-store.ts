@@ -1,7 +1,8 @@
 // src/lib/store/interview-store.ts
 
 import { create } from 'zustand';
-import { devtools } from 'zustand/middleware';
+import { devtools, subscribeWithSelector } from 'zustand/middleware';
+import { immer } from 'zustand/middleware/immer';
 import type {
   InterviewSession,
   InterviewSessionSummary,
@@ -9,7 +10,8 @@ import type {
   ConversationMessage,
   InterviewUIState,
   SessionProgress,
-  QuestionCategory,
+  CurrentQuestion,
+  InterviewSessionStatus,
 } from '@/types/interview.types';
 
 // =====================================================
@@ -26,13 +28,7 @@ interface InterviewState {
 
   // Conversation
   messages: ConversationMessage[];
-  currentQuestion: {
-    id: string;
-    category: QuestionCategory;
-    question: string;
-    order: number;
-    isFollowUp: boolean;
-  } | null;
+  currentQuestion: CurrentQuestion | null;
 
   // Progress
   progress: SessionProgress | null;
@@ -46,19 +42,22 @@ interface InterviewState {
 
   // Actions - Session
   setCurrentSession: (session: InterviewSession | null) => void;
-  updateSessionStatus: (status: InterviewSession['status']) => void;
+  updateSessionStatus: (status: InterviewSessionStatus) => void;
+  updateSessionProgress: (progress: Partial<SessionProgress>) => void;
   setSessionHistory: (sessions: InterviewSessionSummary[], hasMore: boolean) => void;
   appendSessionHistory: (sessions: InterviewSessionSummary[], hasMore: boolean) => void;
   setHistoryLoading: (loading: boolean) => void;
+  incrementHistoryPage: () => void;
 
   // Actions - Conversation
   addMessage: (message: ConversationMessage) => void;
+  updateMessage: (id: string, updates: Partial<ConversationMessage>) => void;
   updateLastMessage: (content: string) => void;
-  setCurrentQuestion: (question: InterviewState['currentQuestion']) => void;
+  setCurrentQuestion: (question: CurrentQuestion | null) => void;
   clearMessages: () => void;
 
   // Actions - Progress
-  setProgress: (progress: SessionProgress) => void;
+  setProgress: (progress: SessionProgress | null) => void;
 
   // Actions - Feedback
   setFeedback: (feedback: InterviewFeedback | null) => void;
@@ -70,9 +69,13 @@ interface InterviewState {
   setRecording: (recording: boolean) => void;
   setAISpeaking: (speaking: boolean) => void;
   setProcessing: (processing: boolean) => void;
+  setPaused: (paused: boolean) => void;
   setCurrentTranscript: (transcript: string) => void;
   appendTranscript: (text: string) => void;
+  clearTranscript: () => void;
   setError: (error: string | null) => void;
+  incrementConnectionAttempts: () => void;
+  resetConnectionAttempts: () => void;
   resetUI: () => void;
 
   // Actions - Full Reset
@@ -89,19 +92,13 @@ const initialUIState: InterviewUIState = {
   isRecording: false,
   isAISpeaking: false,
   isProcessing: false,
+  isPaused: false,
   currentTranscript: '',
   error: null,
+  connectionAttempts: 0,
 };
 
-const initialState: Omit<InterviewState, 
-  | 'setCurrentSession' | 'updateSessionStatus' | 'setSessionHistory' 
-  | 'appendSessionHistory' | 'setHistoryLoading' | 'addMessage' 
-  | 'updateLastMessage' | 'setCurrentQuestion' | 'clearMessages'
-  | 'setProgress' | 'setFeedback' | 'setFeedbackLoading'
-  | 'setConnected' | 'setConnecting' | 'setRecording' | 'setAISpeaking'
-  | 'setProcessing' | 'setCurrentTranscript' | 'appendTranscript'
-  | 'setError' | 'resetUI' | 'reset'
-> = {
+const getInitialState = () => ({
   currentSession: null,
   sessionHistory: [],
   historyLoading: false,
@@ -112,8 +109,8 @@ const initialState: Omit<InterviewState,
   progress: null,
   feedback: null,
   feedbackLoading: false,
-  ui: initialUIState,
-};
+  ui: { ...initialUIState },
+});
 
 // =====================================================
 // STORE
@@ -121,142 +118,206 @@ const initialState: Omit<InterviewState,
 
 export const useInterviewStore = create<InterviewState>()(
   devtools(
-    (set) => ({
-      ...initialState,
+    subscribeWithSelector(
+      immer((set) => ({
+        ...getInitialState(),
 
-      // ===================================================
-      // SESSION ACTIONS
-      // ===================================================
+        // ===================================================
+        // SESSION ACTIONS
+        // ===================================================
 
-      setCurrentSession: (session: InterviewSession | null) => 
-        set({ currentSession: session }),
+        setCurrentSession: (session) =>
+          set((state) => {
+            state.currentSession = session;
+            if (session) {
+              state.progress = session.progress;
+            }
+          }),
 
-      updateSessionStatus: (status: InterviewSession['status']) =>
-        set((state) => ({
-          currentSession: state.currentSession
-            ? { ...state.currentSession, status }
-            : null,
-        })),
+        updateSessionStatus: (status) =>
+          set((state) => {
+            if (state.currentSession) {
+              state.currentSession.status = status;
+            }
+          }),
 
-      setSessionHistory: (sessions: InterviewSessionSummary[], hasMore: boolean) =>
-        set({
-          sessionHistory: sessions,
-          historyHasMore: hasMore,
-          historyPage: 1,
-        }),
+        updateSessionProgress: (progress) =>
+          set((state) => {
+            if (state.progress) {
+              Object.assign(state.progress, progress);
+            }
+            if (state.currentSession) {
+              Object.assign(state.currentSession.progress, progress);
+            }
+          }),
 
-      appendSessionHistory: (sessions: InterviewSessionSummary[], hasMore: boolean) =>
-        set((state) => ({
-          sessionHistory: [...state.sessionHistory, ...sessions],
-          historyHasMore: hasMore,
-          historyPage: state.historyPage + 1,
-        })),
+        setSessionHistory: (sessions, hasMore) =>
+          set((state) => {
+            state.sessionHistory = sessions;
+            state.historyHasMore = hasMore;
+            state.historyPage = 1;
+          }),
 
-      setHistoryLoading: (loading: boolean) => 
-        set({ historyLoading: loading }),
+        appendSessionHistory: (sessions, hasMore) =>
+          set((state) => {
+            const existingIds = new Set(state.sessionHistory.map(s => s.id));
+            const newSessions = sessions.filter(s => !existingIds.has(s.id));
+            state.sessionHistory.push(...newSessions);
+            state.historyHasMore = hasMore;
+          }),
 
-      // ===================================================
-      // CONVERSATION ACTIONS
-      // ===================================================
+        setHistoryLoading: (loading) =>
+          set((state) => {
+            state.historyLoading = loading;
+          }),
 
-      addMessage: (message: ConversationMessage) =>
-        set((state) => ({
-          messages: [...state.messages, message],
-        })),
+        incrementHistoryPage: () =>
+          set((state) => {
+            state.historyPage += 1;
+          }),
 
-      updateLastMessage: (content: string) =>
-        set((state) => {
-          const messages = [...state.messages];
-          if (messages.length > 0) {
-            messages[messages.length - 1] = {
-              ...messages[messages.length - 1],
-              content,
-            };
-          }
-          return { messages };
-        }),
+        // ===================================================
+        // CONVERSATION ACTIONS
+        // ===================================================
 
-      setCurrentQuestion: (question: InterviewState['currentQuestion']) => 
-        set({ currentQuestion: question }),
+        addMessage: (message) =>
+          set((state) => {
+            if (!state.messages.some(m => m.id === message.id)) {
+              state.messages.push(message);
+            }
+          }),
 
-      clearMessages: () => 
-        set({ messages: [], currentQuestion: null }),
+        updateMessage: (id, updates) =>
+          set((state) => {
+            const index = state.messages.findIndex((m) => m.id === id);
+            if (index !== -1) {
+              Object.assign(state.messages[index], updates);
+            }
+          }),
 
-      // ===================================================
-      // PROGRESS ACTIONS
-      // ===================================================
+        updateLastMessage: (content) =>
+          set((state) => {
+            if (state.messages.length > 0) {
+              state.messages[state.messages.length - 1].content = content;
+            }
+          }),
 
-      setProgress: (progress: SessionProgress) => 
-        set({ progress }),
+        setCurrentQuestion: (question) =>
+          set((state) => {
+            state.currentQuestion = question;
+          }),
 
-      // ===================================================
-      // FEEDBACK ACTIONS
-      // ===================================================
+        clearMessages: () =>
+          set((state) => {
+            state.messages = [];
+            state.currentQuestion = null;
+          }),
 
-      setFeedback: (feedback: InterviewFeedback | null) => 
-        set({ feedback }),
+        // ===================================================
+        // PROGRESS ACTIONS
+        // ===================================================
 
-      setFeedbackLoading: (loading: boolean) => 
-        set({ feedbackLoading: loading }),
+        setProgress: (progress) =>
+          set((state) => {
+            state.progress = progress;
+          }),
 
-      // ===================================================
-      // UI ACTIONS
-      // ===================================================
+        // ===================================================
+        // FEEDBACK ACTIONS
+        // ===================================================
 
-      setConnected: (connected: boolean) =>
-        set((state) => ({
-          ui: { ...state.ui, isConnected: connected, isConnecting: false },
-        })),
+        setFeedback: (feedback) =>
+          set((state) => {
+            state.feedback = feedback;
+          }),
 
-      setConnecting: (connecting: boolean) =>
-        set((state) => ({
-          ui: { ...state.ui, isConnecting: connecting },
-        })),
+        setFeedbackLoading: (loading) =>
+          set((state) => {
+            state.feedbackLoading = loading;
+          }),
 
-      setRecording: (recording: boolean) =>
-        set((state) => ({
-          ui: { ...state.ui, isRecording: recording },
-        })),
+        // ===================================================
+        // UI ACTIONS
+        // ===================================================
 
-      setAISpeaking: (speaking: boolean) =>
-        set((state) => ({
-          ui: { ...state.ui, isAISpeaking: speaking },
-        })),
+        setConnected: (connected) =>
+          set((state) => {
+            state.ui.isConnected = connected;
+            state.ui.isConnecting = false;
+            if (connected) {
+              state.ui.error = null;
+              state.ui.connectionAttempts = 0;
+            }
+          }),
 
-      setProcessing: (processing: boolean) =>
-        set((state) => ({
-          ui: { ...state.ui, isProcessing: processing },
-        })),
+        setConnecting: (connecting) =>
+          set((state) => {
+            state.ui.isConnecting = connecting;
+          }),
 
-      setCurrentTranscript: (transcript: string) =>
-        set((state) => ({
-          ui: { ...state.ui, currentTranscript: transcript },
-        })),
+        setRecording: (recording) =>
+          set((state) => {
+            state.ui.isRecording = recording;
+          }),
 
-      appendTranscript: (text: string) =>
-        set((state) => ({
-          ui: {
-            ...state.ui,
-            currentTranscript: state.ui.currentTranscript + ' ' + text,
-          },
-        })),
+        setAISpeaking: (speaking) =>
+          set((state) => {
+            state.ui.isAISpeaking = speaking;
+          }),
 
-      setError: (error: string | null) =>
-        set((state) => ({
-          ui: { ...state.ui, error },
-        })),
+        setProcessing: (processing) =>
+          set((state) => {
+            state.ui.isProcessing = processing;
+          }),
 
-      resetUI: () =>
-        set(() => ({
-          ui: initialUIState,
-        })),
+        setPaused: (paused) =>
+          set((state) => {
+            state.ui.isPaused = paused;
+          }),
 
-      // ===================================================
-      // FULL RESET
-      // ===================================================
+        setCurrentTranscript: (transcript) =>
+          set((state) => {
+            state.ui.currentTranscript = transcript;
+          }),
 
-      reset: () => set(initialState),
-    }),
+        appendTranscript: (text) =>
+          set((state) => {
+            const current = state.ui.currentTranscript.trim();
+            state.ui.currentTranscript = current ? `${current} ${text}` : text;
+          }),
+
+        clearTranscript: () =>
+          set((state) => {
+            state.ui.currentTranscript = '';
+          }),
+
+        setError: (error) =>
+          set((state) => {
+            state.ui.error = error;
+          }),
+
+        incrementConnectionAttempts: () =>
+          set((state) => {
+            state.ui.connectionAttempts += 1;
+          }),
+
+        resetConnectionAttempts: () =>
+          set((state) => {
+            state.ui.connectionAttempts = 0;
+          }),
+
+        resetUI: () =>
+          set((state) => {
+            state.ui = { ...initialUIState };
+          }),
+
+        // ===================================================
+        // FULL RESET
+        // ===================================================
+
+        reset: () => set(getInitialState()),
+      }))
+    ),
     { name: 'interview-store' }
   )
 );
@@ -270,6 +331,21 @@ export const selectMessages = (state: InterviewState) => state.messages;
 export const selectProgress = (state: InterviewState) => state.progress;
 export const selectFeedback = (state: InterviewState) => state.feedback;
 export const selectUI = (state: InterviewState) => state.ui;
+export const selectCurrentQuestion = (state: InterviewState) => state.currentQuestion;
+
 export const selectIsInterviewActive = (state: InterviewState) =>
   state.currentSession?.status === 'STARTED' ||
   state.currentSession?.status === 'IN_PROGRESS';
+
+export const selectCanRecord = (state: InterviewState) =>
+  state.ui.isConnected &&
+  !state.ui.isAISpeaking &&
+  !state.ui.isProcessing &&
+  !state.ui.isPaused;
+
+export const selectConnectionStatus = (state: InterviewState) => ({
+  isConnected: state.ui.isConnected,
+  isConnecting: state.ui.isConnecting,
+  attempts: state.ui.connectionAttempts,
+  error: state.ui.error,
+});

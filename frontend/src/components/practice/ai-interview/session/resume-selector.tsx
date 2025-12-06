@@ -2,7 +2,7 @@
 
 'use client';
 
-import { FileText, Upload } from 'lucide-react';
+import { FileText, Upload, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Select,
@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useResumes } from '@/lib/hooks/use-profile';
+import Link from 'next/link';
 
 interface ResumeSelectorProps {
   value?: string;
@@ -30,7 +31,7 @@ export function ResumeSelector({ value, onChange }: ResumeSelectorProps) {
 
   if (resumes.length === 0) {
     return (
-      <div className="flex items-center gap-3 p-4 border border-dashed rounded-lg">
+      <div className="flex items-center gap-3 p-4 border border-dashed rounded-lg bg-muted/50">
         <FileText className="h-8 w-8 text-muted-foreground" />
         <div className="flex-1">
           <p className="text-sm font-medium">No resumes uploaded</p>
@@ -39,29 +40,34 @@ export function ResumeSelector({ value, onChange }: ResumeSelectorProps) {
           </p>
         </div>
         <Button variant="outline" size="sm" asChild>
-          <a href="/profile/resumes">
+          <Link href="/profile/resumes">
             <Upload className="mr-2 h-4 w-4" />
             Upload
-          </a>
+          </Link>
         </Button>
       </div>
     );
   }
 
   return (
-    <Select value={value} onValueChange={onChange}>
+    <Select value={value || 'none'} onValueChange={onChange}>
       <SelectTrigger>
         <SelectValue placeholder="Select a resume (optional)" />
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value="none">No resume</SelectItem>
+        <SelectItem value="none">
+          <span className="text-muted-foreground">No resume - generic questions</span>
+        </SelectItem>
         {resumes.map((resume) => (
           <SelectItem key={resume.id} value={String(resume.id)}>
             <div className="flex items-center gap-2">
-              <FileText className="h-4 w-4" />
+              <FileText className="h-4 w-4 text-muted-foreground" />
               <span>{resume.fileName}</span>
               {resume.isDefault && (
-                <span className="text-xs text-muted-foreground">(Default)</span>
+                <span className="flex items-center gap-1 text-xs text-green-600">
+                  <Check className="h-3 w-3" />
+                  Default
+                </span>
               )}
             </div>
           </SelectItem>

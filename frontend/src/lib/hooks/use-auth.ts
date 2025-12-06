@@ -21,17 +21,30 @@ function getDefaultRedirect(role: UserRole): string {
       return '/institute-admin';
     case 'USER':
       return '/dashboard';
-    case 'USER':
-      return '/dashboard';
     default:
       return '/dashboard';
   }
 }
 
-export function useAuth() {
+interface UseAuthOptions {
+  /**
+   * If true, will read redirect param from URL search params.
+   * Only set to true in components wrapped with Suspense.
+   * @default false
+   */
+  enableRedirectParam?: boolean;
+}
+
+export function useAuth(options: UseAuthOptions = {}) {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const store = useAuthStore();
+  const { enableRedirectParam = false } = options;
+
+  // Only call useSearchParams when explicitly enabled
+  // This hook will be called conditionally, but it's okay because
+  // the option is static per component instance
+  const searchParams = enableRedirectParam ? useSearchParams() : null;
+  const redirectParam = searchParams?.get('redirect') ?? null;
 
   const login = useCallback(
     async (credentials: LoginCredentials): Promise<boolean> => {
@@ -62,7 +75,6 @@ export function useAuth() {
           showSuccessToast('Login successful!');
 
           // Handle redirect
-          const redirectParam = searchParams.get('redirect');
           const defaultRedirect = getDefaultRedirect(user.role);
           
           // Use redirect param only if it's a valid path, otherwise use role-based default
@@ -86,7 +98,7 @@ export function useAuth() {
         store.setLoading(false);
       }
     },
-    [store, router, searchParams]
+    [store, router, redirectParam]
   );
 
   const register = useCallback(

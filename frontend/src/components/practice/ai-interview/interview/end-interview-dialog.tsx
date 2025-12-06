@@ -19,9 +19,10 @@ import { Button } from '@/components/ui/button';
 
 interface EndInterviewDialogProps {
   onConfirm: () => void;
+  disabled?: boolean;
 }
 
-export function EndInterviewDialog({ onConfirm }: EndInterviewDialogProps) {
+export function EndInterviewDialog({ onConfirm, disabled }: EndInterviewDialogProps) {
   const [open, setOpen] = useState(false);
 
   const handleConfirm = () => {
@@ -32,7 +33,7 @@ export function EndInterviewDialog({ onConfirm }: EndInterviewDialogProps) {
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
       <AlertDialogTrigger asChild>
-        <Button variant="destructive" size="sm">
+        <Button variant="destructive" size="sm" disabled={disabled}>
           <PhoneOff className="mr-2 h-4 w-4" />
           End Interview
         </Button>

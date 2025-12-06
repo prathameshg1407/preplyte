@@ -8,7 +8,7 @@ import { Trophy, BarChart3, Medal, ArrowRight } from 'lucide-react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Confetti from 'react-confetti';
-import { useWindowSize } from '@/hooks/use-window-size';
+import { useWindowSize } from '@/lib/hooks/use-window-size';
 
 interface AttemptCompleteProps {
   driveId: string;

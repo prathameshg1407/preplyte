@@ -1,50 +1,103 @@
 // src/lib/hooks/use-audio-player.ts
 
 import { useRef, useState, useCallback, useEffect } from 'react';
-import { logger } from '@/lib/utils/logger';
 
 // =====================================================
 // TYPES
 // =====================================================
 
+interface UseAudioPlayerOptions {
+  onPlaybackStart?: () => void;
+  onPlaybackEnd?: () => void;
+  onError?: (error: string) => void;
+}
+
 interface UseAudioPlayerReturn {
   isPlaying: boolean;
+  isBuffering: boolean;
+  queueLength: number;
   queueAudio: (audioData: ArrayBuffer) => void;
+  playAccumulated: () => Promise<void>;
   play: () => Promise<void>;
+  pause: () => void;
   stop: () => void;
   clear: () => void;
+  setVolume: (volume: number) => void;
 }
 
 // =====================================================
 // HOOK
 // =====================================================
 
-export function useAudioPlayer(): UseAudioPlayerReturn {
-  const [isPlaying, setIsPlaying] = useState(false);
+export function useAudioPlayer(
+  options: UseAudioPlayerOptions = {}
+): UseAudioPlayerReturn {
+  const { onPlaybackStart, onPlaybackEnd, onError } = options;
 
+  // State
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isBuffering, setIsBuffering] = useState(false);
+  const [queueLength, setQueueLength] = useState(0);
+
+  // Refs for audio context
   const audioContextRef = useRef<AudioContext | null>(null);
-  const audioQueueRef = useRef<ArrayBuffer[]>([]);
+  const gainNodeRef = useRef<GainNode | null>(null);
   const currentSourceRef = useRef<AudioBufferSourceNode | null>(null);
+
+  // Refs for state management
+  const isPausedRef = useRef(false);
+  const volumeRef = useRef(1);
   const isProcessingRef = useRef(false);
+  const mountedRef = useRef(true);
+
+  // Refs for audio data
+  const chunksRef = useRef<Uint8Array[]>([]);
+  const completeAudioQueueRef = useRef<ArrayBuffer[]>([]);
+
+  // Callback refs to avoid stale closures
+  const onPlaybackStartRef = useRef(onPlaybackStart);
+  const onPlaybackEndRef = useRef(onPlaybackEnd);
+  const onErrorRef = useRef(onError);
+
+  // Keep callback refs updated
+  useEffect(() => {
+    onPlaybackStartRef.current = onPlaybackStart;
+    onPlaybackEndRef.current = onPlaybackEnd;
+    onErrorRef.current = onError;
+  }, [onPlaybackStart, onPlaybackEnd, onError]);
 
   // ===================================================
   // INITIALIZE AUDIO CONTEXT
   // ===================================================
 
-  const getAudioContext = useCallback(() => {
-    if (!audioContextRef.current) {
+  const getAudioContext = useCallback((): AudioContext => {
+    if (!audioContextRef.current || audioContextRef.current.state === 'closed') {
       audioContextRef.current = new AudioContext();
+      gainNodeRef.current = audioContextRef.current.createGain();
+      gainNodeRef.current.gain.value = volumeRef.current;
+      gainNodeRef.current.connect(audioContextRef.current.destination);
     }
     return audioContextRef.current;
   }, []);
 
+  const resumeContext = useCallback(async (): Promise<AudioContext> => {
+    const ctx = getAudioContext();
+    if (ctx.state === 'suspended') {
+      await ctx.resume();
+    }
+    return ctx;
+  }, [getAudioContext]);
+
   // ===================================================
-  // PLAY NEXT IN QUEUE
+  // PLAY NEXT COMPLETE AUDIO
   // ===================================================
 
-  const playNext = useCallback(async () => {
-    if (isProcessingRef.current) return;
-    if (audioQueueRef.current.length === 0) {
+  const playNextCompleteRef = useRef<(() => Promise<void>) | null>(null);
+
+  const playNextComplete = useCallback(async (): Promise<void> => {
+    if (!mountedRef.current) return;
+    if (isProcessingRef.current || isPausedRef.current) return;
+    if (completeAudioQueueRef.current.length === 0) {
       setIsPlaying(false);
       return;
     }
@@ -52,80 +105,134 @@ export function useAudioPlayer(): UseAudioPlayerReturn {
     isProcessingRef.current = true;
     setIsPlaying(true);
 
-    const audioData = audioQueueRef.current.shift()!;
+    const audioData = completeAudioQueueRef.current.shift()!;
 
     try {
-      const audioContext = getAudioContext();
+      const audioContext = await resumeContext();
 
-      // Resume context if suspended
-      if (audioContext.state === 'suspended') {
-        await audioContext.resume();
-      }
-
-      // Decode audio data
+      // Clone the buffer to avoid detached ArrayBuffer issues
       const audioBuffer = await audioContext.decodeAudioData(audioData.slice(0));
 
-      // Create source
+      if (!mountedRef.current) return;
+
+      // Create source and play
       const source = audioContext.createBufferSource();
       source.buffer = audioBuffer;
-      source.connect(audioContext.destination);
+      source.connect(gainNodeRef.current!);
       currentSourceRef.current = source;
 
-      // Play and wait for completion
-      source.start();
+      onPlaybackStartRef.current?.();
 
-      await new Promise<void>((resolve) => {
-        source.onended = () => {
-          resolve();
-        };
-      });
+      source.onended = (): void => {
+        currentSourceRef.current = null;
+        isProcessingRef.current = false;
+
+        if (!mountedRef.current) return;
+
+        // Check if there's more to play
+        if (completeAudioQueueRef.current.length > 0) {
+          playNextCompleteRef.current?.();
+        } else {
+          setIsPlaying(false);
+          onPlaybackEndRef.current?.();
+        }
+      };
+
+      source.start(0);
     } catch (error) {
-      logger.error('[AudioPlayer] Failed to play audio', error);
-    } finally {
+      console.error('[AudioPlayer] Failed to decode/play audio:', error);
+      onErrorRef.current?.('Failed to play audio');
       isProcessingRef.current = false;
       currentSourceRef.current = null;
 
-      // Play next in queue
-      playNext();
-    }
-  }, [getAudioContext]);
+      if (!mountedRef.current) return;
 
-  // ===================================================
-  // QUEUE AUDIO
-  // ===================================================
-
-  const queueAudio = useCallback(
-    (audioData: ArrayBuffer) => {
-      audioQueueRef.current.push(audioData);
-
-      // Start playing if not already
-      if (!isProcessingRef.current) {
-        playNext();
+      // Try next if available
+      if (completeAudioQueueRef.current.length > 0) {
+        playNextCompleteRef.current?.();
+      } else {
+        setIsPlaying(false);
+        onPlaybackEndRef.current?.();
       }
-    },
-    [playNext]
-  );
-
-  // ===================================================
-  // PLAY
-  // ===================================================
-
-  const play = useCallback(async () => {
-    if (!isProcessingRef.current && audioQueueRef.current.length > 0) {
-      await playNext();
     }
-  }, [playNext]);
+  }, [resumeContext]);
+
+  // Set the ref for self-reference
+  useEffect(() => {
+    playNextCompleteRef.current = playNextComplete;
+  }, [playNextComplete]);
 
   // ===================================================
-  // STOP
+  // QUEUE AUDIO CHUNK (accumulates for streaming)
   // ===================================================
 
-  const stop = useCallback(() => {
+  const queueAudio = useCallback((audioData: ArrayBuffer): void => {
+    if (!mountedRef.current) return;
+
+    chunksRef.current.push(new Uint8Array(audioData));
+    setQueueLength(chunksRef.current.length);
+    setIsBuffering(true);
+  }, []);
+
+  // ===================================================
+  // PLAY ACCUMULATED AUDIO (call when AI is done)
+  // ===================================================
+
+  const playAccumulated = useCallback(async (): Promise<void> => {
+    if (!mountedRef.current) return;
+
+    if (chunksRef.current.length === 0) {
+      console.log('[AudioPlayer] No audio chunks to play');
+      setIsBuffering(false);
+      return;
+    }
+
+    console.log('[AudioPlayer] Playing accumulated audio, chunks:', chunksRef.current.length);
+
+    // Combine all chunks
+    const totalLength = chunksRef.current.reduce((acc, chunk) => acc + chunk.length, 0);
+    const combined = new Uint8Array(totalLength);
+    let offset = 0;
+    for (const chunk of chunksRef.current) {
+      combined.set(chunk, offset);
+      offset += chunk.length;
+    }
+
+    // Clear chunks
+    chunksRef.current = [];
+    setQueueLength(0);
+    setIsBuffering(false);
+
+    // Add to complete audio queue
+    completeAudioQueueRef.current.push(combined.buffer);
+
+    // Start playing if not already
+    if (!isProcessingRef.current) {
+      await playNextComplete();
+    }
+  }, [playNextComplete]);
+
+  // ===================================================
+  // PLAYBACK CONTROLS
+  // ===================================================
+
+  const play = useCallback(async (): Promise<void> => {
+    isPausedRef.current = false;
+    await resumeContext();
+
+    if (!isProcessingRef.current && completeAudioQueueRef.current.length > 0) {
+      await playNextComplete();
+    }
+  }, [resumeContext, playNextComplete]);
+
+  const pause = useCallback((): void => {
+    isPausedRef.current = true;
+
     if (currentSourceRef.current) {
       try {
         currentSourceRef.current.stop();
-      } catch (error) {
-        // Ignore if already stopped
+      } catch {
+        // Ignore - already stopped
       }
       currentSourceRef.current = null;
     }
@@ -134,38 +241,80 @@ export function useAudioPlayer(): UseAudioPlayerReturn {
     setIsPlaying(false);
   }, []);
 
-  // ===================================================
-  // CLEAR
-  // ===================================================
+  const stop = useCallback((): void => {
+    isPausedRef.current = false;
 
-  const clear = useCallback(() => {
+    if (currentSourceRef.current) {
+      try {
+        currentSourceRef.current.stop();
+      } catch {
+        // Ignore - already stopped
+      }
+      currentSourceRef.current = null;
+    }
+
+    isProcessingRef.current = false;
+    setIsPlaying(false);
+    setIsBuffering(false);
+  }, []);
+
+  const clear = useCallback((): void => {
     stop();
-    audioQueueRef.current = [];
+    chunksRef.current = [];
+    completeAudioQueueRef.current = [];
+    setQueueLength(0);
   }, [stop]);
+
+  const setVolume = useCallback((volume: number): void => {
+    volumeRef.current = Math.max(0, Math.min(1, volume));
+
+    if (gainNodeRef.current) {
+      gainNodeRef.current.gain.value = volumeRef.current;
+    }
+  }, []);
 
   // ===================================================
   // CLEANUP
   // ===================================================
 
   useEffect(() => {
+    mountedRef.current = true;
+
     return () => {
-      clear();
-      if (audioContextRef.current) {
-        audioContextRef.current.close();
+      mountedRef.current = false;
+
+      // Stop current playback
+      if (currentSourceRef.current) {
+        try {
+          currentSourceRef.current.stop();
+        } catch {
+          // Ignore
+        }
+        currentSourceRef.current = null;
+      }
+
+      // Close audio context
+      if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+        audioContextRef.current.close().catch(() => {});
         audioContextRef.current = null;
       }
-    };
-  }, [clear]);
 
-  // ===================================================
-  // RETURN
-  // ===================================================
+      gainNodeRef.current = null;
+      chunksRef.current = [];
+      completeAudioQueueRef.current = [];
+    };
+  }, []);
 
   return {
     isPlaying,
+    isBuffering,
+    queueLength,
     queueAudio,
+    playAccumulated,
     play,
+    pause,
     stop,
     clear,
+    setVolume,
   };
 }

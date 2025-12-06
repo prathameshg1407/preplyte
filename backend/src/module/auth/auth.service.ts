@@ -168,94 +168,146 @@ class AuthService {
     };
   }
 
-  async refreshToken(token: string) {
+ // auth.service.ts - Updated refreshToken method
+async refreshToken(token: string) {
+  try {
+    // First, verify the JWT structure
+    let payload;
     try {
-      const { payload } = await jwtVerify(token, REFRESH_SECRET, {
+      const result = await jwtVerify(token, REFRESH_SECRET, {
         issuer: JWT_ISSUER,
         audience: JWT_AUDIENCE,
       });
-
-      const userId = payload.sub as string;
-      const tokenVersion = (payload.tokenVersion as number) || 0;
-      const tokenHash = this.hashToken(token);
-
-      const storedToken = await prisma.refreshToken.findFirst({
-        where: {
-          token: tokenHash,
-          userId,
-        },
-      });
-
-      // Token reuse detection
-      if (storedToken?.revokedAt) {
-        await this.logoutAll(userId);
-        logger.warn('Refresh token reuse detected', { userId });
-        throw new UnauthorizedError('Token reuse detected. All sessions revoked.');
-      }
-
-      if (!storedToken || storedToken.expiresAt < new Date()) {
-        throw new UnauthorizedError('Invalid or expired refresh token');
-      }
-
-      const user = await prisma.user.findUnique({
-        where: { id: userId },
-        include: {
-          institute: {
-            select: { id: true, name: true, domain: true, isActive: true },
-          },
-        },
-      });
-
-      if (!user?.isActive) {
-        throw new UnauthorizedError('Account is inactive');
-      }
-
-      if (user.tokenVersion !== tokenVersion) {
-        throw new UnauthorizedError('Session has been revoked');
-      }
-
-      if (user.institute && !user.institute.isActive) {
-        throw new InstituteInactiveError(user.institute.name);
-      }
-
-      const { accessToken, refreshToken: newRefreshToken } = await this.generateTokens({
-        id: user.id,
-        role: user.role,
-        instituteId: user.instituteId,
-        tokenVersion: user.tokenVersion,
-      });
-
-      // Rotate refresh token
-      await Promise.all([
-        prisma.refreshToken.update({
-          where: { id: storedToken.id },
-          data: { revokedAt: new Date() },
-        }),
-        prisma.refreshToken.create({
-          data: {
-            token: this.hashToken(newRefreshToken),
-            userId: user.id,
-            expiresAt: new Date(Date.now() + this.parseExpiry(REFRESH_TOKEN_EXPIRY)),
-          },
-        }),
-      ]);
-
-      const { password: _, tokenVersion: __, ...safeUser } = user;
-
-      return {
-        user: safeUser,
-        accessToken,
-        refreshToken: newRefreshToken,
-        expiresIn: ACCESS_TOKEN_EXPIRY,
-      };
-    } catch (error) {
-      if (error instanceof UnauthorizedError || error instanceof InstituteInactiveError) {
-        throw error;
-      }
-      logger.error('Refresh token error', { error });
+      payload = result.payload;
+    } catch (jwtError) {
+      logger.warn('Invalid refresh token JWT', { error: jwtError });
       throw new UnauthorizedError('Invalid refresh token');
     }
+
+    const userId = payload.sub as string;
+    const tokenVersion = (payload.tokenVersion as number) ?? 0;
+    const tokenHash = this.hashToken(token);
+
+    // Find the stored token
+    const storedToken = await prisma.refreshToken.findFirst({
+      where: {
+        token: tokenHash,
+        userId,
+      },
+    });
+
+    // Token doesn't exist
+    if (!storedToken) {
+      logger.warn('Refresh token not found in database', { userId });
+      throw new UnauthorizedError('Invalid refresh token');
+    }
+
+    // Token reuse detection - if revoked, this is a reuse attempt
+    if (storedToken.revokedAt) {
+      logger.warn('Refresh token reuse detected', { 
+        userId, 
+        tokenId: storedToken.id,
+        revokedAt: storedToken.revokedAt,
+      });
+      
+      // Revoke all tokens for this user
+      await this.logoutAll(userId);
+      
+      throw new UnauthorizedError('Token reuse detected. All sessions have been revoked for security.');
+    }
+
+    // Token expired
+    if (storedToken.expiresAt < new Date()) {
+      logger.debug('Refresh token expired', { userId, expiresAt: storedToken.expiresAt });
+      
+      // Clean up expired token
+      await prisma.refreshToken.update({
+        where: { id: storedToken.id },
+        data: { revokedAt: new Date() },
+      });
+      
+      throw new UnauthorizedError('Refresh token expired');
+    }
+
+    // Fetch user
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        institute: {
+          select: { id: true, name: true, domain: true, isActive: true },
+        },
+      },
+    });
+
+    if (!user) {
+      logger.warn('User not found for refresh token', { userId });
+      throw new UnauthorizedError('User not found');
+    }
+
+    if (!user.isActive) {
+      logger.debug('Inactive user attempted token refresh', { userId });
+      throw new UnauthorizedError('Account is inactive');
+    }
+
+    // Check token version - if different, tokens have been invalidated
+    if (user.tokenVersion !== tokenVersion) {
+      logger.debug('Token version mismatch', { 
+        userId, 
+        tokenVersion, 
+        currentVersion: user.tokenVersion 
+      });
+      throw new UnauthorizedError('Session has been revoked');
+    }
+
+    if (user.institute && !user.institute.isActive) {
+      throw new InstituteInactiveError(user.institute.name);
+    }
+
+    // Generate new tokens
+    const { accessToken, refreshToken: newRefreshToken } = await this.generateTokens({
+      id: user.id,
+      role: user.role,
+      instituteId: user.instituteId,
+      tokenVersion: user.tokenVersion,
+    });
+
+    // Rotate refresh token - revoke old one and create new one
+    await prisma.$transaction([
+      prisma.refreshToken.update({
+        where: { id: storedToken.id },
+        data: { revokedAt: new Date() },
+      }),
+      prisma.refreshToken.create({
+        data: {
+          token: this.hashToken(newRefreshToken),
+          userId: user.id,
+          expiresAt: new Date(Date.now() + this.parseExpiry(REFRESH_TOKEN_EXPIRY)),
+        },
+      }),
+    ]);
+
+    logger.info('Token refreshed successfully', { userId: user.id });
+
+    const { password: _, tokenVersion: __, ...safeUser } = user;
+
+    return {
+      user: safeUser,
+      accessToken,
+      refreshToken: newRefreshToken,
+      expiresIn: ACCESS_TOKEN_EXPIRY,
+    };
+  } catch (error) {
+    if (
+      error instanceof UnauthorizedError || 
+      error instanceof InstituteInactiveError
+    ) {
+      throw error;
+    }
+    
+    logger.error('Unexpected refresh token error', { error });
+    throw new UnauthorizedError('Invalid refresh token');
   }
+}
 
   async logout(userId: string, refreshToken: string) {
     await prisma.refreshToken.updateMany({

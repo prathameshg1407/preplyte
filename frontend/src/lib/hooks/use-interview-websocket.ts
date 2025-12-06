@@ -1,45 +1,28 @@
 // src/lib/hooks/use-interview-websocket.ts
 
-import { useEffect, useRef, useCallback, useState } from 'react';
+import { useEffect, useRef, useCallback, useMemo } from 'react';
 import { useInterviewStore } from '@/lib/store/interview-store';
 import { interviewService } from '@/lib/api/services/interview.service';
 import { useAuthStore } from '@/lib/store/auth-store';
-import { logger } from '@/lib/utils/logger';
 import type {
   WSMessage,
+  WSSessionReadyData,
+  WSTranscriptionData,
+  WSAISpeakingData,
+  WSAIAudioData,
+  WSSessionStateData,
+  WSInterviewEndedData,
+  WSErrorData,
   ConversationMessage,
-  QuestionCategory,
 } from '@/types/interview.types';
 
 // =====================================================
 // CONSTANTS
 // =====================================================
 
-const WS_EVENTS = {
-  CLIENT: {
-    AUDIO_CHUNK: 'audio_chunk',
-    START_RECORDING: 'start_recording',
-    STOP_RECORDING: 'stop_recording',
-    END_INTERVIEW: 'end_interview',
-    PAUSE: 'pause',
-    RESUME: 'resume',
-    PING: 'ping',
-  },
-  SERVER: {
-    CONNECTED: 'connected',
-    SESSION_READY: 'session_ready',
-    TRANSCRIPTION: 'transcription',
-    TRANSCRIPTION_FINAL: 'transcription_final',
-    AI_THINKING: 'ai_thinking',
-    AI_SPEAKING: 'ai_speaking',
-    AI_AUDIO: 'ai_audio',
-    AI_DONE: 'ai_done',
-    SESSION_STATE: 'session_state',
-    INTERVIEW_ENDED: 'interview_ended',
-    ERROR: 'error',
-    PONG: 'pong',
-  },
-};
+const MAX_RECONNECT_ATTEMPTS = 5;
+const INITIAL_RECONNECT_DELAY = 1000;
+const MAX_RECONNECT_DELAY = 30000;
 
 // =====================================================
 // TYPES
@@ -49,17 +32,20 @@ interface UseInterviewWebSocketOptions {
   sessionId: string;
   onAudioReceived?: (audioData: ArrayBuffer) => void;
   onInterviewEnded?: (feedbackUrl: string) => void;
+  onError?: (error: { code: string; message: string }) => void;
+  autoConnect?: boolean;
 }
 
 interface UseInterviewWebSocketReturn {
   isConnected: boolean;
   isConnecting: boolean;
+  connectionAttempts: number;
   connect: () => void;
   disconnect: () => void;
   sendAudio: (audioData: ArrayBuffer) => void;
   startRecording: () => void;
   stopRecording: () => void;
-  endInterview: (reason?: string) => void;
+  endInterview: (reason?: 'completed' | 'cancelled' | 'timeout') => void;
   pause: () => void;
   resume: () => void;
 }
@@ -71,348 +57,534 @@ interface UseInterviewWebSocketReturn {
 export function useInterviewWebSocket(
   options: UseInterviewWebSocketOptions
 ): UseInterviewWebSocketReturn {
-  const { sessionId, onAudioReceived, onInterviewEnded } = options;
+  const {
+    sessionId,
+    onAudioReceived,
+    onInterviewEnded,
+    onError,
+    autoConnect = false,
+  } = options;
+
+  // ===================================================
+  // REFS
+  // ===================================================
 
   const wsRef = useRef<WebSocket | null>(null);
-  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const pingIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const audioQueueRef = useRef<ArrayBuffer[]>([]);
+  const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const connectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const [isConnecting, setIsConnecting] = useState(false);
+  const reconnectDelayRef = useRef(INITIAL_RECONNECT_DELAY);
+  const isManualDisconnectRef = useRef(false);
+  const mountedRef = useRef(false);
+  const connectingRef = useRef(false);
+  const connectedRef = useRef(false);
+  const messageIdRef = useRef(0);
+  const sessionIdRef = useRef(sessionId);
+  const lastServerActivityRef = useRef<number>(Date.now());
 
-  const { accessToken } = useAuthStore();
-  const {
-    setConnected,
-    setConnecting,
-    setRecording,
-    setAISpeaking,
-    setProcessing,
-    setCurrentTranscript,
-    appendTranscript,
-    setError,
-    setProgress,
-    setCurrentQuestion,
-    addMessage,
-    updateSessionStatus,
-  } = useInterviewStore();
+  // Callback refs
+  const onAudioReceivedRef = useRef(onAudioReceived);
+  const onInterviewEndedRef = useRef(onInterviewEnded);
+  const onErrorRef = useRef(onError);
 
-  const isConnected = useInterviewStore((state) => state.ui.isConnected);
+  useEffect(() => {
+    sessionIdRef.current = sessionId;
+  }, [sessionId]);
 
-  // ===================================================
-  // SEND MESSAGE
-  // ===================================================
-
-  const sendMessage = useCallback((type: string, data?: unknown) => {
-    if (wsRef.current?.readyState === WebSocket.OPEN) {
-      wsRef.current.send(
-        JSON.stringify({
-          type,
-          data,
-          timestamp: Date.now(),
-        })
-      );
-    }
-  }, []);
+  useEffect(() => {
+    onAudioReceivedRef.current = onAudioReceived;
+    onInterviewEndedRef.current = onInterviewEnded;
+    onErrorRef.current = onError;
+  }, [onAudioReceived, onInterviewEnded, onError]);
 
   // ===================================================
-  // MESSAGE HANDLERS
+  // AUTH & STORE
   // ===================================================
 
-  const handleMessage = useCallback(
-    (event: MessageEvent) => {
-      try {
-        // Handle binary audio data
-        if (event.data instanceof Blob) {
-          event.data.arrayBuffer().then((buffer) => {
-            onAudioReceived?.(buffer);
-          });
-          return;
-        }
+  const accessToken = useAuthStore((state) => state.accessToken);
+  const accessTokenRef = useRef(accessToken);
 
-        const message: WSMessage = JSON.parse(event.data);
-        logger.debug('[WS] Received message', { type: message.type });
+  useEffect(() => {
+    accessTokenRef.current = accessToken;
+  }, [accessToken]);
 
-        switch (message.type) {
-          case WS_EVENTS.SERVER.CONNECTED:
-            logger.info('[WS] Connected to interview session');
-            break;
+  const store = useInterviewStore();
+  const storeRef = useRef(store);
 
-          case WS_EVENTS.SERVER.SESSION_READY:
-            setConnected(true);
-            setConnecting(false);
-            const readyData = message.data as any;
-            if (readyData.currentQuestion) {
-              setCurrentQuestion(readyData.currentQuestion);
-            }
-            break;
+  useEffect(() => {
+    storeRef.current = store;
+  }, [store]);
 
-          case WS_EVENTS.SERVER.TRANSCRIPTION:
-            const transcriptData = message.data as { text: string; isFinal: boolean };
-            setCurrentTranscript(transcriptData.text);
-            break;
-
-          case WS_EVENTS.SERVER.TRANSCRIPTION_FINAL:
-            const finalData = message.data as { text: string };
-            // Add user message to conversation
-            addMessage({
-              id: `user-${Date.now()}`,
-              role: 'user',
-              content: finalData.text,
-              timestamp: new Date(),
-            });
-            setCurrentTranscript('');
-            setRecording(false);
-            setProcessing(true);
-            break;
-
-          case WS_EVENTS.SERVER.AI_THINKING:
-            setProcessing(true);
-            break;
-
-          case WS_EVENTS.SERVER.AI_SPEAKING:
-            setProcessing(false);
-            setAISpeaking(true);
-            const speakingData = message.data as {
-              text: string;
-              category: QuestionCategory;
-              isFollowUp?: boolean;
-            };
-            addMessage({
-              id: `ai-${Date.now()}`,
-              role: 'assistant',
-              content: speakingData.text,
-              timestamp: new Date(),
-              category: speakingData.category,
-              isFollowUp: speakingData.isFollowUp,
-            });
-            break;
-
-          case WS_EVENTS.SERVER.AI_AUDIO:
-            const audioData = message.data as { chunk: string; isLast: boolean };
-            // Decode base64 and queue audio
-            const binaryString = atob(audioData.chunk);
-            const bytes = new Uint8Array(binaryString.length);
-            for (let i = 0; i < binaryString.length; i++) {
-              bytes[i] = binaryString.charCodeAt(i);
-            }
-            onAudioReceived?.(bytes.buffer);
-            break;
-
-          case WS_EVENTS.SERVER.AI_DONE:
-            setAISpeaking(false);
-            setRecording(true);
-            break;
-
-          case WS_EVENTS.SERVER.SESSION_STATE:
-            const stateData = message.data as any;
-            setProgress(stateData.progress);
-            if (stateData.currentQuestion) {
-              setCurrentQuestion(stateData.currentQuestion);
-            }
-            break;
-
-          case WS_EVENTS.SERVER.INTERVIEW_ENDED:
-            const endData = message.data as { sessionId: string; reason: string; feedbackUrl: string };
-            updateSessionStatus('COMPLETED');
-            setConnected(false);
-            onInterviewEnded?.(endData.feedbackUrl);
-            break;
-
-          case WS_EVENTS.SERVER.ERROR:
-            const errorData = message.data as { code: string; message: string; recoverable: boolean };
-            setError(errorData.message);
-            if (!errorData.recoverable) {
-              disconnect();
-            }
-            break;
-
-          case WS_EVENTS.SERVER.PONG:
-            // Keep-alive acknowledged
-            break;
-
-          default:
-            logger.warn('[WS] Unknown message type', { type: message.type });
-        }
-      } catch (error) {
-        logger.error('[WS] Failed to parse message', error);
-      }
-    },
-    [
-      addMessage,
-      onAudioReceived,
-      onInterviewEnded,
-      setAISpeaking,
-      setConnected,
-      setConnecting,
-      setCurrentQuestion,
-      setCurrentTranscript,
-      setError,
-      setProcessing,
-      setProgress,
-      setRecording,
-      updateSessionStatus,
-    ]
-  );
+  const ui = useInterviewStore((state) => state.ui);
 
   // ===================================================
-  // CONNECTION MANAGEMENT
+  // HELPERS
   // ===================================================
 
-  const connect = useCallback(() => {
-    if (wsRef.current?.readyState === WebSocket.OPEN) {
-      logger.debug('[WS] Already connected');
-      return;
-    }
-
-    if (!accessToken) {
-      setError('Not authenticated');
-      return;
-    }
-
-    setIsConnecting(true);
-    setConnecting(true);
-
-    const wsUrl = interviewService.getWebSocketUrl(sessionId, accessToken);
-    logger.info('[WS] Connecting to', { wsUrl: wsUrl.replace(/token=.*/, 'token=***') });
-
-    const ws = new WebSocket(wsUrl);
-    wsRef.current = ws;
-
-    ws.onopen = () => {
-      logger.info('[WS] Connection opened');
-      setIsConnecting(false);
-      startPingInterval();
-    };
-
-    ws.onmessage = handleMessage;
-
-    ws.onerror = (error) => {
-      logger.error('[WS] Connection error', error);
-      setError('Connection error');
-    };
-
-    ws.onclose = (event) => {
-      logger.info('[WS] Connection closed', { code: event.code, reason: event.reason });
-      setConnected(false);
-      setIsConnecting(false);
-      stopPingInterval();
-
-      // Attempt reconnect for unexpected closes
-      if (event.code !== 1000 && event.code !== 1001) {
-        scheduleReconnect();
-      }
-    };
-  }, [accessToken, handleMessage, sessionId, setConnected, setConnecting, setError]);
-
-  const disconnect = useCallback(() => {
-    logger.info('[WS] Disconnecting');
-
+  const clearAllTimeouts = useCallback(() => {
     if (reconnectTimeoutRef.current) {
       clearTimeout(reconnectTimeoutRef.current);
       reconnectTimeoutRef.current = null;
     }
-
-    stopPingInterval();
-
-    if (wsRef.current) {
-      wsRef.current.close(1000, 'User disconnect');
-      wsRef.current = null;
-    }
-
-    setConnected(false);
-  }, [setConnected]);
-
-  const scheduleReconnect = useCallback(() => {
-    if (reconnectTimeoutRef.current) return;
-
-    logger.info('[WS] Scheduling reconnect in 3s');
-    reconnectTimeoutRef.current = setTimeout(() => {
-      reconnectTimeoutRef.current = null;
-      connect();
-    }, 3000);
-  }, [connect]);
-
-  const startPingInterval = useCallback(() => {
-    pingIntervalRef.current = setInterval(() => {
-      sendMessage(WS_EVENTS.CLIENT.PING);
-    }, 30000);
-  }, [sendMessage]);
-
-  const stopPingInterval = useCallback(() => {
-    if (pingIntervalRef.current) {
-      clearInterval(pingIntervalRef.current);
-      pingIntervalRef.current = null;
+    if (connectTimeoutRef.current) {
+      clearTimeout(connectTimeoutRef.current);
+      connectTimeoutRef.current = null;
     }
   }, []);
 
+  const sendMessage = useCallback(<T = unknown>(type: string, data?: T): boolean => {
+    const ws = wsRef.current;
+    if (ws?.readyState === WebSocket.OPEN) {
+      const message: WSMessage<T> = {
+        type,
+        data,
+        timestamp: Date.now(),
+      };
+      ws.send(JSON.stringify(message));
+      return true;
+    }
+    return false;
+  }, []);
+
   // ===================================================
-  // AUDIO ACTIONS
+  // DISCONNECT
   // ===================================================
 
-  const sendAudio = useCallback(
-    (audioData: ArrayBuffer) => {
-      if (wsRef.current?.readyState === WebSocket.OPEN) {
-        wsRef.current.send(audioData);
+  const disconnect = useCallback(() => {
+    console.log('[WS] Disconnect called');
+    isManualDisconnectRef.current = true;
+    connectingRef.current = false;
+    connectedRef.current = false;
+
+    clearAllTimeouts();
+
+    const ws = wsRef.current;
+    if (ws) {
+      wsRef.current = null;
+
+      ws.onopen = null;
+      ws.onmessage = null;
+      ws.onerror = null;
+      ws.onclose = null;
+
+      if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
+        try {
+          ws.close(1000, 'User disconnect');
+        } catch (e) {
+          // Ignore
+        }
       }
-    },
-    []
-  );
+    }
+
+    storeRef.current.setConnected(false);
+    storeRef.current.setConnecting(false);
+  }, [clearAllTimeouts]);
+
+  // ===================================================
+  // CONNECT
+  // ===================================================
+
+  const connect = useCallback(() => {
+    const currentSessionId = sessionIdRef.current;
+    const currentToken = accessTokenRef.current;
+
+    console.log('[WS] Connect called', {
+      sessionId: currentSessionId,
+      hasToken: !!currentToken,
+      mounted: mountedRef.current,
+      connecting: connectingRef.current,
+      wsState: wsRef.current?.readyState,
+    });
+
+    // Guards
+    if (!mountedRef.current) {
+      console.log('[WS] Not mounted, skipping connect');
+      return;
+    }
+
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      console.log('[WS] Already connected');
+      return;
+    }
+
+    if (wsRef.current?.readyState === WebSocket.CONNECTING || connectingRef.current) {
+      console.log('[WS] Already connecting');
+      return;
+    }
+
+    if (!currentToken) {
+      console.error('[WS] No access token');
+      storeRef.current.setError('Authentication required');
+      return;
+    }
+
+    if (!currentSessionId) {
+      console.error('[WS] No session ID');
+      storeRef.current.setError('Session ID required');
+      return;
+    }
+
+    // Start connecting
+    console.log('[WS] Creating WebSocket connection...');
+    isManualDisconnectRef.current = false;
+    connectingRef.current = true;
+    storeRef.current.setConnecting(true);
+    storeRef.current.setError(null);
+
+    try {
+      const wsUrl = interviewService.getWebSocketUrl(currentSessionId, currentToken);
+      console.log('[WS] URL:', wsUrl.substring(0, 50) + '...');
+
+      const ws = new WebSocket(wsUrl);
+      wsRef.current = ws;
+      ws.binaryType = 'arraybuffer';
+
+      ws.onopen = () => {
+        console.log('[WS] Connection opened');
+
+        if (!mountedRef.current) {
+          console.log('[WS] Unmounted during connect, closing');
+          ws.close(1000, 'Component unmounted');
+          return;
+        }
+
+        connectingRef.current = false;
+        connectedRef.current = true;
+        lastServerActivityRef.current = Date.now();
+      };
+
+      ws.onmessage = (event: MessageEvent) => {
+        if (!mountedRef.current) return;
+
+        // Update activity on any message
+        lastServerActivityRef.current = Date.now();
+
+        try {
+          // Binary audio
+          if (event.data instanceof Blob) {
+            event.data.arrayBuffer().then((buffer) => {
+              if (mountedRef.current) {
+                onAudioReceivedRef.current?.(buffer);
+              }
+            });
+            return;
+          }
+
+          if (event.data instanceof ArrayBuffer) {
+            onAudioReceivedRef.current?.(event.data);
+            return;
+          }
+
+          // JSON message
+          const message = JSON.parse(event.data) as WSMessage;
+
+          switch (message.type) {
+            case 'connected': {
+              console.log('[WS] Server confirmed connection:', message.data);
+              break;
+            }
+
+            case 'ping':
+              console.log('[WS] Received ping, sending pong');
+              sendMessage('pong');
+              break;
+
+            case 'pong':
+              console.log('[WS] Received pong');
+              break;
+
+            case 'session_ready': {
+              const data = message.data as WSSessionReadyData;
+              console.log('[WS] Session ready:', data);
+              storeRef.current.setConnected(true);
+              storeRef.current.setConnecting(false);
+              storeRef.current.resetConnectionAttempts();
+              reconnectDelayRef.current = INITIAL_RECONNECT_DELAY;
+              if (data.currentQuestion) {
+                storeRef.current.setCurrentQuestion(data.currentQuestion);
+              }
+              break;
+            }
+
+            case 'transcription': {
+              const data = message.data as WSTranscriptionData;
+              storeRef.current.setCurrentTranscript(data.text);
+              break;
+            }
+
+            case 'transcription_final': {
+              const data = message.data as WSTranscriptionData;
+              const userMessage: ConversationMessage = {
+                id: `user-${Date.now()}-${++messageIdRef.current}`,
+                role: 'user',
+                content: data.text,
+                timestamp: new Date(),
+              };
+              storeRef.current.addMessage(userMessage);
+              storeRef.current.clearTranscript();
+              storeRef.current.setRecording(false);
+              storeRef.current.setProcessing(true);
+              break;
+            }
+
+            case 'ai_thinking': {
+              storeRef.current.setProcessing(true);
+              break;
+            }
+
+            case 'ai_speaking': {
+              const data = message.data as WSAISpeakingData;
+              storeRef.current.setProcessing(false);
+              storeRef.current.setAISpeaking(true);
+              const aiMessage: ConversationMessage = {
+                id: `ai-${Date.now()}-${++messageIdRef.current}`,
+                role: 'assistant',
+                content: data.text,
+                timestamp: new Date(),
+                category: data.category,
+                isFollowUp: data.isFollowUp,
+              };
+              storeRef.current.addMessage(aiMessage);
+              break;
+            }
+
+            case 'ai_audio': {
+              const data = message.data as WSAIAudioData;
+              try {
+                const binaryString = atob(data.chunk);
+                const bytes = new Uint8Array(binaryString.length);
+                for (let i = 0; i < binaryString.length; i++) {
+                  bytes[i] = binaryString.charCodeAt(i);
+                }
+                onAudioReceivedRef.current?.(bytes.buffer);
+              } catch (e) {
+                console.error('[WS] Failed to decode audio:', e);
+              }
+              break;
+            }
+
+            case 'ai_done': {
+              storeRef.current.setAISpeaking(false);
+              storeRef.current.setRecording(true);
+              break;
+            }
+
+            case 'session_state': {
+              const data = message.data as WSSessionStateData;
+              storeRef.current.setProgress(data.progress);
+              if (data.currentQuestion) {
+                storeRef.current.setCurrentQuestion(data.currentQuestion);
+              }
+              storeRef.current.setRecording(data.isListening);
+              storeRef.current.setAISpeaking(data.isAISpeaking);
+              break;
+            }
+
+            case 'interview_ended': {
+              const data = message.data as WSInterviewEndedData;
+              storeRef.current.updateSessionStatus('COMPLETED');
+              storeRef.current.setConnected(false);
+              onInterviewEndedRef.current?.(data.feedbackUrl);
+              break;
+            }
+
+            case 'error': {
+              const data = message.data as WSErrorData;
+              console.error('[WS] Server error:', data);
+              storeRef.current.setError(data.message);
+              onErrorRef.current?.({ code: data.code, message: data.message });
+              if (!data.recoverable) {
+                disconnect();
+              }
+                            break;
+            }
+
+            default:
+              console.log('[WS] Unknown message:', message.type);
+          }
+        } catch (e) {
+          console.error('[WS] Message parse error:', e);
+        }
+      };
+
+      ws.onerror = (error) => {
+        console.error('[WS] Error:', error);
+      };
+
+      ws.onclose = (event) => {
+        console.log('[WS] Closed:', { code: event.code, reason: event.reason });
+
+        connectingRef.current = false;
+        connectedRef.current = false;
+
+        if (wsRef.current === ws) {
+          wsRef.current = null;
+        }
+
+        if (!mountedRef.current) return;
+
+        storeRef.current.setConnected(false);
+        storeRef.current.setConnecting(false);
+
+        // Reconnect if not manual disconnect
+        if (!isManualDisconnectRef.current && event.code !== 1000) {
+          const attempts = useInterviewStore.getState().ui.connectionAttempts;
+
+          if (attempts >= MAX_RECONNECT_ATTEMPTS) {
+            storeRef.current.setError('Connection failed. Please refresh the page.');
+            return;
+          }
+
+          const delay = Math.min(
+            reconnectDelayRef.current * Math.pow(2, attempts),
+            MAX_RECONNECT_DELAY
+          );
+
+          console.log(`[WS] Reconnecting in ${delay}ms...`);
+
+          reconnectTimeoutRef.current = setTimeout(() => {
+            if (mountedRef.current && !isManualDisconnectRef.current) {
+              storeRef.current.incrementConnectionAttempts();
+              connect();
+            }
+          }, delay);
+        }
+      };
+
+    } catch (error) {
+      console.error('[WS] Create failed:', error);
+      connectingRef.current = false;
+      storeRef.current.setConnecting(false);
+      storeRef.current.setError('Failed to connect');
+    }
+  }, [clearAllTimeouts, disconnect, sendMessage]);
+
+  // ===================================================
+  // ACTIONS
+  // ===================================================
+
+  const sendAudio = useCallback((audioData: ArrayBuffer) => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(audioData);
+    }
+  }, []);
 
   const startRecording = useCallback(() => {
-    sendMessage(WS_EVENTS.CLIENT.START_RECORDING);
-    setRecording(true);
-    setCurrentTranscript('');
-  }, [sendMessage, setRecording, setCurrentTranscript]);
+    if (sendMessage('start_recording')) {
+      storeRef.current.setRecording(true);
+      storeRef.current.clearTranscript();
+    }
+  }, [sendMessage]);
 
   const stopRecording = useCallback(() => {
-    sendMessage(WS_EVENTS.CLIENT.STOP_RECORDING);
-    setRecording(false);
-  }, [sendMessage, setRecording]);
-
-  // ===================================================
-  // INTERVIEW CONTROL ACTIONS
-  // ===================================================
+    if (sendMessage('stop_recording')) {
+      storeRef.current.setRecording(false);
+    }
+  }, [sendMessage]);
 
   const endInterview = useCallback(
-    (reason: string = 'completed') => {
-      sendMessage(WS_EVENTS.CLIENT.END_INTERVIEW, { reason });
+    (reason: 'completed' | 'cancelled' | 'timeout' = 'completed') => {
+      sendMessage('end_interview', { reason });
     },
     [sendMessage]
   );
 
   const pause = useCallback(() => {
-    sendMessage(WS_EVENTS.CLIENT.PAUSE);
-    setRecording(false);
-  }, [sendMessage, setRecording]);
+    if (sendMessage('pause')) {
+      storeRef.current.setRecording(false);
+      storeRef.current.setPaused(true);
+    }
+  }, [sendMessage]);
 
   const resume = useCallback(() => {
-    sendMessage(WS_EVENTS.CLIENT.RESUME);
+    if (sendMessage('resume')) {
+      storeRef.current.setPaused(false);
+    }
   }, [sendMessage]);
 
   // ===================================================
-  // CLEANUP
+  // LIFECYCLE
   // ===================================================
 
+  // Mount/unmount tracking
   useEffect(() => {
+    mountedRef.current = true;
+    console.log('[WS] Hook mounted');
+
     return () => {
-      disconnect();
+      console.log('[WS] Hook unmounting - cleaning up');
+      mountedRef.current = false;
+      clearAllTimeouts();
+
+      // Close WebSocket on unmount
+      const ws = wsRef.current;
+      if (ws) {
+        wsRef.current = null;
+        ws.onopen = null;
+        ws.onmessage = null;
+        ws.onerror = null;
+        ws.onclose = null;
+        if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
+          ws.close(1000, 'Unmount');
+        }
+      }
     };
-  }, [disconnect]);
+  }, [clearAllTimeouts]);
+
+  // Auto-connect effect
+  useEffect(() => {
+    if (!autoConnect) return;
+    if (!accessToken) return;
+    if (!sessionId) return;
+
+    console.log('[WS] Auto-connect effect triggered');
+
+    // Delay to survive React StrictMode
+    connectTimeoutRef.current = setTimeout(() => {
+      if (mountedRef.current && !wsRef.current && !connectingRef.current) {
+        console.log('[WS] Auto-connecting...');
+        connect();
+      }
+    }, 150);
+
+    return () => {
+      if (connectTimeoutRef.current) {
+        clearTimeout(connectTimeoutRef.current);
+        connectTimeoutRef.current = null;
+      }
+    };
+  }, [autoConnect, accessToken, sessionId, connect]);
 
   // ===================================================
   // RETURN
   // ===================================================
 
-  return {
-    isConnected,
-    isConnecting,
-    connect,
-    disconnect,
-    sendAudio,
-    startRecording,
-    stopRecording,
-    endInterview,
-    pause,
-    resume,
-  };
+  return useMemo(
+    () => ({
+      isConnected: ui.isConnected,
+      isConnecting: ui.isConnecting,
+      connectionAttempts: ui.connectionAttempts,
+      connect,
+      disconnect,
+      sendAudio,
+      startRecording,
+      stopRecording,
+      endInterview,
+      pause,
+      resume,
+    }),
+    [
+      ui.isConnected,
+      ui.isConnecting,
+      ui.connectionAttempts,
+      connect,
+      disconnect,
+      sendAudio,
+      startRecording,
+      stopRecording,
+      endInterview,
+      pause,
+      resume,
+    ]
+  );
 }

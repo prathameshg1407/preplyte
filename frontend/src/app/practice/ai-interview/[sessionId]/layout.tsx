@@ -1,6 +1,7 @@
 // src/app/practice/ai-interview/[sessionId]/layout.tsx
 
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { InterviewWebSocketProvider } from '@/lib/contexts/interview-websocket-context';
 
 export default function InterviewLayout({
   children,
@@ -8,10 +9,12 @@ export default function InterviewLayout({
   children: React.ReactNode;
 }) {
   return (
-    <TooltipProvider>
-      <div className="min-h-screen bg-background">
-        {children}
-      </div>
-    </TooltipProvider>
+    <InterviewWebSocketProvider>
+      <TooltipProvider>
+        <div className="min-h-screen bg-background">
+          {children}
+        </div>
+      </TooltipProvider>
+    </InterviewWebSocketProvider>
   );
 }
