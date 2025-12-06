@@ -26,6 +26,20 @@ function getDefaultRedirect(role: UserRole): string {
   }
 }
 
+// Helper to get context based on role
+function getContextFromRole(role: UserRole): AuthContext {
+  switch (role) {
+    case 'PLATFORM_ADMIN':
+      return 'PLATFORM';
+    case 'INSTITUTE_ADMIN':
+      return 'INSTITUTE';
+    case 'USER':
+      return 'PLATFORM'; // Regular users should use PLATFORM context, not INSTITUTE
+    default:
+      return 'PLATFORM';
+  }
+}
+
 interface UseAuthOptions {
   /**
    * If true, will read redirect param from URL search params.
@@ -64,14 +78,23 @@ export function useAuth(options: UseAuthOptions = {}) {
             return false;
           }
 
-          // Determine context from user role
-          const context: AuthContext =
-            user.role === 'PLATFORM_ADMIN' ? 'PLATFORM' : 'INSTITUTE';
+          // Log the user role for debugging
+          logger.debug('[useAuth] User role received:', user.role);
+
+          // Determine context from user role using the helper function
+          const context = getContextFromRole(user.role);
+          
+          logger.debug('[useAuth] Context determined:', context);
 
           // Update store (this also syncs to storage)
           store.setAuth(user, accessToken, refreshToken, context);
 
-          logger.debug('[useAuth] Login successful', { role: user.role });
+          logger.debug('[useAuth] Login successful', { 
+            role: user.role,
+            context: context,
+            instituteId: user.instituteId 
+          });
+          
           showSuccessToast('Login successful!');
 
           // Handle redirect
@@ -106,6 +129,8 @@ export function useAuth(options: UseAuthOptions = {}) {
       store.setLoading(true);
 
       try {
+        logger.debug('[useAuth] Starting registration');
+        
         const response = await authService.register(credentials);
 
         if (response.success) {
@@ -117,6 +142,7 @@ export function useAuth(options: UseAuthOptions = {}) {
         showErrorToast(response.message || 'Registration failed');
         return false;
       } catch (error) {
+        logger.error('[useAuth] Registration error', error);
         showErrorToast(error);
         return false;
       } finally {
@@ -141,14 +167,21 @@ export function useAuth(options: UseAuthOptions = {}) {
   }, [store, router]);
 
   const refreshUser = useCallback(async () => {
-    if (!store.accessToken) return;
+    if (!store.accessToken) {
+      logger.debug('[useAuth] No access token, skipping refresh');
+      return;
+    }
 
     try {
+      logger.debug('[useAuth] Refreshing user data');
       const response = await authService.getCurrentUser();
+      
       if (response.success && response.data) {
         store.updateUser(response.data);
+        logger.debug('[useAuth] User data refreshed successfully');
       }
-    } catch {
+    } catch (error) {
+      logger.error('[useAuth] Failed to refresh user', error);
       store.logout();
     }
   }, [store]);

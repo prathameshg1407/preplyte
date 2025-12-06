@@ -13,25 +13,33 @@ import {
 
 const router = Router();
 
-// All routes require authentication
+// Require auth for all aptitude routes
 router.use(authenticate);
 
-// Session management
-router.post('/sessions', validate(createSessionSchema), aptitudeController.createSession.bind(aptitudeController));
-router.get('/sessions', validate(listSessionsSchema), aptitudeController.listSessions.bind(aptitudeController));
-router.get('/sessions/:id', validate(sessionIdSchema), aptitudeController.getSession.bind(aptitudeController));
+// =====================================================
+// SESSION MANAGEMENT
+// =====================================================
+router.post('/sessions', validate(createSessionSchema), aptitudeController.createSession);
+router.get('/sessions', validate(listSessionsSchema), aptitudeController.listSessions);
+router.get('/sessions/:id', validate(sessionIdSchema), aptitudeController.getSession);
 
-// Questions
-router.get('/sessions/:id/questions', validate(sessionIdSchema), aptitudeController.getSessionQuestions.bind(aptitudeController));
-router.get('/sessions/:id/questions/:questionId', validate(questionIdSchema), aptitudeController.getQuestion.bind(aptitudeController));
+// =====================================================
+// QUESTIONS
+// =====================================================
+router.get('/sessions/:id/questions', validate(sessionIdSchema), aptitudeController.getSessionQuestions);
+router.get('/sessions/:id/questions/:questionId', validate(questionIdSchema), aptitudeController.getQuestion);
 
-// Test taking
-router.post('/sessions/:id/answer', validate(saveAnswerSchema), aptitudeController.saveAnswer.bind(aptitudeController));
-router.post('/sessions/:id/submit', validate(sessionIdSchema), aptitudeController.submitSession.bind(aptitudeController));
+// =====================================================
+// TEST TAKING
+// =====================================================
+router.post('/sessions/:id/answer', validate(saveAnswerSchema), aptitudeController.saveAnswer);
+router.post('/sessions/:id/submit', validate(sessionIdSchema), aptitudeController.submitSession);
 
-// Status & Results
-router.get('/sessions/:id/status', validate(sessionIdSchema), aptitudeController.getSessionStatus.bind(aptitudeController));
-router.get('/sessions/:id/results', validate(sessionIdSchema), aptitudeController.getSessionResults.bind(aptitudeController));
-router.get('/sessions/:id/solutions', validate(solutionsFilterSchema), aptitudeController.getSolutions.bind(aptitudeController));
+// =====================================================
+// STATUS & RESULTS
+// =====================================================
+router.get('/sessions/:id/status', validate(sessionIdSchema), aptitudeController.getSessionStatus);
+router.get('/sessions/:id/results', validate(sessionIdSchema), aptitudeController.getSessionResults);
+router.get('/sessions/:id/solutions', validate(solutionsFilterSchema), aptitudeController.getSolutions);
 
 export default router;

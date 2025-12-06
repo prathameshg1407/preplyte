@@ -1,20 +1,28 @@
 services:
   - type: web
     name: preplyte-api
-    runtime: node
-    region: singapore  # or your preferred region
+    env: node
+    rootDir: backend
+    region: singapore
     plan: free
-    buildCommand: pnpm install && pnpm prisma:generate && pnpm build
-    startCommand: pnpm prisma:migrate:prod && pnpm start:prod
+    
+    buildCommand: pnpm install --frozen-lockfile && pnpm prisma:generate && pnpm build
+    startCommand: pnpm start:prod
+    releaseCommand: pnpm prisma:migrate:prod
+    
     healthCheckPath: /health
+
     envVars:
       - key: NODE_ENV
         value: production
       - key: DATABASE_URL
-        sync: false  # Set manually in dashboard
+        sync: false
       - key: REDIS_URL
+        sync: false
+      - key: CLOUDINARY_URL
         sync: false
       - key: JWT_SECRET
         generateValue: true
       - key: JWT_REFRESH_SECRET
         generateValue: true
+

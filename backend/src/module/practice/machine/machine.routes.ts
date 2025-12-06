@@ -1,7 +1,10 @@
+// src/module/practice/machine/machine.routes.ts
+
 import { Router } from 'express';
 import { machineController } from './machine.controller';
 import { authenticate } from '../../../middleware/auth.middleware';
 import { validate } from '../../../middleware/validate.middleware';
+
 import {
   createSessionSchema,
   listSessionsSchema,
@@ -15,26 +18,27 @@ import {
 
 const router = Router();
 
+// Require Authentication for all machine endpoints
 router.use(authenticate);
 
-// Session management
-router.post('/sessions', validate(createSessionSchema), machineController.createSession.bind(machineController));
-router.get('/sessions', validate(listSessionsSchema), machineController.listSessions.bind(machineController));
-router.get('/sessions/:id', validate(sessionIdSchema), machineController.getSession.bind(machineController));
-router.get('/sessions/:id/questions', validate(sessionIdSchema), machineController.getSessionQuestions.bind(machineController));
-router.get('/sessions/:id/questions/:questionId', validate(questionIdSchema), machineController.getQuestion.bind(machineController));
+// Sessions
+router.post('/sessions', validate(createSessionSchema), machineController.createSession);
+router.get('/sessions', validate(listSessionsSchema), machineController.listSessions);
+router.get('/sessions/:id', validate(sessionIdSchema), machineController.getSession);
+router.get('/sessions/:id/questions', validate(sessionIdSchema), machineController.getSessionQuestions);
+router.get('/sessions/:id/questions/:questionId', validate(questionIdSchema), machineController.getQuestion);
 
-// Code execution
-router.post('/sessions/:sessionId/questions/:questionId/run', validate(runCodeSchema), machineController.runCode.bind(machineController));
-router.post('/sessions/:sessionId/questions/:questionId/submit', validate(submitCodeSchema), machineController.submitCode.bind(machineController));
+// Code Execution
+router.post('/sessions/:sessionId/questions/:questionId/run', validate(runCodeSchema), machineController.runCode);
+router.post('/sessions/:sessionId/questions/:questionId/submit', validate(submitCodeSchema), machineController.submitCode);
 
-// Session control & results
-router.get('/sessions/:id/status', validate(sessionIdSchema), machineController.getSessionStatus.bind(machineController));
-router.post('/sessions/:id/complete', validate(sessionIdSchema), machineController.completeSession.bind(machineController));
-router.get('/sessions/:id/results', validate(sessionIdSchema), machineController.getSessionResults.bind(machineController));
+// Status + Results
+router.get('/sessions/:id/status', validate(sessionIdSchema), machineController.getSessionStatus);
+router.post('/sessions/:id/complete', validate(sessionIdSchema), machineController.completeSession);
+router.get('/sessions/:id/results', validate(sessionIdSchema), machineController.getSessionResults);
 
 // Submissions
-router.get('/sessions/:sessionId/questions/:questionId/submissions', validate(submissionsListSchema), machineController.getSubmissionHistory.bind(machineController));
-router.get('/submissions/:id', validate(submissionIdSchema), machineController.getSubmissionDetails.bind(machineController));
+router.get('/sessions/:sessionId/questions/:questionId/submissions', validate(submissionsListSchema), machineController.getSubmissionHistory);
+router.get('/submissions/:id', validate(submissionIdSchema), machineController.getSubmissionDetails);
 
 export default router;

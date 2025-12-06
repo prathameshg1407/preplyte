@@ -1,49 +1,49 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-// Routes that don't require authentication
+// Public routes (Unauthenticated users allowed)
 const PUBLIC_ROUTES = ['/', '/login', '/register', '/forgot-password'];
 
-// Routes that authenticated users shouldn't access
-const AUTH_ROUTES = ['/login', '/register'];
+// Landing pages per role
+const ROLE_REDIRECT: Record<string, string> = {
+  PLATFORM_ADMIN: '/admin',
+  INSTITUTE_ADMIN: '/institute-admin',
+  USER: '/dashboard',
+};
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Check for session indicator cookie (set by client after login)
   const hasSession = request.cookies.get('has_session')?.value === 'true';
+  const role = request.cookies.get('role')?.value as keyof typeof ROLE_REDIRECT | undefined;
 
-  // Check if current path is public
-  const isPublicRoute = PUBLIC_ROUTES.some(
-    (route) => pathname === route || pathname.startsWith(`${route}/`)
-  );
+  const isPublicRoute = PUBLIC_ROUTES.some((route) => pathname === route);
 
-  // Check if current path is an auth route
-  const isAuthRoute = AUTH_ROUTES.some(
-    (route) => pathname === route || pathname.startsWith(`${route}/`)
-  );
-
-  // Redirect authenticated users away from auth pages
-  if (hasSession && isAuthRoute) {
-    return NextResponse.redirect(new URL('/dashboard', request.url));
+  // If user is authenticated + tries to access login/register → redirect by role
+  if (hasSession && isPublicRoute && role && ROLE_REDIRECT[role]) {
+    return NextResponse.redirect(new URL(ROLE_REDIRECT[role], request.url));
   }
 
-  // For protected routes, we rely on client-side auth checks
-  // The middleware only handles basic redirects based on session cookie
+  // If no session + trying to access protected route → redirect to login
+  if (!hasSession && !isPublicRoute) {
+    const loginUrl = new URL('/login', request.url);
+    loginUrl.searchParams.set('redirect', pathname);
+    return NextResponse.redirect(loginUrl);
+  }
+
+  // If user has role but trying to access wrong area's base path → fix redirect
+  if (hasSession && role && ROLE_REDIRECT[role]) {
+    const requiredBase = ROLE_REDIRECT[role];
+    if (!pathname.startsWith(requiredBase) && !isPublicRoute) {
+      return NextResponse.redirect(new URL(requiredBase, request.url));
+    }
+  }
 
   return NextResponse.next();
 }
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except:
-     * - api routes
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico
-     * - public files (images, etc.)
-     */
     '/((?!api|_next/static|_next/image|favicon.ico|.*\\..*$).*)',
   ],
 };
