@@ -13,6 +13,7 @@ import { MockDriveRegistrationStatus, MockDriveStatus } from '@/types/mockdrive.
 export default function MyRegistrationsPage() {
   const { data, isLoading } = useMyRegistrations();
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const registrations = data?.registrations || [];
 
   const categorized = useMemo(() => {
