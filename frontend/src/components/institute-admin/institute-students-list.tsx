@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
@@ -41,6 +41,7 @@ export type Student = {
 export type Filters = {
   search?: string;
   department?: string;
+  year?: string; // Added year filter type
   minCgpa?: number;
   status?: 'all' | 'active' | 'inactive';
 };
@@ -76,25 +77,12 @@ export function InstituteStudentsList({
 }: InstituteStudentsListProps) {
   const [selectedStudents, setSelectedStudents] = useState<Set<string>>(new Set());
 
-  /* ---------- Pagination Logic (FIXED) ---------- */
-
-  // FIX: Calculate total pages based on the 'total' count from the API metadata
   const totalPages = Math.max(
     1,
     Math.ceil(pagination.total / pagination.pageSize),
   );
 
-  // FIX: Since the API already handles filtering and pagination, 
-  // we use the 'students' prop directly.
   const displayStudents = students;
-
-  /* ---------- Selection ---------- */
-
-  const isAllSelected =
-    displayStudents.length > 0 &&
-    displayStudents.every(s => selectedStudents.has(s.id));
-
-  const isAnySelected = selectedStudents.size > 0;
 
   const handleSelectAll = (checked: CheckedState) => {
     const updated = new Set(selectedStudents);
@@ -109,8 +97,6 @@ export function InstituteStudentsList({
     checked ? updated.add(id) : updated.delete(id);
     setSelectedStudents(updated);
   };
-
-  /* ---------- Error State ---------- */
 
   if (error) {
     return (
@@ -133,12 +119,10 @@ export function InstituteStudentsList({
           <Button size="icon" variant="ghost" onClick={onRefresh} disabled={loading}>
             <RefreshCw className={loading ? 'animate-spin' : ''} />
           </Button>
-
           <Checkbox
-            checked={isAllSelected ? true : isAnySelected ? 'indeterminate' : false}
+            checked={displayStudents.length > 0 && displayStudents.every(s => selectedStudents.has(s.id)) ? true : selectedStudents.size > 0 ? 'indeterminate' : false}
             onCheckedChange={handleSelectAll}
           />
-
           <span className="text-sm text-muted-foreground">
             {selectedStudents.size} selected
           </span>
@@ -148,39 +132,59 @@ export function InstituteStudentsList({
           <Input
             placeholder="Search..."
             value={filters.search || ''}
-            onChange={e =>
-              onFiltersChange({ ...filters, search: e.target.value || undefined })
-            }
+            onChange={e => onFiltersChange({ ...filters, search: e.target.value || undefined })}
             className="w-40"
           />
 
-          <Input
-            type="number"
-            placeholder="Min CGPA"
-            value={filters.minCgpa ?? ''}
-            onChange={e =>
-              onFiltersChange({
-                ...filters,
-                minCgpa: e.target.value ? Number(e.target.value) : undefined,
-              })
-            }
-            className="w-24"
-          />
+          {/* Department Filter */}
+          <Select
+            value={filters.department || 'all_depts'}
+            onValueChange={value => onFiltersChange({ 
+              ...filters, 
+              department: value === 'all_depts' ? undefined : value 
+            })}
+          >
+            <SelectTrigger className="w-[160px]">
+              <SelectValue placeholder="Department" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all_depts">All Departments</SelectItem>
+              <SelectItem value="Computer Science">Computer Science</SelectItem>
+              <SelectItem value="Information Technology">Information Technology</SelectItem>
+              <SelectItem value="Electronics">Electronics</SelectItem>
+              <SelectItem value="Mechanical">Mechanical</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {/* Year Filter */}
+          <Select
+            value={filters.year || 'all_years'}
+            onValueChange={value => onFiltersChange({ 
+              ...filters, 
+              year: value === 'all_years' ? undefined : value 
+            })}
+          >
+            <SelectTrigger className="w-[130px]">
+              <SelectValue placeholder="Year" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all_years">All Years</SelectItem>
+              <SelectItem value="1st Year">1st Year</SelectItem>
+              <SelectItem value="2nd Year">2nd Year</SelectItem>
+              <SelectItem value="3rd Year">3rd Year</SelectItem>
+              <SelectItem value="4th Year">4th Year</SelectItem>
+            </SelectContent>
+          </Select>
 
           <Select
             value={filters.status || 'all'}
-            onValueChange={value =>
-              onFiltersChange({
-                ...filters,
-                status: value as Filters['status'],
-              })
-            }
+            onValueChange={value => onFiltersChange({ ...filters, status: value as Filters['status'] })}
           >
-            <SelectTrigger className="w-28">
-              <SelectValue />
+            <SelectTrigger className="w-32">
+              <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All</SelectItem>
+              <SelectItem value="all">All Status</SelectItem>
               <SelectItem value="active">Active</SelectItem>
               <SelectItem value="inactive">Inactive</SelectItem>
             </SelectContent>
@@ -188,13 +192,11 @@ export function InstituteStudentsList({
         </div>
       </div>
 
-      {/* Table */}
+      {/* Table Section */}
       <div className="flex-1 overflow-auto">
         {loading ? (
           <div className="p-4 space-y-3">
-            {[...Array(6)].map((_, i) => (
-              <Skeleton key={i} className="h-12 w-full" />
-            ))}
+            {[...Array(6)].map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
           </div>
         ) : displayStudents.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-64">
@@ -205,14 +207,13 @@ export function InstituteStudentsList({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead />
-                <TableHead>Name</TableHead>
-                <TableHead>Email</TableHead>
+                <TableHead className="w-12" />
+                <TableHead>Student</TableHead>
                 <TableHead>ID</TableHead>
-                <TableHead>Dept</TableHead>
-                <TableHead>CGPA</TableHead>
+                <TableHead>Department</TableHead>
+                <TableHead>Year</TableHead>
                 <TableHead>Status</TableHead>
-                {showActions && <TableHead />}
+                {showActions && <TableHead className="w-12" />}
               </TableRow>
             </TableHeader>
 
@@ -225,15 +226,25 @@ export function InstituteStudentsList({
                       onCheckedChange={c => handleStudentSelect(student.id, c)}
                     />
                   </TableCell>
-                  <TableCell>{student.name ?? 'Unknown'}</TableCell>
-                  <TableCell>{student.email}</TableCell>
-                  <TableCell>{student.studentId}</TableCell>
                   <TableCell>
-                    <Badge variant="outline">{student.department ?? 'N/A'}</Badge>
+                    <div className="flex flex-col">
+                      <span className="font-medium uppercase leading-tight">
+                        {student.name || `Student ${student.studentId.slice(-3)}`}
+                      </span>
+                      <span className="text-xs text-muted-foreground">{student.email}</span>
+                    </div>
                   </TableCell>
-                  <TableCell>{(student.averageCgpa ?? 0).toFixed(2)}</TableCell>
+                  <TableCell className="text-muted-foreground whitespace-nowrap">
+                    {student.studentId || '—'}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground whitespace-nowrap">
+                    {student.department || '—'}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground whitespace-nowrap">
+                    {student.courseYear || '—'}
+                  </TableCell>
                   <TableCell>
-                    <Badge variant={student.isActive ? 'default' : 'secondary'}>
+                    <Badge variant={student.isActive ? 'default' : 'secondary'} className="font-normal">
                       {student.isActive ? 'Active' : 'Inactive'}
                     </Badge>
                   </TableCell>
@@ -242,15 +253,12 @@ export function InstituteStudentsList({
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button size="icon" variant="ghost">
-                            <MoreHorizontal />
+                            <MoreHorizontal className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent>
-                          <DropdownMenuItem>View</DropdownMenuItem>
-                          <DropdownMenuItem>Edit</DropdownMenuItem>
-                          <DropdownMenuItem className="text-destructive">
-                            Deactivate
-                          </DropdownMenuItem>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem>View Profile</DropdownMenuItem>
+                          <DropdownMenuItem>Edit Details</DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>
@@ -264,9 +272,9 @@ export function InstituteStudentsList({
 
       {/* Pagination Footer */}
       {!loading && (
-        <div className="p-4 border-t flex justify-between items-center">
-          <span className="text-xs text-muted-foreground">
-            Page {pagination.page} of {totalPages} ({pagination.total} total)
+        <div className="p-4 border-t flex justify-between items-center bg-background/50">
+          <span className="text-xs text-muted-foreground font-medium">
+            Showing {displayStudents.length} of {pagination.total} students (Page {pagination.page} of {totalPages})
           </span>
 
           <Pagination className="w-auto mx-0">
@@ -274,25 +282,31 @@ export function InstituteStudentsList({
               <PaginationItem>
                 <PaginationPrevious
                   className={pagination.page <= 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                  onClick={() =>
-                    pagination.page > 1 &&
-                    onPaginationChange({
-                      ...pagination,
-                      page: pagination.page - 1,
-                    })
-                  }
+                  onClick={() => pagination.page > 1 && onPaginationChange({ ...pagination, page: pagination.page - 1 })}
                 />
               </PaginationItem>
+              
+              {/* Show limited page numbers */}
+              {[...Array(Math.min(totalPages, 5))].map((_, i) => {
+                const pageNum = i + 1;
+                return (
+                    <PaginationItem key={pageNum}>
+                        <Button 
+                            variant={pagination.page === pageNum ? "outline" : "ghost"} 
+                            size="sm"
+                            className="h-8 w-8 p-0"
+                            onClick={() => onPaginationChange({ ...pagination, page: pageNum })}
+                        >
+                            {pageNum}
+                        </Button>
+                    </PaginationItem>
+                )
+              })}
+
               <PaginationItem>
                 <PaginationNext
                   className={pagination.page >= totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                  onClick={() =>
-                    pagination.page < totalPages &&
-                    onPaginationChange({
-                      ...pagination,
-                      page: pagination.page + 1,
-                    })
-                  }
+                  onClick={() => pagination.page < totalPages && onPaginationChange({ ...pagination, page: pagination.page + 1 })}
                 />
               </PaginationItem>
             </PaginationContent>
