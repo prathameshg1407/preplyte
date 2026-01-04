@@ -188,7 +188,7 @@ class AptitudeService {
 
   /**
    * Get time limits configuration
-   * GET /api/config/time-limits
+   * GET /api/practice/config/time-limits
    */
   async getTimeLimits(): Promise<ApiResponse<TimeLimitsResponse>> {
     const response = await apiClient.get(API_ENDPOINTS.COMMON.TIME_LIMITS);
@@ -197,7 +197,7 @@ class AptitudeService {
 
   /**
    * Get difficulty levels
-   * GET /api/enums/difficulty-levels
+   * GET /api/practice/enums/difficulty-levels
    */
   async getDifficultyLevels(): Promise<ApiResponse<DifficultyLevelsResponse>> {
     const response = await apiClient.get(API_ENDPOINTS.COMMON.DIFFICULTY_LEVELS);
@@ -206,10 +206,10 @@ class AptitudeService {
 
   /**
    * Get question types
-   * GET /api/enums/question-types
+   * GET /api/practice/enums/question-types
    */
   async getQuestionTypes(): Promise<ApiResponse<QuestionTypesResponse>> {
-    const response = await apiClient.get(`/api/enums/question-types`);
+    const response = await apiClient.get(API_ENDPOINTS.COMMON.QUESTION_TYPES);
     return response.data;
   }
 }

@@ -54,11 +54,10 @@ export function useAuth(options: UseAuthOptions = {}) {
   const store = useAuthStore();
   const { enableRedirectParam = false } = options;
 
-  // Only call useSearchParams when explicitly enabled
-  // This hook will be called conditionally, but it's okay because
-  // the option is static per component instance
-  const searchParams = enableRedirectParam ? useSearchParams() : null;
-  const redirectParam = searchParams?.get('redirect') ?? null;
+  // Always call useSearchParams to maintain hook order
+  // Only use the value if enableRedirectParam is true
+  const searchParams = useSearchParams();
+  const redirectParam = enableRedirectParam ? (searchParams?.get('redirect') ?? null) : null;
 
   const login = useCallback(
     async (credentials: LoginCredentials): Promise<boolean> => {

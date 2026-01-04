@@ -8,5 +8,8 @@ router.use(authenticate);
 
 router.get('/difficulty-levels', enumsController.getDifficultyLevels.bind(enumsController));
 router.get('/question-types', enumsController.getQuestionTypes.bind(enumsController));
+router.get('/ai-interview-difficulties', enumsController.getAiInterviewDifficulties.bind(enumsController));
+router.get('/module-types', enumsController.getModuleTypes.bind(enumsController));
+router.get('/mock-drive-statuses', enumsController.getMockDriveStatuses.bind(enumsController));
 
 export default router;
