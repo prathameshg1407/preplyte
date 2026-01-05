@@ -141,7 +141,6 @@ export const COURSE_YEARS = [
   '2nd Year',
   '3rd Year',
   '4th Year',
-  '5th Year',
 ] as const;
 
 export type Department = (typeof DEPARTMENTS)[number];
