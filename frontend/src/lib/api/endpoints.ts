@@ -56,47 +56,48 @@ export const API_ENDPOINTS = {
   // Aptitude Practice
   // ============================================
   APTITUDE: {
-    SESSIONS: '/api/aptitude/sessions',
-    SESSION: (id: string) => `/api/aptitude/sessions/${id}` as const,
-    QUESTIONS: (id: string) => `/api/aptitude/sessions/${id}/questions` as const,
+    SESSIONS: '/api/practice/aptitude/sessions',
+    SESSION: (id: string) => `/api/practice/aptitude/sessions/${id}` as const,
+    QUESTIONS: (id: string) => `/api/practice/aptitude/sessions/${id}/questions` as const,
     QUESTION: (sessionId: string, questionId: string) =>
-      `/api/aptitude/sessions/${sessionId}/questions/${questionId}` as const,
-    ANSWER: (id: string) => `/api/aptitude/sessions/${id}/answer` as const,
-    SUBMIT: (id: string) => `/api/aptitude/sessions/${id}/submit` as const,
-    STATUS: (id: string) => `/api/aptitude/sessions/${id}/status` as const,
-    RESULTS: (id: string) => `/api/aptitude/sessions/${id}/results` as const,
-    SOLUTIONS: (id: string) => `/api/aptitude/sessions/${id}/solutions` as const,
+      `/api/practice/aptitude/sessions/${sessionId}/questions/${questionId}` as const,
+    ANSWER: (id: string) => `/api/practice/aptitude/sessions/${id}/answer` as const,
+    SUBMIT: (id: string) => `/api/practice/aptitude/sessions/${id}/submit` as const,
+    STATUS: (id: string) => `/api/practice/aptitude/sessions/${id}/status` as const,
+    RESULTS: (id: string) => `/api/practice/aptitude/sessions/${id}/results` as const,
+    SOLUTIONS: (id: string) => `/api/practice/aptitude/sessions/${id}/solutions` as const,
   },
 
   // ============================================
   // Machine Coding Practice
   // ============================================
   MACHINE: {
-    SESSIONS: '/api/machine/sessions',
-    SESSION: (id: string) => `/api/machine/sessions/${id}` as const,
-    QUESTIONS: (id: string) => `/api/machine/sessions/${id}/questions` as const,
+    SESSIONS: '/api/practice/machine/sessions',
+    SESSION: (id: string) => `/api/practice/machine/sessions/${id}` as const,
+    QUESTIONS: (id: string) => `/api/practice/machine/sessions/${id}/questions` as const,
     QUESTION: (sessionId: string, questionId: string) =>
-      `/api/machine/sessions/${sessionId}/questions/${questionId}` as const,
+      `/api/practice/machine/sessions/${sessionId}/questions/${questionId}` as const,
     RUN: (sessionId: string, questionId: string) =>
-      `/api/machine/sessions/${sessionId}/questions/${questionId}/run` as const,
+      `/api/practice/machine/sessions/${sessionId}/questions/${questionId}/run` as const,
     SUBMIT: (sessionId: string, questionId: string) =>
-      `/api/machine/sessions/${sessionId}/questions/${questionId}/submit` as const,
-    COMPLETE: (id: string) => `/api/machine/sessions/${id}/complete` as const,
-    RESULTS: (id: string) => `/api/machine/sessions/${id}/results` as const,
+      `/api/practice/machine/sessions/${sessionId}/questions/${questionId}/submit` as const,
+    COMPLETE: (id: string) => `/api/practice/machine/sessions/${id}/complete` as const,
+    RESULTS: (id: string) => `/api/practice/machine/sessions/${id}/results` as const,
   },
 
   // ============================================
   // AI Interview Practice
   // ============================================
   INTERVIEW: {
-    START: '/api/ai-interview/start',
-    SESSIONS: '/api/ai-interview/sessions',
-    STATS: '/api/ai-interview/stats',
-    SESSION: (id: string) => `/api/ai-interview/${id}` as const,
-    RESPOND: (id: string) => `/api/ai-interview/${id}/respond` as const,
-    END: (id: string) => `/api/ai-interview/${id}/end` as const,
-    FEEDBACK: (id: string) => `/api/ai-interview/${id}/feedback` as const,
-    DELETE: (id: string) => `/api/ai-interview/${id}` as const,
+    SESSIONS: '/api/practice/interview/sessions',
+    SESSION: (id: string) => `/api/practice/interview/sessions/${id}` as const,
+    SESSION_DETAIL: (id: string) => `/api/practice/interview/sessions/${id}/detail` as const,
+    START: (id: string) => `/api/practice/interview/sessions/${id}/start` as const,
+    CANCEL: (id: string) => `/api/practice/interview/sessions/${id}/cancel` as const,
+    END: (id: string) => `/api/practice/interview/sessions/${id}/end` as const,
+    RESPOND: (id: string) => `/api/practice/interview/sessions/${id}/respond` as const,
+    FEEDBACK: (id: string) => `/api/practice/interview/sessions/${id}/feedback` as const,
+    REGENERATE_FEEDBACK: (id: string) => `/api/practice/interview/sessions/${id}/feedback/regenerate` as const,
   },
 
   // ============================================
@@ -245,13 +246,13 @@ export const API_ENDPOINTS = {
   // Common / Config
   // ============================================
   COMMON: {
-    LANGUAGES: '/api/languages',
-    TIME_LIMITS: '/api/config/time-limits',
-    DIFFICULTY_LEVELS: '/api/enums/difficulty-levels',
-    QUESTION_TYPES: '/api/enums/question-types',
-    AI_INTERVIEW_DIFFICULTIES: '/api/enums/ai-interview-difficulties',
-    MODULE_TYPES: '/api/enums/module-types',
-    MOCK_DRIVE_STATUSES: '/api/enums/mock-drive-statuses',
+    LANGUAGES: '/api/practice/languages',
+    TIME_LIMITS: '/api/practice/config/time-limits',
+    DIFFICULTY_LEVELS: '/api/practice/enums/difficulty-levels',
+    QUESTION_TYPES: '/api/practice/enums/question-types',
+    AI_INTERVIEW_DIFFICULTIES: '/api/practice/enums/ai-interview-difficulties',
+    MODULE_TYPES: '/api/practice/enums/module-types',
+    MOCK_DRIVE_STATUSES: '/api/practice/enums/mock-drive-statuses',
   },
 } as const;
 
@@ -451,12 +452,14 @@ export const EndpointBuilders = {
   },
 
   interview: {
-    start: () => buildUrl(API_ENDPOINTS.INTERVIEW.START),
     sessions: () => buildUrl(API_ENDPOINTS.INTERVIEW.SESSIONS),
-    stats: () => buildUrl(API_ENDPOINTS.INTERVIEW.STATS),
     session: (id: string) => buildUrl(API_ENDPOINTS.INTERVIEW.SESSION(id)),
-    respond: (id: string) => buildUrl(API_ENDPOINTS.INTERVIEW.RESPOND(id)),
+    sessionDetail: (id: string) => buildUrl(API_ENDPOINTS.INTERVIEW.SESSION_DETAIL(id)),
+    start: (id: string) => buildUrl(API_ENDPOINTS.INTERVIEW.START(id)),
+    cancel: (id: string) => buildUrl(API_ENDPOINTS.INTERVIEW.CANCEL(id)),
     end: (id: string) => buildUrl(API_ENDPOINTS.INTERVIEW.END(id)),
+    respond: (id: string) => buildUrl(API_ENDPOINTS.INTERVIEW.RESPOND(id)),
     feedback: (id: string) => buildUrl(API_ENDPOINTS.INTERVIEW.FEEDBACK(id)),
+    regenerateFeedback: (id: string) => buildUrl(API_ENDPOINTS.INTERVIEW.REGENERATE_FEEDBACK(id)),
   },
 } as const;
