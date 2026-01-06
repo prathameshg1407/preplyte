@@ -136,7 +136,7 @@ export function StudentProfileCard() {
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-background">
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </div>
-          <div>
+          <div className="flex-1">
             <p className="text-xs text-muted-foreground">Number of Backlogs</p>
             <p className={cn(
               "font-medium text-sm",
@@ -147,6 +147,9 @@ export function StudentProfileCard() {
                 : "text-rose-600 dark:text-rose-400"
             )}>
               {studentProfile.numberOfBacklogs ?? 0}
+              {(studentProfile.numberOfBacklogs ?? 0) === 0 && (
+                <span className="ml-1 text-xs text-emerald-600 dark:text-emerald-400">✓</span>
+              )}
             </p>
           </div>
         </div>
