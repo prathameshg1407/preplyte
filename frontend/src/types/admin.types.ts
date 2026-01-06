@@ -77,6 +77,7 @@ export interface UserProfile {
   studentId: string;
   department: string;
   courseYear: string;
+  numberOfBacklogs: number;
   averageCgpa: number | null;
   skills: string[];
 }

@@ -162,6 +162,7 @@ class ProfileService {
         studentId: input.studentId,
         department: input.department,
         courseYear: input.courseYear,
+        numberOfBacklogs: input.numberOfBacklogs || 0,
         skills: input.skills || [],
         marks10: input.marks10,
         marks12: input.marks12,

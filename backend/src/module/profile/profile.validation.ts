@@ -45,6 +45,14 @@ export const createStudentProfileSchema = z.object({
     errorMap: () => ({ message: 'Invalid course year' }),
   }),
 
+  numberOfBacklogs: z
+    .number()
+    .int('backlogs must be a whole number')
+    .min(0, 'backlogs cannot be negative')
+    .max(50, 'backlogs cannot exceed 50')
+    .optional()
+    .default(0),
+
   skills: z
     .array(z.string().min(1).max(50).trim())
     .max(20, 'Maximum 20 skills allowed')
@@ -93,6 +101,13 @@ export const updateStudentProfileSchema = z.object({
     .enum(COURSE_YEARS as unknown as [string, ...string[]], {
       errorMap: () => ({ message: 'Invalid course year' }),
     })
+    .optional(),
+
+  numberOfBacklogs: z
+    .number()
+    .int('backlogs must be a whole number')
+    .min(0, 'backlogs cannot be negative')
+    .max(50, 'backlogs cannot exceed 50')
     .optional(),
 
   skills: z

@@ -255,7 +255,7 @@
       "minMarks10": 60.0,
       "minMarks12": 60.0,
       "allowedDepartments": ["Computer Engineering", "Information Technology", "Electronics and Telecommunication"],
-      "allowedCourseYears": ["Third Year", "Final Year"],
+      "allowedCourseYears": ["Third Year", "Fourth Year"],
       "requiredSkills": [],
       "maxBacklogs": 0,
       "customRules": null
@@ -268,7 +268,7 @@
       "minMarks10": 55.0,
       "minMarks12": 55.0,
       "allowedDepartments": [],
-      "allowedCourseYears": ["Final Year"],
+      "allowedCourseYears": ["Fourth Year"],
       "requiredSkills": ["Java", "Python"],
       "maxBacklogs": 1,
       "customRules": null
@@ -281,7 +281,7 @@
       "minMarks10": 65.0,
       "minMarks12": 60.0,
       "allowedDepartments": ["Computer Engineering", "Information Technology"],
-      "allowedCourseYears": ["Third Year", "Final Year"],
+      "allowedCourseYears": ["Third Year", "Fourth Year"],
       "requiredSkills": [],
       "maxBacklogs": 0,
       "customRules": {
@@ -315,7 +315,7 @@
       "minMarks10": 75.0,
       "minMarks12": 75.0,
       "allowedDepartments": ["Computer Engineering"],
-      "allowedCourseYears": ["Final Year"],
+      "allowedCourseYears": ["Fourth Year"],
       "requiredSkills": ["Data Structures", "Algorithms", "System Design"],
       "maxBacklogs": 0,
       "customRules": null
@@ -354,7 +354,7 @@
       "minMarks10": null,
       "minMarks12": null,
       "allowedDepartments": [],
-      "allowedCourseYears": ["Third Year", "Final Year"],
+      "allowedCourseYears": ["Third Year", "Fourth Year"],
       "requiredSkills": [],
       "maxBacklogs": null,
       "customRules": null
@@ -802,7 +802,7 @@
           {"criterion": "minMarks10", "passed": true, "details": "10th: 85% >= 60%"},
           {"criterion": "minMarks12", "passed": true, "details": "12th: 80% >= 60%"},
           {"criterion": "department", "passed": true, "details": "Computer Engineering is allowed"},
-          {"criterion": "courseYear", "passed": true, "details": "Final Year is allowed"},
+          {"criterion": "courseYear", "passed": true, "details": "Fourth Year is allowed"},
           {"criterion": "backlogs", "passed": true, "details": "0 backlogs <= 0 allowed"}
         ]
       },
@@ -824,7 +824,7 @@
           {"criterion": "minMarks10", "passed": true, "details": "10th: 78% >= 60%"},
           {"criterion": "minMarks12", "passed": true, "details": "12th: 75% >= 60%"},
           {"criterion": "department", "passed": true, "details": "Computer Engineering is allowed"},
-          {"criterion": "courseYear", "passed": true, "details": "Final Year is allowed"},
+          {"criterion": "courseYear", "passed": true, "details": "Fourth Year is allowed"},
           {"criterion": "backlogs", "passed": true, "details": "0 backlogs <= 0 allowed"}
         ]
       },
@@ -846,7 +846,7 @@
           {"criterion": "minMarks10", "passed": true, "details": "10th: 72% >= 60%"},
           {"criterion": "minMarks12", "passed": true, "details": "12th: 68% >= 60%"},
           {"criterion": "department", "passed": true, "details": "Information Technology is allowed"},
-          {"criterion": "courseYear", "passed": true, "details": "Final Year is allowed"},
+          {"criterion": "courseYear", "passed": true, "details": "Fourth Year is allowed"},
           {"criterion": "backlogs", "passed": true, "details": "0 backlogs <= 0 allowed"}
         ]
       },
@@ -868,7 +868,7 @@
           {"criterion": "minMarks10", "passed": true, "details": "10th: 65% >= 60%"},
           {"criterion": "minMarks12", "passed": true, "details": "12th: 62% >= 60%"},
           {"criterion": "department", "passed": true, "details": "Computer Engineering is allowed"},
-          {"criterion": "courseYear", "passed": true, "details": "Final Year is allowed"},
+          {"criterion": "courseYear", "passed": true, "details": "Fourth Year is allowed"},
           {"criterion": "backlogs", "passed": true, "details": "0 backlogs <= 0 allowed"}
         ]
       },
@@ -890,7 +890,7 @@
           {"criterion": "minMarks10", "passed": true, "details": "10th: 92% >= 60%"},
           {"criterion": "minMarks12", "passed": true, "details": "12th: 88% >= 60%"},
           {"criterion": "department", "passed": true, "details": "Computer Engineering is allowed"},
-          {"criterion": "courseYear", "passed": true, "details": "Final Year is allowed"},
+          {"criterion": "courseYear", "passed": true, "details": "Fourth Year is allowed"},
           {"criterion": "backlogs", "passed": true, "details": "0 backlogs <= 0 allowed"}
         ]
       },
@@ -912,7 +912,7 @@
           {"criterion": "minMarks10", "passed": true, "details": "10th: 75% >= 60%"},
           {"criterion": "minMarks12", "passed": true, "details": "12th: 70% >= 60%"},
           {"criterion": "department", "passed": true, "details": "Electronics and Telecommunication is allowed"},
-          {"criterion": "courseYear", "passed": true, "details": "Final Year is allowed"},
+          {"criterion": "courseYear", "passed": true, "details": "Fourth Year is allowed"},
           {"criterion": "backlogs", "passed": true, "details": "0 backlogs <= 0 allowed"}
         ]
       },
@@ -1083,7 +1083,7 @@
       "mockDriveId": "md_010_interview_only",
       "userEmail": "vu1f2223001@pvppcoe.ac.in",
       "status": "APPROVED",
-      "eligibilityCheckResult": {"isEligible": true, "checks": [{"criterion": "courseYear", "passed": true, "details": "Final Year is allowed"}]},
+      "eligibilityCheckResult": {"isEligible": true, "checks": [{"criterion": "courseYear", "passed": true, "details": "Fourth Year is allowed"}]},
       "adminNotes": null,
       "batchId": "batch_010_a",
       "registeredAt": "2024-03-11T10:00:00.000Z",

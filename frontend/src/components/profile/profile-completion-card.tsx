@@ -32,6 +32,7 @@ const fieldConfig: Record<string, { label: string; icon: React.ElementType; link
   studentId: { label: 'Student ID', icon: Target, link: '/profile/student/edit' },
   department: { label: 'Department', icon: GraduationCap, link: '/profile/student/edit' },
   courseYear: { label: 'Course Year', icon: GraduationCap, link: '/profile/student/edit' },
+  numberOfBacklogs: { label: 'Number of Backlogs', icon: Target, link: '/profile/student/edit' },
   skills: { label: 'Skills', icon: Briefcase, link: '/profile/student/edit' },
   marks10: { label: '10th Marks', icon: Target, link: '/profile/student/edit' },
   marks12: { label: '12th Marks', icon: Target, link: '/profile/student/edit' },
