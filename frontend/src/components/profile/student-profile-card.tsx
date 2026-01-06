@@ -131,6 +131,26 @@ export function StudentProfileCard() {
           </div>
         </div>
 
+        {/* Backlogs Info */}
+        <div className="flex items-center gap-3 rounded-lg bg-muted/50 p-3">
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-background">
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground">Number of Backlogs</p>
+            <p className={cn(
+              "font-medium text-sm",
+              (studentProfile.numberOfBacklogs ?? 0) === 0 
+                ? "text-emerald-600 dark:text-emerald-400" 
+                : (studentProfile.numberOfBacklogs ?? 0) <= 2 
+                ? "text-amber-600 dark:text-amber-400" 
+                : "text-rose-600 dark:text-rose-400"
+            )}>
+              {studentProfile.numberOfBacklogs ?? 0}
+            </p>
+          </div>
+        </div>
+
         {/* Academic Performance */}
         <div className="space-y-3">
           <div className="flex items-center gap-2">
