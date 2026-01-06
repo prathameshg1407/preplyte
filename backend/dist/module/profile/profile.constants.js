@@ -35,7 +35,6 @@ exports.COURSE_YEARS = [
     '2nd Year',
     '3rd Year',
     '4th Year',
-    '5th Year',
 ];
 exports.DEPARTMENTS = [
     'Computer Science',

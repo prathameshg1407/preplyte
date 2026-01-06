@@ -45,6 +45,7 @@ export interface StudentProfileResponse {
   studentId: string;
   department: string;
   courseYear: string;
+  numberOfBacklogs: number;
   skills: string[];
   marks10: number | null;
   marks12: number | null;
@@ -61,6 +62,7 @@ export interface CreateStudentProfileInput {
   studentId: string;
   department: string;
   courseYear: string;
+  numberOfBacklogs?: number;
   skills?: string[];
   marks10?: number;
   marks12?: number;
@@ -71,6 +73,7 @@ export interface UpdateStudentProfileInput {
   fullName?: string;
   department?: string;
   courseYear?: string;
+  numberOfBacklogs?: number;
   skills?: string[];
   marks10?: number;
   marks12?: number;
@@ -141,6 +144,7 @@ export const mapStudentProfileToResponse = (
   studentId: profile.studentId,
   department: profile.department,
   courseYear: profile.courseYear,
+  numberOfBacklogs: profile.numberOfBacklogs,
   skills: profile.skills,
   marks10: profile.marks10,
   marks12: profile.marks12,

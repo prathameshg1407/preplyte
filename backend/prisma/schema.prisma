@@ -10,7 +10,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+  url=env("DATABASE_URL")
 }
 
 // =====================================================
@@ -247,6 +247,7 @@ model StudentProfile {
 
   department String
   courseYear String
+  numberOfBacklogs Int @default(0)
 
   marks10       Float?
   marks12       Float?
@@ -263,6 +264,7 @@ model StudentProfile {
   @@index([courseYear])
   @@index([averageCgpa])
   @@index([department, courseYear])
+  @@index([numberOfBacklogs])
   @@map("student_profiles")
 }
 

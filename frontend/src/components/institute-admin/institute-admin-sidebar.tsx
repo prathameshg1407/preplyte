@@ -29,9 +29,9 @@ import {
 const navigation = [
   { name: 'Dashboard', href: '/institute', icon: LayoutDashboard },
   { name: 'Mock Drives', href: '/institute-admin/mock-drives', icon: FileText },
-  { name: 'Students', href: '/institute/students', icon: Users },
-  { name: 'Analytics', href: '/institute/analytics', icon: BarChart3 },
-  { name: 'Settings', href: '/institute/settings', icon: Settings },
+  { name: 'Students', href: '/institute-admin/students', icon: Users },
+  { name: 'Analytics', href: '/institute-admin/analytics', icon: BarChart3 },
+  { name: 'Settings', href: '/institute-admin/settings', icon: Settings },
 ];
 
 export function InstituteAdminSidebar() {

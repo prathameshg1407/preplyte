@@ -16,3 +16,20 @@
 // }
 
 // export {};
+
+
+import { Request } from 'express';
+
+declare global {
+  namespace Express {
+    interface Request {
+      instituteAdmin?: {
+        userId: string;
+        instituteId: string;
+        role: string;
+      };
+    }
+  }
+}
+
+export {};

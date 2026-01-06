@@ -39,6 +39,14 @@ export const createStudentProfileSchema = z.object({
     errorMap: () => ({ message: 'Please select a valid course year' }),
   }),
 
+  numberOfBacklogs: z
+    .number()
+    .int('backlogs must be a whole number')
+    .min(0, 'backlogs cannot be negative')
+    .max(50, 'backlogs cannot exceed 50')
+    .optional()
+    .default(0),
+
   skills: z
     .array(z.string().min(1).max(50))
     .max(20, 'Maximum 20 skills allowed')

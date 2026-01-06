@@ -517,7 +517,6 @@ export const COURSE_YEAR_OPTIONS = [
   '2nd Year',
   '3rd Year',
   '4th Year',
-  'Final Year',
   'Post Graduate',
 ] as const;
 

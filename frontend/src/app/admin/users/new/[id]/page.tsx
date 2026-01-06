@@ -159,6 +159,10 @@ export default function UserDetailPage() {
                   <dd className="font-medium mt-0.5">{user.profile.courseYear || '—'}</dd>
                 </div>
                 <div>
+                  <dt className="text-muted-foreground">Backlogs</dt>
+                  <dd className="font-medium mt-0.5">{user.profile.numberOfBacklogs ?? '—'}</dd>
+                </div>
+                <div>
                   <dt className="text-muted-foreground">CGPA</dt>
                   <dd className="font-medium mt-0.5">
                     {user.profile.averageCgpa?.toFixed(2) || '—'}

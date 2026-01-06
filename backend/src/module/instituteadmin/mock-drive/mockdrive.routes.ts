@@ -9,12 +9,19 @@ import { registrationController } from './registration/registration.controller';
 import { analyticsController } from './analytics/analytics.controller';
 import { resultsController } from './results/results.controller';
 import { authenticate, authorize } from '../../../middleware/auth.middleware';
+import studentsRoutes from '../students/students.routes';
 
 const router = Router();
 
 // All routes require authentication and institute admin role
 router.use(authenticate);
 router.use(authorize('INSTITUTE_ADMIN'));
+
+// ============================================
+// Students (mounted before mock-drive routes to avoid conflicts)
+// ============================================
+
+router.use('/students', studentsRoutes);
 
 // ============================================
 // Mock Drive CRUD
