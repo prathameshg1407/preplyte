@@ -74,6 +74,7 @@ export function StudentProfileForm({ mode, onSuccess }: StudentProfileFormProps)
       studentId: '',
       department: undefined,
       courseYear: undefined,
+      numberOfBacklogs: 0,
       skills: [],
       marks10: undefined,
       marks12: undefined,
@@ -90,6 +91,7 @@ export function StudentProfileForm({ mode, onSuccess }: StudentProfileFormProps)
         studentId: studentProfile.studentId,
         department: studentProfile.department as any,
         courseYear: studentProfile.courseYear as any,
+        numberOfBacklogs: studentProfile.numberOfBacklogs,
         skills: studentProfile.skills,
         marks10: studentProfile.marks10 ?? undefined,
         marks12: studentProfile.marks12 ?? undefined,
@@ -443,6 +445,40 @@ export function StudentProfileForm({ mode, onSuccess }: StudentProfileFormProps)
                       </motion.p>
                     )}
                   </div>
+                </div>
+
+                {/* Number of Backlogs */}
+                <div className="space-y-2">
+                  <Label htmlFor="numberOfBacklogs">
+                    Backlogs
+                  </Label>
+                  <div className="relative max-w-xs">
+                    <Input
+                      id="numberOfBacklogs"
+                      type="number"
+                      min="0"
+                      max="50"
+                      placeholder="0"
+                      {...register('numberOfBacklogs', { valueAsNumber: true })}
+                      disabled={isUpdating}
+                      className={cn(
+                        '[&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]',
+                        errors.numberOfBacklogs && 'border-destructive focus-visible:ring-destructive'
+                      )}
+                    />
+                  </div>
+                  {errors.numberOfBacklogs && (
+                    <motion.p
+                      initial={{ opacity: 0, y: -5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="text-sm text-destructive"
+                    >
+                      {errors.numberOfBacklogs.message}
+                    </motion.p>
+                  )}
+                  <p className="text-xs text-muted-foreground">
+                    Enter the total number of subjects you have backlogs in
+                  </p>
                 </div>
               </motion.div>
             )}
