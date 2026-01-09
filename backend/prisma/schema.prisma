@@ -9,8 +9,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url=env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 // =====================================================
@@ -153,7 +154,7 @@ model User {
   refreshTokens    RefreshToken[]
   profile          StudentProfile?
   resumes          Resume[]
-  
+
   // Practice Sessions
   aptitudeSessions AptitudePracticeSession[]
   machineSessions  MachinePracticeSession[]
@@ -205,9 +206,10 @@ model Institute {
   updatedAt DateTime @updatedAt
 
   // Relations
-  users      User[]
-  profile    InstituteProfile?
-  mockDrives MockDrive[]
+  users       User[]
+  profile     InstituteProfile?
+  departments Department[]
+  mockDrives  MockDrive[]
 
   @@index([domain])
   @@index([isActive])
@@ -231,6 +233,32 @@ model InstituteProfile {
 }
 
 // =====================================================
+// DEPARTMENT (Institute-managed)
+// =====================================================
+
+model Department {
+  id          String  @id @default(cuid())
+  instituteId String
+  name        String
+  code        String? // Short code like "CSE", "ECE", "ME"
+  description String?
+  isActive    Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  institute Institute        @relation(fields: [instituteId], references: [id], onDelete: Cascade)
+  students  StudentProfile[]
+
+  @@unique([instituteId, name])
+  @@unique([instituteId, code])
+  @@index([instituteId])
+  @@index([instituteId, isActive])
+  @@map("departments")
+}
+
+// =====================================================
 // STUDENT PROFILE
 // =====================================================
 
@@ -245,8 +273,10 @@ model StudentProfile {
 
   skills String[]
 
-  department String
-  courseYear String
+  // Department relation (student selects from institute's departments)
+  departmentId String
+  courseYear   String
+
   numberOfBacklogs Int @default(0)
 
   marks10       Float?
@@ -257,13 +287,15 @@ model StudentProfile {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Relations
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  department Department @relation(fields: [departmentId], references: [id], onDelete: Restrict)
 
   @@index([studentId])
-  @@index([department])
+  @@index([departmentId])
   @@index([courseYear])
   @@index([averageCgpa])
-  @@index([department, courseYear])
+  @@index([departmentId, courseYear])
   @@index([numberOfBacklogs])
   @@map("student_profiles")
 }
@@ -545,7 +577,7 @@ model ProgrammingLanguage {
 // =====================================================
 
 model AiInterviewSession {
-  id       String @id @default(cuid())
+  id       String  @id @default(cuid())
   userId   String
   resumeId String?
 
@@ -720,10 +752,10 @@ model MockDriveEligibility {
   minMarks10 Float?
   minMarks12 Float?
 
-  // Filters (empty = all allowed)
-  allowedDepartments String[]
-  allowedCourseYears String[]
-  requiredSkills     String[] // Student must have at least one
+  // Department Filters (stores department IDs, empty = all allowed)
+  allowedDepartmentIds String[]
+  allowedCourseYears   String[]
+  requiredSkills       String[] // Student must have at least one
 
   // Backlogs
   maxBacklogs Int?
@@ -750,38 +782,10 @@ model MockDriveModule {
   moduleType  MockDriveModuleType
   order       Int
   name        String?
-  timeLimit   Int                 // in minutes
+  timeLimit   Int // in minutes
   weightage   Float               @default(100)
 
   // Module-specific configuration (JSON)
-  // ═══════════════════════════════════════════════════
-  // APTITUDE:
-  // {
-  //   difficulty: DifficultyLevel,
-  //   questionTypes: QuestionType[],
-  //   numberOfQuestions: number,
-  //   marksPerQuestion: number,
-  //   negativeMarking: number
-  // }
-  // ═══════════════════════════════════════════════════
-  // MACHINE_CODING:
-  // {
-  //   difficulty: DifficultyLevel,
-  //   numberOfQuestions: number,
-  //   allowedLanguages: string[],
-  //   partialScoring: boolean,
-  //   maxScorePerQuestion: number
-  // }
-  // ═══════════════════════════════════════════════════
-  // AI_INTERVIEW:
-  // {
-  //   difficulty: AiInterviewDifficulty,
-  //   jobTitle: string,
-  //   companyName?: string,
-  //   focusAreas: string[],
-  //   targetQuestions: number
-  // }
-  // ═══════════════════════════════════════════════════
   config Json
 
   passingScore Float?
@@ -804,7 +808,6 @@ model MockDriveModule {
 
 // =====================================================
 // MOCKDRIVE - PRE-SELECTED QUESTIONS
-// (Generated when MockDrive is published)
 // =====================================================
 
 model MockDriveModuleQuestion {
@@ -841,11 +844,6 @@ model MockDriveRegistration {
   userId      String
   status      MockDriveRegistrationStatus @default(PENDING)
 
-  // Eligibility check result (stored for audit)
-  // Structure: {
-  //   isEligible: boolean,
-  //   checks: Array<{ criterion: string, passed: boolean, details: string }>
-  // }
   eligibilityCheckResult Json?
 
   adminNotes String?
@@ -925,14 +923,12 @@ model MockDriveAttempt {
   startedAt   DateTime?
   completedAt DateTime?
 
-  // Scores (calculated after completion)
+  // Scores
   totalScore      Float?
   percentageScore Float?
   rank            Int?
   isPassed        Boolean?
 
-  // Module-wise summary (denormalized)
-  // Structure: Array<{ moduleId, moduleType, score, maxScore, percentage, passed }>
   moduleScoresSummary Json?
 
   // Proctoring
@@ -982,126 +978,6 @@ model MockDriveModuleAttempt {
   percentage Float?
   isPassed   Boolean?
 
-  // ═══════════════════════════════════════════════════════════════════════
-  // MODULE DATA (JSON) - Stores all attempt data
-  // ═══════════════════════════════════════════════════════════════════════
-  //
-  // APTITUDE:
-  // {
-  //   questions: Array<{
-  //     questionId: string,           // MockDriveModuleQuestion.id
-  //     aptitudeQuestionId: string,   // AptitudeQuestion.id
-  //     displayOrder: number,         // Shuffled order for this student
-  //     selectedOptionId: string | null,
-  //     isCorrect: boolean | null,
-  //     timeSpentSeconds: number,
-  //     answeredAt: string | null     // ISO datetime
-  //   }>,
-  //   summary: {
-  //     totalQuestions: number,
-  //     totalCorrect: number,
-  //     totalWrong: number,
-  //     totalUnanswered: number,
-  //     marksObtained: number,
-  //     negativeMarks: number,
-  //     finalScore: number,
-  //     maxScore: number
-  //   }
-  // }
-  //
-  // ═══════════════════════════════════════════════════════════════════════
-  //
-  // MACHINE_CODING:
-  // {
-  //   questions: Array<{
-  //     questionId: string,           // MockDriveModuleQuestion.id
-  //     machineQuestionId: string,    // MachineQuestion.id
-  //     displayOrder: number,
-  //     submissions: Array<{
-  //       id: string,
-  //       code: string,
-  //       languageId: number,
-  //       languageName: string,
-  //       status: SubmissionStatus,
-  //       testCasesPassed: number,
-  //       testCasesTotal: number,
-  //       executionTime: number | null,
-  //       memoryUsed: number | null,
-  //       stdout: string | null,
-  //       stderr: string | null,
-  //       compileError: string | null,
-  //       submittedAt: string         // ISO datetime
-  //     }>,
-  //     bestSubmissionId: string | null,
-  //     bestScore: number,
-  //     isSolved: boolean
-  //   }>,
-  //   summary: {
-  //     totalQuestions: number,
-  //     totalSolved: number,
-  //     totalPartial: number,
-  //     totalUnattempted: number,
-  //     totalScore: number,
-  //     maxScore: number
-  //   }
-  // }
-  //
-  // ═══════════════════════════════════════════════════════════════════════
-  //
-  // AI_INTERVIEW:
-  // {
-  //   config: {
-  //     resumeId: string,
-  //     resumeUrl: string,
-  //     jobTitle: string,
-  //     companyName: string | null,
-  //     difficulty: AiInterviewDifficulty,
-  //     focusAreas: string[],
-  //     targetQuestions: number
-  //   },
-  //   conversation: Array<{
-  //     id: string,
-  //     role: 'assistant' | 'user',
-  //     content: string,
-  //     timestamp: string             // ISO datetime
-  //   }>,
-  //   responses: Array<{
-  //     id: string,
-  //     questionIndex: number,
-  //     category: AiInterviewQuestionCategory,
-  //     question: string,
-  //     answer: string,
-  //     isFollowup: boolean,
-  //     scores: {
-  //       relevance: number,
-  //       clarity: number,
-  //       depth: number,
-  //       technicalAccuracy: number | null,
-  //       overall: number
-  //     },
-  //     feedback: string,
-  //     timeTakenSeconds: number,
-  //     answeredAt: string            // ISO datetime
-  //   }>,
-  //   summary: {
-  //     totalQuestions: number,
-  //     questionsAnswered: number,
-  //     overallScore: number,
-  //     maxScore: number,
-  //     categoryScores: {
-  //       INTRODUCTORY: { score: number, count: number },
-  //       TECHNICAL: { score: number, count: number },
-  //       BEHAVIORAL: { score: number, count: number },
-  //       SITUATIONAL: { score: number, count: number },
-  //       CLOSING: { score: number, count: number }
-  //     },
-  //     keyStrengths: string[],
-  //     areasForImprovement: string[],
-  //     overallFeedback: string
-  //   }
-  // }
-  //
-  // ═══════════════════════════════════════════════════════════════════════
   moduleData Json?
 
   isAutoSubmitted Boolean @default(false)
@@ -1137,23 +1013,6 @@ model MockDriveReport {
   strengths  String[]
   weaknesses String[]
 
-  // Module-wise detailed feedback (JSON)
-  // Structure: Array<{
-  //   moduleId: string,
-  //   moduleName: string,
-  //   moduleType: MockDriveModuleType,
-  //   score: number,
-  //   maxScore: number,
-  //   percentage: number,
-  //   rank?: number,
-  //   feedback: string,
-  //   detailedAnalysis: {
-  //     // APTITUDE: questionTypeWiseAnalysis, difficultyWiseAnalysis
-  //     // MACHINE_CODING: problemWiseAnalysis, languageUsed
-  //     // AI_INTERVIEW: categoryWiseScores, communicationScore
-  //   },
-  //   recommendations: string[]
-  // }>
   moduleFeedback Json
 
   percentile        Float?
@@ -1177,23 +1036,23 @@ model MockDriveReport {
 model MockDriveLeaderboard {
   id          String  @id @default(cuid())
   mockDriveId String
-  batchId     String? // Null = overall mockdrive leaderboard
+  batchId     String?
   userId      String
 
-  // Denormalized student info
-  studentName String
-  studentId   String?
-  department  String?
+  // Denormalized student info for quick display
+  studentName    String
+  studentId      String?
+  departmentId   String? // Reference for filtering
+  departmentName String? // Denormalized for display
+  departmentCode String? // Denormalized for display
 
   totalScore      Float
   percentageScore Float
   rank            Int
 
-  // Module-wise scores (JSON)
-  // Structure: Array<{ moduleId, moduleType, moduleName, score, maxScore, percentage }>
   moduleScores Json
 
-  totalTimeTaken Int? // seconds
+  totalTimeTaken Int?
   completedAt    DateTime?
 
   createdAt DateTime @default(now())
@@ -1208,6 +1067,7 @@ model MockDriveLeaderboard {
   @@index([mockDriveId, batchId])
   @@index([mockDriveId, rank])
   @@index([mockDriveId, batchId, rank])
+  @@index([mockDriveId, departmentId])
   @@index([userId])
   @@map("mock_drive_leaderboard")
 }

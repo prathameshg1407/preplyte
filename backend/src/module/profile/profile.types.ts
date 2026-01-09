@@ -1,13 +1,29 @@
 // src/module/profile/profile.types.ts
 
-import { Resume, StudentProfile, User } from '@prisma/client';
+import { Resume, StudentProfile, User, Department } from '@prisma/client';
+
+// =====================================================
+// DEPARTMENT TYPES
+// =====================================================
+
+export interface DepartmentResponse {
+  id: string;
+  name: string;
+  code: string | null;
+  description: string | null;
+}
+
+export interface DepartmentListResponse {
+  departments: DepartmentResponse[];
+  total: number;
+}
 
 // =====================================================
 // RESUME TYPES
 // =====================================================
 
 export interface ResumeResponse {
-  id: string;  // Changed from number to string
+  id: string;
   fileName: string;
   fileUrl: string;
   fileSize: number | null;
@@ -43,7 +59,9 @@ export interface StudentProfileResponse {
   userId: string;
   fullName: string;
   studentId: string;
-  department: string;
+  departmentId: string;
+  departmentName: string;
+  departmentCode: string | null;
   courseYear: string;
   numberOfBacklogs: number;
   skills: string[];
@@ -60,7 +78,7 @@ export interface StudentProfileResponse {
 export interface CreateStudentProfileInput {
   fullName: string;
   studentId: string;
-  department: string;
+  departmentId: string;
   courseYear: string;
   numberOfBacklogs?: number;
   skills?: string[];
@@ -71,7 +89,7 @@ export interface CreateStudentProfileInput {
 
 export interface UpdateStudentProfileInput {
   fullName?: string;
-  department?: string;
+  departmentId?: string;
   courseYear?: string;
   numberOfBacklogs?: number;
   skills?: string[];
@@ -112,6 +130,7 @@ export interface CompleteProfileResponse {
   studentProfile: StudentProfileResponse | null;
   resumes: ResumeResponse[];
   profileCompletion: ProfileCompletionStatus;
+  availableDepartments: DepartmentResponse[];
 }
 
 export interface ProfileCompletionStatus {
@@ -121,11 +140,26 @@ export interface ProfileCompletionStatus {
 }
 
 // =====================================================
+// EXTENDED PRISMA TYPES
+// =====================================================
+
+type StudentProfileWithDepartment = StudentProfile & {
+  department: Department;
+};
+
+// =====================================================
 // MAPPER FUNCTIONS
 // =====================================================
 
+export const mapDepartmentToResponse = (department: Department): DepartmentResponse => ({
+  id: department.id,
+  name: department.name,
+  code: department.code,
+  description: department.description,
+});
+
 export const mapResumeToResponse = (resume: Resume): ResumeResponse => ({
-  id: resume.id,  // Now correctly expects string
+  id: resume.id,
   fileName: resume.fileName,
   fileUrl: resume.fileUrl,
   fileSize: resume.fileSize,
@@ -136,13 +170,15 @@ export const mapResumeToResponse = (resume: Resume): ResumeResponse => ({
 });
 
 export const mapStudentProfileToResponse = (
-  profile: StudentProfile
+  profile: StudentProfileWithDepartment
 ): StudentProfileResponse => ({
   id: profile.id,
   userId: profile.userId,
   fullName: profile.fullName,
   studentId: profile.studentId,
-  department: profile.department,
+  departmentId: profile.departmentId,
+  departmentName: profile.department.name,
+  departmentCode: profile.department.code,
   courseYear: profile.courseYear,
   numberOfBacklogs: profile.numberOfBacklogs,
   skills: profile.skills,
@@ -159,7 +195,7 @@ export const mapStudentProfileToResponse = (
 export const mapUserToProfileResponse = (
   user: User & {
     institute?: { name: string } | null;
-    profile?: StudentProfile | null;
+    profile?: StudentProfileWithDepartment | null;
     resumes?: Resume[];
   }
 ): UserProfileResponse => ({

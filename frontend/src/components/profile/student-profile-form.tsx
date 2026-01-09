@@ -17,7 +17,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Progress } from '@/components/ui/progress';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   Loader2,
   User,
@@ -28,13 +29,15 @@ import {
   ChevronRight,
   Check,
   Sparkles,
+  AlertCircle,
+  Building2,
 } from 'lucide-react';
-import { useProfile } from '@/lib/hooks/use-profile';
+import { useProfile, useDepartments } from '@/lib/hooks/use-profile';
 import {
   createStudentProfileSchema,
   type CreateStudentProfileFormData,
 } from '@/lib/validations/profile.schema';
-import { DEPARTMENTS, COURSE_YEARS } from '@/types/profile.types';
+import { COURSE_YEARS } from '@/types/profile.types';
 import { cn } from '@/lib/utils';
 
 interface StudentProfileFormProps {
@@ -56,6 +59,8 @@ export function StudentProfileForm({ mode, onSuccess }: StudentProfileFormProps)
     isUpdating,
   } = useProfile();
 
+  const { departments, isLoading: isDepartmentsLoading, error: departmentsError } = useDepartments();
+
   const [currentStep, setCurrentStep] = useState(0);
   const [showSuccess, setShowSuccess] = useState(false);
 
@@ -65,14 +70,14 @@ export function StudentProfileForm({ mode, onSuccess }: StudentProfileFormProps)
     setValue,
     watch,
     trigger,
-    formState: { errors, dirtyFields },
+    formState: { errors },
     reset,
   } = useForm<CreateStudentProfileFormData>({
     resolver: zodResolver(createStudentProfileSchema),
     defaultValues: {
       fullName: '',
       studentId: '',
-      department: undefined,
+      departmentId: '',
       courseYear: undefined,
       numberOfBacklogs: 0,
       skills: [],
@@ -89,7 +94,7 @@ export function StudentProfileForm({ mode, onSuccess }: StudentProfileFormProps)
       reset({
         fullName: studentProfile.fullName,
         studentId: studentProfile.studentId,
-        department: studentProfile.department as any,
+        departmentId: studentProfile.departmentId,
         courseYear: studentProfile.courseYear as any,
         numberOfBacklogs: studentProfile.numberOfBacklogs,
         skills: studentProfile.skills,
@@ -105,11 +110,11 @@ export function StudentProfileForm({ mode, onSuccess }: StudentProfileFormProps)
   // Calculate completion percentage
   const calculateCompletion = () => {
     let filled = 0;
-    let total = 4; // Required fields
+    const total = 4; // Required fields
 
     if (watchedFields.fullName) filled++;
     if (watchedFields.studentId) filled++;
-    if (watchedFields.department) filled++;
+    if (watchedFields.departmentId) filled++;
     if (watchedFields.courseYear) filled++;
 
     return Math.round((filled / total) * 100);
@@ -122,7 +127,9 @@ export function StudentProfileForm({ mode, onSuccess }: StudentProfileFormProps)
       if (mode === 'create') {
         await createStudentProfile(data);
       } else {
-        await updateStudentProfile(data);
+        // Remove studentId from update data
+        const { studentId, ...updateData } = data;
+        await updateStudentProfile(updateData);
       }
       setShowSuccess(true);
       setTimeout(() => {
@@ -135,12 +142,13 @@ export function StudentProfileForm({ mode, onSuccess }: StudentProfileFormProps)
   };
 
   const nextStep = async () => {
-    const fieldsToValidate = currentStep === 0 
-      ? ['fullName', 'studentId'] 
-      : currentStep === 1 
-      ? ['department', 'courseYear'] 
-      : [];
-    
+    const fieldsToValidate =
+      currentStep === 0
+        ? ['fullName', 'studentId']
+        : currentStep === 1
+          ? ['departmentId', 'courseYear']
+          : [];
+
     const isValid = await trigger(fieldsToValidate as any);
     if (isValid && currentStep < STEPS.length - 1) {
       setCurrentStep(currentStep + 1);
@@ -152,6 +160,9 @@ export function StudentProfileForm({ mode, onSuccess }: StudentProfileFormProps)
       setCurrentStep(currentStep - 1);
     }
   };
+
+  // Get selected department name for display
+  const selectedDepartment = departments.find((d) => d.id === watchedFields.departmentId);
 
   return (
     <Card className="overflow-hidden">
@@ -341,9 +352,7 @@ export function StudentProfileForm({ mode, onSuccess }: StudentProfileFormProps)
                       </motion.p>
                     )}
                     {mode === 'edit' && (
-                      <p className="text-xs text-muted-foreground">
-                        Student ID cannot be changed
-                      </p>
+                      <p className="text-xs text-muted-foreground">Student ID cannot be changed</p>
                     )}
                   </div>
                 </div>
@@ -371,41 +380,76 @@ export function StudentProfileForm({ mode, onSuccess }: StudentProfileFormProps)
                   </div>
                 )}
 
+                {/* Department Error Alert */}
+                {departmentsError && (
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>
+                      Failed to load departments. Please refresh the page.
+                    </AlertDescription>
+                  </Alert>
+                )}
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* Department */}
                   <div className="space-y-2">
-                    <Label htmlFor="department" className="flex items-center gap-1">
+                    <Label htmlFor="departmentId" className="flex items-center gap-1">
                       Department
                       <span className="text-destructive">*</span>
                     </Label>
-                    <Select
-                      value={watch('department')}
-                      onValueChange={(value) => setValue('department', value as any, { shouldValidate: true })}
-                      disabled={isUpdating}
-                    >
-                      <SelectTrigger
-                        className={cn(
-                          errors.department && 'border-destructive focus:ring-destructive'
-                        )}
+                    {isDepartmentsLoading ? (
+                      <Skeleton className="h-10 w-full" />
+                    ) : (
+                      <Select
+                        value={watchedFields.departmentId}
+                        onValueChange={(value) =>
+                          setValue('departmentId', value, { shouldValidate: true })
+                        }
+                        disabled={isUpdating || departments.length === 0}
                       >
-                        <SelectValue placeholder="Select your department" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {DEPARTMENTS.map((dept) => (
-                          <SelectItem key={dept} value={dept}>
-                            {dept}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {errors.department && (
+                        <SelectTrigger
+                          className={cn(
+                            errors.departmentId && 'border-destructive focus:ring-destructive'
+                          )}
+                        >
+                          <div className="flex items-center gap-2">
+                            <Building2 className="h-4 w-4 text-muted-foreground" />
+                            <SelectValue placeholder="Select your department" />
+                          </div>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {departments.length === 0 ? (
+                            <div className="px-2 py-4 text-center text-sm text-muted-foreground">
+                              No departments available
+                            </div>
+                          ) : (
+                            departments.map((dept) => (
+                              <SelectItem key={dept.id} value={dept.id}>
+                                <div className="flex items-center gap-2">
+                                  {dept.code && (
+                                    <span className="font-medium text-primary">{dept.code}</span>
+                                  )}
+                                  <span>{dept.name}</span>
+                                </div>
+                              </SelectItem>
+                            ))
+                          )}
+                        </SelectContent>
+                      </Select>
+                    )}
+                    {errors.departmentId && (
                       <motion.p
                         initial={{ opacity: 0, y: -5 }}
                         animate={{ opacity: 1, y: 0 }}
                         className="text-sm text-destructive"
                       >
-                        {errors.department.message}
+                        {errors.departmentId.message}
                       </motion.p>
+                    )}
+                    {selectedDepartment?.description && (
+                      <p className="text-xs text-muted-foreground">
+                        {selectedDepartment.description}
+                      </p>
                     )}
                   </div>
 
@@ -416,8 +460,10 @@ export function StudentProfileForm({ mode, onSuccess }: StudentProfileFormProps)
                       <span className="text-destructive">*</span>
                     </Label>
                     <Select
-                      value={watch('courseYear')}
-                      onValueChange={(value) => setValue('courseYear', value as any, { shouldValidate: true })}
+                      value={watchedFields.courseYear}
+                      onValueChange={(value) =>
+                        setValue('courseYear', value as any, { shouldValidate: true })
+                      }
                       disabled={isUpdating}
                     >
                       <SelectTrigger
@@ -425,7 +471,10 @@ export function StudentProfileForm({ mode, onSuccess }: StudentProfileFormProps)
                           errors.courseYear && 'border-destructive focus:ring-destructive'
                         )}
                       >
-                        <SelectValue placeholder="Select your year" />
+                        <div className="flex items-center gap-2">
+                          <Calendar className="h-4 w-4 text-muted-foreground" />
+                          <SelectValue placeholder="Select your year" />
+                        </div>
                       </SelectTrigger>
                       <SelectContent>
                         {COURSE_YEARS.map((year) => (
@@ -449,9 +498,7 @@ export function StudentProfileForm({ mode, onSuccess }: StudentProfileFormProps)
 
                 {/* Number of Backlogs */}
                 <div className="space-y-2">
-                  <Label htmlFor="numberOfBacklogs">
-                    Backlogs
-                  </Label>
+                  <Label htmlFor="numberOfBacklogs">Number of Backlogs</Label>
                   <div className="relative max-w-xs">
                     <Input
                       id="numberOfBacklogs"

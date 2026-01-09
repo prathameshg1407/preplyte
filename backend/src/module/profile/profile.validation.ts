@@ -6,7 +6,6 @@ import {
   ALLOWED_RESUME_MIME_TYPES,
   STUDENT_ID_PATTERN,
   COURSE_YEARS,
-  DEPARTMENTS,
 } from './profile.constants';
 import { BadRequestError } from '../../utils/errors';
 
@@ -15,10 +14,7 @@ import { BadRequestError } from '../../utils/errors';
 // =====================================================
 
 export const resumeIdParamSchema = z.object({
-  resumeId: z.coerce
-    .number()
-    .int('Resume ID must be an integer')
-    .positive('Resume ID must be positive'),
+  resumeId: z.string().min(1, 'Resume ID is required'),
 });
 
 // =====================================================
@@ -34,12 +30,13 @@ export const createStudentProfileSchema = z.object({
 
   studentId: z
     .string()
-    .regex(STUDENT_ID_PATTERN, 'Invalid student ID format (6-20 alphanumeric characters)')
+    .regex(STUDENT_ID_PATTERN, 'Invalid student ID format (3-30 alphanumeric characters)')
     .toUpperCase(),
 
-  department: z.enum(DEPARTMENTS as unknown as [string, ...string[]], {
-    errorMap: () => ({ message: 'Invalid department' }),
-  }),
+  departmentId: z
+    .string()
+    .min(1, 'Department is required')
+    .trim(),
 
   courseYear: z.enum(COURSE_YEARS as unknown as [string, ...string[]], {
     errorMap: () => ({ message: 'Invalid course year' }),
@@ -47,9 +44,9 @@ export const createStudentProfileSchema = z.object({
 
   numberOfBacklogs: z
     .number()
-    .int('backlogs must be a whole number')
-    .min(0, 'backlogs cannot be negative')
-    .max(50, 'backlogs cannot exceed 50')
+    .int('Backlogs must be a whole number')
+    .min(0, 'Backlogs cannot be negative')
+    .max(50, 'Backlogs cannot exceed 50')
     .optional()
     .default(0),
 
@@ -91,10 +88,10 @@ export const updateStudentProfileSchema = z.object({
     .trim()
     .optional(),
 
-  department: z
-    .enum(DEPARTMENTS as unknown as [string, ...string[]], {
-      errorMap: () => ({ message: 'Invalid department' }),
-    })
+  departmentId: z
+    .string()
+    .min(1, 'Department ID cannot be empty')
+    .trim()
     .optional(),
 
   courseYear: z
@@ -105,9 +102,9 @@ export const updateStudentProfileSchema = z.object({
 
   numberOfBacklogs: z
     .number()
-    .int('backlogs must be a whole number')
-    .min(0, 'backlogs cannot be negative')
-    .max(50, 'backlogs cannot exceed 50')
+    .int('Backlogs must be a whole number')
+    .min(0, 'Backlogs cannot be negative')
+    .max(50, 'Backlogs cannot exceed 50')
     .optional(),
 
   skills: z
@@ -160,6 +157,10 @@ export const profileQuerySchema = z.object({
   includeStudentProfile: z.coerce.boolean().optional().default(true),
 });
 
+export const departmentQuerySchema = z.object({
+  includeInactive: z.coerce.boolean().optional().default(false),
+});
+
 // =====================================================
 // TYPE EXPORTS
 // =====================================================
@@ -169,6 +170,7 @@ export type CreateStudentProfileInput = z.infer<typeof createStudentProfileSchem
 export type UpdateStudentProfileInput = z.infer<typeof updateStudentProfileSchema>;
 export type UpdateUserProfileInput = z.infer<typeof updateUserProfileSchema>;
 export type ProfileQuery = z.infer<typeof profileQuerySchema>;
+export type DepartmentQuery = z.infer<typeof departmentQuerySchema>;
 
 // =====================================================
 // FILE VALIDATION
@@ -209,13 +211,9 @@ export const validateResumeFile = (
 // HELPER PARSERS
 // =====================================================
 
-// In profile.validation.ts
 export function parseResumeId(value: unknown): string {
   if (typeof value === 'string' && value.trim().length > 0) {
     return value.trim();
-  }
-  if (typeof value === 'number') {
-    return String(value);
   }
   throw new BadRequestError('Invalid resume ID');
 }
@@ -230,4 +228,8 @@ export const parseUpdateStudentProfile = (data: unknown): UpdateStudentProfileIn
 
 export const parseUpdateUserProfile = (data: unknown): UpdateUserProfileInput => {
   return updateUserProfileSchema.parse(data);
+};
+
+export const parseDepartmentQuery = (data: unknown): DepartmentQuery => {
+  return departmentQuerySchema.parse(data);
 };

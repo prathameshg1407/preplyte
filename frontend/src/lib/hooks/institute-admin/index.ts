@@ -83,3 +83,6 @@ export {
   useResultsPage,
   useResultDetailPage,
 } from './use-mockdrive-results';
+
+
+export * from './use-departments';
