@@ -8,7 +8,7 @@ interface EligibilityCriteria {
   maxCgpa: number | null;
   minMarks10: number | null;
   minMarks12: number | null;
-  allowedDepartments: string[];
+  allowedDepartmentIds: string[];
   allowedCourseYears: string[];
   requiredSkills: string[];
   maxBacklogs: number | null;
@@ -109,19 +109,19 @@ export function checkEligibility(
   }
 
   // Check department
-  if (criteria.allowedDepartments && criteria.allowedDepartments.length > 0) {
-    const passed = criteria.allowedDepartments.some(
-      (dept) => dept.toLowerCase() === profile.department.toLowerCase()
+  if (criteria.allowedDepartmentIds && criteria.allowedDepartmentIds.length > 0) {
+    const passed = criteria.allowedDepartmentIds.some(
+      (dept) => dept.toLowerCase() === profile.departmentId.toLowerCase()
     );
     checks.push({
       criterion: 'Department',
       passed,
       details: passed
-        ? `Department ${profile.department} is allowed`
-        : `Department ${profile.department} is not in allowed list: ${criteria.allowedDepartments.join(', ')}`,
-      value: profile.department,
+        ? `Department ${profile.departmentId} is allowed`
+        : `Department ${profile.departmentId} is not in allowed list: ${criteria.allowedDepartmentIds.join(', ')}`,
+      value: profile.departmentId,
     });
-    if (!passed) failedCriteria.push(`Allowed Departments: ${criteria.allowedDepartments.join(', ')}`);
+    if (!passed) failedCriteria.push(`Allowed Departments: ${criteria.allowedDepartmentIds.join(', ')}`);
   }
 
   // Check course year

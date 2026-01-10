@@ -101,7 +101,7 @@ interface EligibilityData {
   maxCgpa?: number;
   minMarks10?: number;
   minMarks12?: number;
-  allowedDepartments: string[];
+  allowedDepartmentIds: string[];
   allowedCourseYears: string[];
   requiredSkills: string[];
   maxBacklogs?: number;
@@ -239,7 +239,7 @@ interface LeaderboardData {
   userEmail: string;
   studentName: string;
   studentId?: string;
-  department?: string;
+  departmentId?: string;
   totalScore: number;
   percentageScore: number;
   rank: number;
@@ -580,7 +580,7 @@ async function seed() {
           maxCgpa: eligData.maxCgpa,
           minMarks10: eligData.minMarks10,
           minMarks12: eligData.minMarks12,
-          allowedDepartments: eligData.allowedDepartments,
+          allowedDepartmentIds: eligData.allowedDepartmentIds,
           allowedCourseYears: eligData.allowedCourseYears,
           requiredSkills: eligData.requiredSkills,
           maxBacklogs: eligData.maxBacklogs,
@@ -865,7 +865,7 @@ async function seed() {
           userId: userId,
           studentName: lbData.studentName,
           studentId: lbData.studentId,
-          department: lbData.department,
+          departmentId: lbData.departmentId,
           totalScore: lbData.totalScore,
           percentageScore: lbData.percentageScore,
           rank: lbData.rank,

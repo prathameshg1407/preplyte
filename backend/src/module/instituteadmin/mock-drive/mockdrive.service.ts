@@ -125,7 +125,7 @@ interface MockDriveWithIncludes {
     maxCgpa: number | null;
     minMarks10: number | null;
     minMarks12: number | null;
-    allowedDepartments: string[];
+    allowedDepartmentIds: string[];
     allowedCourseYears: string[];
     requiredSkills: string[];
     maxBacklogs: number | null;
@@ -948,8 +948,8 @@ export class MockDriveService {
             maxCgpa: original.eligibilityCriteria.maxCgpa,
             minMarks10: original.eligibilityCriteria.minMarks10,
             minMarks12: original.eligibilityCriteria.minMarks12,
-            allowedDepartments:
-              original.eligibilityCriteria.allowedDepartments,
+            allowedDepartmentIds:
+              original.eligibilityCriteria.allowedDepartmentIds,
             allowedCourseYears:
               original.eligibilityCriteria.allowedCourseYears,
             requiredSkills: original.eligibilityCriteria.requiredSkills,
@@ -1511,8 +1511,8 @@ export class MockDriveService {
             maxCgpa: mockDrive.eligibilityCriteria.maxCgpa,
             minMarks10: mockDrive.eligibilityCriteria.minMarks10,
             minMarks12: mockDrive.eligibilityCriteria.minMarks12,
-            allowedDepartments:
-              mockDrive.eligibilityCriteria.allowedDepartments,
+            allowedDepartmentIds:
+              mockDrive.eligibilityCriteria.allowedDepartmentIds,
             allowedCourseYears:
               mockDrive.eligibilityCriteria.allowedCourseYears,
             requiredSkills: mockDrive.eligibilityCriteria.requiredSkills,

@@ -152,7 +152,7 @@ export default function UserDetailPage() {
                 </div>
                 <div>
                   <dt className="text-muted-foreground">Department</dt>
-                  <dd className="font-medium mt-0.5">{user.profile.department || '—'}</dd>
+                  <dd className="font-medium mt-0.5">{user.profile.departmentId || '—'}</dd>
                 </div>
                 <div>
                   <dt className="text-muted-foreground">Course Year</dt>

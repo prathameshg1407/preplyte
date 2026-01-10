@@ -192,7 +192,7 @@ export function DepartmentDialog({
                 Active Status
               </Label>
               <p className="text-sm text-muted-foreground">
-                Inactive departments won't be available for student selection
+                Inactive departments would not be available for student selection
               </p>
             </div>
             <Switch

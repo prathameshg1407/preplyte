@@ -517,7 +517,7 @@ export class BatchService {
         userId: r.userId,
         studentName: r.user.profile?.fullName ?? r.user.name ?? 'Unknown',
         studentId: r.user.profile?.studentId ?? 'N/A',
-        department: r.user.profile?.department ?? 'N/A',
+        departmentId: r.user.profile?.departmentId ?? 'N/A',
         courseYear: r.user.profile?.courseYear ?? 'N/A',
         registrationStatus: r.status,
         attemptStatus: attempt?.status ?? null,

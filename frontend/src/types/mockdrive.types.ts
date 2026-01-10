@@ -138,7 +138,7 @@ export interface EligibilityCriteria {
   maxCgpa: number | null;
   minMarks10: number | null;
   minMarks12: number | null;
-  allowedDepartments: string[];
+  allowedDepartmentIds: string[];
   allowedCourseYears: string[];
   requiredSkills: string[];
   maxBacklogs: number | null;
@@ -669,7 +669,7 @@ export interface LeaderboardEntry {
   userId: string;
   studentName: string;
   studentId: string | null;
-  department: string | null;
+  departmentId: string | null;
   totalScore: number;
   percentageScore: number;
   moduleScores: Array<{
@@ -710,7 +710,7 @@ export interface MyRankResponse {
 
 export interface LeaderboardFilters {
   batchId?: string;
-  department?: string;
+  departmentId?: string;
 }
 
 // ============================================
@@ -881,7 +881,7 @@ export interface MockDriveListQueryParams extends PaginationParams {
 
 export interface LeaderboardQueryParams extends PaginationParams {
   batchId?: string;
-  department?: string;
+  departmentId?: string;
 }
 
 export interface MyRankQueryParams {

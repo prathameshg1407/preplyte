@@ -42,8 +42,8 @@ export default function DepartmentsPage() {
     setFilters((prev) => ({ ...prev, page }));
   };
 
-  const handleEdit = (department: Department) => {
-    setEditDepartment(department);
+  const handleEdit = (departmentId: Department) => {
+    setEditDepartment(departmentId);
   };
 
   const handleCloseEdit = (open: boolean) => {
@@ -67,7 +67,7 @@ export default function DepartmentsPage() {
           <div>
             <h1 className="text-2xl font-bold tracking-tight">Departments</h1>
             <p className="text-muted-foreground">
-              Manage your institute's departments
+              Manage your institutes departments
             </p>
           </div>
         </div>

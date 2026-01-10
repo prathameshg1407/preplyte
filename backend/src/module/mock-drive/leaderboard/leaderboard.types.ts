@@ -7,7 +7,7 @@ export interface LeaderboardEntry {
   userId: string;
   studentName: string;
   studentId: string | null;
-  department: string | null;
+  departmentId: string | null;
   totalScore: number;
   percentageScore: number;
   moduleScores: Array<{
@@ -53,5 +53,5 @@ export interface MyRankResponse {
 
 export interface LeaderboardFilters {
   batchId?: string;
-  department?: string;
+  departmentId?: string;
 }

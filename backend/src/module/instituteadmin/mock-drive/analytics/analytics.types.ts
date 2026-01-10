@@ -156,7 +156,7 @@ export interface CompletionTrend {
 // ============================================
 
 export interface DepartmentBreakdown {
-  department: string;
+  departmentId: string;
   totalStudents: number;
   completedStudents: number;
   averageScore: number | null;

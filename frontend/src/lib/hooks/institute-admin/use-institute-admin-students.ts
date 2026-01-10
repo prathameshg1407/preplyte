@@ -6,7 +6,7 @@ import { instituteAdminService, type InstituteStudentFiltersExtended, type Insti
 
 export type Filters = {
   search?: string;
-  department?: string;
+  departmentId?: string;
   minCgpa?: number;
   status?: 'all' | 'active' | 'inactive';
 };
@@ -23,7 +23,7 @@ type ComponentStudent = {
   email: string;
   name?: string;
   studentId: string;
-  department?: string;
+  departmentId?: string;
   courseYear?: string;
   averageCgpa?: number;
   isActive: boolean;
@@ -36,7 +36,7 @@ function transformStudent(student: InstituteStudent): ComponentStudent {
     email: student.email,
     name: student.name || undefined,
     studentId: student.profile?.studentId || '',
-    department: student.profile?.department,
+    departmentId: student.profile?.departmentId,
     courseYear: student.profile?.courseYear,
     averageCgpa: student.profile?.averageCgpa,
     isActive: student.isActive,
@@ -63,7 +63,7 @@ export function useInstituteAdminStudents(instituteId: string) {
       page: pagination.page,
       limit: pagination.pageSize,
       search: filters.search,
-      department: filters.department,
+      departmentId: filters.departmentId,
       cgpa: filters.minCgpa,
       status: filters.status !== 'all' ? filters.status : undefined,
     };

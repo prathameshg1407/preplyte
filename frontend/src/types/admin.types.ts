@@ -75,7 +75,7 @@ export type UserRole = 'PLATFORM_ADMIN' | 'INSTITUTE_ADMIN' | 'USER';
 export interface UserProfile {
   fullName: string;
   studentId: string;
-  department: string;
+  departmentId: string;
   courseYear: string;
   numberOfBacklogs: number;
   averageCgpa: number | null;
@@ -150,7 +150,7 @@ export interface UserFilters {
 
 export interface InstituteStudentFilters {
   search?: string;
-  department?: string;
+  departmentId?: string;
   courseYear?: string;
   isActive?: boolean;
   sortBy?: 'name' | 'email' | 'createdAt' | 'averageCgpa';

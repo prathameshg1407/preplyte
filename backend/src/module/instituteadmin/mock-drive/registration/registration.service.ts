@@ -49,7 +49,7 @@ interface RegistrationWithRelations {
     profile: {
       fullName: string;
       studentId: string;
-      department: string;
+      departmentId: string;
       courseYear: string;
       averageCgpa: number | null;
       marks10: number | null;
@@ -565,7 +565,7 @@ export class RegistrationService {
       name: registration.user.profile?.fullName ?? registration.user.name ?? 'Unknown',
       email: registration.user.email,
       studentId: registration.user.profile?.studentId ?? null,
-      department: registration.user.profile?.department ?? null,
+      departmentId: registration.user.profile?.departmentId ?? null,
       courseYear: registration.user.profile?.courseYear ?? null,
       averageCgpa: registration.user.profile?.averageCgpa ?? null,
       marks10: registration.user.profile?.marks10 ?? null,
@@ -601,7 +601,7 @@ export class RegistrationService {
       studentName:
         registration.user.profile?.fullName ?? registration.user.name ?? 'Unknown',
       studentId: registration.user.profile?.studentId ?? null,
-      department: registration.user.profile?.department ?? null,
+      departmentId: registration.user.profile?.departmentId ?? null,
       courseYear: registration.user.profile?.courseYear ?? null,
       averageCgpa: registration.user.profile?.averageCgpa ?? null,
       batchId: registration.batchId,

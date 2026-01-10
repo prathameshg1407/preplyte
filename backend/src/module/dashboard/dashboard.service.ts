@@ -440,7 +440,7 @@ class DashboardService {
         userId: true,
         studentName: true,
         studentId: true,
-        department: true,
+        departmentId: true,
         percentageScore: true,
       },
     });
@@ -450,7 +450,7 @@ class DashboardService {
       userId: string;
       studentName: string;
       studentId: string | null;
-      department: string | null;
+      departmentId: string | null;
       scores: number[];
     }>();
 
@@ -460,7 +460,7 @@ class DashboardService {
           userId: entry.userId,
           studentName: entry.studentName,
           studentId: entry.studentId,
-          department: entry.department,
+          departmentId: entry.departmentId,
           scores: [],
         });
       }
@@ -473,7 +473,7 @@ class DashboardService {
         userId: user.userId,
         studentName: user.studentName,
         studentId: user.studentId,
-        department: user.department,
+        departmentId: user.departmentId,
         avgScore: Math.round(
           (user.scores.reduce((a, b) => a + b, 0) / user.scores.length) * 10
         ) / 10,

@@ -40,7 +40,7 @@ export interface WizardEligibility {
   maxCgpa: number | null;
   minMarks10: number | null;
   minMarks12: number | null;
-  allowedDepartments: string[];
+  allowedDepartmentIds: string[];
   allowedCourseYears: string[];
   requiredSkills: string[];
   maxBacklogs: number | null;
@@ -171,7 +171,7 @@ const initialEligibility: WizardEligibility = {
   maxCgpa: null,
   minMarks10: null,
   minMarks12: null,
-  allowedDepartments: [],
+  allowedDepartmentIds: [],
   allowedCourseYears: [],
   requiredSkills: [],
   maxBacklogs: null,
@@ -474,10 +474,10 @@ export const useCreateWizardStore = create<CreateWizardState>()(
                 eligibility.minMarks12 !== undefined
                   ? ensureNumberOrNull(eligibility.minMarks12)
                   : state.eligibility.minMarks12,
-              allowedDepartments:
-                eligibility.allowedDepartments !== undefined
-                  ? eligibility.allowedDepartments
-                  : state.eligibility.allowedDepartments,
+              allowedDepartmentIds:
+                eligibility.allowedDepartmentIds !== undefined
+                  ? eligibility.allowedDepartmentIds
+                  : state.eligibility.allowedDepartmentIds,
               allowedCourseYears:
                 eligibility.allowedCourseYears !== undefined
                   ? eligibility.allowedCourseYears
@@ -682,7 +682,7 @@ export const useCreateWizardStore = create<CreateWizardState>()(
             maxCgpa: eligibility.maxCgpa,
             minMarks10: eligibility.minMarks10,
             minMarks12: eligibility.minMarks12,
-            allowedDepartments: eligibility.allowedDepartments,
+            allowedDepartmentIds: eligibility.allowedDepartmentIds,
             allowedCourseYears: eligibility.allowedCourseYears,
             requiredSkills: eligibility.requiredSkills,
             maxBacklogs: eligibility.maxBacklogs,

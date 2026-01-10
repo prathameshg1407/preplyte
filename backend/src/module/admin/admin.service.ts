@@ -59,7 +59,7 @@ const userInclude = {
     select: {
       fullName: true,
       studentId: true,
-      department: true,
+      departmentId: true,
       courseYear: true,
       averageCgpa: true,
       skills: true,
@@ -432,7 +432,7 @@ class AdminService {
       ];
     }
 
-    if (f.department) where.profile = { department: f.department };
+    if (f.departmentId) where.profile = { departmentId: f.departmentId };
     if (f.courseYear) where.profile = { ...(where.profile as object), courseYear: f.courseYear };
     if (f.isActive !== undefined) where.isActive = f.isActive;
 

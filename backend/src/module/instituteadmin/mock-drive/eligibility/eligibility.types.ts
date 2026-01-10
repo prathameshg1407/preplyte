@@ -38,7 +38,7 @@ export interface SetEligibilityDTO {
   maxCgpa?: number | null;
   minMarks10?: number | null;
   minMarks12?: number | null;
-  allowedDepartments?: string[];
+  allowedDepartmentIds?: string[];
   allowedCourseYears?: string[];
   requiredSkills?: string[];
   maxBacklogs?: number | null;
@@ -58,7 +58,7 @@ export interface EligibilityDetails {
   maxCgpa: number | null;
   minMarks10: number | null;
   minMarks12: number | null;
-  allowedDepartments: string[];
+  allowedDepartmentIds: string[];
   allowedCourseYears: string[];
   requiredSkills: string[];
   maxBacklogs: number | null;
@@ -88,7 +88,7 @@ export interface EligibilityCheck {
 export interface EligibleStudentsQuery {
   page?: number;
   limit?: number;
-  department?: string;
+  departmentId?: string;
   courseYear?: string;
   search?: string;
 }
@@ -98,7 +98,7 @@ export interface EligibleStudent {
   userId: string;
   fullName: string;
   studentId: string;
-  department: string;
+  departmentId: string;
   courseYear: string;
   averageCgpa: number | null;
   marks10: number | null;

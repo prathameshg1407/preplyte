@@ -144,7 +144,7 @@ export default function EditMockDrivePage() {
         minMarks10: drive.eligibilityCriteria.minMarks10,
         minMarks12: drive.eligibilityCriteria.minMarks12,
         maxBacklogs: drive.eligibilityCriteria.maxBacklogs,
-        allowedDepartments: drive.eligibilityCriteria.allowedDepartments || [],
+        allowedDepartmentIds: drive.eligibilityCriteria.allowedDepartmentIds || [],
         allowedCourseYears: drive.eligibilityCriteria.allowedCourseYears || [],
         requiredSkills: drive.eligibilityCriteria.requiredSkills || [],
       });

@@ -81,7 +81,7 @@ export class EligibilityService {
         maxCgpa: data.maxCgpa ?? null,
         minMarks10: data.minMarks10 ?? null,
         minMarks12: data.minMarks12 ?? null,
-        allowedDepartments: data.allowedDepartments ?? [],
+        allowedDepartmentIds: data.allowedDepartmentIds ?? [],
         allowedCourseYears: data.allowedCourseYears ?? [],
         requiredSkills: data.requiredSkills ?? [],
         maxBacklogs: data.maxBacklogs ?? null,
@@ -92,7 +92,7 @@ export class EligibilityService {
         maxCgpa: data.maxCgpa ?? null,
         minMarks10: data.minMarks10 ?? null,
         minMarks12: data.minMarks12 ?? null,
-        allowedDepartments: data.allowedDepartments ?? [],
+        allowedDepartmentIds: data.allowedDepartmentIds ?? [],
         allowedCourseYears: data.allowedCourseYears ?? [],
         requiredSkills: data.requiredSkills ?? [],
         maxBacklogs: data.maxBacklogs ?? null,
@@ -159,8 +159,8 @@ export class EligibilityService {
     if (data.maxCgpa !== undefined) updateData.maxCgpa = data.maxCgpa;
     if (data.minMarks10 !== undefined) updateData.minMarks10 = data.minMarks10;
     if (data.minMarks12 !== undefined) updateData.minMarks12 = data.minMarks12;
-    if (data.allowedDepartments !== undefined) {
-      updateData.allowedDepartments = data.allowedDepartments;
+    if (data.allowedDepartmentIds !== undefined) {
+      updateData.allowedDepartmentIds = data.allowedDepartmentIds;
     }
     if (data.allowedCourseYears !== undefined) {
       updateData.allowedCourseYears = data.allowedCourseYears;
@@ -302,13 +302,13 @@ export class EligibilityService {
     }
 
     // Check Department
-    if (eligibility.allowedDepartments.length > 0) {
-      const passed = eligibility.allowedDepartments.includes(studentProfile.department);
+    if (eligibility.allowedDepartmentIds.length > 0) {
+      const passed = eligibility.allowedDepartmentIds.includes(studentProfile.departmentId);
       checks.push({
         criterion: 'Department',
         passed,
-        required: eligibility.allowedDepartments.join(', '),
-        actual: studentProfile.department,
+        required: eligibility.allowedDepartmentIds.join(', '),
+        actual: studentProfile.departmentId,
       });
     }
 
@@ -373,7 +373,7 @@ export class EligibilityService {
   ): Promise<PaginatedEligibleStudents> {
     const mockDrive = await this.verifyMockDriveAccess(mockDriveId, instituteId);
 
-    const { page = 1, limit = 20, department, courseYear, search } = query;
+    const { page = 1, limit = 20, departmentId, courseYear, search } = query;
     const skip = (page - 1) * limit;
 
     const eligibility = await prisma.mockDriveEligibility.findUnique({
@@ -415,10 +415,10 @@ export class EligibilityService {
       }
 
       // Apply department filter (query param takes precedence)
-      if (department) {
-        where.department = department;
-      } else if (eligibility.allowedDepartments.length > 0) {
-        where.department = { in: eligibility.allowedDepartments };
+      if (departmentId) {
+        where.departmentId = departmentId;
+      } else if (eligibility.allowedDepartmentIds.length > 0) {
+        where.departmentId = { in: eligibility.allowedDepartmentIds };
       }
 
       // Apply course year filter (query param takes precedence)
@@ -429,8 +429,8 @@ export class EligibilityService {
       }
     } else {
       // No eligibility criteria - just apply query filters
-      if (department) {
-        where.department = department;
+      if (departmentId) {
+        where.departmentId = departmentId;
       }
       if (courseYear) {
         where.courseYear = courseYear;
@@ -476,7 +476,7 @@ export class EligibilityService {
         userId: s.userId,
         fullName: s.fullName,
         studentId: s.studentId,
-        department: s.department,
+        departmentId: s.departmentId,
         courseYear: s.courseYear,
         averageCgpa: s.averageCgpa,
         marks10: s.marks10,
@@ -527,8 +527,8 @@ export class EligibilityService {
       if (eligibility.minCgpa !== null) {
         where.averageCgpa = { gte: eligibility.minCgpa };
       }
-      if (eligibility.allowedDepartments.length > 0) {
-        where.department = { in: eligibility.allowedDepartments };
+      if (eligibility.allowedDepartmentIds.length > 0) {
+        where.departmentId = { in: eligibility.allowedDepartmentIds };
       }
       if (eligibility.allowedCourseYears.length > 0) {
         where.courseYear = { in: eligibility.allowedCourseYears };
@@ -540,7 +540,7 @@ export class EligibilityService {
         prisma.studentProfile.count({ where }),
         prisma.mockDriveRegistration.count({ where: { mockDriveId } }),
         prisma.studentProfile.groupBy({
-          by: ['department'],
+          by: ['departmentId'],
           where,
           _count: { id: true },
         }),
@@ -555,7 +555,7 @@ export class EligibilityService {
       totalEligible,
       totalRegistered,
       byDepartment: Object.fromEntries(
-        departmentCounts.map((d) => [d.department, d._count.id])
+        departmentCounts.map((d) => [d.departmentId, d._count.id])
       ),
       byCourseYear: Object.fromEntries(
         yearCounts.map((y) => [y.courseYear, y._count.id])
@@ -763,7 +763,7 @@ export class EligibilityService {
     maxCgpa: number | null;
     minMarks10: number | null;
     minMarks12: number | null;
-    allowedDepartments: string[];
+    allowedDepartmentIds: string[];
     allowedCourseYears: string[];
     requiredSkills: string[];
     maxBacklogs: number | null;
@@ -778,7 +778,7 @@ export class EligibilityService {
       maxCgpa: eligibility.maxCgpa,
       minMarks10: eligibility.minMarks10,
       minMarks12: eligibility.minMarks12,
-      allowedDepartments: eligibility.allowedDepartments,
+      allowedDepartmentIds: eligibility.allowedDepartmentIds,
       allowedCourseYears: eligibility.allowedCourseYears,
       requiredSkills: eligibility.requiredSkills,
       maxBacklogs: eligibility.maxBacklogs,

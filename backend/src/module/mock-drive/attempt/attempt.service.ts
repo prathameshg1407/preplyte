@@ -597,12 +597,12 @@ export class AttemptService {
 
     const studentName = user?.profile?.fullName || user?.name || 'Unknown';
     const studentId = user?.profile?.studentId;
-    const department = user?.profile?.department;
+    const departmentId = user?.profile?.departmentId;
 
     const leaderboardData = {
       studentName,
       studentId,
-      department,
+      departmentId,
       totalScore: data.totalScore,
       percentageScore: data.percentageScore,
       moduleScores: data.moduleScores as unknown as Prisma.InputJsonValue,

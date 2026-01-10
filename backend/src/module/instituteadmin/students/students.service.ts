@@ -30,7 +30,7 @@ export async function getInstituteStudents(
       { email: { contains: whereFilters.search, mode: 'insensitive' } },
     ];
   }
-  if (whereFilters.department) where.profile = { department: whereFilters.department };
+  if (whereFilters.departmentId) where.profile = { departmentId: whereFilters.departmentId };
   if (whereFilters.minCgpa) where.profile = { ...where.profile, averageCgpa: { gte: whereFilters.minCgpa } };
 
   const [students, total] = await Promise.all([

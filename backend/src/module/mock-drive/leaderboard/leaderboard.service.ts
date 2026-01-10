@@ -56,8 +56,8 @@ export class LeaderboardService {
       batchId: filters?.batchId || registration.batchId,
     };
 
-    if (filters?.department) {
-      where.department = filters.department;
+    if (filters?.departmentId) {
+      where.departmentId = filters.departmentId;
     }
 
     // Get total count
@@ -94,7 +94,7 @@ export class LeaderboardService {
       userId: entry.userId,
       studentName: entry.studentName,
       studentId: entry.studentId,
-      department: entry.department,
+      departmentId: entry.departmentId,
       totalScore: entry.totalScore,
       percentageScore: entry.percentageScore,
       moduleScores: (entry.moduleScores as any[]) || [],
@@ -187,7 +187,7 @@ export class LeaderboardService {
         userId: entry.userId,
         studentName: entry.studentName,
         studentId: entry.studentId,
-        department: entry.department,
+        departmentId: entry.departmentId,
         totalScore: entry.totalScore,
         percentageScore: entry.percentageScore,
         moduleScores: (entry.moduleScores as any[]) || [],

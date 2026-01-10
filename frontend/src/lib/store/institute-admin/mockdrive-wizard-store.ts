@@ -51,7 +51,7 @@ export interface WizardEligibility {
   maxCgpa: number | null;
   minMarks10: number | null;
   minMarks12: number | null;
-  allowedDepartments: string[];
+  allowedDepartmentIds: string[];
   allowedCourseYears: string[];
   requiredSkills: string[];
   maxBacklogs: number | null;
@@ -226,7 +226,7 @@ const initialEligibility: WizardEligibility = {
   maxCgpa: null,
   minMarks10: null,
   minMarks12: null,
-  allowedDepartments: [],
+  allowedDepartmentIds: [],
   allowedCourseYears: [],
   requiredSkills: [],
   maxBacklogs: null,

@@ -339,7 +339,7 @@ export class DiscoveryService {
             maxCgpa: drive.eligibilityCriteria.maxCgpa,
             minMarks10: drive.eligibilityCriteria.minMarks10,
             minMarks12: drive.eligibilityCriteria.minMarks12,
-            allowedDepartments: drive.eligibilityCriteria.allowedDepartments,
+            allowedDepartmentIds: drive.eligibilityCriteria.allowedDepartmentIds,
             allowedCourseYears: drive.eligibilityCriteria.allowedCourseYears,
             requiredSkills: drive.eligibilityCriteria.requiredSkills,
             maxBacklogs: drive.eligibilityCriteria.maxBacklogs,

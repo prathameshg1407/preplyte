@@ -68,7 +68,7 @@ export interface TopPerformer {
   userId: string;
   studentName: string;
   studentId: string | null;
-  department: string | null;
+  departmentId: string | null;
   avgScore: number;
   completedDrives: number;
 }

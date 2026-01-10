@@ -166,7 +166,7 @@ export function StepReview() {
 
     // Check if any eligibility criteria is set
     const hasElig =
-      eligibility.allowedDepartments.length > 0 ||
+      eligibility.allowedDepartmentIds.length > 0 ||
       eligibility.allowedCourseYears.length > 0 ||
       eligibility.requiredSkills.length > 0 ||
       eligibility.minCgpa != null ||
@@ -364,12 +364,12 @@ export function StepReview() {
             )}
 
             {/* Departments */}
-            {eligibility.allowedDepartments.length > 0 && (
+            {eligibility.allowedDepartmentIds.length > 0 && (
               <ReviewItem
                 label="Allowed Departments"
                 value={
                   <div className="mt-1 flex flex-wrap gap-1">
-                    {eligibility.allowedDepartments.map((dept) => (
+                    {eligibility.allowedDepartmentIds.map((dept) => (
                       <Badge key={dept} variant="secondary">
                         {dept}
                       </Badge>

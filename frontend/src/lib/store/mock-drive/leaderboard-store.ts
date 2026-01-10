@@ -19,7 +19,7 @@ interface LeaderboardStoreState {
   setCurrentDriveId: (driveId: string | null) => void;
   setFilters: (filters: LeaderboardFilters) => void;
   setBatchId: (batchId: string | undefined) => void;
-  setDepartment: (department: string | undefined) => void;
+  setDepartment: (departmentId: string | undefined) => void;
   setPage: (page: number) => void;
   setLimit: (limit: number) => void;
   setShowOnlyMyBatch: (show: boolean) => void;
