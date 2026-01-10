@@ -158,7 +158,7 @@ export interface EligibilityCriteria {
   maxCgpa: number | null;
   minMarks10: number | null;
   minMarks12: number | null;
-  allowedDepartments: string[];
+  allowedDepartmentIds: string[];
   allowedCourseYears: string[];
   requiredSkills: string[];
   maxBacklogs: number | null;
@@ -190,7 +190,7 @@ export interface EligibleStudent {
   userId: string;
   fullName: string;
   studentId: string;
-  department: string;
+  departmentId: string;
   courseYear: string;
   numberOfBacklogs: number;
   averageCgpa: number | null;
@@ -259,7 +259,7 @@ export interface StudentInfo {
   name: string;
   email: string;
   studentId: string | null;
-  department: string | null;
+  departmentId: string | null;
   courseYear: string | null;
   numberOfBacklogs: number | null;
   averageCgpa: number | null;
@@ -289,7 +289,7 @@ export interface RegistrationListItem {
   status: MockDriveRegistrationStatus;
   studentName: string;
   studentId: string | null;
-  department: string | null;
+  departmentId: string | null;
   courseYear: string | null;
   numberOfBacklogs: number | null;
   averageCgpa: number | null;
@@ -363,7 +363,7 @@ export interface BatchStudent {
   userId: string;
   studentName: string;
   studentId: string;
-  department: string;
+  departmentId: string;
   courseYear: string;
   numberOfBacklogs: number;
   registrationStatus: MockDriveRegistrationStatus;
@@ -477,7 +477,7 @@ export interface CompletionTrend {
 }
 
 export interface DepartmentBreakdown {
-  department: string;
+  departmentId: string;
   totalStudents: number;
   completedStudents: number;
   averageScore: number | null;
@@ -512,7 +512,7 @@ export interface ResultListItem {
   userId: string;
   studentName: string;
   studentId: string | null;
-  department: string | null;
+  departmentId: string | null;
   batchName: string | null;
   status: MockDriveAttemptStatus;
   totalScore: number | null;
@@ -541,7 +541,7 @@ export interface DetailedResult {
     name: string;
     email: string;
     studentId: string | null;
-    department: string | null;
+    departmentId: string | null;
   };
   batch: {
     id: string;
@@ -697,7 +697,7 @@ export interface SetEligibilityInput {
   maxCgpa?: number | null;
   minMarks10?: number | null;
   minMarks12?: number | null;
-  allowedDepartments?: string[];
+  allowedDepartmentIds?: string[];
   allowedCourseYears?: string[];
   requiredSkills?: string[];
   maxBacklogs?: number | null;
@@ -783,7 +783,7 @@ export interface ListBatchesParams {
 export interface ListEligibleStudentsParams {
   page?: number;
   limit?: number;
-  department?: string;
+  departmentId?: string;
   courseYear?: string;
   search?: string;
 }

@@ -627,13 +627,13 @@ export default function MockDriveDetailPage() {
                   )}
 
                   {/* Departments */}
-                  {drive.eligibilityCriteria.allowedDepartments.length > 0 && (
+                  {drive.eligibilityCriteria.allowedDepartmentIds.length > 0 && (
                     <div className="md:col-span-2">
                       <div className="text-sm font-medium text-muted-foreground">
                         Allowed Departments
                       </div>
                       <div className="mt-2 flex flex-wrap gap-2">
-                        {drive.eligibilityCriteria.allowedDepartments.map((dept) => (
+                        {drive.eligibilityCriteria.allowedDepartmentIds.map((dept) => (
                           <Badge key={dept} variant="secondary">
                             {dept}
                           </Badge>

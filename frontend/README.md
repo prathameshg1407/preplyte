@@ -719,7 +719,7 @@ model MockDriveEligibility {
   minMarks12 Float?
 
   // Filters (empty = all allowed)
-  allowedDepartments String[]
+  allowedDepartmentIds String[]
   allowedCourseYears String[]
   requiredSkills     String[] // Student must have at least one
 

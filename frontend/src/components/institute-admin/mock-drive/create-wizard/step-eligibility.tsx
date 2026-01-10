@@ -152,21 +152,21 @@ export function StepEligibility() {
   // Department handlers
   const addDepartment = useCallback(() => {
     const trimmed = newDepartment.trim();
-    if (trimmed && !eligibility.allowedDepartments.includes(trimmed)) {
+    if (trimmed && !eligibility.allowedDepartmentIds.includes(trimmed)) {
       setEligibility({
-        allowedDepartments: [...eligibility.allowedDepartments, trimmed],
+        allowedDepartmentIds: [...eligibility.allowedDepartmentIds, trimmed],
       });
       setNewDepartment('');
     }
-  }, [newDepartment, eligibility.allowedDepartments, setEligibility]);
+  }, [newDepartment, eligibility.allowedDepartmentIds, setEligibility]);
 
   const removeDepartment = useCallback(
     (dept: string) => {
       setEligibility({
-        allowedDepartments: eligibility.allowedDepartments.filter((d) => d !== dept),
+        allowedDepartmentIds: eligibility.allowedDepartmentIds.filter((d) => d !== dept),
       });
     },
-    [eligibility.allowedDepartments, setEligibility]
+    [eligibility.allowedDepartmentIds, setEligibility]
   );
 
   // Course year handlers
@@ -354,7 +354,7 @@ export function StepEligibility() {
             onChange={setNewDepartment}
             onAdd={addDepartment}
             placeholder="e.g., Computer Science"
-            tags={eligibility.allowedDepartments}
+            tags={eligibility.allowedDepartmentIds}
             onRemove={removeDepartment}
             label="department"
           />

@@ -17,7 +17,7 @@ export interface InstituteStudentFiltersExtended extends Omit<InstituteStudentFi
 export interface InstituteStudent extends User {
   profile: {
     studentId: string;
-    department?: string;
+    departmentId?: string;
     courseYear?: string;
     averageCgpa?: number;
   } | null;
@@ -48,7 +48,7 @@ export const instituteAdminService = {
     
     // Filters
     if (filters.search) params.append('search', filters.search);
-    if (filters.department) params.append('department', filters.department);
+    if (filters.departmentId) params.append('department', filters.departmentId);
     if (filters.courseYear) params.append('courseYear', filters.courseYear);
     if (filters.cgpa !== undefined && filters.cgpa > 0) {
       params.append('minCgpa', String(filters.cgpa));
@@ -95,7 +95,7 @@ export const instituteAdminService = {
   ) {
     const params = new URLSearchParams();
     if (filters.search) params.append('search', filters.search);
-    if (filters.department) params.append('department', filters.department);
+    if (filters.departmentId) params.append('department', filters.departmentId);
     if (filters.courseYear) params.append('courseYear', filters.courseYear);
 
     const response = await apiClient.get(

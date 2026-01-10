@@ -8,7 +8,7 @@ export interface LeaderboardParams {
   page?: number;
   limit?: number;
   batchId?: string;
-  department?: string;
+  departmentId?: string;
 }
 
 export const leaderboardService = {
@@ -30,8 +30,8 @@ export const leaderboardService = {
     if (params?.batchId) {
       searchParams.set('batchId', params.batchId);
     }
-    if (params?.department) {
-      searchParams.set('department', params.department);
+    if (params?.departmentId) {
+      searchParams.set('department', params.departmentId);
     }
 
     const queryString = searchParams.toString();

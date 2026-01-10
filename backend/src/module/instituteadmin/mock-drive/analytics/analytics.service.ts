@@ -442,7 +442,7 @@ export class AnalyticsService {
       include: {
         user: {
           include: {
-            profile: { select: { department: true } },
+            profile: { select: { departmentId: true } },
           },
         },
       },
@@ -450,12 +450,12 @@ export class AnalyticsService {
 
     const departmentMap = this.groupAttemptsByField(
       attempts,
-      (a) => a.user.profile?.department ?? 'Unknown'
+      (a) => a.user.profile?.departmentId ?? 'Unknown'
     );
 
     return Array.from(departmentMap.entries())
-      .map(([department, stats]) => ({
-        department,
+      .map(([departmentId, stats]) => ({
+        departmentId,
         totalStudents: stats.total,
         completedStudents: stats.completed,
         averageScore: this.calculateAverage(stats.scores),

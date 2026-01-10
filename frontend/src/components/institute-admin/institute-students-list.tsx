@@ -32,7 +32,7 @@ import type { Student } from '@/types/institute-admin.types'; // ✅ Use shared 
 /* ---------------- Types (align with Prisma StudentProfile) ---------------- */
 export type Filters = {
   search?: string;
-  department?: string;
+  departmentId?: string;
   year?: string;
   minCgpa?: string; // Backend expects string
   status?: 'all' | 'active' | 'inactive';
@@ -153,10 +153,10 @@ export function InstituteStudentsList({
               disabled={loading}
             />
             <Select
-              value={filters.department || 'all_depts'}
+              value={filters.departmentId || 'all_depts'}
               onValueChange={value => onFiltersChange({ 
                 ...filters, 
-                department: value === 'all_depts' ? undefined : value 
+                departmentId: value === 'all_depts' ? undefined : value 
               })}
               disabled={loading}
             >
@@ -280,7 +280,7 @@ export function InstituteStudentsList({
                     </TableCell>
                     <TableCell>
                       <Badge variant="outline" className="text-xs capitalize">
-                        {student.department || '—'}
+                        {student.departmentId || '—'}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-xs font-medium">

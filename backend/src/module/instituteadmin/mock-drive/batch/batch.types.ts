@@ -106,7 +106,7 @@ export interface BatchStudent {
   userId: string;
   studentName: string;
   studentId: string;
-  department: string;
+  departmentId: string;
   courseYear: string;
   registrationStatus: MockDriveRegistrationStatus;
   attemptStatus: MockDriveAttemptStatus | null;

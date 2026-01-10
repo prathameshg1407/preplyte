@@ -89,8 +89,8 @@ export function InstituteStudentsList({
 
         <Input
           placeholder="Department"
-          value={filters.department || ''}
-          onChange={(e) => handleFilterChange({ department: e.target.value })}
+          value={filters.departmentId || ''}
+          onChange={(e) => handleFilterChange({ departmentId: e.target.value })}
           className="h-9 w-[130px]"
         />
 
@@ -174,7 +174,7 @@ export function InstituteStudentsList({
                     </span>
                   </TableCell>
                   <TableCell>
-                    <span className="text-sm">{student.profile?.department || '—'}</span>
+                    <span className="text-sm">{student.profile?.departmentId || '—'}</span>
                   </TableCell>
                   <TableCell>
                     <span className="text-sm">{student.profile?.courseYear || '—'}</span>

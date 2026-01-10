@@ -167,7 +167,7 @@ export const LeaderboardView: FC<LeaderboardViewProps> = ({ data }) => {
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell>{entry.department || '-'}</TableCell>
+                  <TableCell>{entry.departmentId || '-'}</TableCell>
                   <TableCell className="text-right font-medium">
                     {entry.totalScore.toFixed(1)}
                   </TableCell>

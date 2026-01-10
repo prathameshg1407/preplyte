@@ -83,7 +83,7 @@ export const instituteStudentsSchema = z.object({
   params: z.object({ id: cuid }),
   query: z.object({
     search: z.string().max(200).optional(),
-    department: z.string().max(100).optional(),
+    departmentId: z.string().max(100).optional(),
     courseYear: z.string().max(50).optional(),
     isActive: booleanString.optional(),
     sortBy: z.enum(['name', 'email', 'createdAt', 'averageCgpa']).default('createdAt'),

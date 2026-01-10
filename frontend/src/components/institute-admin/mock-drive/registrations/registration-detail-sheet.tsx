@@ -86,7 +86,7 @@ export function RegistrationDetailSheet({
               Academic Details
             </h4>
             <div className="grid gap-3">
-              <DetailRow label="Department" value={registration.department || '-'} />
+              <DetailRow label="Department" value={registration.departmentId || '-'} />
               <DetailRow label="Course Year" value={registration.courseYear || '-'} />
               <DetailRow
                 label="Average CGPA"

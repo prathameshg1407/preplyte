@@ -30,7 +30,7 @@ export const getInstituteStudents = async (req: AuthenticatedRequest, res: Respo
       page: Number(req.query.page) || 1,
       limit: Number(req.query.limit) || 10,
       search: (req.query.search as string) || '',
-      department: (req.query.department as string) || '',
+      departmentId: (req.query.departmentId as string) || '',
       courseYear: (req.query.courseYear as string) || '',
       minCgpa: req.query.minCgpa ? Number(req.query.minCgpa) : undefined,
       isActive: req.query.isActive ? (req.query.isActive === 'true') : undefined,

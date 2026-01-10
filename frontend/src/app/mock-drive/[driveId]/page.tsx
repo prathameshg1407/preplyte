@@ -216,11 +216,11 @@ export default function MockDriveDetailPage() {
                       <span className="ml-2 font-medium">{drive.eligibilityCriteria.minMarks12}%</span>
                     </div>
                   )}
-                  {drive.eligibilityCriteria.allowedDepartments.length > 0 && (
+                  {drive.eligibilityCriteria.allowedDepartmentIds.length > 0 && (
                     <div className="col-span-2">
                       <span className="text-muted-foreground">Departments:</span>
                       <span className="ml-2 font-medium">
-                        {drive.eligibilityCriteria.allowedDepartments.join(', ')}
+                        {drive.eligibilityCriteria.allowedDepartmentIds.join(', ')}
                       </span>
                     </div>
                   )}

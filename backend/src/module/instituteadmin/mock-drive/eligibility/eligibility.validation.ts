@@ -72,7 +72,7 @@ const baseEligibilitySchema = z.object({
   maxCgpa: cgpaSchema,
   minMarks10: marksSchema,
   minMarks12: marksSchema,
-  allowedDepartments: z
+  allowedDepartmentIds: z
     .array(z.string().min(1).max(100).trim())
     .max(50, 'Maximum 50 departments allowed')
     .optional()
@@ -148,7 +148,7 @@ export const updateEligibilitySchema = baseEligibilitySchema.partial().refine(
 // ============================================
 
 export const eligibleStudentsQuerySchema = paginationSchema.extend({
-  department: z.string().max(100).optional(),
+  departmentId: z.string().max(100).optional(),
   courseYear: z.string().max(20).optional(),
   search: searchSchema,
 });

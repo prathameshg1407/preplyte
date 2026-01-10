@@ -9,7 +9,7 @@ interface LeaderboardQueryParams {
   page?: string;
   limit?: string;
   batchId?: string;
-  department?: string;
+  departmentId?: string;
 }
 
 interface MyRankQueryParams {
@@ -31,14 +31,14 @@ export class LeaderboardController {
     try {
       const userId = req.user!.id;
       const { driveId } = req.params;
-      const { page, limit, batchId, department } = req.query;
+      const { page, limit, batchId, departmentId } = req.query;
 
       const result = await this.service.getLeaderboard(
         userId,
         driveId,
         page ? parseInt(page, 10) : 1,
         limit ? parseInt(limit, 10) : 10,
-        { batchId, department }
+        { batchId, departmentId }
       );
 
       sendSuccess(res, result, 'Leaderboard retrieved successfully');

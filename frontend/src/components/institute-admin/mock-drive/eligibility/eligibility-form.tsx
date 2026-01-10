@@ -51,7 +51,7 @@ const formSchema = z.object({
   minMarks10: z.number().min(0).max(100).nullable(),
   minMarks12: z.number().min(0).max(100).nullable(),
   maxBacklogs: z.number().min(0).max(20).nullable(),
-  allowedDepartments: z.array(z.string()),
+  allowedDepartmentIds: z.array(z.string()),
   allowedCourseYears: z.array(z.string()),
   requiredSkills: z.array(z.string()),
 });
@@ -89,7 +89,7 @@ export function EligibilityForm({
       minMarks10: null,
       minMarks12: null,
       maxBacklogs: null,
-      allowedDepartments: [],
+      allowedDepartmentIds: [],
       allowedCourseYears: [],
       requiredSkills: [],
     },
@@ -104,7 +104,7 @@ export function EligibilityForm({
         minMarks10: criteria.minMarks10,
         minMarks12: criteria.minMarks12,
         maxBacklogs: criteria.maxBacklogs,
-        allowedDepartments: criteria.allowedDepartments || [],
+        allowedDepartmentIds: criteria.allowedDepartmentIds || [],
         allowedCourseYears: criteria.allowedCourseYears || [],
         requiredSkills: criteria.requiredSkills || [],
       });
@@ -118,7 +118,7 @@ export function EligibilityForm({
       minMarks10: values.minMarks10,
       minMarks12: values.minMarks12,
       maxBacklogs: values.maxBacklogs,
-      allowedDepartments: values.allowedDepartments,
+      allowedDepartmentIds: values.allowedDepartmentIds,
       allowedCourseYears: values.allowedCourseYears,
       requiredSkills: values.requiredSkills,
     });
@@ -126,7 +126,7 @@ export function EligibilityForm({
 
   // Array field helpers
   const addToArray = useCallback(
-    (fieldName: 'allowedDepartments' | 'allowedCourseYears' | 'requiredSkills', value: string) => {
+    (fieldName: 'allowedDepartmentIds' | 'allowedCourseYears' | 'requiredSkills', value: string) => {
       const trimmed = value.trim();
       if (!trimmed) return;
 
@@ -139,7 +139,7 @@ export function EligibilityForm({
   );
 
   const removeFromArray = useCallback(
-    (fieldName: 'allowedDepartments' | 'allowedCourseYears' | 'requiredSkills', value: string) => {
+    (fieldName: 'allowedDepartmentIds' | 'allowedCourseYears' | 'requiredSkills', value: string) => {
       const currentValues = form.getValues(fieldName);
       form.setValue(
         fieldName,
@@ -324,7 +324,7 @@ export function EligibilityForm({
           <CardContent className="space-y-4">
             <FormField
               control={form.control}
-              name="allowedDepartments"
+              name="allowedDepartmentIds"
               render={({ field }) => (
                 <FormItem>
                   <div className="flex gap-2">
@@ -335,7 +335,7 @@ export function EligibilityForm({
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') {
                           e.preventDefault();
-                          addToArray('allowedDepartments', newDepartment);
+                          addToArray('allowedDepartmentIds', newDepartment);
                           setNewDepartment('');
                         }
                       }}
@@ -344,7 +344,7 @@ export function EligibilityForm({
                       type="button"
                       variant="secondary"
                       onClick={() => {
-                        addToArray('allowedDepartments', newDepartment);
+                        addToArray('allowedDepartmentIds', newDepartment);
                         setNewDepartment('');
                       }}
                     >
@@ -363,7 +363,7 @@ export function EligibilityForm({
                         variant="outline"
                         size="sm"
                         className="h-7 text-xs"
-                        onClick={() => addToArray('allowedDepartments', dept)}
+                        onClick={() => addToArray('allowedDepartmentIds', dept)}
                       >
                         <Plus className="mr-1 h-3 w-3" />
                         {dept}
@@ -379,7 +379,7 @@ export function EligibilityForm({
                           {dept}
                           <button
                             type="button"
-                            onClick={() => removeFromArray('allowedDepartments', dept)}
+                            onClick={() => removeFromArray('allowedDepartmentIds', dept)}
                             className="ml-1 rounded-full p-0.5 hover:bg-muted-foreground/20"
                           >
                             <X className="h-3 w-3" />
