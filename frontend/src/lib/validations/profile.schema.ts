@@ -1,7 +1,7 @@
 // src/lib/validations/profile.schema.ts
 
 import { z } from 'zod';
-import { DEPARTMENTS, COURSE_YEARS } from '@/types/profile.types';
+import { COURSE_YEARS } from '@/types/profile.types';
 
 // =====================================================
 // USER PROFILE SCHEMA
@@ -27,13 +27,13 @@ export const createStudentProfileSchema = z.object({
 
   studentId: z
     .string()
-    .min(6, 'Student ID must be at least 6 characters')
-    .max(20, 'Student ID must not exceed 20 characters')
-    .regex(/^[A-Z0-9]+$/i, 'Student ID must be alphanumeric'),
+    .min(3, 'Student ID must be at least 3 characters')
+    .max(30, 'Student ID must not exceed 30 characters')
+    .regex(/^[A-Z0-9_\-\/]+$/i, 'Student ID must be alphanumeric'),
 
-  department: z.enum(DEPARTMENTS as unknown as [string, ...string[]], {
-    errorMap: () => ({ message: 'Please select a valid department' }),
-  }),
+  departmentId: z
+    .string()
+    .min(1, 'Please select a department'),
 
   courseYear: z.enum(COURSE_YEARS as unknown as [string, ...string[]], {
     errorMap: () => ({ message: 'Please select a valid course year' }),
@@ -41,9 +41,9 @@ export const createStudentProfileSchema = z.object({
 
   numberOfBacklogs: z
     .number()
-    .int('backlogs must be a whole number')
-    .min(0, 'backlogs cannot be negative')
-    .max(50, 'backlogs cannot exceed 50')
+    .int('Backlogs must be a whole number')
+    .min(0, 'Backlogs cannot be negative')
+    .max(50, 'Backlogs cannot exceed 50')
     .optional()
     .default(0),
 
@@ -72,7 +72,9 @@ export const createStudentProfileSchema = z.object({
     .default([]),
 });
 
-export const updateStudentProfileSchema = createStudentProfileSchema.partial();
+export const updateStudentProfileSchema = createStudentProfileSchema
+  .omit({ studentId: true })
+  .partial();
 
 // =====================================================
 // SKILLS SCHEMA

@@ -1,11 +1,27 @@
 // src/types/profile.types.ts
 
 // =====================================================
+// DEPARTMENT TYPES
+// =====================================================
+
+export interface Department {
+  id: string;
+  name: string;
+  code: string | null;
+  description: string | null;
+}
+
+export interface DepartmentListResponse {
+  departments: Department[];
+  total: number;
+}
+
+// =====================================================
 // RESUME TYPES
 // =====================================================
 
 export interface Resume {
-  id: number;
+  id: string;
   fileName: string;
   fileUrl: string;
   fileSize: number | null;
@@ -36,7 +52,9 @@ export interface StudentProfile {
   userId: string;
   fullName: string;
   studentId: string;
-  department: string;
+  departmentId: string;
+  departmentName: string;
+  departmentCode: string | null;
   courseYear: string;
   numberOfBacklogs: number;
   skills: string[];
@@ -53,7 +71,7 @@ export interface StudentProfile {
 export interface CreateStudentProfileInput {
   fullName: string;
   studentId: string;
-  department: string;
+  departmentId: string;
   courseYear: string;
   numberOfBacklogs?: number;
   skills?: string[];
@@ -64,7 +82,7 @@ export interface CreateStudentProfileInput {
 
 export interface UpdateStudentProfileInput {
   fullName?: string;
-  department?: string;
+  departmentId?: string;
   courseYear?: string;
   numberOfBacklogs?: number;
   skills?: string[];
@@ -111,6 +129,7 @@ export interface CompleteProfile {
   studentProfile: StudentProfile | null;
   resumes: Resume[];
   profileCompletion: ProfileCompletionStatus;
+  availableDepartments: Department[];
 }
 
 // =====================================================
@@ -127,18 +146,6 @@ export interface AcademicMarksInput {
 // CONSTANTS
 // =====================================================
 
-export const DEPARTMENTS = [
-  'Computer Science',
-  'Information Technology',
-  'Electronics',
-  'Electrical',
-  'Mechanical',
-  'Civil',
-  'Chemical',
-  'Biotechnology',
-  'Other',
-] as const;
-
 export const COURSE_YEARS = [
   '1st Year',
   '2nd Year',
@@ -146,7 +153,6 @@ export const COURSE_YEARS = [
   '4th Year',
 ] as const;
 
-export type Department = (typeof DEPARTMENTS)[number];
 export type CourseYear = (typeof COURSE_YEARS)[number];
 
 // =====================================================

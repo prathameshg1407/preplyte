@@ -38,19 +38,21 @@ export const API_ENDPOINTS = {
   // ============================================
   // Profile Management
   // ============================================
-  PROFILE: {
+ PROFILE: {
     COMPLETE: '/api/profile',
     USER: '/api/profile/user',
     STUDENT: '/api/profile/student',
     STUDENT_SKILLS: '/api/profile/student/skills',
     STUDENT_ACADEMICS: '/api/profile/student/academics',
+    DEPARTMENTS: '/api/profile/departments',
     RESUMES: '/api/profile/resumes',
     RESUMES_DEFAULT: '/api/profile/resumes/default',
-    RESUME: (id: number) => `/api/profile/resumes/${id}` as const,
-    RESUME_DEFAULT: (id: number) => `/api/profile/resumes/${id}/default` as const,
-    RESUME_TEXT: (id: number) => `/api/profile/resumes/${id}/text` as const,
-    RESUME_LINK: (id: number) => `/api/profile/resumes/${id}/link` as const,
+    RESUME: (id: string) => `/api/profile/resumes/${id}` as const,
+    RESUME_DEFAULT: (id: string) => `/api/profile/resumes/${id}/default` as const,
+    RESUME_TEXT: (id: string) => `/api/profile/resumes/${id}/text` as const,
+    RESUME_LINK: (id: string) => `/api/profile/resumes/${id}/link` as const,
   },
+  
 
   // ============================================
   // Aptitude Practice
@@ -139,7 +141,13 @@ export const API_ENDPOINTS = {
     MOCK_DRIVE_CANCEL: (id: string) => `/api/institute/mock-drive/${id}/cancel` as const,
     MOCK_DRIVE_DUPLICATE: (id: string) => `/api/institute/mock-drive/${id}/duplicate` as const,
     MOCK_DRIVE_STATS: (id: string) => `/api/institute/mock-drive/${id}/stats` as const,
-
+ DEPARTMENTS: '/api/institute/departments',
+    DEPARTMENTS_STATS: '/api/institute/departments/stats',
+    DEPARTMENTS_ACTIVE: '/api/institute/departments/active',
+    DEPARTMENTS_BULK: '/api/institute/departments/bulk',
+    DEPARTMENT: (id: string) => `/api/institute/departments/${id}` as const,
+    DEPARTMENT_STATUS: (id: string) => `/api/institute/departments/${id}/status` as const,
+  
     // Eligibility
     MOCK_DRIVE_ELIGIBILITY: (id: string) =>
       `/api/institute/mock-drive/${id}/eligibility` as const,
@@ -412,7 +420,25 @@ export const EndpointBuilders = {
     myRankWithParams: (id: string, params: { batchId?: string }) =>
       buildUrlWithParams(API_ENDPOINTS.MOCK_DRIVES.MY_RANK(id), params),
   },
-
+ instituteDepartments: {
+    list: () => buildUrl(API_ENDPOINTS.INSTITUTE.DEPARTMENTS),
+    listWithParams: (params: {
+      page?: number;
+      limit?: number;
+      search?: string;
+      isActive?: boolean;
+      sortBy?: string;
+      sortOrder?: string;
+    }) => buildUrlWithParams(API_ENDPOINTS.INSTITUTE.DEPARTMENTS, params),
+    stats: () => buildUrl(API_ENDPOINTS.INSTITUTE.DEPARTMENTS_STATS),
+    active: () => buildUrl(API_ENDPOINTS.INSTITUTE.DEPARTMENTS_ACTIVE),
+    bulk: () => buildUrl(API_ENDPOINTS.INSTITUTE.DEPARTMENTS_BULK),
+    get: (id: string) => buildUrl(API_ENDPOINTS.INSTITUTE.DEPARTMENT(id)),
+    create: () => buildUrl(API_ENDPOINTS.INSTITUTE.DEPARTMENTS),
+    update: (id: string) => buildUrl(API_ENDPOINTS.INSTITUTE.DEPARTMENT(id)),
+    delete: (id: string) => buildUrl(API_ENDPOINTS.INSTITUTE.DEPARTMENT(id)),
+    toggleStatus: (id: string) => buildUrl(API_ENDPOINTS.INSTITUTE.DEPARTMENT_STATUS(id)),
+  },
   // ... rest of the endpoint builders remain the same
   auth: {
     login: () => buildUrl(API_ENDPOINTS.AUTH.LOGIN),
@@ -426,8 +452,9 @@ export const EndpointBuilders = {
     complete: () => buildUrl(API_ENDPOINTS.PROFILE.COMPLETE),
     user: () => buildUrl(API_ENDPOINTS.PROFILE.USER),
     student: () => buildUrl(API_ENDPOINTS.PROFILE.STUDENT),
+    departments: () => buildUrl(API_ENDPOINTS.PROFILE.DEPARTMENTS),
     resumes: () => buildUrl(API_ENDPOINTS.PROFILE.RESUMES),
-    resume: (id: number) => buildUrl(API_ENDPOINTS.PROFILE.RESUME(id)),
+    resume: (id: string) => buildUrl(API_ENDPOINTS.PROFILE.RESUME(id)),
   },
 
   aptitude: {

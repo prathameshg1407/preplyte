@@ -7,6 +7,7 @@ import {
   parseCreateStudentProfile,
   parseUpdateStudentProfile,
   parseUpdateUserProfile,
+  parseDepartmentQuery,
 } from './profile.validation';
 import { AuthenticatedRequest } from '../../middleware/auth.middleware';
 import { BadRequestError } from '../../utils/errors';
@@ -22,6 +23,8 @@ class ProfileController {
     this.getCompleteProfile = this.getCompleteProfile.bind(this);
     this.getUserProfile = this.getUserProfile.bind(this);
     this.updateUserProfile = this.updateUserProfile.bind(this);
+
+    this.getAvailableDepartments = this.getAvailableDepartments.bind(this);
 
     this.createStudentProfile = this.createStudentProfile.bind(this);
     this.getStudentProfile = this.getStudentProfile.bind(this);
@@ -108,6 +111,36 @@ class ProfileController {
         success: true,
         message: 'Profile updated successfully',
         data: profile,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // =================================================
+  // DEPARTMENT ENDPOINTS
+  // =================================================
+
+  /**
+   * GET /profile/departments
+   * Get available departments for the user's institute
+   */
+  async getAvailableDepartments(
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const userId = this.getUserId(req);
+      const query = parseDepartmentQuery(req.query);
+      const result = await profileService.getAvailableDepartments(
+        userId,
+        query.includeInactive
+      );
+
+      res.status(HTTP_STATUS.OK).json({
+        success: true,
+        data: result,
       });
     } catch (error) {
       next(error);

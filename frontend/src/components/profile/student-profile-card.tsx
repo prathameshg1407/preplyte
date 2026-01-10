@@ -3,7 +3,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -13,12 +13,12 @@ import {
   Pencil,
   FileText,
   ExternalLink,
-  User,
   Hash,
   Calendar,
   TrendingUp,
   Sparkles,
   ArrowRight,
+  Building2,
 } from 'lucide-react';
 import { useProfile } from '@/lib/hooks/use-profile';
 import Link from 'next/link';
@@ -113,11 +113,21 @@ export function StudentProfileCard() {
         <div className="grid grid-cols-2 gap-4">
           <div className="flex items-center gap-3 rounded-lg bg-muted/50 p-3">
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-background">
-              <BookOpen className="h-4 w-4 text-muted-foreground" />
+              <Building2 className="h-4 w-4 text-muted-foreground" />
             </div>
-            <div>
+            <div className="min-w-0 flex-1">
               <p className="text-xs text-muted-foreground">Department</p>
-              <p className="font-medium text-sm">{studentProfile.department}</p>
+              <p className="font-medium text-sm truncate" title={studentProfile.departmentName}>
+                {studentProfile.departmentCode ? (
+                  <span className="flex items-center gap-1">
+                    <span className="font-semibold">{studentProfile.departmentCode}</span>
+                    <span className="text-muted-foreground">•</span>
+                    <span className="truncate">{studentProfile.departmentName}</span>
+                  </span>
+                ) : (
+                  studentProfile.departmentName
+                )}
+              </p>
             </div>
           </div>
           <div className="flex items-center gap-3 rounded-lg bg-muted/50 p-3">
@@ -134,18 +144,20 @@ export function StudentProfileCard() {
         {/* Backlogs Info */}
         <div className="flex items-center gap-3 rounded-lg bg-muted/50 p-3">
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-background">
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            <BookOpen className="h-4 w-4 text-muted-foreground" />
           </div>
           <div className="flex-1">
             <p className="text-xs text-muted-foreground">Number of Backlogs</p>
-            <p className={cn(
-              "font-medium text-sm",
-              (studentProfile.numberOfBacklogs ?? 0) === 0 
-                ? "text-emerald-600 dark:text-emerald-400" 
-                : (studentProfile.numberOfBacklogs ?? 0) <= 2 
-                ? "text-amber-600 dark:text-amber-400" 
-                : "text-rose-600 dark:text-rose-400"
-            )}>
+            <p
+              className={cn(
+                'font-medium text-sm',
+                (studentProfile.numberOfBacklogs ?? 0) === 0
+                  ? 'text-emerald-600 dark:text-emerald-400'
+                  : (studentProfile.numberOfBacklogs ?? 0) <= 2
+                    ? 'text-amber-600 dark:text-amber-400'
+                    : 'text-rose-600 dark:text-rose-400'
+              )}
+            >
               {studentProfile.numberOfBacklogs ?? 0}
               {(studentProfile.numberOfBacklogs ?? 0) === 0 && (
                 <span className="ml-1 text-xs text-emerald-600 dark:text-emerald-400">✓</span>
