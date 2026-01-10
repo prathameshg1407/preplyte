@@ -54,6 +54,13 @@ router.get('/user', profileController.getUserProfile);
 router.patch('/user', profileController.updateUserProfile);
 
 // =====================================================
+// DEPARTMENT ROUTES
+// =====================================================
+
+// GET /profile/departments - Get available departments for user's institute
+router.get('/departments', profileController.getAvailableDepartments);
+
+// =====================================================
 // STUDENT PROFILE ROUTES
 // =====================================================
 

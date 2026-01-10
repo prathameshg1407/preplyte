@@ -14,6 +14,8 @@ import type {
   UpdateUserProfileInput,
   AcademicMarksInput,
   ProfileApiResponse,
+  Department,
+  DepartmentListResponse,
 } from '@/types/profile.types';
 
 // =====================================================
@@ -44,6 +46,22 @@ export const updateUserProfile = async (
   const response = await apiClient.patch<ProfileApiResponse<UserProfile>>(
     API_ENDPOINTS.PROFILE.USER,
     input
+  );
+  return response.data.data;
+};
+
+// =====================================================
+// DEPARTMENTS
+// =====================================================
+
+export const getDepartments = async (
+  includeInactive = false
+): Promise<DepartmentListResponse> => {
+  const response = await apiClient.get<ProfileApiResponse<DepartmentListResponse>>(
+    API_ENDPOINTS.PROFILE.DEPARTMENTS,
+    {
+      params: { includeInactive },
+    }
   );
   return response.data.data;
 };
@@ -144,14 +162,14 @@ export const uploadResume = async (file: File): Promise<Resume> => {
   return response.data.data;
 };
 
-export const getResume = async (resumeId: number): Promise<Resume> => {
+export const getResume = async (resumeId: string): Promise<Resume> => {
   const response = await apiClient.get<ProfileApiResponse<Resume>>(
     API_ENDPOINTS.PROFILE.RESUME(resumeId)
   );
   return response.data.data;
 };
 
-export const deleteResume = async (resumeId: number): Promise<void> => {
+export const deleteResume = async (resumeId: string): Promise<void> => {
   await apiClient.delete(API_ENDPOINTS.PROFILE.RESUME(resumeId));
 };
 
@@ -162,7 +180,7 @@ export const getDefaultResume = async (): Promise<Resume | null> => {
   return response.data.data;
 };
 
-export const setDefaultResume = async (resumeId: number): Promise<Resume> => {
+export const setDefaultResume = async (resumeId: string): Promise<Resume> => {
   const response = await apiClient.patch<ProfileApiResponse<Resume>>(
     API_ENDPOINTS.PROFILE.RESUME_DEFAULT(resumeId)
   );
@@ -170,7 +188,7 @@ export const setDefaultResume = async (resumeId: number): Promise<Resume> => {
 };
 
 export const extractResumeText = async (
-  resumeId: number
+  resumeId: string
 ): Promise<ExtractedResumeData> => {
   const response = await apiClient.get<ProfileApiResponse<ExtractedResumeData>>(
     API_ENDPOINTS.PROFILE.RESUME_TEXT(resumeId)
@@ -178,7 +196,7 @@ export const extractResumeText = async (
   return response.data.data;
 };
 
-export const linkResumeToProfile = async (resumeId: number): Promise<void> => {
+export const linkResumeToProfile = async (resumeId: string): Promise<void> => {
   await apiClient.post(API_ENDPOINTS.PROFILE.RESUME_LINK(resumeId));
 };
 
@@ -193,6 +211,9 @@ export const profileService = {
   // User profile
   getUserProfile,
   updateUserProfile,
+
+  // Departments
+  getDepartments,
 
   // Student profile
   createStudentProfile,

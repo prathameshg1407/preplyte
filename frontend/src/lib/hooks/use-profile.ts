@@ -1,12 +1,8 @@
+// src/lib/hooks/use-profile.ts
+
 import { useCallback, useEffect, useRef } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useProfileStore } from '@/lib/store/profile-store';
-import type {
-  CreateStudentProfileInput,
-  UpdateStudentProfileInput,
-  UpdateUserProfileInput,
-  AcademicMarksInput,
-} from '@/types/profile.types';
 
 // =====================================================
 // MAIN PROFILE HOOK
@@ -20,15 +16,18 @@ export const useProfile = () => {
     resumeCount,
     maxResumes,
     profileCompletion,
+    departments,
     isLoading,
     isUpdating,
     isUploadingResume,
+    isDepartmentsLoading,
     error,
     _profileFetched,
     clearError,
     fetchCompleteProfile,
     fetchUserProfile,
     updateUserProfile,
+    fetchDepartments,
     createStudentProfile,
     fetchStudentProfile,
     updateStudentProfile,
@@ -43,6 +42,7 @@ export const useProfile = () => {
     linkResumeToProfile,
     reset,
     invalidateProfile,
+    invalidateDepartments,
   } = useProfileStore(
     useShallow((state) => ({
       userProfile: state.userProfile,
@@ -51,15 +51,18 @@ export const useProfile = () => {
       resumeCount: state.resumeCount,
       maxResumes: state.maxResumes,
       profileCompletion: state.profileCompletion,
+      departments: state.departments,
       isLoading: state.isLoading,
       isUpdating: state.isUpdating,
       isUploadingResume: state.isUploadingResume,
+      isDepartmentsLoading: state.isDepartmentsLoading,
       error: state.error,
       _profileFetched: state._profileFetched,
       clearError: state.clearError,
       fetchCompleteProfile: state.fetchCompleteProfile,
       fetchUserProfile: state.fetchUserProfile,
       updateUserProfile: state.updateUserProfile,
+      fetchDepartments: state.fetchDepartments,
       createStudentProfile: state.createStudentProfile,
       fetchStudentProfile: state.fetchStudentProfile,
       updateStudentProfile: state.updateStudentProfile,
@@ -74,6 +77,7 @@ export const useProfile = () => {
       linkResumeToProfile: state.linkResumeToProfile,
       reset: state.reset,
       invalidateProfile: state.invalidateProfile,
+      invalidateDepartments: state.invalidateDepartments,
     }))
   );
 
@@ -92,11 +96,13 @@ export const useProfile = () => {
     resumeCount,
     maxResumes,
     profileCompletion,
+    departments,
 
     // Loading states
     isLoading,
     isUpdating,
     isUploadingResume,
+    isDepartmentsLoading,
 
     // Error
     error,
@@ -109,6 +115,9 @@ export const useProfile = () => {
     fetchCompleteProfile,
     fetchUserProfile,
     updateUserProfile,
+
+    // Department actions
+    fetchDepartments,
 
     // Student profile actions
     createStudentProfile,
@@ -135,10 +144,12 @@ export const useProfile = () => {
     hasResumes: resumes.length > 0,
     canUploadMore: resumeCount < maxResumes,
     defaultResume: resumes.find((r) => r.isDefault) || null,
+    hasDepartments: departments.length > 0,
 
     // Reset & Invalidate
     reset,
     invalidateProfile,
+    invalidateDepartments,
   };
 };
 
@@ -158,6 +169,52 @@ export const useProfileData = () => {
   }, [profile.initializeProfile]);
 
   return profile;
+};
+
+// =====================================================
+// DEPARTMENTS HOOK
+// =====================================================
+
+export const useDepartments = () => {
+  const {
+    departments,
+    isDepartmentsLoading,
+    error,
+    _departmentsFetched,
+    fetchDepartments,
+    invalidateDepartments,
+  } = useProfileStore(
+    useShallow((state) => ({
+      departments: state.departments,
+      isDepartmentsLoading: state.isDepartmentsLoading,
+      error: state.error,
+      _departmentsFetched: state._departmentsFetched,
+      fetchDepartments: state.fetchDepartments,
+      invalidateDepartments: state.invalidateDepartments,
+    }))
+  );
+
+  const initRef = useRef(false);
+
+  useEffect(() => {
+    if (!initRef.current && !_departmentsFetched && !isDepartmentsLoading) {
+      initRef.current = true;
+      fetchDepartments();
+    }
+  }, [_departmentsFetched, isDepartmentsLoading, fetchDepartments]);
+
+  const refetch = useCallback(async () => {
+    invalidateDepartments();
+    await fetchDepartments();
+  }, [invalidateDepartments, fetchDepartments]);
+
+  return {
+    departments,
+    isLoading: isDepartmentsLoading,
+    error,
+    refetch,
+    hasDepartments: departments.length > 0,
+  };
 };
 
 // =====================================================
@@ -198,14 +255,12 @@ export const useResumes = () => {
   const initRef = useRef(false);
 
   useEffect(() => {
-    // Only fetch once on mount if not already fetched
     if (!initRef.current && !_resumesFetched && !isLoading) {
       initRef.current = true;
       fetchResumes();
     }
   }, [_resumesFetched, isLoading, fetchResumes]);
 
-  // Manual refetch function that invalidates cache first
   const refetch = useCallback(async () => {
     invalidateResumes();
     await fetchResumes();
@@ -236,10 +291,13 @@ export const useResumes = () => {
 export const useStudentProfile = () => {
   const {
     studentProfile,
+    departments,
     isLoading,
     isUpdating,
+    isDepartmentsLoading,
     error,
     fetchStudentProfile,
+    fetchDepartments,
     createStudentProfile,
     updateStudentProfile,
     deleteStudentProfile,
@@ -250,10 +308,13 @@ export const useStudentProfile = () => {
   } = useProfileStore(
     useShallow((state) => ({
       studentProfile: state.studentProfile,
+      departments: state.departments,
       isLoading: state.isLoading,
       isUpdating: state.isUpdating,
+      isDepartmentsLoading: state.isDepartmentsLoading,
       error: state.error,
       fetchStudentProfile: state.fetchStudentProfile,
+      fetchDepartments: state.fetchDepartments,
       createStudentProfile: state.createStudentProfile,
       updateStudentProfile: state.updateStudentProfile,
       deleteStudentProfile: state.deleteStudentProfile,
@@ -266,11 +327,14 @@ export const useStudentProfile = () => {
 
   return {
     studentProfile,
+    departments,
     isLoading,
     isUpdating,
+    isDepartmentsLoading,
     error,
     clearError,
     fetchStudentProfile,
+    fetchDepartments,
     createStudentProfile,
     updateStudentProfile,
     deleteStudentProfile,
@@ -278,6 +342,7 @@ export const useStudentProfile = () => {
     removeSkills,
     updateAcademicMarks,
     hasProfile: !!studentProfile,
+    hasDepartments: departments.length > 0,
   };
 };
 

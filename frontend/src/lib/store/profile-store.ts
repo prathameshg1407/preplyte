@@ -1,3 +1,5 @@
+// src/lib/store/profile-store.ts
+
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import type {
@@ -5,6 +7,7 @@ import type {
   UserProfile,
   StudentProfile,
   Resume,
+  Department,
   CreateStudentProfileInput,
   UpdateStudentProfileInput,
   UpdateUserProfileInput,
@@ -25,15 +28,18 @@ interface ProfileState {
   resumeCount: number;
   maxResumes: number;
   profileCompletion: ProfileCompletionStatus | null;
+  departments: Department[];
 
   // Loading states
   isLoading: boolean;
   isUpdating: boolean;
   isUploadingResume: boolean;
+  isDepartmentsLoading: boolean;
 
   // Fetch tracking (prevents duplicate calls)
   _profileFetched: boolean;
   _resumesFetched: boolean;
+  _departmentsFetched: boolean;
 
   // Error state
   error: string | null;
@@ -42,6 +48,9 @@ interface ProfileState {
   fetchCompleteProfile: () => Promise<void>;
   fetchUserProfile: () => Promise<void>;
   updateUserProfile: (input: UpdateUserProfileInput) => Promise<void>;
+
+  // Actions - Departments
+  fetchDepartments: () => Promise<void>;
 
   // Actions - Student Profile
   createStudentProfile: (input: CreateStudentProfileInput) => Promise<void>;
@@ -59,15 +68,16 @@ interface ProfileState {
   // Actions - Resumes
   fetchResumes: () => Promise<void>;
   uploadResume: (file: File) => Promise<Resume>;
-  deleteResume: (resumeId: number) => Promise<void>;
-  setDefaultResume: (resumeId: number) => Promise<void>;
-  linkResumeToProfile: (resumeId: number) => Promise<void>;
+  deleteResume: (resumeId: string) => Promise<void>;
+  setDefaultResume: (resumeId: string) => Promise<void>;
+  linkResumeToProfile: (resumeId: string) => Promise<void>;
 
   // Utility
   clearError: () => void;
   reset: () => void;
   invalidateResumes: () => void;
   invalidateProfile: () => void;
+  invalidateDepartments: () => void;
 }
 
 // =====================================================
@@ -81,11 +91,14 @@ const initialState = {
   resumeCount: 0,
   maxResumes: 5,
   profileCompletion: null,
+  departments: [],
   isLoading: false,
   isUpdating: false,
   isUploadingResume: false,
+  isDepartmentsLoading: false,
   _profileFetched: false,
   _resumesFetched: false,
+  _departmentsFetched: false,
   error: null,
 };
 
@@ -104,14 +117,14 @@ export const useProfileStore = create<ProfileState>()(
 
       fetchCompleteProfile: async () => {
         const state = get();
-        
+
         // Prevent duplicate fetches
         if (state.isLoading || state._profileFetched) {
           return;
         }
 
         set({ isLoading: true, error: null });
-        
+
         try {
           const data = await profileService.getCompleteProfile();
           set({
@@ -120,9 +133,11 @@ export const useProfileStore = create<ProfileState>()(
             resumes: data.resumes,
             resumeCount: data.resumes.length,
             profileCompletion: data.profileCompletion,
+            departments: data.availableDepartments,
             isLoading: false,
             _profileFetched: true,
-            _resumesFetched: true, // Resumes are included in complete profile
+            _resumesFetched: true,
+            _departmentsFetched: true,
           });
         } catch (error: any) {
           set({
@@ -135,13 +150,13 @@ export const useProfileStore = create<ProfileState>()(
 
       fetchUserProfile: async () => {
         const state = get();
-        
+
         if (state.isLoading) {
           return;
         }
 
         set({ isLoading: true, error: null });
-        
+
         try {
           const data = await profileService.getUserProfile();
           set({
@@ -160,7 +175,7 @@ export const useProfileStore = create<ProfileState>()(
 
       updateUserProfile: async (input) => {
         set({ isUpdating: true, error: null });
-        
+
         try {
           const data = await profileService.updateUserProfile(input);
           set({
@@ -177,12 +192,42 @@ export const useProfileStore = create<ProfileState>()(
       },
 
       // =================================================
+      // DEPARTMENT ACTIONS
+      // =================================================
+
+      fetchDepartments: async () => {
+        const state = get();
+
+        // Prevent duplicate fetches
+        if (state.isDepartmentsLoading || state._departmentsFetched) {
+          return;
+        }
+
+        set({ isDepartmentsLoading: true, error: null });
+
+        try {
+          const data = await profileService.getDepartments();
+          set({
+            departments: data.departments,
+            isDepartmentsLoading: false,
+            _departmentsFetched: true,
+          });
+        } catch (error: any) {
+          set({
+            error: error.response?.data?.message || 'Failed to fetch departments',
+            isDepartmentsLoading: false,
+          });
+          throw error;
+        }
+      },
+
+      // =================================================
       // STUDENT PROFILE ACTIONS
       // =================================================
 
       createStudentProfile: async (input) => {
         set({ isUpdating: true, error: null });
-        
+
         try {
           const data = await profileService.createStudentProfile(input);
           set({
@@ -200,7 +245,7 @@ export const useProfileStore = create<ProfileState>()(
 
       fetchStudentProfile: async () => {
         set({ isLoading: true, error: null });
-        
+
         try {
           const data = await profileService.getStudentProfile();
           set({
@@ -218,7 +263,7 @@ export const useProfileStore = create<ProfileState>()(
 
       updateStudentProfile: async (input) => {
         set({ isUpdating: true, error: null });
-        
+
         try {
           const data = await profileService.updateStudentProfile(input);
           set({
@@ -236,7 +281,7 @@ export const useProfileStore = create<ProfileState>()(
 
       deleteStudentProfile: async () => {
         set({ isUpdating: true, error: null });
-        
+
         try {
           await profileService.deleteStudentProfile();
           set({
@@ -258,7 +303,7 @@ export const useProfileStore = create<ProfileState>()(
 
       addSkills: async (skills) => {
         set({ isUpdating: true, error: null });
-        
+
         try {
           const data = await profileService.addSkills(skills);
           set({
@@ -276,7 +321,7 @@ export const useProfileStore = create<ProfileState>()(
 
       removeSkills: async (skills) => {
         set({ isUpdating: true, error: null });
-        
+
         try {
           const data = await profileService.removeSkills(skills);
           set({
@@ -298,7 +343,7 @@ export const useProfileStore = create<ProfileState>()(
 
       updateAcademicMarks: async (input) => {
         set({ isUpdating: true, error: null });
-        
+
         try {
           const data = await profileService.updateAcademicMarks(input);
           set({
@@ -320,14 +365,14 @@ export const useProfileStore = create<ProfileState>()(
 
       fetchResumes: async () => {
         const state = get();
-        
+
         // Prevent duplicate fetches
         if (state.isLoading || state._resumesFetched) {
           return;
         }
 
         set({ isLoading: true, error: null });
-        
+
         try {
           const data = await profileService.getResumes();
           set({
@@ -348,7 +393,7 @@ export const useProfileStore = create<ProfileState>()(
 
       uploadResume: async (file) => {
         set({ isUploadingResume: true, error: null });
-        
+
         try {
           const data = await profileService.uploadResume(file);
           set((state) => ({
@@ -368,7 +413,7 @@ export const useProfileStore = create<ProfileState>()(
 
       deleteResume: async (resumeId) => {
         set({ isUpdating: true, error: null });
-        
+
         try {
           await profileService.deleteResume(resumeId);
           set((state) => ({
@@ -387,7 +432,7 @@ export const useProfileStore = create<ProfileState>()(
 
       setDefaultResume: async (resumeId) => {
         set({ isUpdating: true, error: null });
-        
+
         try {
           await profileService.setDefaultResume(resumeId);
           set((state) => ({
@@ -408,7 +453,7 @@ export const useProfileStore = create<ProfileState>()(
 
       linkResumeToProfile: async (resumeId) => {
         set({ isUpdating: true, error: null });
-        
+
         try {
           await profileService.linkResumeToProfile(resumeId);
           const studentProfile = await profileService.getStudentProfile();
@@ -433,7 +478,10 @@ export const useProfileStore = create<ProfileState>()(
 
       invalidateResumes: () => set({ _resumesFetched: false }),
 
-      invalidateProfile: () => set({ _profileFetched: false, _resumesFetched: false }),
+      invalidateProfile: () =>
+        set({ _profileFetched: false, _resumesFetched: false, _departmentsFetched: false }),
+
+      invalidateDepartments: () => set({ _departmentsFetched: false }),
 
       reset: () => set(initialState),
     }),

@@ -43,17 +43,7 @@ export const COURSE_YEARS = [
   '4th Year',
 ] as const;
 
-export const DEPARTMENTS = [
-  'Computer Science',
-  'Information Technology',
-  'Electronics',
-  'Electrical',
-  'Mechanical',
-  'Civil',
-  'Chemical',
-  'Biotechnology',
-  'Other',
-] as const;
+// Note: DEPARTMENTS removed - now managed per institute in database
 
 // =====================================================
 // HTTP STATUS CODES
@@ -75,9 +65,11 @@ export const PROFILE_CACHE_KEYS = {
   studentProfile: (userId: string) => `profile:student:${userId}`,
   resumes: (userId: string) => `profile:resumes:${userId}`,
   defaultResume: (userId: string) => `profile:resume:default:${userId}`,
+  departments: (instituteId: string) => `profile:departments:${instituteId}`,
 } as const;
 
 export const PROFILE_CACHE_TTL = {
   STUDENT_PROFILE: 300, // 5 minutes
   RESUMES: 180, // 3 minutes
+  DEPARTMENTS: 600, // 10 minutes
 } as const;

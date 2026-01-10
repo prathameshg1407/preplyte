@@ -1,3 +1,5 @@
+// src/components/institute-admin/institute-admin-sidebar.tsx
+
 'use client';
 
 import Link from 'next/link';
@@ -24,12 +26,14 @@ import {
   LogOut,
   User,
   ChevronDown,
+  Building2,
 } from 'lucide-react';
 
 const navigation = [
-  { name: 'Dashboard', href: '/institute', icon: LayoutDashboard },
+  { name: 'Dashboard', href: '/institute-admin', icon: LayoutDashboard },
   { name: 'Mock Drives', href: '/institute-admin/mock-drives', icon: FileText },
   { name: 'Students', href: '/institute-admin/students', icon: Users },
+  { name: 'Departments', href: '/institute-admin/departments', icon: Building2 },
   { name: 'Analytics', href: '/institute-admin/analytics', icon: BarChart3 },
   { name: 'Settings', href: '/institute-admin/settings', icon: Settings },
 ];
@@ -48,6 +52,15 @@ export function InstituteAdminSidebar() {
       .slice(0, 2);
   };
 
+  const isActiveRoute = (href: string): boolean => {
+    // Exact match for dashboard
+    if (href === '/institute-admin') {
+      return pathname === '/institute-admin';
+    }
+    // Prefix match for other routes
+    return pathname.startsWith(href);
+  };
+
   return (
     <div className="flex h-screen w-64 flex-col border-r bg-background">
       {/* Logo */}
@@ -59,10 +72,7 @@ export function InstituteAdminSidebar() {
       {/* Navigation */}
       <nav className="flex-1 space-y-1 p-4">
         {navigation.map((item) => {
-          const isActive =
-            item.href === '/institute'
-              ? pathname === '/institute'
-              : pathname.startsWith(item.href);
+          const isActive = isActiveRoute(item.href);
 
           return (
             <Link
@@ -115,13 +125,13 @@ export function InstituteAdminSidebar() {
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
-              <Link href="/institute/profile">
+              <Link href="/institute-admin/profile">
                 <User className="mr-2 h-4 w-4" />
                 Profile
               </Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
-              <Link href="/institute/settings">
+              <Link href="/institute-admin/settings">
                 <Settings className="mr-2 h-4 w-4" />
                 Settings
               </Link>
