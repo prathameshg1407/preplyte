@@ -1,5 +1,3 @@
-// src/module/practice/interview/websocket/interview.gateway.ts
-
 import { WebSocket, WebSocketServer } from 'ws';
 import type { RawData } from 'ws';
 import type { Server, IncomingMessage } from 'http';
@@ -379,7 +377,7 @@ class InterviewWebSocketGateway {
         }
       );
 
-      // Initialize STT - MUST happen before setting isInitialized
+      // Initialize STT
       try {
         connection.transcriber = speechToTextService.createRealtimeTranscriber({
           onTranscript: (result) => this.handleTranscription(connection, result),
@@ -393,12 +391,9 @@ class InterviewWebSocketGateway {
         connection.transcriber = null;
       }
 
-      // Generate opening if session is new
-      if (session.status === 'CREATED' || session.status === 'STARTED') {
-        await this.generateAndSpeakOpening(connection, session);
-      }
-
-      // Mark as initialized and ready to listen
+      // --- CRITICAL FIX: Send Session Ready BEFORE generating audio ---
+      // This ensures the frontend loader disappears before the voice starts.
+      
       connection.isInitialized = true;
       connection.isInitializing = false;
       connection.isListening = true;
@@ -415,12 +410,16 @@ class InterviewWebSocketGateway {
         },
       });
 
-      logger.info('[WS Gateway] Interview initialized', {
+      logger.info('[WS Gateway] Interview initialized - Ready signal sent', {
         sessionId: socket.sessionId,
         hasTranscriber: !!connection.transcriber,
         isListening: connection.isListening,
-        pendingChunks: connection.pendingAudioChunks.length,
       });
+
+      // Now generate opening if session is new
+      if (session.status === 'CREATED' || session.status === 'STARTED') {
+        await this.generateAndSpeakOpening(connection, session);
+      }
 
       // Process any queued audio chunks
       if (connection.pendingAudioChunks.length > 0) {

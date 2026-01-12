@@ -70,7 +70,7 @@ const modules: PracticeModule[] = [
     id: 'coding',
     title: 'Coding',
     subtitle: 'DSA & Problem Solving',
-    description: 'Solve real interview problems with our powerful code editor. Auto-graded with detailed test cases.',
+    description: 'Solve real interview problems with our powerful code editor. Auto-graded with test cases.',
     icon: Code2,
     href: '/practice/machine',
     color: 'text-emerald-600 dark:text-emerald-400',

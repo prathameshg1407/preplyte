@@ -334,6 +334,9 @@ export function useInterviewWebSocket(
 
             case 'ai_speaking': {
               const data = message.data as WSAISpeakingData;
+              if (!storeRef.current.ui.isConnected) {
+                storeRef.current.setConnected(true);
+            }
               storeRef.current.setProcessing(false);
               storeRef.current.setAISpeaking(true);
               const aiMessage: ConversationMessage = {
