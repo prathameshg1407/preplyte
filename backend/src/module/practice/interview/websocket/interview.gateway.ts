@@ -365,6 +365,12 @@ class InterviewWebSocketGateway {
         }
       }
 
+      // FIX: FETCH PREVIOUS RESPONSES FROM DB
+      const previousResponses = await prisma.aiInterviewResponse.findMany({
+        where: { sessionId: socket.sessionId },
+        orderBy: { questionOrder: 'asc' }
+      });
+
       // Initialize conversation context
       connection.context = await conversationEngineService.initializeContext(
         parsedResume || this.createMinimalResume(),
@@ -374,7 +380,8 @@ class InterviewWebSocketGateway {
           difficulty: session.difficulty,
           focusAreas: session.focusAreas,
           targetQuestions: session.totalQuestions,
-        }
+        },
+        previousResponses
       );
 
       // Initialize STT
@@ -417,8 +424,11 @@ class InterviewWebSocketGateway {
       });
 
       // Now generate opening if session is new
-      if (session.status === 'CREATED' || session.status === 'STARTED') {
+      if (previousResponses.length === 0 && (session.status === 'CREATED' || session.status === 'STARTED')) {
         await this.generateAndSpeakOpening(connection, session);
+      }else {
+        // RESUMING: Send current state
+        this.sendSessionState(connection);
       }
 
       // Process any queued audio chunks
@@ -617,9 +627,8 @@ class InterviewWebSocketGateway {
           connection.isListening = true;
         }
         break;
-
-      case WS_EVENTS.CLIENT.PING:
       case 'ping':
+      case WS_EVENTS.CLIENT.PING:
         socket.isAlive = true;
         socket.lastPongTime = Date.now();
         logger.debug('[WS Gateway] Application ping received, sending pong', {
@@ -743,7 +752,7 @@ class InterviewWebSocketGateway {
         await this.processUserResponse(connection, connection.currentTranscript.trim());
         connection.currentTranscript = '';
       }
-    }, 3000); // 3 seconds of silence
+    }, 5000); // 3 seconds of silence
 
     this.responseProcessingTimeout.set(socket.id, timeout);
   }

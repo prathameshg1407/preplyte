@@ -1,10 +1,7 @@
 // src/module/practice/interview/services/index.ts
 
 export { resumeParserService, ResumeParserService } from './resume-parser.service';
-export {
-  conversationEngineService,
-  ConversationEngineService,
-} from './conversation-engine.service';
+export * from './conversation-engine.service';
 export {
   speechToTextService,
   SpeechToTextService,

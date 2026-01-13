@@ -75,6 +75,7 @@ class ConversationEngineService {
 
   /**
    * Initialize a new conversation context
+   * Updated to support Resuming Sessions by loading previous responses
    */
   async initializeContext(
     resume: ParsedResume,
@@ -84,9 +85,53 @@ class ConversationEngineService {
       difficulty: AiInterviewDifficulty;
       focusAreas: string[];
       targetQuestions: number;
-    }
+    },
+    previousResponses: any[] = [] // ADDED: Accept DB history
   ): Promise<ConversationContext> {
     const candidateProfile = resumeParserService.extractCandidateProfile(resume.structured);
+
+    // Reconstruct History and Questions from DB Data
+    const history: ConversationMessage[] = [];
+    const questionsAsked: GeneratedQuestion[] = [];
+
+    // Sort by order to ensure chronological history
+    const sortedResponses = [...previousResponses].sort((a, b) => a.questionOrder - b.questionOrder);
+
+    for (const resp of sortedResponses) {
+        // 1. Add AI Question to History
+        history.push({
+            id: nanoid(),
+            role: 'assistant',
+            content: resp.question,
+            timestamp: new Date(resp.createdAt)
+        });
+
+        // 2. Add User Answer to History (if answered)
+        if (resp.answer) {
+            history.push({
+                id: nanoid(),
+                role: 'user',
+                content: resp.answer,
+                timestamp: new Date(resp.updatedAt || resp.createdAt)
+            });
+        }
+
+        // 3. Rebuild Questions Asked List
+        questionsAsked.push({
+            id: resp.id,
+            category: resp.category,
+            question: resp.question,
+            order: resp.questionOrder,
+            followUpPotential: []
+        });
+    }
+
+    // Determine current topic based on last question
+    const lastQuestion = questionsAsked[questionsAsked.length - 1];
+    const currentTopic = lastQuestion ? lastQuestion.category : null;
+    const followUpDepth = lastQuestion?.category && questionsAsked.length >= 2 
+        && questionsAsked[questionsAsked.length - 2].category === lastQuestion.category 
+        ? 1 : 0; // Simple approximation for depth
 
     return {
       resume,
@@ -94,10 +139,10 @@ class ConversationEngineService {
         resumeId: null,
         ...config,
       },
-      history: [],
-      questionsAsked: [],
-      currentTopic: null,
-      followUpDepth: 0,
+      history,
+      questionsAsked,
+      currentTopic,
+      followUpDepth,
       candidateProfile,
     };
   }

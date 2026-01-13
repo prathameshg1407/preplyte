@@ -33,6 +33,7 @@ const DEFAULT_SAMPLE_RATE = 16000;
 const DEFAULT_CHANNEL_COUNT = 1;
 const BUFFER_SIZE = 4096;
 const VOLUME_SMOOTHING = 0.8;
+const NOISE_THRESHOLD = 0.01; // Ignore audio below this volume (noise gate)
 
 // =====================================================
 // UTILITY FUNCTIONS
@@ -146,6 +147,8 @@ export function useAudioRecorder(
   // ===================================================
 
   const stopRecording = useCallback((): void => {
+    if (!isRecordingRef.current) return;
+    
     console.log('[AudioRecorder] Stopping recording');
 
     isRecordingRef.current = false;
@@ -281,7 +284,23 @@ export function useAudioRecorder(
 
       processor.onaudioprocess = (e: AudioProcessingEvent): void => {
         if (!isRecordingRef.current) return;
+        
+        // NOISE GATE LOGIC: Calculate RMS amplitude of this buffer
         const inputData = e.inputBuffer.getChannelData(0);
+        let sum = 0;
+        for (let i = 0; i < inputData.length; i++) {
+            sum += inputData[i] * inputData[i];
+        }
+        const rms = Math.sqrt(sum / inputData.length);
+
+        // Only send audio if it's loud enough (ignore silence/static)
+        // Note: We still send data if volume is low, but the backend VAD handles it better if the stream is clean.
+        // If you want to strictly prevent sending silence:
+        // if (rms < NOISE_THRESHOLD) return; 
+        
+        // HOWEVER, completely cutting packets can cause sync issues.
+        // Better strategy: Convert to PCM regardless, but monitor volume for UI.
+        
         const pcmData = float32ToPCM16(inputData);
         onAudioDataRef.current?.(pcmData);
       };

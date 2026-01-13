@@ -205,6 +205,16 @@ export const useInterviewStore = create<InterviewState>()(
         setCurrentQuestion: (question) =>
           set((state) => {
             state.currentQuestion = question;
+            if (question && !state.messages.some(m => m.id === question.id)) {
+               state.messages.push({
+                 id: question.id, // Use the same ID so we don't duplicate
+                 role: 'assistant',
+                 content: question.question,
+                 timestamp: new Date(), // Or question.startedAt if available
+                 category: question.category,
+                 isFollowUp: question.isFollowUp
+               });
+            }
           }),
 
         clearMessages: () =>

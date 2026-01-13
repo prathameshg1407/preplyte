@@ -54,7 +54,7 @@ export default function InterviewSessionPage() {
         <div className="text-center">
           <h1 className="text-2xl font-bold mb-2">Session Not Found</h1>
           <p className="text-muted-foreground max-w-md">
-            The interview session you're looking for doesn't exist or has expired.
+            The interview session you are looking for does not exist or has expired.
           </p>
         </div>
         <Button onClick={() => router.push('/practice/ai-interview')}>
