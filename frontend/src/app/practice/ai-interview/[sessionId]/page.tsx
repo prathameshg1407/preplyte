@@ -35,7 +35,7 @@ export default function InterviewSessionPage() {
   }, [session?.status, sessionId, router]);
 
   // Loading state
-  if (isLoading) {
+  if (isLoading && !session) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="flex flex-col items-center gap-4">
@@ -47,14 +47,14 @@ export default function InterviewSessionPage() {
   }
 
   // Error state
-  if (error || !session) {
+  if (error || (!session && !isLoading)) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen gap-6 p-8">
         <AlertCircle className="h-16 w-16 text-destructive" />
         <div className="text-center">
           <h1 className="text-2xl font-bold mb-2">Session Not Found</h1>
           <p className="text-muted-foreground max-w-md">
-            The interview session you're looking for doesn't exist or has expired.
+            The interview session you are looking for does not exist or has expired.
           </p>
         </div>
         <Button onClick={() => router.push('/practice/ai-interview')}>

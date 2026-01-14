@@ -341,8 +341,20 @@ export function InterviewWebSocketProvider({ children }: { children: React.React
                   storeRef.current.setConnected(true);
                   storeRef.current.setConnecting(false);
                   storeRef.current.resetConnectionAttempts();
+                  
                   if (data.currentQuestion) {
                     storeRef.current.setCurrentQuestion(data.currentQuestion);
+                    
+                    // FIX 1: Explicitly add message to history on RESUME/READY
+                    // This fixes the "Invisible Question" bug when resuming an interview
+                    storeRef.current.addMessage({
+                      id: data.currentQuestion.id,
+                      role: 'assistant',
+                      content: data.currentQuestion.question,
+                      timestamp: new Date(),
+                      category: data.currentQuestion.category,
+                      isFollowUp: data.currentQuestion.isFollowUp,
+                    });
                   }
                 });
                 break;
@@ -379,12 +391,13 @@ export function InterviewWebSocketProvider({ children }: { children: React.React
                 break;
 
               case 'ai_speaking': {
-                const data = message.data as WSAISpeakingData;
+                const data = message.data as WSAISpeakingData & {id?: string};
                 safeStoreUpdate(() => {
                   storeRef.current.setProcessing(false);
                   storeRef.current.setAISpeaking(true);
+                  const messageId = data.id || `ai-${Date.now()}-${++messageIdRef.current}`;
                   storeRef.current.addMessage({
-                    id: `ai-${Date.now()}-${++messageIdRef.current}`,
+                    id: messageId,
                     role: 'assistant',
                     content: data.text,
                     timestamp: new Date(),
@@ -411,11 +424,16 @@ export function InterviewWebSocketProvider({ children }: { children: React.React
               }
 
               case 'ai_done':
-                console.log('[WS Context] AI done speaking');
-                safeStoreUpdate(() => {
-                  storeRef.current.setAISpeaking(false);
-                  storeRef.current.setRecording(true);
-                });
+                console.log('[WS Context] AI done speaking (server side)');
+                
+                // FIX 2: DO NOT UPDATE STATE HERE.
+                // We must wait for the UI Audio Player to finish playing.
+                // If we flip to "Listening" now, the mic will turn on while audio is still buffering!
+                // safeStoreUpdate(() => {
+                //   storeRef.current.setAISpeaking(false);
+                //   storeRef.current.setRecording(true);
+                // });
+                
                 notifyAiDoneHandlers();
                 break;
 
@@ -425,9 +443,21 @@ export function InterviewWebSocketProvider({ children }: { children: React.React
                   storeRef.current.setProgress(data.progress);
                   if (data.currentQuestion) {
                     storeRef.current.setCurrentQuestion(data.currentQuestion);
+                    
+                    // FIX 3: Also add to history on Session State update
+                    storeRef.current.addMessage({
+                        id: data.currentQuestion.id,
+                        role: 'assistant',
+                        content: data.currentQuestion.question,
+                        timestamp: new Date(),
+                        category: data.currentQuestion.category,
+                        isFollowUp: data.currentQuestion.isFollowUp,
+                    });
                   }
-                  storeRef.current.setRecording(data.isListening);
-                  storeRef.current.setAISpeaking(data.isAISpeaking);
+                  
+                  // Don't auto-set recording/speaking here, let the room handle it based on activity
+                  // storeRef.current.setRecording(data.isListening);
+                  // storeRef.current.setAISpeaking(data.isAISpeaking);
                 });
                 break;
               }

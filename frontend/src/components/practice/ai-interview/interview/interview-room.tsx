@@ -5,7 +5,7 @@
 import { useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 
-// Local component imports - use relative paths to avoid circular dependencies
+// Local component imports
 import { AIAvatar } from './ai-avatar';
 import { AudioVisualizer } from './audio-visualizer';
 import { TranscriptDisplay } from './transcript-display';
@@ -41,8 +41,9 @@ interface InterviewRoomProps {
 export function InterviewRoom({ sessionId }: InterviewRoomProps) {
   const router = useRouter();
   const hasInitializedRef = useRef(false);
+  const hasStartedRef = useRef(false); // Prevents double-start
 
-  // Fetch session data
+  // Fetch session data via REST
   const { data: sessionData, isLoading: isSessionLoading } = useInterviewSession(sessionId);
 
   // Store
@@ -56,9 +57,12 @@ export function InterviewRoom({ sessionId }: InterviewRoomProps) {
       isProcessing,
       currentTranscript,
       error,
+      isConnected, // Get connection status from store
     },
     setCurrentSession,
     setError,
+    setRecording, 
+    setAISpeaking
   } = useInterviewStore();
 
   // WebSocket from context
@@ -73,7 +77,12 @@ export function InterviewRoom({ sessionId }: InterviewRoomProps) {
     clear: clearAudioQueue,
   } = useAudioPlayer({
     onPlaybackEnd: () => {
-      console.log('[InterviewRoom] Audio playback ended');
+      console.log('[InterviewRoom] Audio playback ended - Starting Mic');
+      // FIX: FORCE UI UPDATE AND START MIC
+      setAISpeaking(false);
+      setRecording(true); 
+      startMicRecording(); 
+      ws.startRecording();
     },
     onError: (err) => {
       console.error('[InterviewRoom] Audio player error:', err);
@@ -81,35 +90,35 @@ export function InterviewRoom({ sessionId }: InterviewRoomProps) {
   });
 
   // Audio recorder
-// In interview-room.tsx - update useAudioRecorder
+  const {
+    isRecording: isRecorderActive,
+    startRecording: startMicRecording,
+    stopRecording: stopMicRecording,
+    volume,
+    error: recorderError,
+    requestPermission,
+    isSupported: isAudioSupported,
+  } = useAudioRecorder({
+    onAudioData: (data) => {
+      // Only send if connected to avoid errors
+      if (ws.isConnected) {
+        ws.sendAudio(data);
+      }
+    },
+    onError: (err) => {
+      console.error('[InterviewRoom] Recorder error:', err);
+      setError(err);
+    },
+  });
 
-const {
-  isRecording: isRecorderActive,
-  startRecording: startMicRecording,
-  stopRecording: stopMicRecording,
-  volume,
-  error: recorderError,
-  requestPermission,
-  isSupported: isAudioSupported,
-} = useAudioRecorder({
-  onAudioData: (data) => {
-    // ADD THIS LOG
-    console.log('[InterviewRoom] Sending audio chunk, size:', data.byteLength);
-    ws.sendAudio(data);
-  },
-  onError: (err) => {
-    console.error('[InterviewRoom] Recorder error:', err);
-    setError(err);
-  },
-});
   // Start session mutation
-  const { mutate: startSession, isPending: isStarting } = useStartSession();
+  const { mutate: startSession } = useStartSession();
 
   // ===================================================
   // REGISTER HANDLERS
   // ===================================================
 
-  // Register audio handler - accumulate chunks
+  // Register audio handler
   useEffect(() => {
     const unsubscribe = ws.registerAudioHandler((data) => {
       queueAudio(data);
@@ -117,7 +126,7 @@ const {
     return unsubscribe;
   }, [ws, queueAudio]);
 
-  // Register AI done handler - trigger playback when AI finishes
+  // Register AI done handler
   useEffect(() => {
     const unsubscribe = ws.registerAiDoneHandler(() => {
       console.log('[InterviewRoom] AI done, playing accumulated audio');
@@ -153,7 +162,9 @@ const {
       hasInitializedRef.current = true;
 
       // Start session if it's in CREATED state
-      if (sessionData.status === 'CREATED') {
+      // Use ref to ensure we only call this ONCE per mount
+      if (sessionData.status === 'CREATED' && !hasStartedRef.current) {
+        hasStartedRef.current = true;
         startSession(sessionId);
       }
 
@@ -188,7 +199,6 @@ const {
   // HANDLERS
   // ===================================================
 
-  // Handle recording toggle
   const handleToggleRecording = useCallback(async () => {
     if (isRecording) {
       stopMicRecording();
@@ -202,14 +212,12 @@ const {
     }
   }, [isRecording, startMicRecording, stopMicRecording, ws, requestPermission]);
 
-  // Handle end interview
   const handleEndInterview = useCallback(() => {
     stopMicRecording();
     clearAudioQueue();
     ws.endInterview('completed');
   }, [stopMicRecording, clearAudioQueue, ws]);
 
-  // Handle reconnect
   const handleReconnect = useCallback(() => {
     setError(null);
     ws.connect(sessionId);
@@ -219,20 +227,19 @@ const {
   // RENDER STATES
   // ===================================================
 
-  // Loading state
-  if (isSessionLoading || isStarting) {
+  // FIX: Only show Loader if we have NO data AND we aren't connected yet.
+  // This allows the UI to render while "Starting" happens in the background.
+  if ((isSessionLoading && !currentSession) && !isConnected) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen gap-4">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
-        <p className="text-lg text-muted-foreground">
-          {isSessionLoading ? 'Loading session...' : 'Starting interview...'}
-        </p>
+        <p className="text-lg text-muted-foreground">Loading session...</p>
       </div>
     );
   }
 
-  // Connecting state
-  if (ws.isConnecting) {
+  // Connecting state (Only show if truly stuck connecting and no UI ready)
+  if (ws.isConnecting && !currentSession) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen gap-4">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />

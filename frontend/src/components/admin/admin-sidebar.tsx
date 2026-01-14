@@ -31,7 +31,7 @@ const NAVIGATION = [
   { name: 'Institutes', href: '/admin/institutes', icon: Building2 },
   { name: 'Users', href: '/admin/users', icon: Users },
   { name: 'Reports', href: '/admin/reports', icon: FileBarChart },
-  { name: 'Settings', href: '/admin/settings', icon: Settings },
+  { name: 'Settings', href: '/profile/settings', icon: Settings },
 ] as const;
 
 export function AdminSidebar() {
@@ -51,10 +51,6 @@ export function AdminSidebar() {
   return (
     <div className="flex h-screen w-64 flex-col border-r bg-background">
       {/* Logo */}
-      <div className="flex h-16 items-center gap-2 border-b px-6">
-        <GraduationCap className="h-8 w-8 text-primary" />
-        <span className="text-xl font-bold">Preplyte</span>
-      </div>
 
       {/* Navigation */}
       <nav className="flex-1 space-y-1 p-4">

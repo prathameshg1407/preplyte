@@ -341,9 +341,7 @@ export default function HomePage() {
         <div className="container mx-auto px-4">
           <div className="flex flex-col items-center justify-between gap-6 md:flex-row">
             <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-sm font-bold text-primary-foreground">
-                P
-              </div>
+              <GraduationCap className="h-8 w-8 text-primary" />
               <span className="font-semibold">Preplyte</span>
             </div>
 
