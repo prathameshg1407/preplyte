@@ -17,7 +17,8 @@ import {
   BookOpen,
   Code2,
   Brain,
-  Trophy
+  Trophy,
+  GraduationCap
 } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
@@ -92,12 +93,8 @@ export function AppHeader() {
           {/* Logo */}
           <div className="flex items-center gap-8">
             <Link href="/" className="group flex items-center gap-2.5">
-              <motion.div 
-                whileHover={{ scale: 1.05 }}
-                className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-sm font-bold text-primary-foreground transition-shadow group-hover:shadow-lg group-hover:shadow-primary/20"
-              >
-                P
-              </motion.div>
+              
+                <GraduationCap className="h-8 w-8 text-primary" />
               <span className="hidden font-semibold sm:inline-block">
                 Preplyte
               </span>

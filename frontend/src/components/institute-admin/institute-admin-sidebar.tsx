@@ -35,7 +35,7 @@ const navigation = [
   { name: 'Students', href: '/institute-admin/students', icon: Users },
   { name: 'Departments', href: '/institute-admin/departments', icon: Building2 },
   { name: 'Analytics', href: '/institute-admin/analytics', icon: BarChart3 },
-  { name: 'Settings', href: '/institute-admin/settings', icon: Settings },
+  { name: 'Settings', href: '/profile/settings', icon: Settings },
 ];
 
 export function InstituteAdminSidebar() {
@@ -63,11 +63,6 @@ export function InstituteAdminSidebar() {
 
   return (
     <div className="flex h-screen w-64 flex-col border-r bg-background">
-      {/* Logo */}
-      <div className="flex h-16 items-center gap-2 border-b px-6">
-        <GraduationCap className="h-8 w-8 text-primary" />
-        <span className="text-xl font-bold">Preplyte</span>
-      </div>
 
       {/* Navigation */}
       <nav className="flex-1 space-y-1 p-4">

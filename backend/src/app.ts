@@ -70,10 +70,6 @@ const config = {
       windowMs: 15 * 60 * 1000,
       max: parseInt(process.env.RATE_LIMIT_MOCK_DRIVE || '100', 10),
     },
-    instituteAdmin: {
-      windowMs: 15 * 60 * 1000,
-      max: parseInt(process.env.RATE_LIMIT_INSTITUTE_ADMIN || '150', 10),
-    },
   },
 };
 
@@ -136,6 +132,7 @@ if (!config.isTest) {
           logger.info(message.trim());
         },
       },
+      // Skip logging for health checks and WebSocket upgrade attempts
       skip: (req) => req.path === '/health' || req.path.startsWith('/ws/'),
     })
   );
@@ -179,6 +176,7 @@ const createRateLimiter = (
     },
     standardHeaders: true,
     legacyHeaders: false,
+    // Skip rate limiting for tests and WebSocket paths
     skip: (req) => config.isTest || req.path.startsWith('/ws/'),
     keyGenerator: (req) => {
       return (
@@ -246,12 +244,6 @@ const mockDriveLimiter = createRateLimiter(
   'Too many mock drive requests. Please try again later.'
 );
 
-const instituteAdminLimiter = createRateLimiter(
-  config.rateLimits.instituteAdmin.windowMs,
-  config.rateLimits.instituteAdmin.max,
-  'Too many institute admin requests. Please try again later.'
-);
-
 // Apply general limiter to all API routes
 app.use('/api', generalLimiter);
 
@@ -317,26 +309,13 @@ app.use('/api/auth', authRoutes);
 app.use('/api/profile/resumes', uploadLimiter);
 app.use('/api/profile', profileLimiter, profileRoutes);
 
-// =====================================================
-// INSTITUTE ADMIN ROUTES
-// =====================================================
+// Institute admin mock drive routes
+app.use('/api/institute/mock-drive', mockDriveRoutes);
 
-// Apply institute admin rate limiter to all institute routes
-app.use('/api/institute', instituteAdminLimiter);
-
-// Department management
+//Institute department routes
 app.use('/api/institute/departments', departmentRoutes);
 
-// Mock drive management (for institute admins)
-app.use('/api/institute/mock-drives', mockDriveRoutes);
-
-// Student management
-
-// =====================================================
-// STUDENT ROUTES
-// =====================================================
-
-// Student mock drive routes (discovery, attempt, results)
+// Student mock drive routes
 app.use('/api/mock-drives', mockDriveLimiter, createMockDriveRoutes(prisma));
 
 // Practice routes - mounted at /api/practice
@@ -359,21 +338,17 @@ app.use(
   codeExecutionLimiter
 );
 
-// =====================================================
-// PLATFORM ADMIN ROUTES
-// =====================================================
-
 // Admin routes with specific rate limiter
 app.use('/api/admin', adminLimiter, adminRoutes);
-
-// Dashboard routes
 app.use('/api/dashboard', dashboardRoutes);
 
 // =====================================================
 // 8. ERROR HANDLING
 // =====================================================
 
+// Note: Don't handle /ws/ paths in Express - they're handled by WebSocket upgrade
 app.use((req, res, next) => {
+  // WebSocket upgrade requests shouldn't reach here, but if they do, skip them
   if (req.headers.upgrade === 'websocket') {
     return next();
   }

@@ -391,12 +391,13 @@ export function InterviewWebSocketProvider({ children }: { children: React.React
                 break;
 
               case 'ai_speaking': {
-                const data = message.data as WSAISpeakingData;
+                const data = message.data as WSAISpeakingData & {id?: string};
                 safeStoreUpdate(() => {
                   storeRef.current.setProcessing(false);
                   storeRef.current.setAISpeaking(true);
+                  const messageId = data.id || `ai-${Date.now()}-${++messageIdRef.current}`;
                   storeRef.current.addMessage({
-                    id: `ai-${Date.now()}-${++messageIdRef.current}`,
+                    id: messageId,
                     role: 'assistant',
                     content: data.text,
                     timestamp: new Date(),

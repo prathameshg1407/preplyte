@@ -871,7 +871,7 @@ class InterviewWebSocketGateway {
         where: { id: socket.sessionId },
       });
 
-      await prisma.aiInterviewResponse.create({
+      const savedResponse = await prisma.aiInterviewResponse.create({
         data: {
           sessionId: socket.sessionId,
           category: nextQuestion.category,
@@ -895,11 +895,13 @@ class InterviewWebSocketGateway {
         sessionId: socket.sessionId,
         category: nextQuestion.category,
         isFollowUp: nextQuestion.isFollowUp,
+        questionId: savedResponse.id
       });
 
       this.send(socket, {
         type: WS_EVENTS.SERVER.AI_SPEAKING,
         data: {
+          id: savedResponse.id,
           text: nextQuestion.question,
           category: nextQuestion.category,
           isFollowUp: nextQuestion.isFollowUp,
@@ -919,7 +921,7 @@ class InterviewWebSocketGateway {
         logger.warn('[WS Gateway] TTS failed', ttsError);
       }
 
-      this.send(socket, { type: WS_EVENTS.SERVER.AI_DONE, data: { questionId: nextQuestion.question } });
+      this.send(socket, { type: WS_EVENTS.SERVER.AI_DONE, data: { questionId: savedResponse.id } });
       this.sendSessionState(connection);
 
     } catch (error) {
