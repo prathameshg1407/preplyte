@@ -11,7 +11,6 @@ generator client {
 datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
 }
 
 // =====================================================
@@ -132,6 +131,47 @@ enum MockDriveModuleAttemptStatus {
 }
 
 // =====================================================
+// ENUMS - LMS
+// =====================================================
+
+enum LmsCourseStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum LmsEnrollmentStatus {
+  ACTIVE
+  COMPLETED
+  DROPPED
+  EXPIRED
+}
+
+enum LmsModuleStatus {
+  LOCKED
+  AVAILABLE
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum LmsTopicStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum LmsTestType {
+  MODULE_TEST
+  FINAL_TEST
+}
+
+enum LmsTestAttemptStatus {
+  IN_PROGRESS
+  COMPLETED
+  TIMED_OUT
+}
+
+// =====================================================
 // USER & AUTHENTICATION
 // =====================================================
 
@@ -167,6 +207,12 @@ model User {
   mockDriveRegistrations MockDriveRegistration[]
   mockDriveAttempts      MockDriveAttempt[]
   mockDriveLeaderboard   MockDriveLeaderboard[]
+
+  // LMS
+  lmsEnrollments     LmsEnrollment[]
+  lmsModuleProgress  LmsModuleProgress[]
+  lmsTopicProgress   LmsTopicProgress[]
+  lmsTestAttempts    LmsTestAttempt[]
 
   @@index([email])
   @@index([instituteId])
@@ -240,7 +286,7 @@ model Department {
   id          String  @id @default(cuid())
   instituteId String
   name        String
-  code        String? // Short code like "CSE", "ECE", "ME"
+  code        String?
   description String?
   isActive    Boolean @default(true)
 
@@ -273,7 +319,6 @@ model StudentProfile {
 
   skills String[]
 
-  // Department relation (student selects from institute's departments)
   departmentId String
   courseYear   String
 
@@ -581,30 +626,24 @@ model AiInterviewSession {
   userId   String
   resumeId String?
 
-  // Configuration
   jobTitle    String?
   companyName String?
   difficulty  AiInterviewDifficulty @default(MID)
   focusAreas  String[]
 
-  // State
   status AiInterviewSessionStatus @default(CREATED)
 
-  // Questions (JSON array)
   questions Json?
 
-  // Progress
   totalQuestions       Int @default(10)
   currentQuestionIndex Int @default(0)
 
-  // Timestamps
   startedAt   DateTime?
   completedAt DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Relations
   user      User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
   resume    Resume?               @relation(fields: [resumeId], references: [id], onDelete: SetNull)
   responses AiInterviewResponse[]
@@ -633,7 +672,6 @@ model AiInterviewResponse {
   isFollowup       Boolean @default(false)
   timeTakenSeconds Int?
 
-  // Scoring (JSON for flexibility)
   scoresJson   Json?
   feedbackText String? @db.Text
 
@@ -684,42 +722,34 @@ model MockDrive {
   id          String @id @default(cuid())
   instituteId String
 
-  // Basic Info
   title        String
   description  String? @db.Text
   instructions String? @db.Text
 
-  // Status
   status MockDriveStatus @default(DRAFT)
 
-  // Registration
   registrationStartDate DateTime?
   registrationEndDate   DateTime?
   maxRegistrations      Int?
 
-  // Drive Timing
   driveStartDate DateTime?
   driveEndDate   DateTime?
 
-  // Settings
   allowLateSubmission    Boolean @default(false)
   showLeaderboard        Boolean @default(true)
   showResultsImmediately Boolean @default(false)
   resultsReleaseDate     DateTime?
   shuffleQuestions       Boolean @default(true)
 
-  // Proctoring
   enableProctoring   Boolean @default(false)
   proctoringSettings Json?
 
-  // Question Generation Flag
   questionsGenerated   Boolean   @default(false)
   questionsGeneratedAt DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Relations
   institute           Institute                @relation(fields: [instituteId], references: [id], onDelete: Cascade)
   eligibilityCriteria MockDriveEligibility?
   modules             MockDriveModule[]
@@ -744,24 +774,18 @@ model MockDriveEligibility {
   id          String @id @default(cuid())
   mockDriveId String @unique
 
-  // CGPA
   minCgpa Float?
   maxCgpa Float?
 
-  // Academic Marks
   minMarks10 Float?
   minMarks12 Float?
 
-  // Department Filters (stores department IDs, empty = all allowed)
   allowedDepartmentIds String[]
   allowedCourseYears   String[]
-  requiredSkills       String[] // Student must have at least one
+  requiredSkills       String[]
 
-  // Backlogs
   maxBacklogs Int?
 
-  // Custom Rules (JSON for flexibility)
-  // Structure: { rules: Array<{ field: string, operator: string, value: any }> }
   customRules Json?
 
   createdAt DateTime @default(now())
@@ -782,10 +806,9 @@ model MockDriveModule {
   moduleType  MockDriveModuleType
   order       Int
   name        String?
-  timeLimit   Int // in minutes
+  timeLimit   Int
   weightage   Float               @default(100)
 
-  // Module-specific configuration (JSON)
   config Json
 
   passingScore Float?
@@ -814,11 +837,9 @@ model MockDriveModuleQuestion {
   id       String @id @default(cuid())
   moduleId String
 
-  // Polymorphic reference (only one will be set based on module type)
   aptitudeQuestionId String?
   machineQuestionId  String?
 
-  // Order for consistent display
   order Int
 
   createdAt DateTime @default(now())
@@ -923,7 +944,6 @@ model MockDriveAttempt {
   startedAt   DateTime?
   completedAt DateTime?
 
-  // Scores
   totalScore      Float?
   percentageScore Float?
   rank            Int?
@@ -931,7 +951,6 @@ model MockDriveAttempt {
 
   moduleScoresSummary Json?
 
-  // Proctoring
   browserInfo        String?
   ipAddress          String?
   deviceInfo         Json?
@@ -1039,12 +1058,11 @@ model MockDriveLeaderboard {
   batchId     String?
   userId      String
 
-  // Denormalized student info for quick display
   studentName    String
   studentId      String?
-  departmentId   String? // Reference for filtering
-  departmentName String? // Denormalized for display
-  departmentCode String? // Denormalized for display
+  departmentId   String?
+  departmentName String?
+  departmentCode String?
 
   totalScore      Float
   percentageScore Float
@@ -1070,4 +1088,500 @@ model MockDriveLeaderboard {
   @@index([mockDriveId, departmentId])
   @@index([userId])
   @@map("mock_drive_leaderboard")
+}
+
+// =====================================================
+// LMS - CATEGORY
+// =====================================================
+
+model LmsCategory {
+  id          String  @id @default(cuid())
+  name        String  @unique
+  slug        String  @unique
+  description String?
+  iconUrl     String?
+  order       Int     @default(0)
+  isActive    Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  courses LmsCourse[]
+
+  @@index([isActive])
+  @@index([slug])
+  @@map("lms_categories")
+}
+
+// =====================================================
+// LMS - COURSE
+// =====================================================
+
+model LmsCourse {
+  id         String @id @default(cuid())
+  categoryId String
+
+  // Basic Info
+  title            String
+  slug             String          @unique
+  shortDescription String          @db.VarChar(255) // 1 line description for card
+  description      String          @db.Text
+  thumbnailUrl     String?
+  previewVideoUrl  String?
+
+  // Course Stats (denormalized for performance)
+  totalModules Int   @default(0)
+  totalTopics  Int   @default(0)
+  totalPoints  Int   @default(0) // Total achievable points
+  totalHours   Float @default(0) // Hours required to complete
+
+  // Pricing
+  price         Float   @default(0) // 0 = free
+  discountPrice Float?
+  currency      String  @default("INR")
+
+  // Status
+  status   LmsCourseStatus @default(DRAFT)
+  isActive Boolean         @default(true)
+
+  // Settings
+  certificateEnabled Boolean @default(true)
+  passingPercentage  Float   @default(60) // Required to pass final test
+
+  // Metadata
+  tags       String[]
+  difficulty DifficultyLevel @default(MEDIUM)
+  instructor String?
+  language   String          @default("English")
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  publishedAt DateTime?
+
+  // Relations
+  category    LmsCategory     @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  modules     LmsModule[]
+  enrollments LmsEnrollment[]
+  finalTest   LmsFinalTest?
+
+  @@index([categoryId])
+  @@index([status, isActive])
+  @@index([slug])
+  @@index([price])
+  @@index([difficulty])
+  @@map("lms_courses")
+}
+
+// =====================================================
+// LMS - MODULE
+// =====================================================
+
+model LmsModule {
+  id       String @id @default(cuid())
+  courseId String
+
+  // Basic Info
+  title            String
+  shortDescription String  @db.VarChar(500) // Topics summary
+  description      String? @db.Text
+  order            Int
+
+  // Module Stats (denormalized)
+  totalTopics     Int   @default(0)
+  points          Int   @default(0) // Points for completing this module
+  estimatedMinutes Int   @default(0) // Time required
+
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  course         LmsCourse           @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  topics         LmsTopic[]
+  moduleTest     LmsModuleTest?
+  moduleProgress LmsModuleProgress[]
+
+  @@unique([courseId, order])
+  @@index([courseId])
+  @@index([courseId, isActive])
+  @@map("lms_modules")
+}
+
+// =====================================================
+// LMS - TOPIC
+// =====================================================
+
+model LmsTopic {
+  id       String @id @default(cuid())
+  moduleId String
+
+  // Basic Info
+  title       String
+  description String? @db.Text
+  order       Int
+
+  // Content
+  theoryContent String  @db.Text // Rich text / markdown content
+  videoUrl      String? // Video URL for "Watch Video" button
+  videoDuration Int?    // Duration in seconds
+
+  // Topic Stats
+  estimatedMinutes Int @default(10)
+
+  // Resources (optional attachments)
+  resources Json? // Array of { name, url, type }
+
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  module        LmsModule          @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  topicProgress LmsTopicProgress[]
+
+  @@unique([moduleId, order])
+  @@index([moduleId])
+  @@index([moduleId, isActive])
+  @@map("lms_topics")
+}
+
+// =====================================================
+// LMS - MODULE TEST (After each module)
+// =====================================================
+
+model LmsModuleTest {
+  id       String @id @default(cuid())
+  moduleId String @unique
+
+  title        String
+  instructions String? @db.Text
+
+  // Test Configuration
+  totalQuestions   Int @default(10)
+  passingScore     Int @default(60) // Percentage
+  timeLimitMinutes Int @default(30)
+  maxAttempts      Int @default(3) // -1 for unlimited
+
+  // Points Configuration
+  pointsPerQuestion Int @default(10)
+  totalPoints       Int @default(100) // Total achievable points
+
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  module    LmsModule            @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  questions LmsTestQuestion[]
+  attempts  LmsTestAttempt[]
+
+  @@map("lms_module_tests")
+}
+
+// =====================================================
+// LMS - FINAL TEST (End of course - one attempt only)
+// =====================================================
+
+model LmsFinalTest {
+  id       String @id @default(cuid())
+  courseId String @unique
+
+  title        String
+  instructions String? @db.Text
+
+  // Test Configuration
+  totalQuestions   Int @default(50)
+  passingScore     Int @default(60) // Percentage required to pass
+  timeLimitMinutes Int @default(120)
+
+  // Points Configuration
+  pointsPerQuestion Int @default(10)
+  totalPoints       Int @default(500)
+
+  // Final test is allowed only once
+  maxAttempts Int @default(1)
+
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  course    LmsCourse         @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  questions LmsTestQuestion[]
+  attempts  LmsTestAttempt[]
+
+  @@map("lms_final_tests")
+}
+
+// =====================================================
+// LMS - TEST QUESTIONS
+// =====================================================
+
+model LmsTestQuestion {
+  id String @id @default(cuid())
+
+  // Polymorphic reference (either module test or final test)
+  moduleTestId String?
+  finalTestId  String?
+
+  questionText String @db.Text
+  explanation  String? @db.Text
+
+  order    Int
+  points   Int     @default(10)
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  moduleTest LmsModuleTest? @relation(fields: [moduleTestId], references: [id], onDelete: Cascade)
+  finalTest  LmsFinalTest?  @relation(fields: [finalTestId], references: [id], onDelete: Cascade)
+  options    LmsTestOption[]
+  responses  LmsTestResponse[]
+
+  @@index([moduleTestId])
+  @@index([finalTestId])
+  @@index([moduleTestId, order])
+  @@index([finalTestId, order])
+  @@map("lms_test_questions")
+}
+
+// =====================================================
+// LMS - TEST OPTIONS
+// =====================================================
+
+model LmsTestOption {
+  id         String @id @default(cuid())
+  questionId String
+
+  text      String
+  isCorrect Boolean @default(false)
+  order     Int     @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  question LmsTestQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@index([questionId])
+  @@map("lms_test_options")
+}
+
+// =====================================================
+// LMS - ENROLLMENT
+// =====================================================
+
+model LmsEnrollment {
+  id       String @id @default(cuid())
+  userId   String
+  courseId String
+
+  status LmsEnrollmentStatus @default(ACTIVE)
+
+  // Progress Tracking
+  completedModules Int   @default(0)
+  completedTopics  Int   @default(0)
+  progressPercent  Float @default(0)
+
+  // Points & Scores
+  totalPointsEarned    Int @default(0)
+  moduleTestPointsEarned Int @default(0)
+  finalTestPointsEarned  Int @default(0)
+
+  // Final Test Result
+  finalTestAttempted Boolean @default(false)
+  finalTestPassed    Boolean @default(false)
+  finalTestScore     Float?
+  finalTestMarks     Int?
+
+  // Timestamps
+  enrolledAt    DateTime  @default(now())
+  startedAt     DateTime?
+  completedAt   DateTime?
+  lastAccessedAt DateTime?
+
+  // Certificate
+  certificateUrl     String?
+  certificateIssuedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user   User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course LmsCourse @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, courseId])
+  @@index([userId])
+  @@index([courseId])
+  @@index([userId, status])
+  @@index([courseId, status])
+  @@map("lms_enrollments")
+}
+
+// =====================================================
+// LMS - MODULE PROGRESS
+// =====================================================
+
+model LmsModuleProgress {
+  id       String @id @default(cuid())
+  userId   String
+  moduleId String
+
+  status LmsModuleStatus @default(LOCKED)
+
+  // Topic Progress
+  completedTopics Int   @default(0)
+  totalTopics     Int   @default(0)
+  progressPercent Float @default(0)
+
+  // Test Progress
+  testAttempted   Boolean @default(false)
+  testPassed      Boolean @default(false)
+  testScore       Float?
+  testAttempts    Int     @default(0)
+  pointsEarned    Int     @default(0)
+
+  // Time Tracking
+  timeSpentMinutes Int @default(0)
+
+  startedAt   DateTime?
+  completedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user   User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  module LmsModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, moduleId])
+  @@index([userId])
+  @@index([moduleId])
+  @@index([userId, status])
+  @@map("lms_module_progress")
+}
+
+// =====================================================
+// LMS - TOPIC PROGRESS
+// =====================================================
+
+model LmsTopicProgress {
+  id      String @id @default(cuid())
+  userId  String
+  topicId String
+
+  status LmsTopicStatus @default(NOT_STARTED)
+
+  // Content Progress
+  theoryCompleted Boolean @default(false)
+  videoWatched    Boolean @default(false)
+  videoProgress   Int     @default(0) // Percentage of video watched
+
+  // Time Tracking
+  timeSpentMinutes Int @default(0)
+
+  startedAt   DateTime?
+  completedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  topic LmsTopic @relation(fields: [topicId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, topicId])
+  @@index([userId])
+  @@index([topicId])
+  @@index([userId, status])
+  @@map("lms_topic_progress")
+}
+
+// =====================================================
+// LMS - TEST ATTEMPT
+// =====================================================
+
+model LmsTestAttempt {
+  id     String @id @default(cuid())
+  userId String
+
+  // Polymorphic reference
+  moduleTestId String?
+  finalTestId  String?
+
+  testType LmsTestType
+  status   LmsTestAttemptStatus @default(IN_PROGRESS)
+
+  // Attempt Info
+  attemptNumber Int @default(1)
+
+  // Scores
+  totalQuestions Int   @default(0)
+  correctAnswers Int   @default(0)
+  wrongAnswers   Int   @default(0)
+  unanswered     Int   @default(0)
+  score          Float @default(0) // Percentage
+  pointsEarned   Int   @default(0)
+  marksObtained  Int   @default(0)
+  totalMarks     Int   @default(0)
+
+  isPassed Boolean @default(false)
+
+  // Timing
+  timeLimitMinutes Int @default(0)
+  timeSpentSeconds Int @default(0)
+
+  startedAt   DateTime  @default(now())
+  completedAt DateTime?
+  expiresAt   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user       User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  moduleTest LmsModuleTest?     @relation(fields: [moduleTestId], references: [id], onDelete: Cascade)
+  finalTest  LmsFinalTest?      @relation(fields: [finalTestId], references: [id], onDelete: Cascade)
+  responses  LmsTestResponse[]
+
+  @@index([userId])
+  @@index([moduleTestId])
+  @@index([finalTestId])
+  @@index([userId, moduleTestId])
+  @@index([userId, finalTestId])
+  @@index([status])
+  @@map("lms_test_attempts")
+}
+
+// =====================================================
+// LMS - TEST RESPONSE
+// =====================================================
+
+model LmsTestResponse {
+  id         String @id @default(cuid())
+  attemptId  String
+  questionId String
+
+  selectedOptionId String?
+  isCorrect        Boolean?
+  pointsAwarded    Int      @default(0)
+
+  answeredAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  attempt  LmsTestAttempt  @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  question LmsTestQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@unique([attemptId, questionId])
+  @@index([attemptId])
+  @@index([questionId])
+  @@map("lms_test_responses")
 }

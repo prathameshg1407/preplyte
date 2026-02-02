@@ -490,3 +490,44 @@ export const EndpointBuilders = {
     regenerateFeedback: (id: string) => buildUrl(API_ENDPOINTS.INTERVIEW.REGENERATE_FEEDBACK(id)),
   },
 } as const;
+
+// src/lib/api/endpoints.ts - Add these to existing file
+
+// src/lib/api/endpoints.ts - Update LMS_ENDPOINTS section
+
+export const LMS_ENDPOINTS = {
+  // Categories
+  CATEGORIES: '/api/lms/categories',
+  
+  // Courses
+  COURSES: '/api/lms/courses',
+  COURSE_BY_SLUG: (slug: string) => `/api/lms/courses/${slug}`,
+  COURSE_ENROLL: (slug: string) => `/api/lms/courses/${slug}/enroll`,
+  
+  // Modules
+  MODULE_DETAILS: (courseSlug: string, moduleOrder: number) => 
+    `/api/lms/courses/${courseSlug}/modules/${moduleOrder}`,
+  
+  // Topics
+  TOPIC_DETAILS: (courseSlug: string, moduleOrder: number, topicOrder: number) => 
+    `/api/lms/courses/${courseSlug}/modules/${moduleOrder}/topics/${topicOrder}`,
+  TOPIC_PROGRESS: (courseSlug: string, moduleOrder: number, topicOrder: number) => 
+    `/api/lms/courses/${courseSlug}/modules/${moduleOrder}/topics/${topicOrder}/progress`,
+  
+  // Tests
+  MODULE_TEST_START: (courseSlug: string, moduleOrder: number) => 
+    `/api/lms/courses/${courseSlug}/modules/${moduleOrder}/test/start`,
+  MODULE_TEST_SUBMIT: (courseSlug: string, moduleOrder: number) => 
+    `/api/lms/courses/${courseSlug}/modules/${moduleOrder}/test/submit`,
+  FINAL_TEST_START: (courseSlug: string) => 
+    `/api/lms/courses/${courseSlug}/final-test/start`,
+  FINAL_TEST_SUBMIT: (courseSlug: string) => 
+    `/api/lms/courses/${courseSlug}/final-test/submit`,
+  
+  // User Dashboard
+  MY_COURSES: '/api/lms/my-courses',
+  MY_DASHBOARD: '/api/lms/dashboard',
+  
+  // Stats
+  STATS: '/api/lms/stats',
+};

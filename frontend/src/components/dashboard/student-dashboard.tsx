@@ -173,7 +173,7 @@ export function StudentDashboard() {
           <CardTitle className="text-base font-medium">Quick Actions</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-5">
             <Button variant="outline" className="h-20 flex-col gap-2" asChild>
               <Link href="/practice/machine">
                 <Code className="h-6 w-6" />
@@ -190,6 +190,18 @@ export function StudentDashboard() {
               <Link href="/practice/ai-interview">
                 <Target className="h-6 w-6" />
                 <span>Mock Interview</span>
+              </Link>
+            </Button>
+            <Button variant="outline" className="h-20 flex-col gap-2" asChild>
+              <Link href="/lms">
+                <BookOpen className="h-6 w-6" />
+                <span>LMS</span>
+              </Link>
+            </Button>
+            <Button variant="outline" className="h-20 flex-col gap-2" asChild>
+              <Link href="/resume-builder">
+                <Trophy className="h-6 w-6" />
+                <span>Resume Builder</span>
               </Link>
             </Button>
           </div>

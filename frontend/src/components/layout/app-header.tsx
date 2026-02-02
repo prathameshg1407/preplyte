@@ -18,7 +18,8 @@ import {
   Code2,
   Brain,
   Trophy,
-  GraduationCap
+  GraduationCap,
+  FileText
 } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
@@ -146,6 +147,40 @@ export function AppHeader() {
                       </div>
                     </div>
                   </NavigationMenuContent>
+                </NavigationMenuItem>
+
+                {/* LMS */}
+                <NavigationMenuItem>
+                  <NavigationMenuLink asChild>
+                    <Link
+                      href="/lms"
+                      className={cn(
+                        "group inline-flex h-9 w-max items-center justify-center rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-secondary hover:text-foreground focus:bg-secondary focus:text-foreground focus:outline-none",
+                        pathname.startsWith('/lms')
+                          ? "bg-secondary text-foreground"
+                          : "text-muted-foreground"
+                      )}
+                    >
+                      LMS
+                    </Link>
+                  </NavigationMenuLink>
+                </NavigationMenuItem>
+
+                {/* Resume Builder */}
+                <NavigationMenuItem>
+                  <NavigationMenuLink asChild>
+                    <Link
+                      href="/resume-builder"
+                      className={cn(
+                        "group inline-flex h-9 w-max items-center justify-center rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-secondary hover:text-foreground focus:bg-secondary focus:text-foreground focus:outline-none",
+                        pathname.startsWith('/resume-builder')
+                          ? "bg-secondary text-foreground"
+                          : "text-muted-foreground"
+                      )}
+                    >
+                      Resume Builder
+                    </Link>
+                  </NavigationMenuLink>
                 </NavigationMenuItem>
 
                 {/* Other nav links - FIXED: removed legacyBehavior */}
@@ -327,6 +362,36 @@ export function AppHeader() {
                     </div>
                   </Link>
                 ))}
+
+                <div className="my-2 border-t border-border" />
+
+                <Link
+                  href="/lms"
+                  onClick={closeMobileMenu}
+                  className={cn(
+                    'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
+                    pathname.startsWith('/lms')
+                      ? 'bg-secondary text-foreground'
+                      : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+                  )}
+                >
+                  <BookOpen className="h-4 w-4" />
+                  LMS
+                </Link>
+
+                <Link
+                  href="/resume-builder"
+                  onClick={closeMobileMenu}
+                  className={cn(
+                    'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
+                    pathname.startsWith('/resume-builder')
+                      ? 'bg-secondary text-foreground'
+                      : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+                  )}
+                >
+                  <FileText className="h-4 w-4" />
+                  Resume Builder
+                </Link>
 
                 <div className="my-2 border-t border-border" />
 
