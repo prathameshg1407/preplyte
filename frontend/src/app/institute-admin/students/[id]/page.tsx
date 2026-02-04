@@ -7,15 +7,15 @@ import { useAuth } from '@/lib/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { 
-  GraduationCap, 
-  FileText, 
-  Code, 
-  Activity, 
-  Brain, 
-  TrendingUp, 
+import {
+  GraduationCap,
+  FileText,
+  Code,
+  Activity,
+  Brain,
+  TrendingUp,
   Users,
-  ArrowLeft 
+  ArrowLeft
 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -31,11 +31,11 @@ export default function InstituteStudentProfilePage() {
   const instituteId = authUser?.instituteId;
 
   // Fetch using the admin student hook
-  const { 
-    students, 
-    loading, 
-    error, 
-    refetch, 
+  const {
+    students,
+    loading,
+    error,
+    refetch,
     setPagination,
     setFilters
   } = useInstituteAdminStudents(instituteId || '');
@@ -101,7 +101,7 @@ export default function InstituteStudentProfilePage() {
 
   return (
     <div className="p-6 space-y-8 animate-in fade-in duration-500">
-      
+
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
         <div className="lg:col-span-2 space-y-8">
@@ -158,7 +158,7 @@ export default function InstituteStudentProfilePage() {
               <TabsTrigger value="activity">Training Activity</TabsTrigger>
               <TabsTrigger value="details">Academic Details</TabsTrigger>
             </TabsList>
-            
+
             <TabsContent value="activity" className="pt-6">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <StatCard label="Aptitude" value={0} icon={<Activity className="h-4 w-4" />} />
@@ -174,7 +174,7 @@ export default function InstituteStudentProfilePage() {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <p className="text-sm text-muted-foreground">Department</p>
-                      <p className="font-semibold">{student?.department || 'Not Set'}</p>
+                      <p className="font-semibold">{student?.departmentId || 'Not Set'}</p>
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Course Year</p>

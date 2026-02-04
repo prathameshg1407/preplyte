@@ -104,8 +104,8 @@ class LmsService {
 
   async getCourses(query: GetCoursesQuery, userId?: string): Promise<CoursesListResponse> {
     const {
-      page: pageStr = '1',
-      limit: limitStr = '12',
+      page: pageRaw = 1,
+      limit: limitRaw = LMS_CONSTANTS.DEFAULT_PAGE_SIZE,
       categorySlug,
       difficulty,
       search,
@@ -113,9 +113,12 @@ class LmsService {
       priceRange = 'all',
     } = query;
 
-    // Convert string parameters to numbers with defaults
-    const page = Math.max(1, parseInt(pageStr) || 1);
-    const limit = Math.min(50, Math.max(1, parseInt(limitStr) || LMS_CONSTANTS.DEFAULT_PAGE_SIZE));
+    // Convert parameters to numbers (handling potential strings from query params)
+    const page = Math.max(1, Number(pageRaw) || 1);
+    const limit = Math.min(
+      LMS_CONSTANTS.MAX_PAGE_SIZE,
+      Math.max(1, Number(limitRaw) || LMS_CONSTANTS.DEFAULT_PAGE_SIZE)
+    );
 
     const skip = (page - 1) * limit;
 
@@ -329,18 +332,18 @@ class LmsService {
       })),
       moduleTest: module.moduleTest
         ? {
-            id: module.moduleTest.id,
-            moduleId: module.id,
-            title: module.moduleTest.title,
-            instructions: module.moduleTest.instructions || '',
-            totalQuestions: module.moduleTest.totalQuestions,
-            timeLimitMinutes: module.moduleTest.timeLimitMinutes,
-            passingScore: module.moduleTest.passingScore,
-            maxAttempts: module.moduleTest.maxAttempts,
-            pointsPerQuestion: module.moduleTest.pointsPerQuestion,
-            totalPoints: module.moduleTest.totalPoints,
-            isActive: module.moduleTest.isActive,
-          }
+          id: module.moduleTest.id,
+          moduleId: module.id,
+          title: module.moduleTest.title,
+          instructions: module.moduleTest.instructions || '',
+          totalQuestions: module.moduleTest.totalQuestions,
+          timeLimitMinutes: module.moduleTest.timeLimitMinutes,
+          passingScore: module.moduleTest.passingScore,
+          maxAttempts: module.moduleTest.maxAttempts,
+          pointsPerQuestion: module.moduleTest.pointsPerQuestion,
+          totalPoints: module.moduleTest.totalPoints,
+          isActive: module.moduleTest.isActive,
+        }
         : null,
       progress: moduleProgressMap.get(module.id) || null,
     }));
@@ -537,18 +540,18 @@ class LmsService {
     // Format moduleTest with all required properties
     const formattedModuleTest = module.moduleTest
       ? {
-          id: module.moduleTest.id,
-          moduleId: module.id,
-          title: module.moduleTest.title,
-          instructions: module.moduleTest.instructions || '',
-          totalQuestions: module.moduleTest.totalQuestions,
-          timeLimitMinutes: module.moduleTest.timeLimitMinutes,
-          passingScore: module.moduleTest.passingScore,
-          maxAttempts: module.moduleTest.maxAttempts,
-          pointsPerQuestion: module.moduleTest.pointsPerQuestion,
-          totalPoints: module.moduleTest.totalPoints,
-          isActive: module.moduleTest.isActive,
-        }
+        id: module.moduleTest.id,
+        moduleId: module.id,
+        title: module.moduleTest.title,
+        instructions: module.moduleTest.instructions || '',
+        totalQuestions: module.moduleTest.totalQuestions,
+        timeLimitMinutes: module.moduleTest.timeLimitMinutes,
+        passingScore: module.moduleTest.passingScore,
+        maxAttempts: module.moduleTest.maxAttempts,
+        pointsPerQuestion: module.moduleTest.pointsPerQuestion,
+        totalPoints: module.moduleTest.totalPoints,
+        isActive: module.moduleTest.isActive,
+      }
       : null;
 
     return {
