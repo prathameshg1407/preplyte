@@ -17,8 +17,8 @@ export type PaginationState = {
   total: number;
 };
 
-// Transform API student to component student format
-type ComponentStudent = {
+// Expanded Student Type for UI
+export type ComponentStudent = {
   id: string;
   email: string;
   name?: string;
@@ -28,19 +28,57 @@ type ComponentStudent = {
   averageCgpa?: number;
   isActive: boolean;
   createdAt: string;
+  
+  // New Fields
+  skills: string[];
+  academic: {
+    marks10: number | null;
+    marks12: number | null;
+    backlogs: number;
+  };
+  resume: {
+    url?: string;
+    fileName?: string;
+  } | null;
+  stats: {
+    aptitude: number;
+    machine: number;
+    interview: number;
+    drives: number;
+  };
 };
 
-function transformStudent(student: InstituteStudent): ComponentStudent {
+function transformStudent(student: any): ComponentStudent {
+  // Extract resume (prefer relation, fallback to profile)
+  const resumeObj = student.resumes?.[0];
+  const resumeUrl = resumeObj?.fileUrl || student.profile?.resumeUrl;
+  const resumeName = resumeObj?.fileName || student.profile?.resumeName;
+
   return {
     id: student.id,
     email: student.email,
     name: student.name || undefined,
-    studentId: student.profile?.studentId || '',
+    studentId: student.profile?.studentId || 'N/A',
     department: student.profile?.department,
     courseYear: student.profile?.courseYear,
     averageCgpa: student.profile?.averageCgpa,
     isActive: student.isActive,
     createdAt: student.createdAt || new Date().toISOString(),
+    
+    // Mapped Profile Data
+    skills: student.profile?.skills || [],
+    academic: {
+      marks10: student.profile?.marks10 || null,
+      marks12: student.profile?.marks12 || null,
+      backlogs: student.profile?.numberOfBacklogs || 0,
+    },
+    resume: resumeUrl ? { url: resumeUrl, fileName: resumeName } : null,
+    stats: {
+      aptitude: student._count?.aptitudeSessions || 0,
+      machine: student._count?.machineSessions || 0,
+      interview: student._count?.aiInterviewSessions || 0,
+      drives: student._count?.mockDriveRegistrations || 0,
+    }
   };
 }
 
@@ -72,20 +110,17 @@ export function useInstituteAdminStudents(instituteId: string) {
     return response;
   }, [instituteId, pagination, filters]);
 
-  // Always call useQuery - it will be disabled if instituteId is empty
   const query = useQuery({
     queryKey: ['institute-students', instituteId, filters, pagination],
     queryFn: fetchStudents,
     enabled: !!instituteId && instituteId.length > 0,
-    staleTime: 5 * 60 * 1000, // 5 min
+    staleTime: 5 * 60 * 1000,
   });
 
-  // Transform students to component format
   const transformedStudents = useMemo(() => {
     return (query.data?.students || []).map(transformStudent);
   }, [query.data?.students]);
 
-  // Transform pagination
   const transformedPagination = useMemo(() => {
     if (query.data?.pagination) {
       return {
@@ -102,7 +137,6 @@ export function useInstituteAdminStudents(instituteId: string) {
   }, [queryClient, instituteId]);
 
   return {
-    // Data
     students: transformedStudents,
     loading: query.isPending || query.isFetching,
     error: !instituteId 
@@ -112,14 +146,10 @@ export function useInstituteAdminStudents(instituteId: string) {
         : query.error 
           ? String(query.error)
           : undefined,
-    
-    // State
     filters,
     setFilters,
     pagination: transformedPagination,
     setPagination,
-    
-    // Actions
     refetch,
   };
 }

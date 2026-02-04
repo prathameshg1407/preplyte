@@ -1,7 +1,7 @@
 import { prisma } from '../../../lib/db';
 
 export interface InstituteStudentsResult {
-  students: any[];  // Match frontend InstituteStudent
+  students: any[];
   pagination: {
     page: number;
     limit: number;
@@ -12,7 +12,7 @@ export interface InstituteStudentsResult {
 
 export async function getInstituteStudents(
   instituteId: string,
-  filters: any  // Match frontend filters
+  filters: any
 ): Promise<InstituteStudentsResult> {
   const { page = 1, limit = 10, ...whereFilters } = filters;
   const skip = (page - 1) * limit;
@@ -28,9 +28,10 @@ export async function getInstituteStudents(
     where.OR = [
       { name: { contains: whereFilters.search, mode: 'insensitive' } },
       { email: { contains: whereFilters.search, mode: 'insensitive' } },
+      { profile: { studentId: { contains: whereFilters.search, mode: 'insensitive' } } }
     ];
   }
-  if (whereFilters.department) where.profile = { department: whereFilters.department };
+  if (whereFilters.department) where.profile = { ...where.profile, department: whereFilters.department };
   if (whereFilters.minCgpa) where.profile = { ...where.profile, averageCgpa: { gte: whereFilters.minCgpa } };
 
   const [students, total] = await Promise.all([
@@ -38,6 +39,13 @@ export async function getInstituteStudents(
       where,
       include: {
         profile: true,
+        // Include latest resume to show download link
+        resumes: {
+          where: { isDefault: true },
+          take: 1,
+          orderBy: { createdAt: 'desc' }
+        },
+        // Include counts for the activity dashboard
         _count: {
           select: {
             aptitudeSessions: true,
