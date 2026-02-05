@@ -2,6 +2,7 @@
 
 import { useParams } from 'next/navigation';
 import { useCourse, useModulesByCourse } from '@/lib/hooks/admin/use-lms-admin';
+import { LmsCourseStatus } from '@/types/lms.types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -68,7 +69,7 @@ export default function CourseDetailsPage() {
                     <div>
                         <h1 className="text-3xl font-bold">{course.title}</h1>
                         <div className="flex items-center gap-2 mt-1">
-                            <Badge variant={course.status === 'published' ? 'default' : 'secondary'}>
+                            <Badge variant={course.status === LmsCourseStatus.PUBLISHED ? 'default' : 'secondary'}>
                                 {course.status}
                             </Badge>
                             <Badge variant="outline">{course.difficulty}</Badge>

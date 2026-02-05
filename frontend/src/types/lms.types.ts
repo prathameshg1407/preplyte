@@ -78,7 +78,7 @@ export interface LmsCourse {
   certificateEnabled: boolean;
   passingPercentage: number;
   tags: string[];
-  difficulty: 'EASY' | 'MEDIUM' | 'HARD';
+  difficulty: DifficultyLevel;
   instructor?: string;
   language: string;
   publishedAt?: string;
@@ -102,7 +102,7 @@ export interface LmsCourseCard {
   price: number;
   discountPrice?: number;
   currency: string;
-  difficulty: 'EASY' | 'MEDIUM' | 'HARD';
+  difficulty: DifficultyLevel;
   instructor?: string;
   category: {
     id: string;

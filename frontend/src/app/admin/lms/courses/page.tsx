@@ -138,9 +138,9 @@ export default function CoursesPage() {
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">All Status</SelectItem>
-                                <SelectItem value="draft">Draft</SelectItem>
-                                <SelectItem value="published">Published</SelectItem>
-                                <SelectItem value="archived">Archived</SelectItem>
+                                <SelectItem value={LmsCourseStatus.DRAFT}>Draft</SelectItem>
+                                <SelectItem value={LmsCourseStatus.PUBLISHED}>Published</SelectItem>
+                                <SelectItem value={LmsCourseStatus.ARCHIVED}>Archived</SelectItem>
                             </SelectContent>
                         </Select>
                         <Select onValueChange={handleDifficultyFilter} defaultValue="all">
@@ -149,9 +149,9 @@ export default function CoursesPage() {
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">All Levels</SelectItem>
-                                <SelectItem value="beginner">Beginner</SelectItem>
-                                <SelectItem value="intermediate">Intermediate</SelectItem>
-                                <SelectItem value="advanced">Advanced</SelectItem>
+                                <SelectItem value={DifficultyLevel.EASY}>Easy</SelectItem>
+                                <SelectItem value={DifficultyLevel.MEDIUM}>Medium</SelectItem>
+                                <SelectItem value={DifficultyLevel.HARD}>Hard</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
