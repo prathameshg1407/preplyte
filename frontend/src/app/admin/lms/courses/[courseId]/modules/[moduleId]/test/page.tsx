@@ -54,7 +54,7 @@ export default function ModuleTestPage() {
                 isActive: test.isActive
             });
         } else if (module) {
-            setFormData(prev => ({ ...prev, title: `${module.title} Test` }));
+            setFormData((prev: any) => ({ ...prev, title: `${module.title} Test` }));
         }
     }, [test, module]);
 

@@ -1,0 +1,91 @@
+# PREPLYTE: COMPREHENSIVE CAMPUS PLACEMENT & LMS ECOSYSTEM
+## Project Documentation
+
+### 1. MISSION & OVERVIEW
+Preplyte is a state-of-the-art platform designed to bridge the gap between academic learning and industry recruitment. It serves as a dual-purpose ecosystem:
+- **For Students**: A sophisticated training ground to practice aptitude, coding, and AI-powered mock interviews.
+- **For Institutions**: A robust management suite to host recruitment drives (Mock Drives) and deliver structured curriculum via a built-in Learning Management System (LMS).
+
+---
+
+### 2. CORE ARCHITECTURE
+The project follows a modern monorepo architecture with a clear separation of concerns between the frontend and backend.
+
+- **Backend**: A high-performance Node.js (Express) API leveraging TypeScript for type safety and Prisma ORM for database management.
+- **Frontend**: A highly interactive Next.js 15 application using React 19, Tailwind CSS 4, and Framer Motion for premium aesthetics and smooth user experiences.
+- **Communication**: RESTful API for standard operations and WebSockets (WS) for real-time interactions (Proctoring, Live Sessions).
+- **Asynchronous Processing**: Redis-backed Bull queues for background tasks like AI analysis and email dispatch.
+
+---
+
+### 3. TECHNOLOGY STACK
+#### Backend (Server-Side)
+- **Language**: TypeScript (Node.js)
+- **Framework**: Express.js (v5 Beta)
+- **ORM**: Prisma with PostgreSQL
+- **State/Queue**: Redis (ioredis, Bull)
+- **Security**: JWT (jose), Bcrypt.js, Helmet, Express Rate Limit
+- **AI/Cloud Services**: OpenAI API, Groq SDK, Deepgram (STT), Google Cloud (Speech/TTS), Cloudinary (Media)
+
+#### Frontend (Client-Side)
+- **Framework**: Next.js 15 (App Router)
+- **Logic**: React 19, Tanstack Query (v5), Zustand
+- **Styling**: Tailwind CSS 4, Framer Motion, Shadcn UI (Radix)
+- **Components**: Monaco Editor (Coding), Recharts (Analytics), Sonner/Hot-Toast
+- **Forms**: React Hook Form + Zod (Validation)
+
+---
+
+### 4. KEY MODULES & FEATURES
+
+#### A. AI Interview System
+- **Dynamic Question Generation**: Context-aware questions based on Job Title, Company, or User Resume.
+- **Conversational Intelligence**: Real-time STT (Speech-to-Text) and TTS (Text-to-Speech) for a natural interview flow.
+- **Holistic Feedback**: Automated grading of responses, identifying strengths and areas for improvement.
+
+#### B. Mock Drive (Placement Management)
+- **Institute-Led Drives**: Complete control for Institute Admins to schedule drives and set eligibility criteria (CGPA, skills, etc.).
+- **Proctoring**: Real-time monitoring and anti-cheating mechanisms for high-stakes assessments.
+- **Leaderboards**: Competitive ranking of students based on performance across aptitude, coding, and interviews.
+
+#### C. Learning Management System (LMS)
+- **Curriculum Builder**: Multi-tabbed interface for creating courses with nested modules and topics.
+- **Atomic Creation**: Supports creating courses, modules, and tests in a single transaction for data integrity.
+- **Assessment Engine**: Module-wise and final certification tests with configurable passing criteria.
+
+#### D. Practice Labs
+- **Aptitude Lab**: Timed sessions for Quantitative, Verbal, and Logical reasoning with a vast question bank.
+- **Machine Coding Lab**: An integrated development environment (IDE) powered by Monaco Editor, supporting multiple languages and real-time test case execution.
+
+#### E. Admin & Dashboard
+- **Analytics Engine**: Deep insights for Platform and Institute Admins regarding enrollment trends, revenue, and student performance.
+- **Profile Management**: Comprehensive student profiles including academic marks, skills, and resume hosting.
+
+---
+
+### 5. DATABASE DESIGN
+The platform uses a relational PostgreSQL database with 40+ models organized into:
+- **Identity & Auth**: Users, Roles (User, Institute Admin, Platform Admin), Refresh Tokens.
+- **Academic Core**: Institutes, Departments, Student Profiles.
+- **Evaluation**: Aptitude Questions, Machine Coding Challenges, Test Cases, Submissions.
+- **Content**: Courses, Categories, Modules, Topics, Resources.
+- **Progress**: Enrollments, Progress Tracking, Test Attempts, Analytics.
+
+---
+
+### 6. SECURITY & RELIABILITY
+- **Role-Based Access Control (RBAC)**: Strict authorization layers ensuring data privacy between institutes.
+- **Input Validation**: Double-layered validation using Zod on both frontend and backend.
+- **Data Integrity**: Heavy use of Prisma Transactions and Nested Writes to ensure complex curriculum data is never corrupted.
+- **Error Monitoring**: Professional logging with Winston (Daily Rotate Files) and structured error handling.
+
+---
+
+### 7. DEVELOPMENT WORKFLOW
+- **Database**: `npm run db:push` / `prisma migrate` for schema updates.
+- **Seeding**: Comprehensive seeding script for testing with mock data.
+- **Deployment**: Configured for Railway, Vercel, and Render with Nixpacks/Docker compatibility.
+
+---
+**Documentation generated on: 2026-02-05**
+**Project: NodePreplyte (Preplyte)**

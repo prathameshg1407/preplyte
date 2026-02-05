@@ -54,7 +54,7 @@ export default function FinalTestPage() {
                 isActive: test.isActive
             });
         } else if (course) {
-            setFormData(prev => ({ ...prev, title: `${course.title} Final Examination` }));
+            setFormData((prev: any) => ({ ...prev, title: `${course.title} Final Examination` }));
         }
     }, [test, course]);
 
