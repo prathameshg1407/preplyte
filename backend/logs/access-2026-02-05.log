@@ -224,3 +224,4 @@
 {"level":"info","message":"User logged out from all devices","service":"preplyte-api","timestamp":"2026-02-05 12:47:55","userId":"cml92ugqs0007q3oof2k0hw35"}
 {"code":"UNAUTHORIZED","ip":"127.0.0.1","level":"warn","message":"Operational error Token reuse detected. All sessions have been revoked for security.","method":"POST","path":"/api/auth/refresh","requestId":"ml94jrd6-eab5c28a1a37c172","service":"preplyte-api","timestamp":"2026-02-05 12:47:55","userAgent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36 Edg/144.0.0.0"}
 {"level":"info","message":"\u001b[0mPOST /api/auth/refresh \u001b[33m401\u001b[0m 67.103 ms - 168\u001b[0m","service":"preplyte-api","timestamp":"2026-02-05 12:47:55"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/analytics/overview \u001b[36m304\u001b[0m 260.414 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-05 12:54:17"}
