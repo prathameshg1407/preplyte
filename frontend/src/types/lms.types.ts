@@ -38,6 +38,12 @@ export enum LmsTestAttemptStatus {
   TIMED_OUT = 'TIMED_OUT',
 }
 
+export enum DifficultyLevel {
+  EASY = 'EASY',
+  MEDIUM = 'MEDIUM',
+  HARD = 'HARD',
+}
+
 // Category
 export interface LmsCategory {
   id: string;

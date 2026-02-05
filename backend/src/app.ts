@@ -25,6 +25,7 @@ import { logger } from './utils/logger';
 import { AppError } from './utils/errors';
 import { prisma } from './lib/db';
 import lmsRoutes from './module/lms/lms.routes';
+import lmsAdminRoutes from './module/admin/lms/lms-admin.routes';
 
 // =====================================================
 // APP INITIALIZATION
@@ -343,6 +344,8 @@ app.use(
 app.use('/api/admin', adminLimiter, adminRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/lms', lmsRoutes);
+app.use('/api/admin/lms', lmsAdminRoutes); // Add this
+
 
 
 // =====================================================

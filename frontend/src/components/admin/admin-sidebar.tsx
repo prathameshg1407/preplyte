@@ -31,8 +31,10 @@ const NAVIGATION = [
   { name: 'Institutes', href: '/admin/institutes', icon: Building2 },
   { name: 'Users', href: '/admin/users', icon: Users },
   { name: 'Reports', href: '/admin/reports', icon: FileBarChart },
+  { name: 'LMS', href: '/admin/lms', icon: GraduationCap },
   { name: 'Settings', href: '/profile/settings', icon: Settings },
 ] as const;
+
 
 export function AdminSidebar() {
   const pathname = usePathname();

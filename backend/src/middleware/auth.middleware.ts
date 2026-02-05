@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import * as jose from 'jose';
+import { UserRole } from '@prisma/client';
 import { prisma } from '../lib/db';
 import { sendError } from '../utils/response';
 import { logger } from '../utils/logger';
@@ -24,7 +25,7 @@ const JWT_AUDIENCE = 'preplyte-client';
 export interface AuthUser {
   id: string;
   email: string;
-  role: string;
+  role: UserRole;
   instituteId: string | null;
   tokenVersion: number;
 }
@@ -52,7 +53,7 @@ const USER_SELECT = {
 type UserSelectResult = {
   id: string;
   email: string;
-  role: string;
+  role: UserRole;
   instituteId: string | null;
   isActive: boolean;
   tokenVersion: number;
@@ -220,7 +221,7 @@ export const optionalAuth = async (
 // Authorization Middleware
 // ============================================
 
-type AllowedRole = 'PLATFORM_ADMIN' | 'INSTITUTE_ADMIN' | 'USER';
+type AllowedRole = UserRole;
 
 export const authorize = (...allowedRoles: AllowedRole[]) => {
   return (req: AuthenticatedRequest, res: Response, next: NextFunction): void => {
@@ -229,7 +230,7 @@ export const authorize = (...allowedRoles: AllowedRole[]) => {
       return;
     }
 
-    if (!allowedRoles.includes(req.user.role as AllowedRole)) {
+    if (!allowedRoles.includes(req.user.role)) {
       sendError(res, 'FORBIDDEN', 'You do not have permission to perform this action', 403);
       return;
     }
@@ -264,7 +265,7 @@ export const authorizeInstitute = (
 // Institute Admin Authorization Middleware
 // ============================================
 
-const INSTITUTE_ADMIN_ROLES: AllowedRole[] = ['PLATFORM_ADMIN', 'INSTITUTE_ADMIN'];
+const INSTITUTE_ADMIN_ROLES: AllowedRole[] = [UserRole.PLATFORM_ADMIN, UserRole.INSTITUTE_ADMIN];
 
 export const authorizeInstituteAdmin = (
   req: AuthenticatedRequest,
@@ -281,7 +282,7 @@ export const authorizeInstituteAdmin = (
     return;
   }
 
-  if (!INSTITUTE_ADMIN_ROLES.includes(req.user.role as AllowedRole)) {
+  if (!INSTITUTE_ADMIN_ROLES.includes(req.user.role)) {
     sendError(res, 'FORBIDDEN', 'This action requires admin privileges', 403);
     return;
   }
@@ -307,7 +308,7 @@ export const authorizeOwnerOrAdmin = (userIdParam: string = 'userId') => {
       return;
     }
 
-    const isAdmin = req.user.role === 'PLATFORM_ADMIN';
+    const isAdmin = req.user.role === UserRole.PLATFORM_ADMIN;
     const isOwner = req.user.id === resourceUserId;
 
     if (isAdmin || isOwner) {

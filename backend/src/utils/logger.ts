@@ -21,15 +21,15 @@ const consoleFormat = winston.format.combine(
   winston.format.errors({ stack: true }),
   winston.format.printf(({ level, message, timestamp, stack, ...meta }) => {
     let log = `${timestamp} [${level}]: ${message}`;
-    
+
     if (stack) {
       log += `\n${stack}`;
     }
-    
+
     if (Object.keys(meta).length > 0) {
       log += ` ${JSON.stringify(meta)}`;
     }
-    
+
     return log;
   })
 );
@@ -51,8 +51,8 @@ const transports: winston.transport[] = [
   }),
 ];
 
-// Add file transports in production
-if (process.env.NODE_ENV === 'production') {
+// Add file transports (Enabled for debugging)
+if (true) {
   // Error logs
   transports.push(
     new DailyRotateFile({
@@ -104,25 +104,25 @@ export const logger = winston.createLogger({
   transports,
   exceptionHandlers: process.env.NODE_ENV === 'production'
     ? [
-        new DailyRotateFile({
-          filename: path.join(LOG_DIR, 'exceptions-%DATE%.log'),
-          datePattern: 'YYYY-MM-DD',
-          maxFiles: LOG_MAX_FILES,
-          format: fileFormat,
-          zippedArchive: true,
-        }),
-      ]
+      new DailyRotateFile({
+        filename: path.join(LOG_DIR, 'exceptions-%DATE%.log'),
+        datePattern: 'YYYY-MM-DD',
+        maxFiles: LOG_MAX_FILES,
+        format: fileFormat,
+        zippedArchive: true,
+      }),
+    ]
     : undefined,
   rejectionHandlers: process.env.NODE_ENV === 'production'
     ? [
-        new DailyRotateFile({
-          filename: path.join(LOG_DIR, 'rejections-%DATE%.log'),
-          datePattern: 'YYYY-MM-DD',
-          maxFiles: LOG_MAX_FILES,
-          format: fileFormat,
-          zippedArchive: true,
-        }),
-      ]
+      new DailyRotateFile({
+        filename: path.join(LOG_DIR, 'rejections-%DATE%.log'),
+        datePattern: 'YYYY-MM-DD',
+        maxFiles: LOG_MAX_FILES,
+        format: fileFormat,
+        zippedArchive: true,
+      }),
+    ]
     : undefined,
 });
 
