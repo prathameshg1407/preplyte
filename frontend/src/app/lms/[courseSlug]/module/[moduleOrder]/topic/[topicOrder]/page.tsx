@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { useTopicDetails, useUpdateTopicProgress } from '@/lib/hooks/lms/use-lms';
 import { useLmsStore } from '@/lib/store/lms-store';
+import { getVideoEmbedUrl } from '@/lib/utils';
 
 export default function TopicPage() {
   const params = useParams();
@@ -116,12 +117,12 @@ export default function TopicPage() {
   // Get current video progress as percentage
   const getVideoProgressPercent = (): number => {
     if (!topic) return 0;
-    
+
     const localProgress = videoProgress[topic.id];
     if (localProgress && localProgress.duration > 0) {
       return (localProgress.currentTime / localProgress.duration) * 100;
     }
-    
+
     return progress?.videoProgress ?? 0;
   };
 
@@ -261,7 +262,7 @@ export default function TopicPage() {
                 Theory
                 {theoryCompleted && <CheckCircle className="h-4 w-4 text-green-600" />}
               </TabsTrigger>
-              <TabsTrigger value="video" disabled={!topic.videoUrl} className="gap-2">
+              <TabsTrigger value="video" className="gap-2">
                 <Video className="h-4 w-4" />
                 Video
                 {videoWatched && <CheckCircle className="h-4 w-4 text-green-600" />}
@@ -291,18 +292,28 @@ export default function TopicPage() {
 
             {/* Video Content */}
             <TabsContent value="video" className="mt-6">
-              {topic.videoUrl && (
+              {topic.videoUrl ? (
                 <Card>
                   <CardContent className="p-6">
                     <div className="aspect-video bg-black rounded-lg overflow-hidden mb-4">
-                      <video
-                        ref={videoRef}
-                        src={topic.videoUrl}
-                        controls
-                        className="w-full h-full"
-                        onTimeUpdate={handleVideoProgress}
-                        poster={topic.resources?.[0]?.url}
-                      />
+                      {getVideoEmbedUrl(topic.videoUrl || '') ? (
+                        <iframe
+                          src={getVideoEmbedUrl(topic.videoUrl || '')!}
+                          className="w-full h-full border-0"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                          title={topic.title}
+                        />
+                      ) : (
+                        <video
+                          ref={videoRef}
+                          src={topic.videoUrl}
+                          controls
+                          className="w-full h-full"
+                          onTimeUpdate={handleVideoProgress}
+                          poster={topic.resources?.[0]?.url}
+                        />
+                      )}
                     </div>
 
                     {/* Video Progress */}
@@ -322,6 +333,27 @@ export default function TopicPage() {
                         </Button>
                       </div>
                     )}
+                  </CardContent>
+                </Card>
+              ) : (
+                <Card>
+                  <CardContent className="p-12 text-center">
+                    <div className="bg-muted w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Video className="h-8 w-8 text-muted-foreground opacity-50" />
+                    </div>
+                    <h3 className="text-xl font-semibold mb-2">No Video Content</h3>
+                    <p className="text-muted-foreground max-w-sm mx-auto">
+                      There is no video tutorial available for this specific topic yet.
+                      Please refer to the theory section for your learning.
+                    </p>
+                    <Button
+                      variant="outline"
+                      className="mt-6"
+                      onClick={() => setActiveTab('theory')}
+                    >
+                      <FileText className="h-4 w-4 mr-2" />
+                      Switch to Theory
+                    </Button>
                   </CardContent>
                 </Card>
               )}

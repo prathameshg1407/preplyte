@@ -39,22 +39,22 @@ import {
 export const lmsCategoryAdminService = {
     async getAll(filters?: CategoryFilters): Promise<PaginatedResponse<LmsCategory>> {
         const response = await apiClient.get('/api/admin/lms/categories', { params: filters });
-        return response.data;
+        return response.data; // getAll usually returns the whole response if it's paginated, but let's check PaginatedResponse type
     },
 
     async getById(id: string): Promise<LmsCategory> {
         const response = await apiClient.get(`/api/admin/lms/categories/${id}`);
-        return response.data;
+        return response.data.data || response.data;
     },
 
     async create(data: CreateCategoryDto): Promise<LmsCategory> {
         const response = await apiClient.post('/api/admin/lms/categories', data);
-        return response.data;
+        return response.data.data || response.data;
     },
 
     async update(id: string, data: UpdateCategoryDto): Promise<LmsCategory> {
         const response = await apiClient.patch(`/api/admin/lms/categories/${id}`, data);
-        return response.data;
+        return response.data.data || response.data;
     },
 
     async delete(id: string): Promise<void> {
@@ -74,17 +74,17 @@ export const lmsCourseAdminService = {
 
     async getById(id: string): Promise<LmsCourseAdmin> {
         const response = await apiClient.get(`/api/admin/lms/courses/${id}`);
-        return response.data;
+        return response.data.data || response.data;
     },
 
     async create(data: CreateCourseDto): Promise<LmsCourseAdmin> {
         const response = await apiClient.post('/api/admin/lms/courses', data);
-        return response.data;
+        return response.data.data || response.data;
     },
 
     async update(id: string, data: UpdateCourseDto): Promise<LmsCourseAdmin> {
         const response = await apiClient.patch(`/api/admin/lms/courses/${id}`, data);
-        return response.data;
+        return response.data.data || response.data;
     },
 
     async delete(id: string): Promise<void> {
@@ -93,7 +93,7 @@ export const lmsCourseAdminService = {
 
     async getStats(id: string): Promise<any> {
         const response = await apiClient.get(`/api/admin/lms/courses/${id}/stats`);
-        return response.data;
+        return response.data.data || response.data;
     },
 };
 

@@ -29,6 +29,7 @@ export class AnalyticsService {
                     where: { price: { gt: 0 } },
                     select: {
                         price: true,
+                        discountPrice: true,
                         _count: {
                             select: { enrollments: true }
                         }
@@ -39,7 +40,10 @@ export class AnalyticsService {
             const { totalCourses, totalEnrollments, totalCategories, totalModules, totalTopics } = counts;
 
             const totalRevenue = revenueData.reduce((sum, course) => {
-                return sum + ((course.price || 0) * course._count.enrollments);
+                const effectivePrice = course.discountPrice !== null && course.discountPrice !== undefined
+                    ? course.discountPrice
+                    : (course.price || 0);
+                return sum + (effectivePrice * course._count.enrollments);
             }, 0);
 
             const [enrollmentTrends, categoryStats, topCourses] = await Promise.all([
@@ -112,6 +116,7 @@ export class AnalyticsService {
                 id: true,
                 title: true,
                 price: true,
+                discountPrice: true,
                 _count: {
                     select: { enrollments: true }
                 }
@@ -134,11 +139,15 @@ export class AnalyticsService {
 
         return courses.map(c => {
             const enrollmentCount = c._count.enrollments;
+            const effectivePrice = c.discountPrice !== null && c.discountPrice !== undefined
+                ? c.discountPrice
+                : (c.price || 0);
+
             return {
                 id: c.id,
                 title: c.title,
                 enrollments: enrollmentCount,
-                revenue: enrollmentCount * (c.price || 0),
+                revenue: enrollmentCount * effectivePrice,
                 averageProgress: progressMap.get(c.id) || 0
             };
         });

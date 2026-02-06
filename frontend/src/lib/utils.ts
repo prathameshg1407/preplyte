@@ -35,3 +35,26 @@ export function formatCurrency(amount: number, currency = 'INR'): string {
     maximumFractionDigits: 0,
   }).format(amount);
 }
+
+/**
+ * Get embed URL for YouTube and Vimeo
+ */
+export function getVideoEmbedUrl(url: string): string | null {
+  if (!url) return null;
+
+  // YouTube
+  const ytRegExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+  const ytMatch = url.match(ytRegExp);
+  if (ytMatch && ytMatch[2].length === 11) {
+    return `https://www.youtube.com/embed/${ytMatch[2]}?rel=0`;
+  }
+
+  // Vimeo
+  const vimeoRegExp = /vimeo\.com\/(\d+)/;
+  const vimeoMatch = url.match(vimeoRegExp);
+  if (vimeoMatch) {
+    return `https://player.vimeo.com/video/${vimeoMatch[1]}`;
+  }
+
+  return null;
+}

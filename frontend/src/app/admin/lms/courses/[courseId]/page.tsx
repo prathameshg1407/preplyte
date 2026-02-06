@@ -185,22 +185,52 @@ export default function CourseDetailsPage() {
                                             Summary
                                         </CardTitle>
                                     </CardHeader>
-                                    <CardContent className="space-y-2">
-                                        <div className="flex justify-between border-b pb-2">
-                                            <span className="text-muted-foreground">Instructor</span>
-                                            <span className="font-medium">{course.instructor || 'N/A'}</span>
+                                    <CardContent className="space-y-4">
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="flex flex-col border rounded-md p-3 bg-accent/5">
+                                                <span className="text-xs text-muted-foreground uppercase font-bold">Modules</span>
+                                                <span className="text-xl font-bold">{course.totalModules}</span>
+                                            </div>
+                                            <div className="flex flex-col border rounded-md p-3 bg-accent/5">
+                                                <span className="text-xs text-muted-foreground uppercase font-bold">Topics</span>
+                                                <span className="text-xl font-bold">{course.totalTopics}</span>
+                                            </div>
+                                            <div className="flex flex-col border rounded-md p-3 bg-accent/5">
+                                                <span className="text-xs text-muted-foreground uppercase font-bold">Points</span>
+                                                <span className="text-xl font-bold text-yellow-600">{course.totalPoints}</span>
+                                            </div>
+                                            <div className="flex flex-col border rounded-md p-3 bg-accent/5">
+                                                <span className="text-xs text-muted-foreground uppercase font-bold">Duration</span>
+                                                <span className="text-xl font-bold text-blue-600">{course.totalHours}h</span>
+                                            </div>
                                         </div>
-                                        <div className="flex justify-between border-b pb-2">
-                                            <span className="text-muted-foreground">Price</span>
-                                            <span className="font-medium">${course.price}</span>
-                                        </div>
-                                        <div className="flex justify-between border-b pb-2">
-                                            <span className="text-muted-foreground">Difficulty</span>
-                                            <span className="font-medium capitalize">{course.difficulty}</span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <span className="text-muted-foreground">Certificate</span>
-                                            <span className="font-medium">{course.certificateEnabled ? 'Yes' : 'No'}</span>
+
+                                        <div className="space-y-2 pt-2">
+                                            <div className="flex justify-between border-b pb-2">
+                                                <span className="text-muted-foreground">Instructor</span>
+                                                <span className="font-medium">{course.instructor || 'N/A'}</span>
+                                            </div>
+                                            <div className="flex justify-between border-b pb-2">
+                                                <span className="text-muted-foreground">Price</span>
+                                                <span className="font-medium">
+                                                    {course.price > 0 ? (
+                                                        course.discountPrice ? (
+                                                            <span className="flex items-center gap-2">
+                                                                <span className="line-through text-xs text-muted-foreground">${course.price}</span>
+                                                                <span>${course.discountPrice}</span>
+                                                            </span>
+                                                        ) : `$${course.price}`
+                                                    ) : <span className="text-green-600 font-bold">Free</span>}
+                                                </span>
+                                            </div>
+                                            <div className="flex justify-between border-b pb-2">
+                                                <span className="text-muted-foreground">Difficulty</span>
+                                                <span className="font-medium capitalize">{course.difficulty}</span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span className="text-muted-foreground">Certificate</span>
+                                                <span className="font-medium">{course.certificateEnabled ? 'Yes' : 'No'}</span>
+                                            </div>
                                         </div>
                                     </CardContent>
                                 </Card>

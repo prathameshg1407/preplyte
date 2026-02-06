@@ -33,9 +33,17 @@ import {
   Star,
   ChevronRight,
   AlertCircle,
+  X,
 } from 'lucide-react';
 import { useCourseDetails, useEnrollCourse } from '@/lib/hooks/lms/use-lms';
 import { LmsModuleStatus } from '@/types/lms.types';
+import { getVideoEmbedUrl } from '@/lib/utils';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 const difficultyColors = {
   EASY: 'bg-green-100 text-green-800',
@@ -56,6 +64,7 @@ export default function CourseDetailsPage() {
 
   const { data, isLoading, error } = useCourseDetails(courseSlug);
   const enrollMutation = useEnrollCourse();
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
   const course = data?.course;
   const modules = data?.modules || [];
@@ -211,15 +220,14 @@ export default function CourseDetailsPage() {
                         <AccordionTrigger className="hover:no-underline">
                           <div className="flex items-center gap-3 flex-1">
                             <div
-                              className={`h-8 w-8 rounded-full flex items-center justify-center ${
-                                isCompleted
-                                  ? 'bg-green-100 text-green-600'
-                                  : isInProgress
+                              className={`h-8 w-8 rounded-full flex items-center justify-center ${isCompleted
+                                ? 'bg-green-100 text-green-600'
+                                : isInProgress
                                   ? 'bg-blue-100 text-blue-600'
                                   : isLocked
-                                  ? 'bg-muted text-muted-foreground'
-                                  : 'bg-primary/10 text-primary'
-                              }`}
+                                    ? 'bg-muted text-muted-foreground'
+                                    : 'bg-primary/10 text-primary'
+                                }`}
                             >
                               {isCompleted ? (
                                 <CheckCircle className="h-4 w-4" />
@@ -303,8 +311,8 @@ export default function CourseDetailsPage() {
                                   {isCompleted
                                     ? 'Review Module'
                                     : isInProgress
-                                    ? 'Continue Learning'
-                                    : 'Start Module'}
+                                      ? 'Continue Learning'
+                                      : 'Start Module'}
                                 </Link>
                               </Button>
                             )}
@@ -376,6 +384,7 @@ export default function CourseDetailsPage() {
                     variant="secondary"
                     size="sm"
                     className="absolute bottom-2 right-2"
+                    onClick={() => setIsPreviewOpen(true)}
                   >
                     <Play className="h-4 w-4 mr-1" />
                     Preview
@@ -507,6 +516,40 @@ export default function CourseDetailsPage() {
           </motion.div>
         </div>
       </div>
+
+      {/* Preview Dialog */}
+      <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
+        <DialogContent className="max-w-4xl p-0 overflow-hidden bg-black border-none">
+          <DialogHeader className="sr-only">
+            <DialogTitle>Course Preview</DialogTitle>
+          </DialogHeader>
+          <div className="aspect-video w-full relative">
+            {course.previewVideoUrl && (
+              getVideoEmbedUrl(course.previewVideoUrl) ? (
+                <iframe
+                  src={getVideoEmbedUrl(course.previewVideoUrl)! + "&autoplay=1"}
+                  className="w-full h-full border-0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
+              ) : (
+                <video
+                  src={course.previewVideoUrl}
+                  controls
+                  autoPlay
+                  className="w-full h-full"
+                />
+              )
+            )}
+            <button
+              onClick={() => setIsPreviewOpen(false)}
+              className="absolute top-4 right-4 text-white hover:bg-white/20 p-2 rounded-full transition-colors z-10"
+            >
+              <X className="h-6 w-6" />
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

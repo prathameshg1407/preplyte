@@ -1,8 +1,10 @@
 'use client';
 
+import { useEffect } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import {
     Form,
@@ -32,11 +34,12 @@ import { CreateCourseDto } from '@/types/lms-admin.types';
 import { Loader2, Plus, Trash2, GripVertical, FileText, Video, HelpCircle, Layout, Settings } from 'lucide-react';
 
 const topicSchema = z.object({
+    id: z.string().optional(),
     title: z.string().min(2, 'Topic title must be at least 2 characters'),
-    description: z.string().optional(),
-    theoryContent: z.string().min(5, 'Theory content is required'),
-    videoUrl: z.string().url().optional().or(z.literal('')),
-    estimatedMinutes: z.coerce.number().min(1).default(10),
+    description: z.string().nullable().optional(),
+    theoryContent: z.string().min(1, 'Theory content is required'),
+    videoUrl: z.string().url().nullable().optional().or(z.literal('')),
+    estimatedMinutes: z.coerce.number().min(0).default(10),
     order: z.number().default(0),
 });
 
@@ -50,14 +53,15 @@ const moduleTestSchema = z.object({
 });
 
 const moduleSchema = z.object({
+    id: z.string().optional(),
     title: z.string().min(2, 'Module title must be at least 2 characters'),
-    shortDescription: z.string().min(5, 'Short description is required'),
-    description: z.string().optional(),
+    shortDescription: z.string().min(2, 'Short description is required'),
+    description: z.string().nullable().optional(),
     points: z.coerce.number().min(0).default(0),
     estimatedMinutes: z.coerce.number().min(0).default(0),
     order: z.number().default(0),
     topics: z.array(topicSchema).default([]),
-    moduleTest: moduleTestSchema.optional().nullable(),
+    moduleTest: moduleTestSchema.nullable().optional(),
 });
 
 const finalTestSchema = z.object({
@@ -71,8 +75,8 @@ const courseSchema = z.object({
     title: z.string().min(2, 'Title must be at least 2 characters'),
     slug: z.string().min(2, 'Slug must be at least 2 characters'),
     categoryId: z.string().min(1, 'Category is required'),
-    shortDescription: z.string().min(10, 'Short description must be at least 10 characters'),
-    description: z.string().min(20, 'Description must be at least 20 characters'),
+    shortDescription: z.string().min(2, 'Short description must be at least 2 characters'),
+    description: z.string().min(2, 'Description must be at least 2 characters'),
     price: z.coerce.number().min(0),
     discountPrice: z.coerce.number().min(0).optional(),
     currency: z.string().default('INR'),
@@ -81,13 +85,13 @@ const courseSchema = z.object({
     isActive: z.boolean().default(true),
     certificateEnabled: z.boolean().default(false),
     passingPercentage: z.coerce.number().min(0).max(100).default(70),
-    instructor: z.string().optional(),
-    thumbnailUrl: z.string().url().optional().or(z.literal('')),
-    previewVideoUrl: z.string().url().optional().or(z.literal('')),
+    instructor: z.string().nullable().optional(),
+    thumbnailUrl: z.string().url().nullable().optional().or(z.literal('')),
+    previewVideoUrl: z.string().url().nullable().optional().or(z.literal('')),
     language: z.string().default('English'),
-    tags: z.string().optional(), // Comma separated for UI
+    tags: z.string().nullable().optional(), // Comma separated for UI
     modules: z.array(moduleSchema).default([]),
-    finalTest: finalTestSchema.optional(),
+    finalTest: finalTestSchema.nullable().optional(),
 });
 
 type CourseFormValues = z.infer<typeof courseSchema>;
@@ -139,6 +143,62 @@ export function CourseForm({ initialData, onSubmit, isLoading }: CourseFormProps
 
     const categories = categoriesData?.data || [];
 
+    // Log form errors to help debugging when button "doesn't work"
+    useEffect(() => {
+        const errors = form.formState.errors;
+        if (Object.keys(errors).length > 0) {
+            console.error('Form Errors:', errors);
+            // Show a toast for the first error to help the user identify what's wrong
+            const findFirstError = (obj: any): string | null => {
+                for (const key in obj) {
+                    if (obj[key]?.message) return obj[key].message;
+                    if (typeof obj[key] === 'object') {
+                        const nested = findFirstError(obj[key]);
+                        if (nested) return nested;
+                    }
+                }
+                return null;
+            };
+            const errorMsg = findFirstError(errors);
+            if (errorMsg) {
+                toast.error(`Please fix: ${errorMsg}`);
+            }
+        }
+    }, [form.formState.errors]);
+
+    // Reset form when initialData changes to ensure all fields are populated
+    useEffect(() => {
+        if (initialData) {
+            form.reset({
+                title: initialData.title || '',
+                slug: initialData.slug || '',
+                categoryId: initialData.categoryId || '',
+                shortDescription: initialData.shortDescription || '',
+                description: initialData.description || '',
+                price: initialData.price || 0,
+                discountPrice: initialData.discountPrice || 0,
+                currency: initialData.currency || 'INR',
+                status: initialData.status || LmsCourseStatus.DRAFT,
+                difficulty: initialData.difficulty || DifficultyLevel.EASY,
+                isActive: initialData.isActive ?? true,
+                certificateEnabled: initialData.certificateEnabled ?? false,
+                passingPercentage: initialData.passingPercentage || 70,
+                instructor: initialData.instructor || '',
+                thumbnailUrl: initialData.thumbnailUrl || '',
+                previewVideoUrl: initialData.previewVideoUrl || '',
+                language: initialData.language || 'English',
+                tags: initialData.tags?.join(', ') || '',
+                modules: initialData.modules || [],
+                finalTest: initialData.finalTest || {
+                    title: 'Final Examination',
+                    totalQuestions: 10,
+                    passingScore: 60,
+                    timeLimitMinutes: 30
+                }
+            });
+        }
+    }, [initialData, form]);
+
     const handleFormSubmit = (values: CourseFormValues) => {
         // Transform tags back to array
         const tagsArray = values.tags ? values.tags.split(',').map(t => t.trim()).filter(Boolean) : [];
@@ -147,7 +207,16 @@ export function CourseForm({ initialData, onSubmit, isLoading }: CourseFormProps
 
     return (
         <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-8">
+            <form
+                onSubmit={form.handleSubmit(
+                    handleFormSubmit,
+                    (err) => {
+                        console.error('Submit Errors:', err);
+                        toast.error('Please check all fields in all tabs.');
+                    }
+                )}
+                className="space-y-8"
+            >
                 <Tabs defaultValue="general" className="w-full">
                     <TabsList className="grid w-full grid-cols-3">
                         <TabsTrigger value="general">
@@ -281,6 +350,7 @@ export function CourseForm({ initialData, onSubmit, isLoading }: CourseFormProps
                                                         placeholder="Full course description"
                                                         className="min-h-[120px]"
                                                         {...field}
+                                                        value={field.value ?? ''}
                                                     />
                                                 </FormControl>
                                                 <FormMessage />
@@ -295,7 +365,7 @@ export function CourseForm({ initialData, onSubmit, isLoading }: CourseFormProps
                                             <FormItem>
                                                 <FormLabel>Thumbnail URL</FormLabel>
                                                 <FormControl>
-                                                    <Input placeholder="https://..." {...field} />
+                                                    <Input placeholder="https://..." {...field} value={field.value ?? ''} />
                                                 </FormControl>
                                                 <FormMessage />
                                             </FormItem>
@@ -309,7 +379,7 @@ export function CourseForm({ initialData, onSubmit, isLoading }: CourseFormProps
                                             <FormItem>
                                                 <FormLabel>Preview Video URL</FormLabel>
                                                 <FormControl>
-                                                    <Input placeholder="https://youtube.com/..." {...field} />
+                                                    <Input placeholder="https://youtube.com/..." {...field} value={field.value ?? ''} />
                                                 </FormControl>
                                                 <FormMessage />
                                             </FormItem>
@@ -335,7 +405,7 @@ export function CourseForm({ initialData, onSubmit, isLoading }: CourseFormProps
                                                 <FormItem>
                                                     <FormLabel>Price (INR)</FormLabel>
                                                     <FormControl>
-                                                        <Input type="number" {...field} />
+                                                        <Input type="number" {...field} value={field.value ?? 0} />
                                                     </FormControl>
                                                     <FormMessage />
                                                 </FormItem>
@@ -348,7 +418,7 @@ export function CourseForm({ initialData, onSubmit, isLoading }: CourseFormProps
                                                 <FormItem>
                                                     <FormLabel>Discount Price</FormLabel>
                                                     <FormControl>
-                                                        <Input type="number" {...field} />
+                                                        <Input type="number" {...field} value={field.value ?? ''} />
                                                     </FormControl>
                                                     <FormMessage />
                                                 </FormItem>
@@ -416,7 +486,7 @@ export function CourseForm({ initialData, onSubmit, isLoading }: CourseFormProps
                                             <FormItem>
                                                 <FormLabel>Instructor</FormLabel>
                                                 <FormControl>
-                                                    <Input placeholder="John Doe" {...field} />
+                                                    <Input placeholder="John Doe" {...field} value={field.value ?? ''} />
                                                 </FormControl>
                                                 <FormMessage />
                                             </FormItem>
@@ -430,7 +500,7 @@ export function CourseForm({ initialData, onSubmit, isLoading }: CourseFormProps
                                             <FormItem>
                                                 <FormLabel>Tags (Comma separated)</FormLabel>
                                                 <FormControl>
-                                                    <Input placeholder="react, web, lms" {...field} />
+                                                    <Input placeholder="react, web, lms" {...field} value={Array.isArray(field.value) ? field.value.join(', ') : (field.value ?? '')} />
                                                 </FormControl>
                                                 <FormMessage />
                                             </FormItem>
@@ -476,7 +546,7 @@ export function CourseForm({ initialData, onSubmit, isLoading }: CourseFormProps
                                                     <FormItem>
                                                         <FormLabel>Passing % for Certificate</FormLabel>
                                                         <FormControl>
-                                                            <Input type="number" {...field} />
+                                                            <Input type="number" {...field} value={field.value ?? 60} />
                                                         </FormControl>
                                                         <FormMessage />
                                                     </FormItem>
@@ -617,7 +687,7 @@ export function CourseForm({ initialData, onSubmit, isLoading }: CourseFormProps
                                                                 <FormItem>
                                                                     <FormLabel className="text-xs">Points</FormLabel>
                                                                     <FormControl>
-                                                                        <Input type="number" {...field} className="h-8 text-sm" />
+                                                                        <Input type="number" {...field} value={field.value ?? 0} className="h-8 text-sm" />
                                                                     </FormControl>
                                                                     <FormMessage />
                                                                 </FormItem>
@@ -631,7 +701,7 @@ export function CourseForm({ initialData, onSubmit, isLoading }: CourseFormProps
                                                             <FormItem>
                                                                 <FormLabel className="text-xs">Short Description</FormLabel>
                                                                 <FormControl>
-                                                                    <Textarea placeholder="What will they learn?" {...field} className="min-h-[60px] text-sm resize-none" />
+                                                                    <Textarea placeholder="What will they learn?" {...field} value={field.value ?? ''} className="min-h-[60px] text-sm resize-none" />
                                                                 </FormControl>
                                                                 <FormMessage />
                                                             </FormItem>
@@ -741,7 +811,7 @@ export function CourseForm({ initialData, onSubmit, isLoading }: CourseFormProps
                                                                             <FormItem className="space-y-1">
                                                                                 <FormLabel className="text-[10px] text-muted-foreground">Topic Title</FormLabel>
                                                                                 <FormControl>
-                                                                                    <Input placeholder="Enter topic title" {...field} className="h-7 text-xs bg-card" />
+                                                                                    <Input placeholder="Enter topic title" {...field} value={field.value ?? ''} className="h-7 text-xs bg-card" />
                                                                                 </FormControl>
                                                                                 <FormMessage className="text-[10px]" />
                                                                             </FormItem>
@@ -759,7 +829,7 @@ export function CourseForm({ initialData, onSubmit, isLoading }: CourseFormProps
                                                                                         Video URL
                                                                                     </FormLabel>
                                                                                     <FormControl>
-                                                                                        <Input placeholder="https://..." {...field} className="h-7 text-xs bg-card" />
+                                                                                        <Input placeholder="https://..." {...field} value={field.value ?? ''} className="h-7 text-xs bg-card" />
                                                                                     </FormControl>
                                                                                 </FormItem>
                                                                             )}
@@ -771,7 +841,7 @@ export function CourseForm({ initialData, onSubmit, isLoading }: CourseFormProps
                                                                                 <FormItem className="space-y-1">
                                                                                     <FormLabel className="text-[10px] text-muted-foreground">Duration (Min)</FormLabel>
                                                                                     <FormControl>
-                                                                                        <Input type="number" {...field} className="h-7 text-xs bg-card" />
+                                                                                        <Input type="number" {...field} value={field.value ?? 10} className="h-7 text-xs bg-card" />
                                                                                     </FormControl>
                                                                                 </FormItem>
                                                                             )}
@@ -785,7 +855,7 @@ export function CourseForm({ initialData, onSubmit, isLoading }: CourseFormProps
                                                                             <FormItem className="space-y-1">
                                                                                 <FormLabel className="text-[10px] text-muted-foreground">Theory Content (Markdown)</FormLabel>
                                                                                 <FormControl>
-                                                                                    <Textarea placeholder="Topic body content..." {...field} className="min-h-[80px] text-xs resize-none bg-card" />
+                                                                                    <Textarea placeholder="Topic body content..." {...field} value={field.value ?? ''} className="min-h-[80px] text-xs resize-none bg-card" />
                                                                                 </FormControl>
                                                                                 <FormMessage className="text-[10px]" />
                                                                             </FormItem>

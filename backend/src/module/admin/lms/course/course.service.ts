@@ -11,65 +11,189 @@ export class CourseService {
             throw new AppError('CONFLICT', 'Course with this slug already exists', 409);
         }
 
+        let totalModules = modules?.length || 0;
+        let totalTopics = 0;
+        let totalPoints = 0;
+        let totalMinutes = 0;
+
         // Prepare nested modules and their topics/tests
-        const modulesCreate = modules?.map((m) => ({
-            title: m.title,
-            shortDescription: m.shortDescription,
-            description: m.description,
-            order: m.order,
-            points: m.points,
-            estimatedMinutes: m.estimatedMinutes,
-            isActive: m.isActive,
-            topics: m.topics ? {
-                create: m.topics.map(t => ({
-                    title: t.title,
-                    description: t.description,
-                    order: t.order,
-                    theoryContent: t.theoryContent,
-                    videoUrl: t.videoUrl,
-                    videoDuration: t.videoDuration,
-                    estimatedMinutes: t.estimatedMinutes,
-                    isActive: t.isActive
-                }))
-            } : undefined,
-            moduleTest: m.moduleTest ? {
+        const modulesCreate = modules?.map((m) => {
+            const moduleTopicsCount = m.topics?.length || 0;
+            totalTopics += moduleTopicsCount;
+
+            let moduleTestPoints = 0;
+            if (m.moduleTest) {
+                moduleTestPoints = m.moduleTest.totalQuestions * m.moduleTest.pointsPerQuestion;
+            }
+
+            totalPoints += (m.points || 0) + moduleTestPoints;
+
+            // Minutes from module itself + each topic
+            totalMinutes += m.estimatedMinutes || 0;
+            m.topics?.forEach(t => {
+                totalMinutes += t.estimatedMinutes || 0;
+            });
+
+            if (m.moduleTest) {
+                totalMinutes += m.moduleTest.timeLimitMinutes || 0;
+            }
+
+            return {
+                title: m.title,
+                shortDescription: m.shortDescription,
+                description: m.description,
+                order: m.order,
+                points: m.points,
+                estimatedMinutes: m.estimatedMinutes,
+                isActive: m.isActive,
+                totalTopics: moduleTopicsCount,
+                topics: m.topics ? {
+                    create: m.topics.map(t => ({
+                        title: t.title,
+                        description: t.description,
+                        order: t.order,
+                        theoryContent: t.theoryContent,
+                        videoUrl: t.videoUrl,
+                        videoDuration: t.videoDuration,
+                        estimatedMinutes: t.estimatedMinutes,
+                        isActive: t.isActive
+                    }))
+                } : undefined,
+                moduleTest: m.moduleTest ? {
+                    create: {
+                        title: m.moduleTest.title,
+                        instructions: m.moduleTest.instructions,
+                        totalQuestions: m.moduleTest.totalQuestions,
+                        passingScore: m.moduleTest.passingScore,
+                        timeLimitMinutes: m.moduleTest.timeLimitMinutes,
+                        maxAttempts: m.moduleTest.maxAttempts,
+                        pointsPerQuestion: m.moduleTest.pointsPerQuestion,
+                        totalPoints: moduleTestPoints,
+                        isActive: m.moduleTest.isActive
+                    }
+                } : undefined
+            };
+        });
+
+        let finalTestCreate: any = undefined;
+        if (finalTest) {
+            const finalTestPoints = finalTest.totalQuestions * finalTest.pointsPerQuestion;
+            totalPoints += finalTestPoints;
+            totalMinutes += finalTest.timeLimitMinutes || 0;
+
+            finalTestCreate = {
                 create: {
-                    title: m.moduleTest.title,
-                    instructions: m.moduleTest.instructions,
-                    totalQuestions: m.moduleTest.totalQuestions,
-                    passingScore: m.moduleTest.passingScore,
-                    timeLimitMinutes: m.moduleTest.timeLimitMinutes,
-                    maxAttempts: m.moduleTest.maxAttempts,
-                    pointsPerQuestion: m.moduleTest.pointsPerQuestion,
-                    isActive: m.moduleTest.isActive
+                    title: finalTest.title,
+                    instructions: finalTest.instructions,
+                    totalQuestions: finalTest.totalQuestions,
+                    passingScore: finalTest.passingScore,
+                    timeLimitMinutes: finalTest.timeLimitMinutes,
+                    maxAttempts: finalTest.maxAttempts,
+                    pointsPerQuestion: finalTest.pointsPerQuestion,
+                    totalPoints: finalTestPoints,
+                    isActive: finalTest.isActive
                 }
-            } : undefined
-        }));
+            };
+        }
+
+        const totalHours = Number((totalMinutes / 60).toFixed(2));
 
         return prisma.lmsCourse.create({
             data: {
                 ...data,
+                totalModules,
+                totalTopics,
+                totalPoints,
+                totalHours,
                 modules: modulesCreate ? {
                     create: modulesCreate
                 } : undefined,
-                finalTest: finalTest ? {
-                    create: {
-                        title: finalTest.title,
-                        instructions: finalTest.instructions,
-                        totalQuestions: finalTest.totalQuestions,
-                        passingScore: finalTest.passingScore,
-                        timeLimitMinutes: finalTest.timeLimitMinutes,
-                        maxAttempts: finalTest.maxAttempts,
-                        pointsPerQuestion: finalTest.pointsPerQuestion,
-                        isActive: finalTest.isActive
-                    }
-                } : undefined
+                finalTest: finalTestCreate
             },
             include: {
                 category: true,
                 modules: true,
                 finalTest: true
             },
+        });
+    }
+
+    async syncCourseStats(courseId: string) {
+        const course = await prisma.lmsCourse.findUnique({
+            where: { id: courseId },
+            include: {
+                modules: {
+                    include: {
+                        topics: true,
+                        moduleTest: true
+                    }
+                },
+                finalTest: true
+            }
+        });
+
+        if (!course) return;
+
+        let totalModules = course.modules.length;
+        let totalTopics = 0;
+        let totalPoints = 0;
+        let totalMinutes = 0;
+
+        for (const module of course.modules) {
+            totalTopics += module.topics.length;
+
+            let moduleTestPoints = 0;
+            if (module.moduleTest) {
+                moduleTestPoints = module.moduleTest.totalQuestions * module.moduleTest.pointsPerQuestion;
+                // Update module test total points if needed
+                if (module.moduleTest.totalPoints !== moduleTestPoints) {
+                    await prisma.lmsModuleTest.update({
+                        where: { id: module.moduleTest.id },
+                        data: { totalPoints: moduleTestPoints }
+                    });
+                }
+                totalMinutes += module.moduleTest.timeLimitMinutes || 0;
+            }
+
+            totalPoints += (module.points || 0) + moduleTestPoints;
+            totalMinutes += module.estimatedMinutes || 0;
+
+            for (const topic of module.topics) {
+                totalMinutes += topic.estimatedMinutes || 0;
+            }
+
+            // Sync module totalTopics
+            if (module.totalTopics !== module.topics.length) {
+                await prisma.lmsModule.update({
+                    where: { id: module.id },
+                    data: { totalTopics: module.topics.length }
+                });
+            }
+        }
+
+        if (course.finalTest) {
+            const finalTestPoints = course.finalTest.totalQuestions * course.finalTest.pointsPerQuestion;
+            totalPoints += finalTestPoints;
+            totalMinutes += course.finalTest.timeLimitMinutes || 0;
+
+            if (course.finalTest.totalPoints !== finalTestPoints) {
+                await prisma.lmsFinalTest.update({
+                    where: { id: course.finalTest.id },
+                    data: { totalPoints: finalTestPoints }
+                });
+            }
+        }
+
+        const totalHours = Number((totalMinutes / 60).toFixed(2));
+
+        await prisma.lmsCourse.update({
+            where: { id: courseId },
+            data: {
+                totalModules,
+                totalTopics,
+                totalPoints,
+                totalHours
+            }
         });
     }
 
@@ -99,8 +223,10 @@ export class CourseService {
                         topics: {
                             orderBy: { order: 'asc' },
                         },
+                        moduleTest: true,
                     },
                 },
+                finalTest: true,
                 _count: {
                     select: {
                         enrollments: true,
@@ -117,7 +243,7 @@ export class CourseService {
     }
 
     async update(id: string, input: UpdateCourseDto) {
-        await this.findOne(id);
+        const course = await this.findOne(id);
 
         const { modules, finalTest, ...data } = input;
 
@@ -128,16 +254,159 @@ export class CourseService {
             }
         }
 
-        // Note: For simplicity, nested update of modules/tests is not implemented here.
-        // Usually curriculum is managed through separate endpoints or specific logic.
+        // Handle nested curriculum updates
+        const updatedCourse = await prisma.$transaction(async (tx) => {
+            // Update course basic data
+            const updated = await tx.lmsCourse.update({
+                where: { id },
+                data: data as any,
+                include: { category: true }
+            });
 
-        return prisma.lmsCourse.update({
-            where: { id },
-            data,
-            include: {
-                category: true,
-            },
+            // Update Final Test if provided
+            if (finalTest) {
+                const finalTestPoints = finalTest.totalQuestions * (finalTest.pointsPerQuestion || 10);
+                if (course.finalTest) {
+                    await tx.lmsFinalTest.update({
+                        where: { id: course.finalTest.id },
+                        data: {
+                            ...(finalTest as any),
+                            totalPoints: finalTestPoints
+                        }
+                    });
+                } else {
+                    await tx.lmsFinalTest.create({
+                        data: {
+                            ...(finalTest as any),
+                            courseId: id,
+                            totalPoints: finalTestPoints
+                        }
+                    });
+                }
+            }
+
+            // Handle Modules and Topics
+            if (modules) {
+                // Get existing modules to know what to delete/update
+                const existingModules = course.modules;
+                const existingModuleIds = existingModules.map(m => m.id);
+                const inputModuleIds = modules.map(m => (m as any).id).filter(Boolean);
+
+                // Modules to delete
+                const modulesToDelete = existingModuleIds.filter(mid => !inputModuleIds.includes(mid));
+                if (modulesToDelete.length > 0) {
+                    // Cascade delete for topics and tests is handled by Prisma/DB if configured, 
+                    // otherwise we should be careful. Assuming Prisma handle it or we do it explicitly.
+                    // For safety, let's just delete the module.
+                    await tx.lmsModule.deleteMany({
+                        where: { id: { in: modulesToDelete } }
+                    });
+                }
+
+                // Create or Update modules
+                for (const m of modules) {
+                    const moduleData: any = {
+                        title: m.title,
+                        shortDescription: m.shortDescription,
+                        description: m.description,
+                        order: m.order,
+                        points: m.points,
+                        estimatedMinutes: m.estimatedMinutes,
+                        isActive: m.isActive,
+                        totalTopics: m.topics?.length || 0,
+                    };
+
+                    let moduleId: string;
+                    const existingModule = (m as any).id ? existingModules.find(em => em.id === (m as any).id) : null;
+
+                    if (existingModule) {
+                        moduleId = existingModule.id;
+                        await tx.lmsModule.update({
+                            where: { id: moduleId },
+                            data: moduleData
+                        });
+                    } else {
+                        const newModule = await tx.lmsModule.create({
+                            data: {
+                                ...moduleData,
+                                courseId: id
+                            }
+                        });
+                        moduleId = newModule.id;
+                    }
+
+                    // Handle Module Test
+                    if (m.moduleTest) {
+                        const testPoints = m.moduleTest.totalQuestions * (m.moduleTest.pointsPerQuestion || 10);
+                        const existingTest = await tx.lmsModuleTest.findUnique({ where: { moduleId } });
+                        if (existingTest) {
+                            await tx.lmsModuleTest.update({
+                                where: { id: existingTest.id },
+                                data: { ...(m.moduleTest as any), totalPoints: testPoints }
+                            });
+                        } else {
+                            await tx.lmsModuleTest.create({
+                                data: { ...(m.moduleTest as any), moduleId, totalPoints: testPoints }
+                            });
+                        }
+                    } else if (existingModule) {
+                        await tx.lmsModuleTest.deleteMany({ where: { moduleId } });
+                    }
+
+                    // Handle Topics
+                    if (m.topics) {
+                        const existingTopics = existingModule?.topics || [];
+                        const existingTopicIds = existingTopics.map(t => t.id);
+                        const inputTopicIds = m.topics.map(t => (t as any).id).filter(Boolean);
+
+                        // Topics to delete
+                        const topicsToDelete = existingTopicIds.filter(tid => !inputTopicIds.includes(tid));
+                        if (topicsToDelete.length > 0) {
+                            await tx.lmsTopic.deleteMany({
+                                where: { id: { in: topicsToDelete } }
+                            });
+                        }
+
+                        // Create or Update topics
+                        for (const t of m.topics) {
+                            const topicData = {
+                                title: t.title,
+                                description: t.description,
+                                order: t.order,
+                                theoryContent: t.theoryContent,
+                                videoUrl: t.videoUrl,
+                                videoDuration: t.videoDuration,
+                                estimatedMinutes: t.estimatedMinutes,
+                                isActive: t.isActive
+                            };
+
+                            const existingTopic = (t as any).id ? existingTopics.find(et => et.id === (t as any).id) : null;
+
+                            if (existingTopic) {
+                                await tx.lmsTopic.update({
+                                    where: { id: existingTopic.id },
+                                    data: topicData
+                                });
+                            } else {
+                                await tx.lmsTopic.create({
+                                    data: {
+                                        ...topicData,
+                                        moduleId
+                                    }
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+
+            return updated;
         });
+
+        // Sync stats after transaction is committed
+        await this.syncCourseStats(id);
+
+        return updatedCourse;
     }
 
     async delete(id: string) {

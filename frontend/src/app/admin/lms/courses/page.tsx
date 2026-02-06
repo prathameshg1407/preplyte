@@ -25,7 +25,7 @@ import {
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import Link from 'next/link';
-import { Edit, Trash2, Plus, Search, Eye } from 'lucide-react';
+import { Edit, Trash2, Plus, Search, Eye, FileText, Layout } from 'lucide-react';
 import type { CourseFilters } from '@/types/lms-admin.types';
 import { DifficultyLevel, LmsCourseStatus } from '@/types/lms.types';
 
@@ -198,12 +198,36 @@ export default function CoursesPage() {
                                 </CardHeader>
                                 <CardContent>
                                     <div className="space-y-2 text-sm text-muted-foreground mb-4">
-                                        {course.price && (
-                                            <p className="text-lg font-bold text-foreground">
-                                                ${course.price}
+                                        <div className="flex flex-wrap gap-y-1 gap-x-4">
+                                            <p className="flex items-center gap-1">
+                                                <Layout className="h-3 w-3" />
+                                                {course.totalModules} Modules
                                             </p>
+                                            <p className="flex items-center gap-1">
+                                                <FileText className="h-3 w-3" />
+                                                {course.totalTopics} Topics
+                                            </p>
+                                            <p className="flex items-center gap-1">
+                                                <div className="h-3 w-3 rounded-full bg-yellow-500" />
+                                                {course.totalPoints} Points
+                                            </p>
+                                            <p className="flex items-center gap-1">
+                                                <div className="h-3 w-3 rounded-full bg-blue-500" />
+                                                {course.totalHours} Hours
+                                            </p>
+                                        </div>
+                                        {course.price > 0 ? (
+                                            <p className="text-lg font-bold text-foreground">
+                                                {course.discountPrice ? (
+                                                    <span className="flex items-center gap-2">
+                                                        <span className="line-through text-sm text-muted-foreground">${course.price}</span>
+                                                        <span>${course.discountPrice}</span>
+                                                    </span>
+                                                ) : `$${course.price}`}
+                                            </p>
+                                        ) : (
+                                            <p className="text-lg font-bold text-green-600">Free</p>
                                         )}
-                                        <p>Slug: {course.slug}</p>
                                     </div>
                                     <div className="flex gap-2">
                                         <Button variant="outline" size="sm" asChild className="flex-1">

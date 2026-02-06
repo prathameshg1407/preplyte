@@ -6,6 +6,7 @@ import {
     CreateFinalTestDto,
     UpdateFinalTestDto,
 } from './test.validation';
+import { courseService } from '../course/course.service';
 
 
 
@@ -22,7 +23,9 @@ export class TestService {
             throw new AppError('NOT_FOUND', 'Module not found', 404);
         }
 
-        return await prisma.lmsModuleTest.create({
+        const totalPoints = data.totalQuestions * data.pointsPerQuestion;
+
+        const test = await prisma.lmsModuleTest.create({
             data: {
                 moduleId: data.moduleId,
                 title: data.title,
@@ -32,6 +35,7 @@ export class TestService {
                 timeLimitMinutes: data.timeLimitMinutes,
                 maxAttempts: data.maxAttempts,
                 pointsPerQuestion: data.pointsPerQuestion,
+                totalPoints,
                 isActive: data.isActive ?? true,
             },
             include: {
@@ -44,6 +48,11 @@ export class TestService {
                 questions: true,
             },
         });
+
+        // Sync course stats
+        await courseService.syncCourseStats(test.module.courseId);
+
+        return test;
     }
 
     async getModuleTestById(testId: string) {
@@ -83,30 +92,46 @@ export class TestService {
     async updateModuleTest(testId: string, data: UpdateModuleTestDto) {
         const test = await prisma.lmsModuleTest.findUnique({
             where: { id: testId },
+            include: { module: true }
         });
 
         if (!test) {
             throw new AppError('NOT_FOUND', 'Module test not found', 404);
         }
 
-        return await prisma.lmsModuleTest.update({
+        let totalPoints = test.totalPoints;
+        if (data.totalQuestions !== undefined || data.pointsPerQuestion !== undefined) {
+            const questions = data.totalQuestions ?? test.totalQuestions;
+            const points = data.pointsPerQuestion ?? test.pointsPerQuestion;
+            totalPoints = questions * points;
+        }
+
+        const updated = await prisma.lmsModuleTest.update({
             where: { id: testId },
-            data,
+            data: { ...data, totalPoints },
             include: {
                 module: true,
                 questions: true,
             },
         });
+
+        // Sync course stats
+        await courseService.syncCourseStats(updated.module.courseId);
+
+        return updated;
     }
 
     async deleteModuleTest(testId: string) {
         const test = await prisma.lmsModuleTest.findUnique({
             where: { id: testId },
+            include: { module: true }
         });
 
         if (!test) {
             throw new AppError('NOT_FOUND', 'Module test not found', 404);
         }
+
+        const courseId = test.module.courseId;
 
         // Delete all questions first
         await prisma.lmsTestQuestion.deleteMany({
@@ -114,9 +139,14 @@ export class TestService {
         });
 
         // Delete the test
-        return await prisma.lmsModuleTest.delete({
+        const deleted = await prisma.lmsModuleTest.delete({
             where: { id: testId },
         });
+
+        // Sync course stats
+        await courseService.syncCourseStats(courseId);
+
+        return deleted;
     }
 
     // ==================== Final Tests ====================
@@ -131,7 +161,9 @@ export class TestService {
             throw new AppError('NOT_FOUND', 'Course not found', 404);
         }
 
-        return await prisma.lmsFinalTest.create({
+        const totalPoints = data.totalQuestions * data.pointsPerQuestion;
+
+        const test = await prisma.lmsFinalTest.create({
             data: {
                 courseId: data.courseId,
                 title: data.title,
@@ -141,6 +173,7 @@ export class TestService {
                 timeLimitMinutes: data.timeLimitMinutes,
                 maxAttempts: data.maxAttempts,
                 pointsPerQuestion: data.pointsPerQuestion,
+                totalPoints,
                 isActive: data.isActive ?? true,
             },
             include: {
@@ -152,6 +185,11 @@ export class TestService {
                 questions: true,
             },
         });
+
+        // Sync course stats
+        await courseService.syncCourseStats(test.courseId);
+
+        return test;
     }
 
     async getFinalTestById(testId: string) {
@@ -196,14 +234,26 @@ export class TestService {
             throw new AppError('NOT_FOUND', 'Final test not found', 404);
         }
 
-        return await prisma.lmsFinalTest.update({
+        let totalPoints = test.totalPoints;
+        if (data.totalQuestions !== undefined || data.pointsPerQuestion !== undefined) {
+            const questions = data.totalQuestions ?? test.totalQuestions;
+            const points = data.pointsPerQuestion ?? test.pointsPerQuestion;
+            totalPoints = questions * points;
+        }
+
+        const updated = await prisma.lmsFinalTest.update({
             where: { id: testId },
-            data,
+            data: { ...data, totalPoints },
             include: {
                 course: true,
                 questions: true,
             },
         });
+
+        // Sync course stats
+        await courseService.syncCourseStats(updated.courseId);
+
+        return updated;
     }
 
     async deleteFinalTest(testId: string) {
@@ -215,15 +265,22 @@ export class TestService {
             throw new AppError('NOT_FOUND', 'Final test not found', 404);
         }
 
+        const courseId = test.courseId;
+
         // Delete all questions first
         await prisma.lmsTestQuestion.deleteMany({
             where: { finalTestId: testId },
         });
 
         // Delete the test
-        return await prisma.lmsFinalTest.delete({
+        const deleted = await prisma.lmsFinalTest.delete({
             where: { id: testId },
         });
+
+        // Sync course stats
+        await courseService.syncCourseStats(courseId);
+
+        return deleted;
     }
 }
 

@@ -1,0 +1,302 @@
+{"baseURL":"https://judge0-ce.p.rapidapi.com","level":"info","message":"Judge0 client initialized","service":"preplyte-api","timestamp":"2026-02-06 09:09:50","useRapidAPI":true}
+{"level":"info","message":"[TTS] Using Deepgram for text-to-speech","service":"preplyte-api","timestamp":"2026-02-06 09:09:50"}
+{"environment":"development","host":"0.0.0.0","level":"info","message":"Starting server...","port":4000,"service":"preplyte-api","timestamp":"2026-02-06 09:09:50"}
+{"level":"info","message":"Checking database connection...","service":"preplyte-api","timestamp":"2026-02-06 09:09:50"}
+{"level":"info","message":"✅ Database connected successfully","service":"preplyte-api","timestamp":"2026-02-06 09:09:51"}
+{"level":"info","message":"[WS Gateway] WebSocket server initialized","path":"/ws/interview/:sessionId","service":"preplyte-api","timestamp":"2026-02-06 09:09:51"}
+{"api":"http://localhost:4000/api","environment":"development","health":"http://localhost:4000/health","host":"0.0.0.0","level":"info","message":"🚀 Server running","port":4000,"service":"preplyte-api","timestamp":"2026-02-06 09:09:51","websocket":"ws://localhost:4000/ws/interview/:sessionId"}
+{"level":"info","message":"User logged in","service":"preplyte-api","timestamp":"2026-02-06 09:10:19","userId":"cml92r5r50001q3oopvkslp23"}
+{"level":"info","message":"\u001b[0mPOST /api/auth/login \u001b[32m200\u001b[0m 1022.723 ms - 934\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:10:19"}
+{"level":"info","message":"\u001b[0mGET /api/admin/institutes?page=1&limit=10&sortBy=createdAt&sortOrder=desc \u001b[36m304\u001b[0m 55.916 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:10:47"}
+{"level":"info","message":"\u001b[0mGET /api/admin/analytics \u001b[32m200\u001b[0m 253.788 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:10:47"}
+{"level":"info","message":"\u001b[0mGET /api/admin/institutes?page=1&limit=5&sortBy=createdAt&sortOrder=desc \u001b[36m304\u001b[0m 35.462 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:10:47"}
+{"level":"info","message":"\u001b[0mGET /api/admin/institutes?page=1&limit=10&sortBy=createdAt&sortOrder=desc \u001b[36m304\u001b[0m 53.197 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:10:47"}
+{"level":"info","message":"\u001b[0mGET /api/admin/analytics \u001b[36m304\u001b[0m 93.480 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:10:47"}
+{"level":"info","message":"\u001b[0mGET /api/admin/institutes?page=1&limit=5&sortBy=createdAt&sortOrder=desc \u001b[36m304\u001b[0m 84.462 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:10:47"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/analytics/overview \u001b[36m304\u001b[0m 133.720 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:10:56"}
+{"baseURL":"https://judge0-ce.p.rapidapi.com","level":"info","message":"Judge0 client initialized","service":"preplyte-api","timestamp":"2026-02-06 09:12:53","useRapidAPI":true}
+{"level":"info","message":"[TTS] Using Deepgram for text-to-speech","service":"preplyte-api","timestamp":"2026-02-06 09:12:53"}
+{"environment":"development","host":"0.0.0.0","level":"info","message":"Starting server...","port":4000,"service":"preplyte-api","timestamp":"2026-02-06 09:12:53"}
+{"level":"info","message":"Checking database connection...","service":"preplyte-api","timestamp":"2026-02-06 09:12:53"}
+{"level":"info","message":"✅ Database connected successfully","service":"preplyte-api","timestamp":"2026-02-06 09:12:53"}
+{"level":"info","message":"[WS Gateway] WebSocket server initialized","path":"/ws/interview/:sessionId","service":"preplyte-api","timestamp":"2026-02-06 09:12:53"}
+{"api":"http://localhost:4000/api","environment":"development","health":"http://localhost:4000/health","host":"0.0.0.0","level":"info","message":"🚀 Server running","port":4000,"service":"preplyte-api","timestamp":"2026-02-06 09:12:53","websocket":"ws://localhost:4000/ws/interview/:sessionId"}
+{"baseURL":"https://judge0-ce.p.rapidapi.com","level":"info","message":"Judge0 client initialized","service":"preplyte-api","timestamp":"2026-02-06 09:13:03","useRapidAPI":true}
+{"level":"info","message":"[TTS] Using Deepgram for text-to-speech","service":"preplyte-api","timestamp":"2026-02-06 09:13:03"}
+{"environment":"development","host":"0.0.0.0","level":"info","message":"Starting server...","port":4000,"service":"preplyte-api","timestamp":"2026-02-06 09:13:04"}
+{"level":"info","message":"Checking database connection...","service":"preplyte-api","timestamp":"2026-02-06 09:13:04"}
+{"level":"info","message":"✅ Database connected successfully","service":"preplyte-api","timestamp":"2026-02-06 09:13:04"}
+{"level":"info","message":"[WS Gateway] WebSocket server initialized","path":"/ws/interview/:sessionId","service":"preplyte-api","timestamp":"2026-02-06 09:13:04"}
+{"api":"http://localhost:4000/api","environment":"development","health":"http://localhost:4000/health","host":"0.0.0.0","level":"info","message":"🚀 Server running","port":4000,"service":"preplyte-api","timestamp":"2026-02-06 09:13:04","websocket":"ws://localhost:4000/ws/interview/:sessionId"}
+{"baseURL":"https://judge0-ce.p.rapidapi.com","level":"info","message":"Judge0 client initialized","service":"preplyte-api","timestamp":"2026-02-06 09:13:14","useRapidAPI":true}
+{"level":"info","message":"[TTS] Using Deepgram for text-to-speech","service":"preplyte-api","timestamp":"2026-02-06 09:13:14"}
+{"environment":"development","host":"0.0.0.0","level":"info","message":"Starting server...","port":4000,"service":"preplyte-api","timestamp":"2026-02-06 09:13:14"}
+{"level":"info","message":"Checking database connection...","service":"preplyte-api","timestamp":"2026-02-06 09:13:14"}
+{"level":"info","message":"✅ Database connected successfully","service":"preplyte-api","timestamp":"2026-02-06 09:13:14"}
+{"level":"info","message":"[WS Gateway] WebSocket server initialized","path":"/ws/interview/:sessionId","service":"preplyte-api","timestamp":"2026-02-06 09:13:14"}
+{"api":"http://localhost:4000/api","environment":"development","health":"http://localhost:4000/health","host":"0.0.0.0","level":"info","message":"🚀 Server running","port":4000,"service":"preplyte-api","timestamp":"2026-02-06 09:13:14","websocket":"ws://localhost:4000/ws/interview/:sessionId"}
+{"baseURL":"https://judge0-ce.p.rapidapi.com","level":"info","message":"Judge0 client initialized","service":"preplyte-api","timestamp":"2026-02-06 09:13:36","useRapidAPI":true}
+{"level":"info","message":"[TTS] Using Deepgram for text-to-speech","service":"preplyte-api","timestamp":"2026-02-06 09:13:36"}
+{"environment":"development","host":"0.0.0.0","level":"info","message":"Starting server...","port":4000,"service":"preplyte-api","timestamp":"2026-02-06 09:13:37"}
+{"level":"info","message":"Checking database connection...","service":"preplyte-api","timestamp":"2026-02-06 09:13:37"}
+{"level":"info","message":"✅ Database connected successfully","service":"preplyte-api","timestamp":"2026-02-06 09:13:37"}
+{"level":"info","message":"[WS Gateway] WebSocket server initialized","path":"/ws/interview/:sessionId","service":"preplyte-api","timestamp":"2026-02-06 09:13:37"}
+{"api":"http://localhost:4000/api","environment":"development","health":"http://localhost:4000/health","host":"0.0.0.0","level":"info","message":"🚀 Server running","port":4000,"service":"preplyte-api","timestamp":"2026-02-06 09:13:37","websocket":"ws://localhost:4000/ws/interview/:sessionId"}
+{"baseURL":"https://judge0-ce.p.rapidapi.com","level":"info","message":"Judge0 client initialized","service":"preplyte-api","timestamp":"2026-02-06 09:13:42","useRapidAPI":true}
+{"level":"info","message":"[TTS] Using Deepgram for text-to-speech","service":"preplyte-api","timestamp":"2026-02-06 09:13:42"}
+{"environment":"development","host":"0.0.0.0","level":"info","message":"Starting server...","port":4000,"service":"preplyte-api","timestamp":"2026-02-06 09:13:42"}
+{"level":"info","message":"Checking database connection...","service":"preplyte-api","timestamp":"2026-02-06 09:13:42"}
+{"level":"info","message":"✅ Database connected successfully","service":"preplyte-api","timestamp":"2026-02-06 09:13:42"}
+{"level":"info","message":"[WS Gateway] WebSocket server initialized","path":"/ws/interview/:sessionId","service":"preplyte-api","timestamp":"2026-02-06 09:13:42"}
+{"api":"http://localhost:4000/api","environment":"development","health":"http://localhost:4000/health","host":"0.0.0.0","level":"info","message":"🚀 Server running","port":4000,"service":"preplyte-api","timestamp":"2026-02-06 09:13:42","websocket":"ws://localhost:4000/ws/interview/:sessionId"}
+{"baseURL":"https://judge0-ce.p.rapidapi.com","level":"info","message":"Judge0 client initialized","service":"preplyte-api","timestamp":"2026-02-06 09:13:48","useRapidAPI":true}
+{"level":"info","message":"[TTS] Using Deepgram for text-to-speech","service":"preplyte-api","timestamp":"2026-02-06 09:13:48"}
+{"environment":"development","host":"0.0.0.0","level":"info","message":"Starting server...","port":4000,"service":"preplyte-api","timestamp":"2026-02-06 09:13:49"}
+{"level":"info","message":"Checking database connection...","service":"preplyte-api","timestamp":"2026-02-06 09:13:49"}
+{"level":"info","message":"✅ Database connected successfully","service":"preplyte-api","timestamp":"2026-02-06 09:13:49"}
+{"level":"info","message":"[WS Gateway] WebSocket server initialized","path":"/ws/interview/:sessionId","service":"preplyte-api","timestamp":"2026-02-06 09:13:49"}
+{"api":"http://localhost:4000/api","environment":"development","health":"http://localhost:4000/health","host":"0.0.0.0","level":"info","message":"🚀 Server running","port":4000,"service":"preplyte-api","timestamp":"2026-02-06 09:13:49","websocket":"ws://localhost:4000/ws/interview/:sessionId"}
+{"baseURL":"https://judge0-ce.p.rapidapi.com","level":"info","message":"Judge0 client initialized","service":"preplyte-api","timestamp":"2026-02-06 09:13:57","useRapidAPI":true}
+{"level":"info","message":"[TTS] Using Deepgram for text-to-speech","service":"preplyte-api","timestamp":"2026-02-06 09:13:57"}
+{"environment":"development","host":"0.0.0.0","level":"info","message":"Starting server...","port":4000,"service":"preplyte-api","timestamp":"2026-02-06 09:13:57"}
+{"level":"info","message":"Checking database connection...","service":"preplyte-api","timestamp":"2026-02-06 09:13:57"}
+{"level":"info","message":"✅ Database connected successfully","service":"preplyte-api","timestamp":"2026-02-06 09:13:57"}
+{"level":"info","message":"[WS Gateway] WebSocket server initialized","path":"/ws/interview/:sessionId","service":"preplyte-api","timestamp":"2026-02-06 09:13:57"}
+{"api":"http://localhost:4000/api","environment":"development","health":"http://localhost:4000/health","host":"0.0.0.0","level":"info","message":"🚀 Server running","port":4000,"service":"preplyte-api","timestamp":"2026-02-06 09:13:57","websocket":"ws://localhost:4000/ws/interview/:sessionId"}
+{"baseURL":"https://judge0-ce.p.rapidapi.com","level":"info","message":"Judge0 client initialized","service":"preplyte-api","timestamp":"2026-02-06 09:14:06","useRapidAPI":true}
+{"level":"info","message":"[TTS] Using Deepgram for text-to-speech","service":"preplyte-api","timestamp":"2026-02-06 09:14:07"}
+{"environment":"development","host":"0.0.0.0","level":"info","message":"Starting server...","port":4000,"service":"preplyte-api","timestamp":"2026-02-06 09:14:07"}
+{"level":"info","message":"Checking database connection...","service":"preplyte-api","timestamp":"2026-02-06 09:14:07"}
+{"level":"info","message":"✅ Database connected successfully","service":"preplyte-api","timestamp":"2026-02-06 09:14:07"}
+{"level":"info","message":"[WS Gateway] WebSocket server initialized","path":"/ws/interview/:sessionId","service":"preplyte-api","timestamp":"2026-02-06 09:14:07"}
+{"api":"http://localhost:4000/api","environment":"development","health":"http://localhost:4000/health","host":"0.0.0.0","level":"info","message":"🚀 Server running","port":4000,"service":"preplyte-api","timestamp":"2026-02-06 09:14:07","websocket":"ws://localhost:4000/ws/interview/:sessionId"}
+{"baseURL":"https://judge0-ce.p.rapidapi.com","level":"info","message":"Judge0 client initialized","service":"preplyte-api","timestamp":"2026-02-06 09:15:32","useRapidAPI":true}
+{"level":"info","message":"[TTS] Using Deepgram for text-to-speech","service":"preplyte-api","timestamp":"2026-02-06 09:15:32"}
+{"environment":"development","host":"0.0.0.0","level":"info","message":"Starting server...","port":4000,"service":"preplyte-api","timestamp":"2026-02-06 09:15:33"}
+{"level":"info","message":"Checking database connection...","service":"preplyte-api","timestamp":"2026-02-06 09:15:33"}
+{"level":"info","message":"✅ Database connected successfully","service":"preplyte-api","timestamp":"2026-02-06 09:15:33"}
+{"level":"info","message":"[WS Gateway] WebSocket server initialized","path":"/ws/interview/:sessionId","service":"preplyte-api","timestamp":"2026-02-06 09:15:33"}
+{"api":"http://localhost:4000/api","environment":"development","health":"http://localhost:4000/health","host":"0.0.0.0","level":"info","message":"🚀 Server running","port":4000,"service":"preplyte-api","timestamp":"2026-02-06 09:15:33","websocket":"ws://localhost:4000/ws/interview/:sessionId"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/analytics/overview \u001b[32m200\u001b[0m 321.580 ms - 993\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:16:29"}
+{"code":"UNAUTHORIZED","ip":"127.0.0.1","level":"warn","message":"Operational error Invalid email or password","method":"POST","path":"/api/auth/login","requestId":"0ae00797-6e16-4b6c-a98a-4e49f35a9421","service":"preplyte-api","timestamp":"2026-02-06 09:16:43","userAgent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36 Edg/144.0.0.0"}
+{"level":"info","message":"\u001b[0mPOST /api/auth/login \u001b[33m401\u001b[0m 62.555 ms - 138\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:16:43"}
+{"code":"UNAUTHORIZED","ip":"127.0.0.1","level":"warn","message":"Operational error Invalid email or password","method":"POST","path":"/api/auth/login","requestId":"6d009b1d-8507-4876-99d6-a4e193debc8f","service":"preplyte-api","timestamp":"2026-02-06 09:16:50","userAgent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36 Edg/144.0.0.0"}
+{"level":"info","message":"\u001b[0mPOST /api/auth/login \u001b[33m401\u001b[0m 15.273 ms - 138\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:16:50"}
+{"level":"info","message":"User logged in","service":"preplyte-api","timestamp":"2026-02-06 09:17:04","userId":"cml92ugqs0007q3oof2k0hw35"}
+{"level":"info","message":"\u001b[0mPOST /api/auth/login \u001b[32m200\u001b[0m 831.721 ms - 920\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:17:04"}
+{"level":"info","message":"\u001b[0mGET /api/lms/courses?page=1&limit=12&priceRange=all&sortBy=popular&search= \u001b[32m200\u001b[0m 40.326 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:17:23"}
+{"level":"info","message":"\u001b[0mGET /api/lms/categories \u001b[36m304\u001b[0m 10.151 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:17:23"}
+{"level":"info","message":"\u001b[0mGET /api/lms/stats \u001b[36m304\u001b[0m 19.488 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:17:23"}
+{"level":"info","message":"\u001b[0mGET /api/lms/stats \u001b[36m304\u001b[0m 26.856 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:17:45"}
+{"level":"info","message":"\u001b[0mGET /api/lms/categories \u001b[36m304\u001b[0m 31.211 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:17:45"}
+{"level":"info","message":"\u001b[0mGET /api/lms/courses?page=1&limit=12&priceRange=all&sortBy=popular&search= \u001b[36m304\u001b[0m 36.941 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:17:45"}
+{"level":"info","message":"\u001b[0mGET /api/lms/courses?page=1&limit=12&priceRange=all&sortBy=popular \u001b[32m200\u001b[0m 40.541 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:17:45"}
+{"level":"info","message":"\u001b[0mGET /api/lms/courses/complete-web-development-bootcamp \u001b[36m304\u001b[0m 67.754 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:17:58"}
+{"level":"info","message":"\u001b[0mPOST /api/lms/courses/complete-web-development-bootcamp/enroll \u001b[32m201\u001b[0m 79.201 ms - 719\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:18:02"}
+{"level":"info","message":"\u001b[0mGET /api/lms/courses/complete-web-development-bootcamp \u001b[32m200\u001b[0m 52.252 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:18:02"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/analytics/overview \u001b[32m200\u001b[0m 105.136 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:18:09"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/courses/cml93bbti0001h2p0y0h24vng \u001b[36m304\u001b[0m 25.391 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:18:59"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/courses/cml93bbti0001h2p0y0h24vng/modules?courseId=cml93bbti0001h2p0y0h24vng \u001b[36m304\u001b[0m 14.002 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:18:59"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/courses/cml92k1k4000417d09rzlrf37 \u001b[32m200\u001b[0m 18.340 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:19:07"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/courses/cml92k1k4000417d09rzlrf37/modules?courseId=cml92k1k4000417d09rzlrf37 \u001b[36m304\u001b[0m 10.982 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:19:07"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/modules/cml92k1ke000617d0l56w3n45 \u001b[36m304\u001b[0m 34.843 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:19:19"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/courses?page=1&limit=10&search= \u001b[32m200\u001b[0m 133.817 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:22:36"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/courses?page=1&limit=10&search= \u001b[36m304\u001b[0m 17.909 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:22:51"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/courses/cml92k1k4000417d09rzlrf37 \u001b[36m304\u001b[0m 23.521 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:22:59"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/courses/cml92k1k4000417d09rzlrf37/modules?courseId=cml92k1k4000417d09rzlrf37 \u001b[36m304\u001b[0m 75.347 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:22:59"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/analytics/overview \u001b[36m304\u001b[0m 126.119 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:23:14"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/courses/cml94bejx00051360oftmcm9a \u001b[36m304\u001b[0m 38.764 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:23:47"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/categories \u001b[36m304\u001b[0m 12.212 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:23:47"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/courses?page=1&limit=10&search= \u001b[36m304\u001b[0m 16.076 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:23:53"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/courses/cml92k1k4000417d09rzlrf37 \u001b[36m304\u001b[0m 19.711 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:24:04"}
+{"baseURL":"https://judge0-ce.p.rapidapi.com","level":"info","message":"Judge0 client initialized","service":"preplyte-api","timestamp":"2026-02-06 09:26:19","useRapidAPI":true}
+{"level":"info","message":"[TTS] Using Deepgram for text-to-speech","service":"preplyte-api","timestamp":"2026-02-06 09:26:19"}
+{"environment":"development","host":"0.0.0.0","level":"info","message":"Starting server...","port":4000,"service":"preplyte-api","timestamp":"2026-02-06 09:26:20"}
+{"level":"info","message":"Checking database connection...","service":"preplyte-api","timestamp":"2026-02-06 09:26:20"}
+{"level":"info","message":"✅ Database connected successfully","service":"preplyte-api","timestamp":"2026-02-06 09:26:20"}
+{"level":"info","message":"[WS Gateway] WebSocket server initialized","path":"/ws/interview/:sessionId","service":"preplyte-api","timestamp":"2026-02-06 09:26:20"}
+{"api":"http://localhost:4000/api","environment":"development","health":"http://localhost:4000/health","host":"0.0.0.0","level":"info","message":"🚀 Server running","port":4000,"service":"preplyte-api","timestamp":"2026-02-06 09:26:20","websocket":"ws://localhost:4000/ws/interview/:sessionId"}
+{"baseURL":"https://judge0-ce.p.rapidapi.com","level":"info","message":"Judge0 client initialized","service":"preplyte-api","timestamp":"2026-02-06 09:26:46","useRapidAPI":true}
+{"level":"info","message":"[TTS] Using Deepgram for text-to-speech","service":"preplyte-api","timestamp":"2026-02-06 09:26:46"}
+{"environment":"development","host":"0.0.0.0","level":"info","message":"Starting server...","port":4000,"service":"preplyte-api","timestamp":"2026-02-06 09:26:46"}
+{"level":"info","message":"Checking database connection...","service":"preplyte-api","timestamp":"2026-02-06 09:26:46"}
+{"level":"info","message":"✅ Database connected successfully","service":"preplyte-api","timestamp":"2026-02-06 09:26:46"}
+{"level":"info","message":"[WS Gateway] WebSocket server initialized","path":"/ws/interview/:sessionId","service":"preplyte-api","timestamp":"2026-02-06 09:26:46"}
+{"api":"http://localhost:4000/api","environment":"development","health":"http://localhost:4000/health","host":"0.0.0.0","level":"info","message":"🚀 Server running","port":4000,"service":"preplyte-api","timestamp":"2026-02-06 09:26:46","websocket":"ws://localhost:4000/ws/interview/:sessionId"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/categories \u001b[33m401\u001b[0m 14.000 ms - 108\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:27:05"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/courses/cml94bejx00051360oftmcm9a \u001b[33m401\u001b[0m 2.479 ms - 108\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:27:05"}
+{"level":"info","message":"Token refreshed successfully","service":"preplyte-api","timestamp":"2026-02-06 09:27:06","userId":"cml92r5r50001q3oopvkslp23"}
+{"level":"info","message":"\u001b[0mPOST /api/auth/refresh \u001b[32m200\u001b[0m 90.331 ms - 946\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:27:06"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/courses/cml94bejx00051360oftmcm9a \u001b[32m200\u001b[0m 56.933 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:27:06"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/categories \u001b[36m304\u001b[0m 90.726 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:27:06"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/courses?page=1&limit=10&search= \u001b[36m304\u001b[0m 29.014 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:27:08"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/courses?page=1&limit=10&search= \u001b[33m401\u001b[0m 1.460 ms - 108\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:27:11"}
+{"level":"warn","message":"Refresh token reuse detected","revokedAt":"2026-02-06T03:57:05.996Z","service":"preplyte-api","timestamp":"2026-02-06 09:27:11","tokenId":"cmlac7rvf000148udocu61a8i","userId":"cml92r5r50001q3oopvkslp23"}
+{"level":"info","message":"User logged out from all devices","service":"preplyte-api","timestamp":"2026-02-06 09:27:11","userId":"cml92r5r50001q3oopvkslp23"}
+{"code":"UNAUTHORIZED","ip":"127.0.0.1","level":"warn","message":"Operational error Token reuse detected. All sessions have been revoked for security.","method":"POST","path":"/api/auth/refresh","requestId":"mlactgv9-7262f55fc52b7e5c","service":"preplyte-api","timestamp":"2026-02-06 09:27:11","userAgent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"}
+{"level":"info","message":"\u001b[0mPOST /api/auth/refresh \u001b[33m401\u001b[0m 40.994 ms - 168\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:27:11"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/courses?page=1&limit=10&search= \u001b[33m401\u001b[0m 1.790 ms - 85\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:27:12"}
+{"level":"info","message":"User logged in","service":"preplyte-api","timestamp":"2026-02-06 09:27:29","userId":"cml92r5r50001q3oopvkslp23"}
+{"level":"info","message":"\u001b[0mPOST /api/auth/login \u001b[32m200\u001b[0m 807.184 ms - 934\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:27:29"}
+{"level":"info","message":"\u001b[0mGET /api/lms/categories \u001b[32m200\u001b[0m 63.343 ms - 652\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:28:41"}
+{"level":"info","message":"\u001b[0mGET /api/lms/courses?page=1&limit=12&priceRange=all&sortBy=popular&search= \u001b[32m200\u001b[0m 108.051 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:28:41"}
+{"level":"info","message":"\u001b[0mGET /api/lms/stats \u001b[32m200\u001b[0m 125.659 ms - 146\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:28:41"}
+{"level":"info","message":"\u001b[0mGET /api/admin/institutes?page=1&limit=10&sortBy=createdAt&sortOrder=desc \u001b[36m304\u001b[0m 48.485 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:28:57"}
+{"level":"info","message":"\u001b[0mGET /api/admin/analytics \u001b[36m304\u001b[0m 184.365 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:28:57"}
+{"level":"info","message":"\u001b[0mGET /api/admin/institutes?page=1&limit=5&sortBy=createdAt&sortOrder=desc \u001b[36m304\u001b[0m 27.436 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:28:57"}
+{"level":"info","message":"\u001b[0mGET /api/admin/institutes?page=1&limit=10&sortBy=createdAt&sortOrder=desc \u001b[36m304\u001b[0m 17.288 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:28:57"}
+{"level":"info","message":"\u001b[0mGET /api/admin/analytics \u001b[36m304\u001b[0m 50.782 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:28:57"}
+{"level":"info","message":"\u001b[0mGET /api/admin/institutes?page=1&limit=5&sortBy=createdAt&sortOrder=desc \u001b[36m304\u001b[0m 24.065 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:28:57"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/analytics/overview \u001b[36m304\u001b[0m 164.401 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:29:00"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/courses?page=1&limit=10&search= \u001b[36m304\u001b[0m 42.199 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:29:09"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/courses/cml94bejx00051360oftmcm9a \u001b[36m304\u001b[0m 30.156 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:29:12"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/categories \u001b[36m304\u001b[0m 9.973 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:29:12"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/courses/cml92k1k4000417d09rzlrf37 \u001b[32m200\u001b[0m 23.645 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:29:24"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/courses/cml94bejx00051360oftmcm9a/modules?courseId=cml94bejx00051360oftmcm9a \u001b[32m200\u001b[0m 14.447 ms - 328\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:29:36"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/modules/cml94bejx00061360ybgbi4lp \u001b[32m200\u001b[0m 22.802 ms - 712\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:29:48"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/modules/cml94bejx00061360ybgbi4lp/topics?moduleId=cml94bejx00061360ybgbi4lp \u001b[32m200\u001b[0m 16.251 ms - 400\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:29:48"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/topics/cml94bejy00071360x0i56b1a \u001b[32m200\u001b[0m 20.242 ms - 398\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:30:00"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/modules/cml94bejx00061360ybgbi4lp/tests \u001b[32m200\u001b[0m 34.448 ms - 373\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:30:16"}
+{"level":"info","message":"\u001b[0mPOST /api/admin/lms/questions \u001b[32m201\u001b[0m 94.604 ms - 735\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:30:22"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/modules/cml94bejx00061360ybgbi4lp/tests \u001b[32m200\u001b[0m 13.429 ms - 630\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:30:22"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/courses/cml94bejx00051360oftmcm9a/modules?courseId=cml94bejx00051360oftmcm9a \u001b[32m200\u001b[0m 31.743 ms - 328\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:30:36"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/courses/cml94bejx00051360oftmcm9a \u001b[32m200\u001b[0m 32.836 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:30:36"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/courses?page=1&limit=10&search= \u001b[32m200\u001b[0m 28.282 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:30:41"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/courses/cml92k1k4000417d09rzlrf37 \u001b[36m304\u001b[0m 30.453 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:30:50"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/categories \u001b[36m304\u001b[0m 24.758 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:30:50"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/courses/cml92k1k4000417d09rzlrf37 \u001b[36m304\u001b[0m 26.009 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:33:42"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/categories \u001b[36m304\u001b[0m 89.844 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:33:42"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/courses?page=1&limit=10&search= \u001b[36m304\u001b[0m 41.830 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:34:49"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/courses/cml93bbti0001h2p0y0h24vng \u001b[32m200\u001b[0m 18.601 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:34:51"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/categories \u001b[36m304\u001b[0m 15.336 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:34:51"}
+{"level":"info","message":"\u001b[0mPATCH /api/admin/lms/courses/cml93bbti0001h2p0y0h24vng \u001b[32m200\u001b[0m 60.106 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:35:39"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/courses/cml93bbti0001h2p0y0h24vng \u001b[32m200\u001b[0m 18.438 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:35:39"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/courses/cml93bbti0001h2p0y0h24vng \u001b[36m304\u001b[0m 18.194 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:35:39"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/courses?page=1&limit=10&search= \u001b[32m200\u001b[0m 25.990 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:35:40"}
+{"level":"info","message":"\u001b[0mGET /api/lms/categories \u001b[36m304\u001b[0m 22.370 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:35:47"}
+{"level":"info","message":"\u001b[0mGET /api/lms/stats \u001b[36m304\u001b[0m 136.789 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:35:47"}
+{"level":"info","message":"\u001b[0mGET /api/lms/courses?page=1&limit=12&priceRange=all&sortBy=popular&search= \u001b[32m200\u001b[0m 141.367 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:35:47"}
+{"level":"info","message":"\u001b[0mGET /api/lms/categories \u001b[36m304\u001b[0m 8.511 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:36:04"}
+{"level":"info","message":"\u001b[0mGET /api/lms/stats \u001b[36m304\u001b[0m 29.769 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:36:04"}
+{"level":"info","message":"\u001b[0mGET /api/lms/courses?page=1&limit=12&priceRange=all&sortBy=popular \u001b[32m200\u001b[0m 17.162 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:36:04"}
+{"level":"info","message":"\u001b[0mGET /api/lms/courses?page=1&limit=12&priceRange=all&sortBy=popular&search= \u001b[36m304\u001b[0m 14.794 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:36:04"}
+{"level":"info","message":"\u001b[0mGET /api/lms/courses/prompt-engineering \u001b[32m200\u001b[0m 27.348 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:36:14"}
+{"level":"info","message":"\u001b[0mPOST /api/lms/courses/prompt-engineering/enroll \u001b[33m401\u001b[0m 1.461 ms - 108\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:36:19"}
+{"level":"info","message":"Token refreshed successfully","service":"preplyte-api","timestamp":"2026-02-06 09:36:19","userId":"cml92ugqs0007q3oof2k0hw35"}
+{"level":"info","message":"\u001b[0mPOST /api/auth/refresh \u001b[32m200\u001b[0m 41.910 ms - 932\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:36:19"}
+{"level":"info","message":"\u001b[0mPOST /api/lms/courses/prompt-engineering/enroll \u001b[32m201\u001b[0m 37.730 ms - 719\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:36:19"}
+{"level":"info","message":"\u001b[0mGET /api/lms/courses/prompt-engineering \u001b[32m200\u001b[0m 44.703 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:36:19"}
+{"code":"MODULE_NOT_FOUND","ip":"127.0.0.1","level":"warn","message":"Operational error Module not found","method":"GET","path":"/api/lms/courses/prompt-engineering/modules/1","requestId":"ef14498e-a5b3-486d-90e5-dbad394bd70e","service":"preplyte-api","timestamp":"2026-02-06 09:36:39","userAgent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36 Edg/144.0.0.0","userId":"cml92ugqs0007q3oof2k0hw35"}
+{"level":"info","message":"\u001b[0mGET /api/lms/courses/prompt-engineering/modules/1 \u001b[33m404\u001b[0m 35.941 ms - 133\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:36:39"}
+{"code":"MODULE_NOT_FOUND","ip":"127.0.0.1","level":"warn","message":"Operational error Module not found","method":"GET","path":"/api/lms/courses/prompt-engineering/modules/1","requestId":"08df29e1-116c-4898-a757-5c3522e89814","service":"preplyte-api","timestamp":"2026-02-06 09:36:40","userAgent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36 Edg/144.0.0.0","userId":"cml92ugqs0007q3oof2k0hw35"}
+{"level":"info","message":"\u001b[0mGET /api/lms/courses/prompt-engineering/modules/1 \u001b[33m404\u001b[0m 31.590 ms - 133\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:36:40"}
+{"level":"info","message":"\u001b[0mGET /api/lms/courses/java-fullstack \u001b[32m200\u001b[0m 41.416 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:37:04"}
+{"level":"info","message":"\u001b[0mGET /api/lms/courses/java-fullstack/modules/1 \u001b[32m200\u001b[0m 32.343 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:37:07"}
+{"level":"info","message":"\u001b[0mGET /api/lms/courses/java-fullstack/modules/1 \u001b[33m401\u001b[0m 1.241 ms - 108\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:37:14"}
+{"level":"warn","message":"Refresh token reuse detected","revokedAt":"2026-02-06T04:06:19.493Z","service":"preplyte-api","timestamp":"2026-02-06 09:37:14","tokenId":"cmlacggik0001118rxzjosfws","userId":"cml92ugqs0007q3oof2k0hw35"}
+{"level":"info","message":"User logged out from all devices","service":"preplyte-api","timestamp":"2026-02-06 09:37:14","userId":"cml92ugqs0007q3oof2k0hw35"}
+{"code":"UNAUTHORIZED","ip":"127.0.0.1","level":"warn","message":"Operational error Token reuse detected. All sessions have been revoked for security.","method":"POST","path":"/api/auth/refresh","requestId":"mlad6ec8-16291bfcc052475f","service":"preplyte-api","timestamp":"2026-02-06 09:37:14","userAgent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36 Edg/144.0.0.0"}
+{"level":"info","message":"\u001b[0mPOST /api/auth/refresh \u001b[33m401\u001b[0m 27.336 ms - 168\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:37:14"}
+{"level":"info","message":"\u001b[0mGET /api/lms/courses/java-fullstack/modules/1 \u001b[33m401\u001b[0m 1.468 ms - 85\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:37:15"}
+{"level":"info","message":"User logged in","service":"preplyte-api","timestamp":"2026-02-06 09:37:30","userId":"cml92ugqs0007q3oof2k0hw35"}
+{"level":"info","message":"\u001b[0mPOST /api/auth/login \u001b[32m200\u001b[0m 768.960 ms - 920\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:37:30"}
+{"level":"info","message":"\u001b[0mGET /api/lms/categories \u001b[36m304\u001b[0m 13.693 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:37:45"}
+{"level":"info","message":"\u001b[0mGET /api/lms/stats \u001b[36m304\u001b[0m 13.827 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:37:45"}
+{"level":"info","message":"\u001b[0mGET /api/lms/courses?page=1&limit=12&priceRange=all&sortBy=popular&search= \u001b[32m200\u001b[0m 32.113 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:37:45"}
+{"level":"info","message":"\u001b[0mGET /api/lms/courses/java-fullstack \u001b[36m304\u001b[0m 64.223 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:37:48"}
+{"level":"info","message":"\u001b[0mGET /api/lms/courses/java-fullstack/modules/1 \u001b[36m304\u001b[0m 30.714 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:37:52"}
+{"level":"info","message":"\u001b[0mGET /api/lms/courses/java-fullstack/modules/1/topics/1 \u001b[36m304\u001b[0m 57.853 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:38:06"}
+{"level":"info","message":"\u001b[0mGET /api/lms/courses/java-fullstack/modules/1/topics/1 \u001b[36m304\u001b[0m 222.895 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:40:52"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/courses/cml94bejx00051360oftmcm9a \u001b[36m304\u001b[0m 34.269 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:41:10"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/categories \u001b[36m304\u001b[0m 25.808 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:41:10"}
+{"level":"info","message":"\u001b[0mGET /api/lms/courses/java-fullstack/modules/1/topics/1 \u001b[36m304\u001b[0m 27.546 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:43:18"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/categories \u001b[33m401\u001b[0m 0.798 ms - 108\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:43:58"}
+{"level":"info","message":"Token refreshed successfully","service":"preplyte-api","timestamp":"2026-02-06 09:43:58","userId":"cml92r5r50001q3oopvkslp23"}
+{"level":"info","message":"\u001b[0mPOST /api/auth/refresh \u001b[32m200\u001b[0m 24.861 ms - 946\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:43:58"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/categories \u001b[36m304\u001b[0m 8.497 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:43:58"}
+{"level":"info","message":"\u001b[0mGET /api/lms/courses/java-fullstack/modules/1/topics/1 \u001b[36m304\u001b[0m 42.685 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:44:54"}
+{"baseURL":"https://judge0-ce.p.rapidapi.com","level":"info","message":"Judge0 client initialized","service":"preplyte-api","timestamp":"2026-02-06 09:49:35","useRapidAPI":true}
+{"level":"info","message":"[TTS] Using Deepgram for text-to-speech","service":"preplyte-api","timestamp":"2026-02-06 09:49:35"}
+{"environment":"development","host":"0.0.0.0","level":"info","message":"Starting server...","port":4000,"service":"preplyte-api","timestamp":"2026-02-06 09:49:36"}
+{"level":"info","message":"Checking database connection...","service":"preplyte-api","timestamp":"2026-02-06 09:49:36"}
+{"level":"info","message":"✅ Database connected successfully","service":"preplyte-api","timestamp":"2026-02-06 09:49:36"}
+{"level":"info","message":"[WS Gateway] WebSocket server initialized","path":"/ws/interview/:sessionId","service":"preplyte-api","timestamp":"2026-02-06 09:49:36"}
+{"api":"http://localhost:4000/api","environment":"development","health":"http://localhost:4000/health","host":"0.0.0.0","level":"info","message":"🚀 Server running","port":4000,"service":"preplyte-api","timestamp":"2026-02-06 09:49:36","websocket":"ws://localhost:4000/ws/interview/:sessionId"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/categories \u001b[36m304\u001b[0m 41.483 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:50:06"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/categories \u001b[36m304\u001b[0m 12.306 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:51:40"}
+{"code":"P2028","ip":"127.0.0.1","level":"warn","message":"Prisma error","method":"PATCH","path":"/api/admin/lms/courses/cml94bejx00051360oftmcm9a","requestId":"ecb5da46-ae95-49fb-8b66-ddfe9ffd57e4","service":"preplyte-api","timestamp":"2026-02-06 09:53:19","userAgent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36","userId":"cml92r5r50001q3oopvkslp23"}
+{"code":"P2028","level":"error","message":"Unhandled Prisma error","meta":{"error":"Transaction already closed: A commit cannot be executed on an expired transaction. The timeout for this transaction was 5000 ms, however 5021 ms passed since the start of the transaction. Consider increasing the interactive transaction timeout or doing less work in the transaction."},"service":"preplyte-api","timestamp":"2026-02-06 09:53:19"}
+{"level":"info","message":"\u001b[0mPATCH /api/admin/lms/courses/cml94bejx00051360oftmcm9a \u001b[31m500\u001b[0m 5150.917 ms - 420\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:53:19"}
+{"code":"P2028","ip":"127.0.0.1","level":"warn","message":"Prisma error","method":"PATCH","path":"/api/admin/lms/courses/cml94bejx00051360oftmcm9a","requestId":"2577436b-bd38-441e-b7a4-4c6e57bbec6a","service":"preplyte-api","timestamp":"2026-02-06 09:53:25","userAgent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36","userId":"cml92r5r50001q3oopvkslp23"}
+{"code":"P2028","level":"error","message":"Unhandled Prisma error","meta":{"error":"Transaction already closed: A commit cannot be executed on an expired transaction. The timeout for this transaction was 5000 ms, however 5021 ms passed since the start of the transaction. Consider increasing the interactive transaction timeout or doing less work in the transaction."},"service":"preplyte-api","timestamp":"2026-02-06 09:53:25"}
+{"level":"info","message":"\u001b[0mPATCH /api/admin/lms/courses/cml94bejx00051360oftmcm9a \u001b[31m500\u001b[0m 5078.387 ms - 420\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:53:25"}
+{"code":"P2028","ip":"127.0.0.1","level":"warn","message":"Prisma error","method":"PATCH","path":"/api/admin/lms/courses/cml94bejx00051360oftmcm9a","requestId":"bc8528d8-7c3d-4782-bae3-1296ef94f97e","service":"preplyte-api","timestamp":"2026-02-06 09:53:32","userAgent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36","userId":"cml92r5r50001q3oopvkslp23"}
+{"code":"P2028","level":"error","message":"Unhandled Prisma error","meta":{"error":"Transaction already closed: A commit cannot be executed on an expired transaction. The timeout for this transaction was 5000 ms, however 5028 ms passed since the start of the transaction. Consider increasing the interactive transaction timeout or doing less work in the transaction."},"service":"preplyte-api","timestamp":"2026-02-06 09:53:33"}
+{"level":"info","message":"\u001b[0mPATCH /api/admin/lms/courses/cml94bejx00051360oftmcm9a \u001b[31m500\u001b[0m 5067.533 ms - 420\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:53:33"}
+{"code":"P2028","ip":"127.0.0.1","level":"warn","message":"Prisma error","method":"PATCH","path":"/api/admin/lms/courses/cml94bejx00051360oftmcm9a","requestId":"6e446bc4-416e-45ac-afbf-573ec01fa794","service":"preplyte-api","timestamp":"2026-02-06 09:53:42","userAgent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36","userId":"cml92r5r50001q3oopvkslp23"}
+{"code":"P2028","level":"error","message":"Unhandled Prisma error","meta":{"error":"Transaction already closed: A commit cannot be executed on an expired transaction. The timeout for this transaction was 5000 ms, however 5015 ms passed since the start of the transaction. Consider increasing the interactive transaction timeout or doing less work in the transaction."},"service":"preplyte-api","timestamp":"2026-02-06 09:53:42"}
+{"level":"info","message":"\u001b[0mPATCH /api/admin/lms/courses/cml94bejx00051360oftmcm9a \u001b[31m500\u001b[0m 5054.104 ms - 420\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:53:42"}
+{"baseURL":"https://judge0-ce.p.rapidapi.com","level":"info","message":"Judge0 client initialized","service":"preplyte-api","timestamp":"2026-02-06 09:55:00","useRapidAPI":true}
+{"level":"info","message":"[TTS] Using Deepgram for text-to-speech","service":"preplyte-api","timestamp":"2026-02-06 09:55:00"}
+{"environment":"development","host":"0.0.0.0","level":"info","message":"Starting server...","port":4000,"service":"preplyte-api","timestamp":"2026-02-06 09:55:01"}
+{"level":"info","message":"Checking database connection...","service":"preplyte-api","timestamp":"2026-02-06 09:55:01"}
+{"level":"info","message":"✅ Database connected successfully","service":"preplyte-api","timestamp":"2026-02-06 09:55:01"}
+{"level":"info","message":"[WS Gateway] WebSocket server initialized","path":"/ws/interview/:sessionId","service":"preplyte-api","timestamp":"2026-02-06 09:55:01"}
+{"api":"http://localhost:4000/api","environment":"development","health":"http://localhost:4000/health","host":"0.0.0.0","level":"info","message":"🚀 Server running","port":4000,"service":"preplyte-api","timestamp":"2026-02-06 09:55:01","websocket":"ws://localhost:4000/ws/interview/:sessionId"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/categories \u001b[36m304\u001b[0m 40.162 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:55:14"}
+{"level":"info","message":"\u001b[0mPATCH /api/admin/lms/courses/cml94bejx00051360oftmcm9a \u001b[32m200\u001b[0m 238.663 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:55:40"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/courses/cml94bejx00051360oftmcm9a \u001b[32m200\u001b[0m 25.458 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:55:40"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/courses/cml94bejx00051360oftmcm9a \u001b[36m304\u001b[0m 29.252 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:55:40"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/courses?page=1&limit=10&search= \u001b[32m200\u001b[0m 17.938 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:55:40"}
+{"level":"info","message":"\u001b[0mGET /api/lms/courses/java-fullstack/modules/1/topics/1 \u001b[33m401\u001b[0m 2.458 ms - 108\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:55:48"}
+{"level":"info","message":"Token refreshed successfully","service":"preplyte-api","timestamp":"2026-02-06 09:55:49","userId":"cml92ugqs0007q3oof2k0hw35"}
+{"level":"info","message":"\u001b[0mPOST /api/auth/refresh \u001b[32m200\u001b[0m 47.996 ms - 932\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:55:49"}
+{"level":"info","message":"\u001b[0mGET /api/lms/courses/java-fullstack/modules/1/topics/1 \u001b[32m200\u001b[0m 74.008 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:55:49"}
+{"level":"info","message":"\u001b[0mPATCH /api/lms/courses/java-fullstack/modules/1/topics/1/progress \u001b[32m200\u001b[0m 53.256 ms - 417\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:55:52"}
+{"level":"info","message":"\u001b[0mGET /api/lms/courses/java-fullstack/modules/1/topics/1 \u001b[32m200\u001b[0m 64.510 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:55:52"}
+{"level":"info","message":"\u001b[0mGET /api/lms/courses/java-fullstack/modules/1 \u001b[32m200\u001b[0m 40.068 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:56:19"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/categories \u001b[36m304\u001b[0m 11.585 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:56:35"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/courses?page=1&limit=10&search= \u001b[36m304\u001b[0m 18.935 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:56:57"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/courses/cml94bejx00051360oftmcm9a \u001b[36m304\u001b[0m 22.851 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:57:03"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/courses/cml93bbti0001h2p0y0h24vng \u001b[32m200\u001b[0m 20.058 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:57:05"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/analytics/overview \u001b[32m200\u001b[0m 221.124 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:57:16"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/courses/cml92k1k4000417d09rzlrf37/modules?courseId=cml92k1k4000417d09rzlrf37 \u001b[36m304\u001b[0m 34.884 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:57:35"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/courses/cml92k1k4000417d09rzlrf37 \u001b[36m304\u001b[0m 71.230 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:57:35"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/modules/cml92k1ke000617d0l56w3n45 \u001b[36m304\u001b[0m 19.474 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:57:54"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/modules/cml92k1ke000617d0l56w3n45/topics?moduleId=cml92k1ke000617d0l56w3n45 \u001b[32m200\u001b[0m 15.912 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:57:55"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/courses/cml92k1k4000417d09rzlrf37 \u001b[33m401\u001b[0m 1.317 ms - 108\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:59:06"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/courses/cml92k1k4000417d09rzlrf37/modules?courseId=cml92k1k4000417d09rzlrf37 \u001b[33m401\u001b[0m 1.044 ms - 108\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:59:06"}
+{"level":"info","message":"Token refreshed successfully","service":"preplyte-api","timestamp":"2026-02-06 09:59:06","userId":"cml92r5r50001q3oopvkslp23"}
+{"level":"info","message":"\u001b[0mPOST /api/auth/refresh \u001b[32m200\u001b[0m 33.663 ms - 946\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:59:06"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/courses/cml92k1k4000417d09rzlrf37/modules?courseId=cml92k1k4000417d09rzlrf37 \u001b[36m304\u001b[0m 21.734 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:59:06"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/courses/cml92k1k4000417d09rzlrf37 \u001b[36m304\u001b[0m 31.047 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:59:06"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/courses?page=1&limit=10&search= \u001b[36m304\u001b[0m 15.073 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:59:07"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/courses/cml94bejx00051360oftmcm9a \u001b[36m304\u001b[0m 21.738 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:59:14"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/courses/cml94bejx00051360oftmcm9a/modules?courseId=cml94bejx00051360oftmcm9a \u001b[32m200\u001b[0m 9.866 ms - 328\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:59:14"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/categories \u001b[36m304\u001b[0m 11.372 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 09:59:27"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/courses?page=1&limit=10&search= \u001b[36m304\u001b[0m 15.640 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 10:00:15"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/courses/cml94bejx00051360oftmcm9a/modules?courseId=cml94bejx00051360oftmcm9a \u001b[36m304\u001b[0m 26.725 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 10:00:17"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/courses/cml94bejx00051360oftmcm9a \u001b[36m304\u001b[0m 31.763 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 10:00:17"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/courses/cml93bbti0001h2p0y0h24vng/modules?courseId=cml93bbti0001h2p0y0h24vng \u001b[36m304\u001b[0m 25.113 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 10:00:47"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/courses/cml93bbti0001h2p0y0h24vng \u001b[36m304\u001b[0m 30.991 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 10:00:47"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/courses/cml92k1k4000417d09rzlrf37/modules?courseId=cml92k1k4000417d09rzlrf37 \u001b[36m304\u001b[0m 24.681 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 10:00:50"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/courses/cml92k1k4000417d09rzlrf37 \u001b[36m304\u001b[0m 29.061 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 10:00:50"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/modules/cml92k1ke000617d0l56w3n45/topics?moduleId=cml92k1ke000617d0l56w3n45 \u001b[36m304\u001b[0m 14.387 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 10:00:52"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/modules/cml92k1ke000617d0l56w3n45 \u001b[36m304\u001b[0m 19.156 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 10:00:52"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/topics/cml92k1kr000g17d0vh5otsfa \u001b[32m200\u001b[0m 22.926 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 10:01:10"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/courses/cml92k1k4000417d09rzlrf37/modules?courseId=cml92k1k4000417d09rzlrf37 \u001b[36m304\u001b[0m 30.037 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 10:01:55"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/courses/cml92k1k4000417d09rzlrf37 \u001b[36m304\u001b[0m 34.243 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 10:01:55"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/modules/cml92k1ke000617d0l56w3n45 \u001b[36m304\u001b[0m 34.512 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 10:01:57"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/modules/cml92k1ke000617d0l56w3n45/topics?moduleId=cml92k1ke000617d0l56w3n45 \u001b[36m304\u001b[0m 35.264 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 10:01:57"}
+{"level":"info","message":"\u001b[0mGET /api/lms/categories \u001b[36m304\u001b[0m 57.808 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 10:02:13"}
+{"level":"info","message":"\u001b[0mGET /api/lms/courses?page=1&limit=12&priceRange=all&sortBy=popular&search= \u001b[36m304\u001b[0m 85.436 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 10:02:13"}
+{"level":"info","message":"\u001b[0mGET /api/lms/stats \u001b[36m304\u001b[0m 127.040 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 10:02:13"}
+{"level":"info","message":"\u001b[0mGET /api/lms/courses/complete-web-development-bootcamp \u001b[36m304\u001b[0m 102.030 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 10:02:24"}
+{"level":"info","message":"\u001b[0mGET /api/lms/courses/complete-web-development-bootcamp/modules/1 \u001b[32m200\u001b[0m 36.369 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 10:02:37"}
+{"level":"info","message":"\u001b[0mGET /api/lms/courses/complete-web-development-bootcamp/modules/1/topics/1 \u001b[32m200\u001b[0m 60.710 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 10:02:48"}
+{"level":"info","message":"\u001b[0mPATCH /api/lms/courses/complete-web-development-bootcamp/modules/1/topics/1/progress \u001b[32m200\u001b[0m 37.805 ms - 417\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 10:02:50"}
+{"level":"info","message":"\u001b[0mGET /api/lms/courses/complete-web-development-bootcamp/modules/1/topics/1 \u001b[32m200\u001b[0m 44.654 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 10:02:50"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/modules/cml92k1ke000617d0l56w3n45 \u001b[36m304\u001b[0m 93.755 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 10:08:58"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/modules/cml92k1ke000617d0l56w3n45/topics?moduleId=cml92k1ke000617d0l56w3n45 \u001b[36m304\u001b[0m 95.190 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 10:08:58"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/courses/cml92k1k4000417d09rzlrf37 \u001b[36m304\u001b[0m 49.633 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 10:09:17"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/courses/cml92k1k4000417d09rzlrf37/modules?courseId=cml92k1k4000417d09rzlrf37 \u001b[36m304\u001b[0m 9.331 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-06 10:09:17"}

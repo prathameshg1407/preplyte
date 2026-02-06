@@ -1,6 +1,7 @@
 import { prisma } from '../../../../lib/db';
 import { CreateTopicDto, UpdateTopicDto } from './topic.validation';
 import { AppError } from '../../../../utils/errors';
+import { courseService } from '../course/course.service';
 
 export class TopicService {
     async create(data: CreateTopicDto) {
@@ -17,9 +18,21 @@ export class TopicService {
             throw new AppError('CONFLICT', 'A topic with this order already exists in the module', 409);
         }
 
-        return prisma.lmsTopic.create({
+        const topic = await prisma.lmsTopic.create({
             data,
         });
+
+        // Get courseId to sync stats
+        const module = await prisma.lmsModule.findUnique({
+            where: { id: data.moduleId },
+            select: { courseId: true }
+        });
+
+        if (module) {
+            await courseService.syncCourseStats(module.courseId);
+        }
+
+        return topic;
     }
 
     async findOne(id: string) {
@@ -35,28 +48,50 @@ export class TopicService {
     }
 
     async update(id: string, data: UpdateTopicDto) {
-        await this.findOne(id);
+        const topic = await this.findOne(id);
 
         if (data.moduleId && data.order) {
             const existing = await prisma.lmsTopic.findUnique({
-                where: { moduleId_order: { moduleId: data.moduleId, order: data.order } }
+                where: { moduleId_order: { moduleId: data.moduleId || topic.moduleId, order: data.order } }
             });
             if (existing && existing.id !== id) {
                 throw new AppError('CONFLICT', 'Order conflict in module', 409);
             }
         }
 
-        return prisma.lmsTopic.update({
+        const updated = await prisma.lmsTopic.update({
             where: { id },
             data,
         });
+
+        const module = await prisma.lmsModule.findUnique({
+            where: { id: updated.moduleId },
+            select: { courseId: true }
+        });
+
+        if (module) {
+            await courseService.syncCourseStats(module.courseId);
+        }
+
+        return updated;
     }
 
     async delete(id: string) {
-        await this.findOne(id);
-        return prisma.lmsTopic.delete({
+        const topic = await this.findOne(id);
+        const deleted = await prisma.lmsTopic.delete({
             where: { id },
         });
+
+        const module = await prisma.lmsModule.findUnique({
+            where: { id: topic.moduleId },
+            select: { courseId: true }
+        });
+
+        if (module) {
+            await courseService.syncCourseStats(module.courseId);
+        }
+
+        return deleted;
     }
 
     async findByModule(moduleId: string) {

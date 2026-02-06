@@ -1,6 +1,7 @@
 import { prisma } from '../../../../lib/db';
 import { CreateModuleDto, UpdateModuleDto } from './module.validation';
 import { AppError } from '../../../../utils/errors';
+import { courseService } from '../course/course.service';
 
 export class ModuleService {
     async create(data: CreateModuleDto) {
@@ -19,9 +20,14 @@ export class ModuleService {
             throw new AppError('CONFLICT', 'A module with this order already exists in the course', 409);
         }
 
-        return prisma.lmsModule.create({
+        const module = await prisma.lmsModule.create({
             data,
         });
+
+        // Sync stats
+        await courseService.syncCourseStats(data.courseId);
+
+        return module;
     }
 
     async findOne(id: string) {
@@ -42,29 +48,39 @@ export class ModuleService {
     }
 
     async update(id: string, data: UpdateModuleDto) {
-        await this.findOne(id);
+        const module = await this.findOne(id);
 
         if (data.courseId && data.order) {
             // check conflict if changing order/course
             const existing = await prisma.lmsModule.findUnique({
-                where: { courseId_order: { courseId: data.courseId, order: data.order } }
+                where: { courseId_order: { courseId: data.courseId || module.courseId, order: data.order } }
             });
             if (existing && existing.id !== id) {
                 throw new AppError('CONFLICT', 'Order conflict in course', 409);
             }
         }
 
-        return prisma.lmsModule.update({
+        const updated = await prisma.lmsModule.update({
             where: { id },
             data,
         });
+
+        // Sync stats
+        await courseService.syncCourseStats(updated.courseId);
+
+        return updated;
     }
 
     async delete(id: string) {
-        await this.findOne(id);
-        return prisma.lmsModule.delete({
+        const module = await this.findOne(id);
+        const deleted = await prisma.lmsModule.delete({
             where: { id },
         });
+
+        // Sync stats
+        await courseService.syncCourseStats(module.courseId);
+
+        return deleted;
     }
 
     async findByCourse(courseId: string) {
