@@ -59,9 +59,9 @@ function getFileIcon(fileName: string) {
 interface ResumeItemProps {
   resume: Resume;
   index: number;
-  onSetDefault: (id: number) => Promise<void>;
-  onDelete: (id: number) => Promise<void>;
-  onLink: (id: number) => Promise<void>;
+  onSetDefault: (id: string) => Promise<void>;
+  onDelete: (id: string) => Promise<void>;
+  onLink: (id: string) => Promise<void>;
   isUpdating: boolean;
 }
 

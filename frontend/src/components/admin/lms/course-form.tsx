@@ -32,15 +32,33 @@ import { useLmsCategories } from '@/lib/hooks/admin/use-lms-admin';
 import { DifficultyLevel, LmsCourseStatus } from '@/types/lms.types';
 import { CreateCourseDto } from '@/types/lms-admin.types';
 import { Loader2, Plus, Trash2, GripVertical, FileText, Video, HelpCircle, Layout, Settings } from 'lucide-react';
+import { LocalTestQuestionsManager } from './local-test-questions-manager';
 
 const topicSchema = z.object({
     id: z.string().optional(),
     title: z.string().min(2, 'Topic title must be at least 2 characters'),
     description: z.string().nullable().optional(),
-    theoryContent: z.string().min(1, 'Theory content is required'),
+    theoryContent: z.string().nullable().optional(),
     videoUrl: z.string().url().nullable().optional().or(z.literal('')),
     estimatedMinutes: z.coerce.number().min(0).default(10),
     order: z.number().default(0),
+});
+
+const questionOptionSchema = z.object({
+    id: z.string().optional(),
+    text: z.string().min(1, 'Option text required'),
+    isCorrect: z.boolean().default(false),
+    order: z.number().default(0),
+});
+
+const questionSchema = z.object({
+    id: z.string().optional(),
+    questionText: z.string().min(1, 'Question text required'),
+    explanation: z.string().optional().nullable(),
+    order: z.number().default(0),
+    points: z.number().min(1).default(1),
+    isActive: z.boolean().default(true),
+    options: z.array(questionOptionSchema).min(2, 'At least 2 options required'),
 });
 
 const moduleTestSchema = z.object({
@@ -50,12 +68,13 @@ const moduleTestSchema = z.object({
     timeLimitMinutes: z.coerce.number().min(1).default(15),
     pointsPerQuestion: z.coerce.number().min(0).default(10),
     isActive: z.boolean().default(true),
+    questions: z.array(questionSchema).optional().default([]),
 });
 
 const moduleSchema = z.object({
     id: z.string().optional(),
     title: z.string().min(2, 'Module title must be at least 2 characters'),
-    shortDescription: z.string().min(2, 'Short description is required'),
+    shortDescription: z.string().nullable().optional(),
     description: z.string().nullable().optional(),
     points: z.coerce.number().min(0).default(0),
     estimatedMinutes: z.coerce.number().min(0).default(0),
@@ -69,14 +88,15 @@ const finalTestSchema = z.object({
     totalQuestions: z.coerce.number().min(1).default(10),
     passingScore: z.coerce.number().min(0).max(100).default(60),
     timeLimitMinutes: z.coerce.number().min(1).default(30),
+    questions: z.array(questionSchema).optional().default([]),
 });
 
 const courseSchema = z.object({
     title: z.string().min(2, 'Title must be at least 2 characters'),
     slug: z.string().min(2, 'Slug must be at least 2 characters'),
     categoryId: z.string().min(1, 'Category is required'),
-    shortDescription: z.string().min(2, 'Short description must be at least 2 characters'),
-    description: z.string().min(2, 'Description must be at least 2 characters'),
+    shortDescription: z.string().nullable().optional(),
+    description: z.string().nullable().optional(),
     price: z.coerce.number().min(0),
     discountPrice: z.coerce.number().min(0).optional(),
     currency: z.string().default('INR'),
@@ -143,29 +163,6 @@ export function CourseForm({ initialData, onSubmit, isLoading }: CourseFormProps
 
     const categories = categoriesData?.data || [];
 
-    // Log form errors to help debugging when button "doesn't work"
-    useEffect(() => {
-        const errors = form.formState.errors;
-        if (Object.keys(errors).length > 0) {
-            console.error('Form Errors:', errors);
-            // Show a toast for the first error to help the user identify what's wrong
-            const findFirstError = (obj: any): string | null => {
-                for (const key in obj) {
-                    if (obj[key]?.message) return obj[key].message;
-                    if (typeof obj[key] === 'object') {
-                        const nested = findFirstError(obj[key]);
-                        if (nested) return nested;
-                    }
-                }
-                return null;
-            };
-            const errorMsg = findFirstError(errors);
-            if (errorMsg) {
-                toast.error(`Please fix: ${errorMsg}`);
-            }
-        }
-    }, [form.formState.errors]);
-
     // Reset form when initialData changes to ensure all fields are populated
     useEffect(() => {
         if (initialData) {
@@ -205,6 +202,20 @@ export function CourseForm({ initialData, onSubmit, isLoading }: CourseFormProps
         onSubmit({ ...values, tags: tagsArray as any });
     };
 
+    const findFirstErrorMessage = (obj: any): string | null => {
+        if (!obj) return null;
+        if (obj.message && typeof obj.message === 'string') return obj.message;
+
+        for (const key in obj) {
+            if (typeof obj[key] === 'object') {
+                const nested = findFirstErrorMessage(obj[key]);
+                if (nested) return nested;
+            }
+        }
+
+        return null;
+    };
+
     return (
         <Form {...form}>
             <form
@@ -212,7 +223,8 @@ export function CourseForm({ initialData, onSubmit, isLoading }: CourseFormProps
                     handleFormSubmit,
                     (err) => {
                         console.error('Submit Errors:', err);
-                        toast.error('Please check all fields in all tabs.');
+                        const firstError = findFirstErrorMessage(err);
+                        toast.error(firstError ? `Validation Error: ${firstError}` : 'Please check all fields. Some required info is missing.');
                     }
                 )}
                 className="space-y-8"
@@ -326,14 +338,16 @@ export function CourseForm({ initialData, onSubmit, isLoading }: CourseFormProps
                                         name="shortDescription"
                                         render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel>Short Description</FormLabel>
+                                                <FormLabel>Short Description (Optional)</FormLabel>
                                                 <FormControl>
                                                     <Textarea
-                                                        placeholder="Brief summary (max 500 chars)"
-                                                        className="resize-none h-20"
+                                                        placeholder="Brief overview..."
+                                                        className="min-h-[80px]"
                                                         {...field}
+                                                        value={field.value || ''}
                                                     />
                                                 </FormControl>
+                                                <FormDescription>A quick summary visible on cards.</FormDescription>
                                                 <FormMessage />
                                             </FormItem>
                                         )}
@@ -344,13 +358,13 @@ export function CourseForm({ initialData, onSubmit, isLoading }: CourseFormProps
                                         name="description"
                                         render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel>Detailed Description</FormLabel>
+                                                <FormLabel>Description (Optional)</FormLabel>
                                                 <FormControl>
                                                     <Textarea
-                                                        placeholder="Full course description"
-                                                        className="min-h-[120px]"
+                                                        placeholder="Detailed description..."
+                                                        className="min-h-[150px]"
                                                         {...field}
-                                                        value={field.value ?? ''}
+                                                        value={field.value || ''}
                                                     />
                                                 </FormControl>
                                                 <FormMessage />
@@ -565,7 +579,7 @@ export function CourseForm({ initialData, onSubmit, isLoading }: CourseFormProps
                                     </CardTitle>
                                     <CardDescription>Setup the final exam required to complete the course.</CardDescription>
                                 </CardHeader>
-                                <CardContent>
+                                <CardContent className="space-y-6">
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                         <FormField
                                             control={form.control}
@@ -602,6 +616,17 @@ export function CourseForm({ initialData, onSubmit, isLoading }: CourseFormProps
                                                     </FormControl>
                                                 </FormItem>
                                             )}
+                                        />
+                                    </div>
+
+                                    <div className="pt-4 border-t border-dashed border-primary/30">
+                                        <h4 className="text-sm font-semibold mb-4 flex items-center gap-2">
+                                            <FileText className="h-4 w-4" />
+                                            Final Test Questions
+                                        </h4>
+                                        <LocalTestQuestionsManager
+                                            questions={form.watch('finalTest.questions' as any) || []}
+                                            onChange={(qs) => form.setValue('finalTest.questions' as any, qs as any)}
                                         />
                                     </div>
                                 </CardContent>
@@ -734,32 +759,42 @@ export function CourseForm({ initialData, onSubmit, isLoading }: CourseFormProps
                                                         </div>
 
                                                         {form.watch(`modules.${moduleIndex}.moduleTest` as any) && (
-                                                            <div className="grid grid-cols-2 gap-3 pt-2">
-                                                                <FormField
-                                                                    control={form.control}
-                                                                    name={`modules.${moduleIndex}.moduleTest.title` as any}
-                                                                    render={({ field }) => (
-                                                                        <FormItem>
-                                                                            <FormLabel className="text-[10px]">Test Title</FormLabel>
-                                                                            <FormControl>
-                                                                                <Input {...field} value={field.value || ''} className="h-7 text-xs bg-card" />
-                                                                            </FormControl>
-                                                                        </FormItem>
-                                                                    )}
-                                                                />
-                                                                <FormField
-                                                                    control={form.control}
-                                                                    name={`modules.${moduleIndex}.moduleTest.totalQuestions` as any}
-                                                                    render={({ field }) => (
-                                                                        <FormItem>
-                                                                            <FormLabel className="text-[10px]">Questions</FormLabel>
-                                                                            <FormControl>
-                                                                                <Input type="number" {...field} value={field.value || 0} className="h-7 text-xs bg-card" />
-                                                                            </FormControl>
-                                                                        </FormItem>
-                                                                    )}
-                                                                />
-                                                            </div>
+                                                            <>
+                                                                <div className="grid grid-cols-2 gap-3 pt-2">
+                                                                    <FormField
+                                                                        control={form.control}
+                                                                        name={`modules.${moduleIndex}.moduleTest.title` as any}
+                                                                        render={({ field }) => (
+                                                                            <FormItem>
+                                                                                <FormLabel className="text-[10px]">Test Title</FormLabel>
+                                                                                <FormControl>
+                                                                                    <Input {...field} value={field.value || ''} className="h-7 text-xs bg-card" />
+                                                                                </FormControl>
+                                                                            </FormItem>
+                                                                        )}
+                                                                    />
+                                                                    <FormField
+                                                                        control={form.control}
+                                                                        name={`modules.${moduleIndex}.moduleTest.totalQuestions` as any}
+                                                                        render={({ field }) => (
+                                                                            <FormItem>
+                                                                                <FormLabel className="text-[10px]">Questions</FormLabel>
+                                                                                <FormControl>
+                                                                                    <Input type="number" {...field} value={field.value || 0} className="h-7 text-xs bg-card" />
+                                                                                </FormControl>
+                                                                            </FormItem>
+                                                                        )}
+                                                                    />
+                                                                </div>
+
+                                                                <div className="mt-4 pt-2 border-t border-dashed">
+                                                                    <h5 className="text-xs font-bold mb-2">Test Questions</h5>
+                                                                    <LocalTestQuestionsManager
+                                                                        questions={form.watch(`modules.${moduleIndex}.moduleTest.questions` as any) || []}
+                                                                        onChange={(qs) => form.setValue(`modules.${moduleIndex}.moduleTest.questions` as any, qs as any)}
+                                                                    />
+                                                                </div>
+                                                            </>
                                                         )}
                                                     </div>
 
@@ -885,6 +920,6 @@ export function CourseForm({ initialData, onSubmit, isLoading }: CourseFormProps
                     </Button>
                 </div>
             </form>
-        </Form>
+        </Form >
     );
 };

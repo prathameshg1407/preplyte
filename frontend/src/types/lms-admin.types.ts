@@ -152,6 +152,23 @@ export interface NestedTopicDto {
     isActive?: boolean;
 }
 
+export interface NestedOptionDto {
+    id?: string;
+    text: string;
+    isCorrect: boolean;
+    order: number;
+}
+
+export interface NestedQuestionDto {
+    id?: string;
+    questionText: string;
+    explanation?: string;
+    order: number;
+    points: number;
+    isActive?: boolean;
+    options: NestedOptionDto[];
+}
+
 export interface NestedModuleTestDto {
     title: string;
     instructions?: string;
@@ -161,6 +178,7 @@ export interface NestedModuleTestDto {
     maxAttempts?: number;
     pointsPerQuestion: number;
     isActive?: boolean;
+    questions?: NestedQuestionDto[];
 }
 
 export interface NestedModuleDto {
@@ -184,6 +202,7 @@ export interface NestedFinalTestDto {
     maxAttempts?: number;
     pointsPerQuestion: number;
     isActive?: boolean;
+    questions?: NestedQuestionDto[];
 }
 
 export interface CreateCourseDto {

@@ -918,14 +918,36 @@ class LmsService {
     const moduleTest = module.moduleTest;
 
     // Check module progress
-    const moduleProgress = await prisma.lmsModuleProgress.findUnique({
+    let moduleProgress = await prisma.lmsModuleProgress.findUnique({
       where: {
         userId_moduleId: { userId, moduleId: module.id },
       },
     });
 
     if (!moduleProgress) {
-      throw new AppError('NOT_ENROLLED', LMS_ERROR_MESSAGES.NOT_ENROLLED, 403);
+      // Check if enrolled
+      const enrollment = await prisma.lmsEnrollment.findUnique({
+        where: {
+          userId_courseId: { userId, courseId: course.id },
+        },
+      });
+
+      if (!enrollment) {
+        throw new AppError('NOT_ENROLLED', LMS_ERROR_MESSAGES.NOT_ENROLLED, 403);
+      }
+
+      // Auto-create progress for existing enrollment (e.g. new module added)
+      moduleProgress = await prisma.lmsModuleProgress.create({
+        data: {
+          userId,
+          moduleId: module.id,
+          status: LmsModuleStatus.AVAILABLE,
+          totalTopics: module.totalTopics,
+          testAttempts: 0,
+          progressPercent: 0,
+          completedTopics: 0
+        },
+      });
     }
 
     // Check if already passed

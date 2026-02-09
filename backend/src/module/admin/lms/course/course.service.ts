@@ -40,8 +40,8 @@ export class CourseService {
 
             return {
                 title: m.title,
-                shortDescription: m.shortDescription,
-                description: m.description,
+                shortDescription: m.shortDescription || '',
+                description: m.description || null,
                 order: m.order,
                 points: m.points,
                 estimatedMinutes: m.estimatedMinutes,
@@ -50,11 +50,11 @@ export class CourseService {
                 topics: m.topics ? {
                     create: m.topics.map(t => ({
                         title: t.title,
-                        description: t.description,
+                        description: t.description || null,
                         order: t.order,
-                        theoryContent: t.theoryContent,
-                        videoUrl: t.videoUrl,
-                        videoDuration: t.videoDuration,
+                        theoryContent: t.theoryContent || '',
+                        videoUrl: t.videoUrl || null,
+                        videoDuration: t.videoDuration || null,
                         estimatedMinutes: t.estimatedMinutes,
                         isActive: t.isActive
                     }))
@@ -62,14 +62,30 @@ export class CourseService {
                 moduleTest: m.moduleTest ? {
                     create: {
                         title: m.moduleTest.title,
-                        instructions: m.moduleTest.instructions,
+                        instructions: m.moduleTest.instructions || null,
                         totalQuestions: m.moduleTest.totalQuestions,
                         passingScore: m.moduleTest.passingScore,
                         timeLimitMinutes: m.moduleTest.timeLimitMinutes,
                         maxAttempts: m.moduleTest.maxAttempts,
                         pointsPerQuestion: m.moduleTest.pointsPerQuestion,
                         totalPoints: moduleTestPoints,
-                        isActive: m.moduleTest.isActive
+                        isActive: m.moduleTest.isActive,
+                        questions: m.moduleTest.questions && m.moduleTest.questions.length > 0 ? {
+                            create: m.moduleTest.questions.map(q => ({
+                                questionText: q.questionText,
+                                explanation: q.explanation || null,
+                                order: q.order,
+                                points: q.points,
+                                isActive: q.isActive,
+                                options: {
+                                    create: q.options.map(o => ({
+                                        text: o.text,
+                                        isCorrect: o.isCorrect,
+                                        order: o.order
+                                    }))
+                                }
+                            }))
+                        } : undefined
                     }
                 } : undefined
             };
@@ -91,7 +107,23 @@ export class CourseService {
                     maxAttempts: finalTest.maxAttempts,
                     pointsPerQuestion: finalTest.pointsPerQuestion,
                     totalPoints: finalTestPoints,
-                    isActive: finalTest.isActive
+                    isActive: finalTest.isActive,
+                    questions: finalTest.questions && finalTest.questions.length > 0 ? {
+                        create: finalTest.questions.map(q => ({
+                            questionText: q.questionText,
+                            explanation: q.explanation,
+                            order: q.order,
+                            points: q.points,
+                            isActive: q.isActive,
+                            options: {
+                                create: q.options.map(o => ({
+                                    text: o.text,
+                                    isCorrect: o.isCorrect,
+                                    order: o.order
+                                }))
+                            }
+                        }))
+                    } : undefined
                 }
             };
         }
@@ -101,6 +133,8 @@ export class CourseService {
         return prisma.lmsCourse.create({
             data: {
                 ...data,
+                shortDescription: data.shortDescription || '',
+                description: data.description || '',
                 totalModules,
                 totalTopics,
                 totalPoints,
@@ -223,10 +257,32 @@ export class CourseService {
                         topics: {
                             orderBy: { order: 'asc' },
                         },
-                        moduleTest: true,
+                        moduleTest: {
+                            include: {
+                                questions: {
+                                    orderBy: { order: 'asc' },
+                                    include: {
+                                        options: {
+                                            orderBy: { order: 'asc' }
+                                        }
+                                    }
+                                }
+                            }
+                        },
                     },
                 },
-                finalTest: true,
+                finalTest: {
+                    include: {
+                        questions: {
+                            orderBy: { order: 'asc' },
+                            include: {
+                                options: {
+                                    orderBy: { order: 'asc' }
+                                }
+                            }
+                        }
+                    }
+                },
                 _count: {
                     select: {
                         enrollments: true,
@@ -256,10 +312,32 @@ export class CourseService {
 
         // Handle nested curriculum updates
         const updatedCourse = await prisma.$transaction(async (tx) => {
+            // Sanitize data to only include valid LmsCourse fields
+            const sanitizedData: any = {};
+            const validFields = [
+                'title', 'slug', 'categoryId', 'shortDescription', 'description',
+                'thumbnailUrl', 'previewVideoUrl', 'price', 'discountPrice',
+                'currency', 'status', 'isActive', 'certificateEnabled',
+                'passingPercentage', 'tags', 'difficulty', 'instructor', 'language'
+            ];
+
+            validFields.forEach(field => {
+                if (data[field as keyof typeof data] !== undefined) {
+                    let val = data[field as keyof typeof data];
+                    // Correct common nullable issues for mandatory DB fields
+                    if (val === null) {
+                        if (field === 'shortDescription' || field === 'description') {
+                            val = '';
+                        }
+                    }
+                    sanitizedData[field] = val;
+                }
+            });
+
             // Update course basic data
             const updated = await tx.lmsCourse.update({
                 where: { id },
-                data: data as any,
+                data: sanitizedData,
                 include: { category: true }
             });
 
@@ -271,15 +349,106 @@ export class CourseService {
                         where: { id: course.finalTest.id },
                         data: {
                             ...(finalTest as any),
-                            totalPoints: finalTestPoints
+                            totalPoints: finalTestPoints,
+                            questions: undefined // Don't update directly
                         }
                     });
+
+                    // Update Questions
+                    if (finalTest.questions) {
+                        const existingQuestions = (course.finalTest as any).questions || [];
+                        const existingIds = existingQuestions.map((q: any) => q.id);
+                        const inputIds = finalTest.questions.filter((q: any) => q.id).map((q: any) => q.id);
+
+                        // Delete missing questions
+                        const toDelete = existingIds.filter((id: string) => !inputIds.includes(id));
+                        if (toDelete.length > 0) {
+                            await tx.lmsTestQuestion.deleteMany({
+                                where: { id: { in: toDelete } }
+                            });
+                        }
+
+                        // Create/Update questions
+                        for (const q of finalTest.questions) {
+                            const qData = {
+                                questionText: q.questionText,
+                                explanation: q.explanation,
+                                order: q.order,
+                                points: q.points,
+                                isActive: q.isActive,
+                            };
+
+                            if (q.id && existingIds.includes(q.id)) {
+                                await tx.lmsTestQuestion.update({
+                                    where: { id: q.id },
+                                    data: qData
+                                });
+
+                                // Smarter Option Update
+                                const inputOptions = q.options || [];
+                                const existingOptions = await tx.lmsTestOption.findMany({ where: { questionId: q.id } });
+                                const existingOptionIds = existingOptions.map(o => o.id);
+                                const inputOptionIds = inputOptions.filter((o: any) => o.id).map((o: any) => o.id);
+
+                                // Delete removed options
+                                const optionsToDelete = existingOptionIds.filter(id => !inputOptionIds.includes(id));
+                                if (optionsToDelete.length > 0) {
+                                    await tx.lmsTestOption.deleteMany({ where: { id: { in: optionsToDelete } } });
+                                }
+
+                                // Update/Create options
+                                for (const opt of inputOptions) {
+                                    const optData = {
+                                        text: opt.text,
+                                        isCorrect: opt.isCorrect,
+                                        order: opt.order
+                                    };
+                                    if (opt.id && existingOptionIds.includes(opt.id)) {
+                                        await tx.lmsTestOption.update({
+                                            where: { id: opt.id },
+                                            data: optData
+                                        });
+                                    } else {
+                                        await tx.lmsTestOption.create({
+                                            data: {
+                                                ...optData,
+                                                questionId: q.id
+                                            }
+                                        });
+                                    }
+                                }
+                            } else {
+                                await tx.lmsTestQuestion.create({
+                                    data: {
+                                        ...qData,
+                                        finalTestId: course.finalTest.id,
+                                        options: {
+                                            create: q.options
+                                        }
+                                    }
+                                });
+                            }
+                        }
+                    }
+
                 } else {
                     await tx.lmsFinalTest.create({
                         data: {
                             ...(finalTest as any),
                             courseId: id,
-                            totalPoints: finalTestPoints
+                            totalPoints: finalTestPoints,
+                            questions: finalTest.questions ? {
+                                create: finalTest.questions.map((q: any) => ({
+                                    questionText: q.questionText,
+                                    explanation: q.explanation,
+                                    order: q.order,
+                                    points: q.points,
+                                    isActive: q.isActive,
+                                    options: {
+                                        create: q.options
+                                    }
+                                }))
+                            } : undefined
                         }
                     });
                 }
@@ -307,8 +476,8 @@ export class CourseService {
                 for (const m of modules) {
                     const moduleData: any = {
                         title: m.title,
-                        shortDescription: m.shortDescription,
-                        description: m.description,
+                        shortDescription: m.shortDescription || '',
+                        description: m.description || null,
                         order: m.order,
                         points: m.points,
                         estimatedMinutes: m.estimatedMinutes,
@@ -338,15 +507,113 @@ export class CourseService {
                     // Handle Module Test
                     if (m.moduleTest) {
                         const testPoints = m.moduleTest.totalQuestions * (m.moduleTest.pointsPerQuestion || 10);
-                        const existingTest = await tx.lmsModuleTest.findUnique({ where: { moduleId } });
+                        let existingTest = existingModule ? await tx.lmsModuleTest.findUnique({
+                            where: { moduleId },
+                            include: { questions: { include: { options: true } } }
+                        }) : null;
+
                         if (existingTest) {
                             await tx.lmsModuleTest.update({
                                 where: { id: existingTest.id },
-                                data: { ...(m.moduleTest as any), totalPoints: testPoints }
+                                data: { ...(m.moduleTest as any), totalPoints: testPoints, questions: undefined }
                             });
+
+                            // Update Questions logic (duplicated from finalTest, could be refactored)
+                            if (m.moduleTest.questions) {
+                                const existingQuestions = existingTest.questions || [];
+                                const existingIds = existingQuestions.map((q: any) => q.id);
+                                const inputIds = m.moduleTest.questions.filter((q: any) => q.id).map((q: any) => q.id);
+
+                                // Delete missing questions
+                                const toDelete = existingIds.filter((id: string) => !inputIds.includes(id));
+                                if (toDelete.length > 0) {
+                                    await tx.lmsTestQuestion.deleteMany({
+                                        where: { id: { in: toDelete } }
+                                    });
+                                }
+
+                                // Create/Update questions
+                                for (const q of m.moduleTest.questions) {
+                                    const qData = {
+                                        questionText: q.questionText,
+                                        explanation: q.explanation,
+                                        order: q.order,
+                                        points: q.points,
+                                        isActive: q.isActive,
+                                    };
+
+                                    if (q.id && existingIds.includes(q.id)) {
+                                        await tx.lmsTestQuestion.update({
+                                            where: { id: q.id },
+                                            data: qData
+                                        });
+
+                                        // Smarter Option Update (duplicated logic)
+                                        const inputOptions = q.options || [];
+                                        const existingOptions = await tx.lmsTestOption.findMany({ where: { questionId: q.id } });
+                                        const existingOptionIds = existingOptions.map(o => o.id);
+                                        const inputOptionIds = inputOptions.filter((o: any) => o.id).map((o: any) => o.id);
+
+                                        // Delete removed options
+                                        const optionsToDelete = existingOptionIds.filter(id => !inputOptionIds.includes(id));
+                                        if (optionsToDelete.length > 0) {
+                                            await tx.lmsTestOption.deleteMany({ where: { id: { in: optionsToDelete } } });
+                                        }
+
+                                        // Update/Create options
+                                        for (const opt of inputOptions) {
+                                            const optData = {
+                                                text: opt.text,
+                                                isCorrect: opt.isCorrect,
+                                                order: opt.order
+                                            };
+                                            if (opt.id && existingOptionIds.includes(opt.id)) {
+                                                await tx.lmsTestOption.update({
+                                                    where: { id: opt.id },
+                                                    data: optData
+                                                });
+                                            } else {
+                                                await tx.lmsTestOption.create({
+                                                    data: {
+                                                        ...optData,
+                                                        questionId: q.id
+                                                    }
+                                                });
+                                            }
+                                        }
+                                    } else {
+                                        await tx.lmsTestQuestion.create({
+                                            data: {
+                                                ...qData,
+                                                moduleTestId: existingTest.id,
+                                                options: {
+                                                    create: q.options
+                                                }
+                                            }
+                                        });
+                                    }
+                                }
+                            }
+
                         } else {
                             await tx.lmsModuleTest.create({
-                                data: { ...(m.moduleTest as any), moduleId, totalPoints: testPoints }
+                                data: {
+                                    ...(m.moduleTest as any),
+                                    moduleId,
+                                    totalPoints: testPoints,
+                                    questions: m.moduleTest.questions ? {
+                                        create: m.moduleTest.questions.map((q: any) => ({
+                                            questionText: q.questionText,
+                                            explanation: q.explanation,
+                                            order: q.order,
+                                            points: q.points,
+                                            isActive: q.isActive,
+                                            options: {
+                                                create: q.options
+                                            }
+                                        }))
+                                    } : undefined
+                                }
                             });
                         }
                     } else if (existingModule) {
@@ -371,11 +638,11 @@ export class CourseService {
                         for (const t of m.topics) {
                             const topicData = {
                                 title: t.title,
-                                description: t.description,
+                                description: t.description || null,
                                 order: t.order,
-                                theoryContent: t.theoryContent,
-                                videoUrl: t.videoUrl,
-                                videoDuration: t.videoDuration,
+                                theoryContent: t.theoryContent || '',
+                                videoUrl: t.videoUrl || null,
+                                videoDuration: t.videoDuration || null,
                                 estimatedMinutes: t.estimatedMinutes,
                                 isActive: t.isActive
                             };
@@ -406,7 +673,7 @@ export class CourseService {
         // Sync stats after transaction is committed
         await this.syncCourseStats(id);
 
-        return updatedCourse;
+        return this.findOne(id);
     }
 
     async delete(id: string) {

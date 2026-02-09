@@ -1,11 +1,28 @@
 import { z } from 'zod';
 import { LmsCourseStatus, DifficultyLevel } from '@prisma/client';
 
+const nestedOptionSchema = z.object({
+    id: z.string().optional(),
+    text: z.string().min(1),
+    isCorrect: z.boolean().default(false),
+    order: z.number().int().default(0),
+});
+
+const nestedQuestionSchema = z.object({
+    id: z.string().optional(),
+    questionText: z.string().min(1),
+    explanation: z.string().optional().nullable(),
+    order: z.number().int().default(0),
+    points: z.number().int().default(1),
+    isActive: z.boolean().default(true),
+    options: z.array(nestedOptionSchema).default([]),
+});
+
 const nestedTopicSchema = z.object({
     title: z.string().min(1),
     description: z.string().optional().nullable(),
     order: z.number().int(),
-    theoryContent: z.string().min(1),
+    theoryContent: z.string().optional().nullable(),
     videoUrl: z.preprocess((val) => val === '' ? null : val, z.string().url().nullable().optional()),
     videoDuration: z.number().int().optional().nullable(),
     estimatedMinutes: z.number().int().default(10),
@@ -21,11 +38,12 @@ const nestedModuleTestSchema = z.object({
     maxAttempts: z.number().int().positive().default(3),
     pointsPerQuestion: z.number().positive().default(10),
     isActive: z.boolean().default(true),
+    questions: z.array(nestedQuestionSchema).optional().default([]),
 });
 
 const nestedModuleSchema = z.object({
     title: z.string().min(1),
-    shortDescription: z.string().min(1),
+    shortDescription: z.string().optional().nullable(),
     description: z.string().optional().nullable(),
     order: z.number().int(),
     points: z.number().int().min(0).default(0),
@@ -44,6 +62,7 @@ const nestedFinalTestSchema = z.object({
     maxAttempts: z.number().int().positive().default(1),
     pointsPerQuestion: z.number().positive().default(10),
     isActive: z.boolean().default(true),
+    questions: z.array(nestedQuestionSchema).optional().default([]),
 });
 
 export const createCourseSchema = z.object({
@@ -52,8 +71,8 @@ export const createCourseSchema = z.object({
     title: z.string().min(1),
     slug: z.string().min(1),
 
-    shortDescription: z.string().min(1),
-    description: z.string().min(1),
+    shortDescription: z.string().optional().nullable(),
+    description: z.string().optional().nullable(),
 
     thumbnailUrl: z.preprocess((val) => val === '' ? null : val, z.string().url().nullable().optional()),
     previewVideoUrl: z.preprocess((val) => val === '' ? null : val, z.string().url().nullable().optional()),
