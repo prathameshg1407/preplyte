@@ -26,12 +26,7 @@ import {
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 
-const stats = [
-  { value: '10K+', label: 'Questions', icon: BookOpen },
-  { value: '50+', label: 'Institutes', icon: Building2 },
-  { value: '25K+', label: 'Students', icon: GraduationCap },
-  { value: '95%', label: 'Success Rate', icon: Star },
-];
+
 
 const features = [
   {
