@@ -1,0 +1,776 @@
+import { PrismaClient, ResumeTemplateCategory } from '@prisma/client';
+import { 
+  ResumeTemplateResponse, 
+  ResumeResponse, 
+  ResumeListItem,
+  ResumeContent,
+  ResumeCustomization,
+  TemplateLayout,
+  TemplateStyles,
+  ResumeVersionResponse,
+  ResumeSectionType,
+} from './resume.types';
+import {
+  CreateResumeInput,
+  UpdateResumeInput,
+  TemplateFiltersInput,
+  ResumeFiltersInput,
+  DuplicateResumeInput,
+} from './resume.validation';
+import { AppError } from '../../utils/errors';
+import { generateSlug } from '../../utils/helpers';
+
+export class ResumeService {
+  constructor(private prisma: PrismaClient) {}
+
+  // ============ Template Methods ============
+
+  async getTemplates(filters: TemplateFiltersInput): Promise<ResumeTemplateResponse[]> {
+    const where: any = {
+      isActive: true,
+    };
+
+    if (filters.category) {
+      where.category = filters.category;
+    }
+
+    if (filters.isPremium !== undefined) {
+      where.isPremium = filters.isPremium;
+    }
+
+    if (filters.search) {
+      where.OR = [
+        { name: { contains: filters.search, mode: 'insensitive' } },
+        { description: { contains: filters.search, mode: 'insensitive' } },
+      ];
+    }
+
+    const templates = await this.prisma.resumeTemplate.findMany({
+      where,
+      orderBy: [
+        { popularity: 'desc' },
+        { createdAt: 'desc' },
+      ],
+    });
+
+    return templates.map(this.mapTemplateToResponse);
+  }
+
+  async getTemplateById(templateId: string): Promise<ResumeTemplateResponse> {
+    const template = await this.prisma.resumeTemplate.findUnique({
+      where: { id: templateId },
+    });
+
+    if (!template) {
+      throw new AppError('Template not found', 404);
+    }
+
+    return this.mapTemplateToResponse(template);
+  }
+
+  async getTemplateBySlug(slug: string): Promise<ResumeTemplateResponse> {
+    const template = await this.prisma.resumeTemplate.findUnique({
+      where: { slug },
+    });
+
+    if (!template) {
+      throw new AppError('Template not found', 404);
+    }
+
+    return this.mapTemplateToResponse(template);
+  }
+
+  async getTemplateCategories(): Promise<{ category: ResumeTemplateCategory; count: number }[]> {
+    const categories = await this.prisma.resumeTemplate.groupBy({
+      by: ['category'],
+      where: { isActive: true },
+      _count: { id: true },
+    });
+
+    return categories.map(c => ({
+      category: c.category,
+      count: c._count.id,
+    }));
+  }
+
+  // ============ Resume CRUD Methods ============
+
+  async createResume(userId: string, data: CreateResumeInput): Promise<ResumeResponse> {
+    // Verify template exists
+    const template = await this.prisma.resumeTemplate.findUnique({
+      where: { id: data.templateId },
+    });
+
+    if (!template) {
+      throw new AppError('Template not found', 404);
+    }
+
+    // Generate unique slug
+    const title = data.title || 'Untitled Resume';
+    const baseSlug = generateSlug(title);
+    const slug = await this.generateUniqueSlug(userId, baseSlug);
+
+    // Create resume with default section order from template
+    const layout = template.layout as unknown as TemplateLayout;
+    const defaultSectionOrder = layout.sections
+      .filter(s => s.defaultVisible)
+      .map(s => s.type);
+
+    const resume = await this.prisma.userResume.create({
+      data: {
+        userId,
+        templateId: data.templateId,
+        title,
+        slug,
+        sectionOrder: defaultSectionOrder,
+        hiddenSections: [],
+      },
+      include: {
+        template: true,
+      },
+    });
+
+    // Increment template popularity
+    await this.prisma.resumeTemplate.update({
+      where: { id: data.templateId },
+      data: { popularity: { increment: 1 } },
+    });
+
+    return this.mapResumeToResponse(resume);
+  }
+
+  async getUserResumes(
+    userId: string, 
+    filters: ResumeFiltersInput
+  ): Promise<{ resumes: ResumeListItem[]; total: number; page: number; totalPages: number }> {
+    const { page = 1, limit = 10, search, templateId, isComplete } = filters;
+    const skip = (page - 1) * limit;
+
+    const where: any = { userId };
+
+    if (search) {
+      where.title = { contains: search, mode: 'insensitive' };
+    }
+
+    if (templateId) {
+      where.templateId = templateId;
+    }
+
+    if (isComplete !== undefined) {
+      where.isComplete = isComplete;
+    }
+
+    const [resumes, total] = await Promise.all([
+      this.prisma.userResume.findMany({
+        where,
+        include: {
+          template: {
+            select: {
+              id: true,
+              name: true,
+              thumbnail: true,
+            },
+          },
+        },
+        orderBy: { updatedAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.userResume.count({ where }),
+    ]);
+
+    return {
+      resumes: resumes.map(r => ({
+        id: r.id,
+        title: r.title,
+        slug: r.slug,
+        templateId: r.templateId,
+        templateName: r.template.name,
+        templateThumbnail: r.template.thumbnail,
+        isComplete: r.isComplete,
+        lastAtsScore: r.lastAtsScore,
+        updatedAt: r.updatedAt.toISOString(),
+      })),
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
+    };
+  }
+
+  async getResumeById(userId: string, resumeId: string): Promise<ResumeResponse> {
+    const resume = await this.prisma.userResume.findFirst({
+      where: {
+        id: resumeId,
+        userId,
+      },
+      include: {
+        template: true,
+      },
+    });
+
+    if (!resume) {
+      throw new AppError('Resume not found', 404);
+    }
+
+    return this.mapResumeToResponse(resume);
+  }
+
+  async getResumeBySlug(userId: string, slug: string): Promise<ResumeResponse> {
+    const resume = await this.prisma.userResume.findFirst({
+      where: {
+        slug,
+        userId,
+      },
+      include: {
+        template: true,
+      },
+    });
+
+    if (!resume) {
+      throw new AppError('Resume not found', 404);
+    }
+
+    return this.mapResumeToResponse(resume);
+  }
+
+  async updateResume(
+    userId: string, 
+    resumeId: string, 
+    data: UpdateResumeInput
+  ): Promise<ResumeResponse> {
+    const existingResume = await this.prisma.userResume.findFirst({
+      where: { id: resumeId, userId },
+    });
+
+    if (!existingResume) {
+      throw new AppError('Resume not found', 404);
+    }
+
+    // If changing template, verify it exists
+    if (data.templateId && data.templateId !== existingResume.templateId) {
+      const template = await this.prisma.resumeTemplate.findUnique({
+        where: { id: data.templateId },
+      });
+
+      if (!template) {
+        throw new AppError('Template not found', 404);
+      }
+    }
+
+    // Build update data
+    const updateData: any = {};
+
+    if (data.title) {
+      updateData.title = data.title;
+      updateData.slug = await this.generateUniqueSlug(userId, generateSlug(data.title), resumeId);
+    }
+
+    if (data.templateId) {
+      updateData.templateId = data.templateId;
+    }
+
+    if (data.content) {
+      if (data.content.personalInfo) updateData.personalInfo = data.content.personalInfo;
+      if (data.content.summary) updateData.summary = data.content.summary;
+      if (data.content.experience) updateData.experience = data.content.experience;
+      if (data.content.education) updateData.education = data.content.education;
+      if (data.content.skills) updateData.skills = data.content.skills;
+      if (data.content.projects) updateData.projects = data.content.projects;
+      if (data.content.certifications) updateData.certifications = data.content.certifications;
+      if (data.content.languages) updateData.languages = data.content.languages;
+      if (data.content.achievements) updateData.achievements = data.content.achievements;
+      if (data.content.customSections) updateData.customSections = data.content.customSections;
+    }
+
+    if (data.customization) {
+      if (data.customization.sectionOrder) updateData.sectionOrder = data.customization.sectionOrder;
+      if (data.customization.hiddenSections) updateData.hiddenSections = data.customization.hiddenSections;
+      if (data.customization.customStyles) updateData.customStyles = data.customization.customStyles;
+      if (data.customization.colorScheme) updateData.colorScheme = data.customization.colorScheme;
+      if (data.customization.fontFamily) updateData.fontFamily = data.customization.fontFamily;
+    }
+
+    // Calculate completion status
+    updateData.isComplete = this.calculateCompletionStatus(existingResume, data.content);
+
+    const resume = await this.prisma.userResume.update({
+      where: { id: resumeId },
+      data: updateData,
+      include: { template: true },
+    });
+
+    return this.mapResumeToResponse(resume);
+  }
+
+  async updateResumeSection(
+    userId: string,
+    resumeId: string,
+    section: ResumeSectionType,
+    data: unknown
+  ): Promise<ResumeResponse> {
+    const existingResume = await this.prisma.userResume.findFirst({
+      where: { id: resumeId, userId },
+    });
+
+    if (!existingResume) {
+      throw new AppError('Resume not found', 404);
+    }
+
+    // Create version snapshot before update
+    await this.createVersionSnapshot(resumeId, `Updated ${section}`);
+
+    const updateData: any = {
+      [section]: data,
+    };
+
+    // Recalculate completion status
+    const contentUpdate = { [section]: data };
+    updateData.isComplete = this.calculateCompletionStatus(existingResume, contentUpdate);
+
+    // Handle customSections in sectionOrder
+    if (section === 'customSections') {
+      const customSections = data as any[];
+      const currentOrder = existingResume.sectionOrder as string[];
+      
+      if (customSections && customSections.length > 0) {
+        // Add customSections to sectionOrder if not present
+        if (!currentOrder.includes('customSections')) {
+          updateData.sectionOrder = [...currentOrder, 'customSections'];
+        }
+      } else {
+        // Remove customSections from sectionOrder if empty
+        if (currentOrder.includes('customSections')) {
+          updateData.sectionOrder = currentOrder.filter(s => s !== 'customSections');
+        }
+      }
+    }
+
+    const resume = await this.prisma.userResume.update({
+      where: { id: resumeId },
+      data: updateData,
+      include: { template: true },
+    });
+
+    return this.mapResumeToResponse(resume);
+  }
+
+  async deleteResume(userId: string, resumeId: string): Promise<void> {
+    const resume = await this.prisma.userResume.findFirst({
+      where: { id: resumeId, userId },
+    });
+
+    if (!resume) {
+      throw new AppError('Resume not found', 404);
+    }
+
+    await this.prisma.userResume.delete({
+      where: { id: resumeId },
+    });
+  }
+
+  async duplicateResume(
+    userId: string, 
+    resumeId: string, 
+    data: DuplicateResumeInput
+  ): Promise<ResumeResponse> {
+    const original = await this.prisma.userResume.findFirst({
+      where: { id: resumeId, userId },
+      include: { template: true },
+    });
+
+    if (!original) {
+      throw new AppError('Resume not found', 404);
+    }
+
+    const title = data.newTitle || `${original.title} (Copy)`;
+    const slug = await this.generateUniqueSlug(userId, generateSlug(title));
+
+    const duplicate = await this.prisma.userResume.create({
+      data: {
+        userId,
+        templateId: original.templateId,
+        title,
+        slug,
+        personalInfo: original.personalInfo || undefined,
+        summary: original.summary || undefined,
+        experience: original.experience || undefined,
+        education: original.education || undefined,
+        skills: original.skills || undefined,
+        projects: original.projects || undefined,
+        certifications: original.certifications || undefined,
+        languages: original.languages || undefined,
+        achievements: original.achievements || undefined,
+        customSections: original.customSections || undefined,
+        sectionOrder: original.sectionOrder,
+        hiddenSections: original.hiddenSections,
+        customStyles: original.customStyles || undefined,
+        colorScheme: original.colorScheme,
+        fontFamily: original.fontFamily,
+        isComplete: original.isComplete,
+      },
+      include: { template: true },
+    });
+
+    return this.mapResumeToResponse(duplicate);
+  }
+
+  async changeTemplate(
+    userId: string,
+    resumeId: string,
+    templateId: string
+  ): Promise<ResumeResponse> {
+    const resume = await this.prisma.userResume.findFirst({
+      where: { id: resumeId, userId },
+    });
+
+    if (!resume) {
+      throw new AppError('Resume not found', 404);
+    }
+
+    const template = await this.prisma.resumeTemplate.findUnique({
+      where: { id: templateId },
+    });
+
+    if (!template) {
+      throw new AppError('Template not found', 404);
+    }
+
+    // Create version before template change
+    await this.createVersionSnapshot(resumeId, 'Changed template');
+
+    const updatedResume = await this.prisma.userResume.update({
+      where: { id: resumeId },
+      data: {
+        templateId,
+        // Reset custom styles when changing template
+        customStyles: null,
+        colorScheme: null,
+        fontFamily: null,
+      },
+      include: { template: true },
+    });
+
+    return this.mapResumeToResponse(updatedResume);
+  }
+
+  // ============ Version History Methods ============
+
+  async getResumeVersions(userId: string, resumeId: string): Promise<ResumeVersionResponse[]> {
+    const resume = await this.prisma.userResume.findFirst({
+      where: { id: resumeId, userId },
+    });
+
+    if (!resume) {
+      throw new AppError('Resume not found', 404);
+    }
+
+    const versions = await this.prisma.resumeVersion.findMany({
+      where: { resumeId },
+      orderBy: { version: 'desc' },
+      take: 20, // Limit to last 20 versions
+    });
+
+    return versions.map(v => ({
+      id: v.id,
+      version: v.version,
+      changeNote: v.changeNote,
+      createdAt: v.createdAt.toISOString(),
+    }));
+  }
+
+  async restoreVersion(
+    userId: string, 
+    resumeId: string, 
+    versionId: string
+  ): Promise<ResumeResponse> {
+    const resume = await this.prisma.userResume.findFirst({
+      where: { id: resumeId, userId },
+    });
+
+    if (!resume) {
+      throw new AppError('Resume not found', 404);
+    }
+
+    const version = await this.prisma.resumeVersion.findFirst({
+      where: { id: versionId, resumeId },
+    });
+
+    if (!version) {
+      throw new AppError('Version not found', 404);
+    }
+
+    // Create snapshot of current state before restore
+    await this.createVersionSnapshot(resumeId, 'Before restore');
+
+    const versionData = version.data as any;
+
+    const updatedResume = await this.prisma.userResume.update({
+      where: { id: resumeId },
+      data: {
+        personalInfo: versionData.personalInfo,
+        summary: versionData.summary,
+        experience: versionData.experience,
+        education: versionData.education,
+        skills: versionData.skills,
+        projects: versionData.projects,
+        certifications: versionData.certifications,
+        languages: versionData.languages,
+        achievements: versionData.achievements,
+        customSections: versionData.customSections,
+        sectionOrder: versionData.sectionOrder,
+        hiddenSections: versionData.hiddenSections,
+        customStyles: versionData.customStyles,
+        colorScheme: versionData.colorScheme,
+        fontFamily: versionData.fontFamily,
+      },
+      include: { template: true },
+    });
+
+    return this.mapResumeToResponse(updatedResume);
+  }
+
+  // ============ Import from Profile ============
+
+  async importFromProfile(userId: string, resumeId: string): Promise<ResumeResponse> {
+    const resume = await this.prisma.userResume.findFirst({
+      where: { id: resumeId, userId },
+    });
+
+    if (!resume) {
+      throw new AppError('Resume not found', 404);
+    }
+
+    // Get user profile and student profile
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        studentProfile: true,
+      },
+    });
+
+    if (!user) {
+      throw new AppError('User not found', 404);
+    }
+
+    // Build personal info from profile
+    const personalInfo: any = {
+      firstName: user.firstName || '',
+      lastName: user.lastName || '',
+      email: user.email,
+    };
+
+    if (user.studentProfile) {
+      const sp = user.studentProfile;
+      personalInfo.phone = sp.phone || undefined;
+      personalInfo.linkedIn = sp.linkedIn || undefined;
+      personalInfo.github = sp.github || undefined;
+      personalInfo.portfolio = sp.portfolio || undefined;
+    }
+
+    // Build education from student profile
+    let education: any[] = [];
+    if (user.studentProfile) {
+      const sp = user.studentProfile;
+      education.push({
+        id: crypto.randomUUID(),
+        institution: sp.collegeName || '',
+        degree: sp.degree || '',
+        field: sp.branch || '',
+        startDate: sp.yearOfStudy ? `${new Date().getFullYear() - sp.yearOfStudy + 1}` : '',
+        endDate: sp.passingYear?.toString() || '',
+        current: sp.yearOfStudy ? sp.yearOfStudy < 4 : false,
+        gpa: sp.cgpa?.toString() || undefined,
+      });
+    }
+
+    // Build skills from profile
+    let skills: any[] = [];
+    if (user.studentProfile?.skills) {
+      const profileSkills = user.studentProfile.skills as string[];
+      if (profileSkills.length > 0) {
+        skills.push({
+          id: crypto.randomUUID(),
+          name: 'Technical Skills',
+          skills: profileSkills,
+        });
+      }
+    }
+
+    // Create version before import
+    await this.createVersionSnapshot(resumeId, 'Before profile import');
+
+    const updatedResume = await this.prisma.userResume.update({
+      where: { id: resumeId },
+      data: {
+        personalInfo,
+        education: education.length > 0 ? education : undefined,
+        skills: skills.length > 0 ? skills : undefined,
+      },
+      include: { template: true },
+    });
+
+    return this.mapResumeToResponse(updatedResume);
+  }
+
+  // ============ Helper Methods ============
+
+  private async generateUniqueSlug(
+    userId: string, 
+    baseSlug: string, 
+    excludeId?: string
+  ): Promise<string> {
+    let slug = baseSlug;
+    let counter = 1;
+
+    while (true) {
+      const existing = await this.prisma.userResume.findFirst({
+        where: {
+          userId,
+          slug,
+          ...(excludeId ? { NOT: { id: excludeId } } : {}),
+        },
+      });
+
+      if (!existing) break;
+
+      slug = `${baseSlug}-${counter}`;
+      counter++;
+    }
+
+    return slug;
+  }
+
+  private async createVersionSnapshot(resumeId: string, changeNote?: string): Promise<void> {
+    const resume = await this.prisma.userResume.findUnique({
+      where: { id: resumeId },
+    });
+
+    if (!resume) return;
+
+    // Get current max version
+    const lastVersion = await this.prisma.resumeVersion.findFirst({
+      where: { resumeId },
+      orderBy: { version: 'desc' },
+    });
+
+    const newVersion = (lastVersion?.version || 0) + 1;
+
+    // Create version snapshot
+    await this.prisma.resumeVersion.create({
+      data: {
+        resumeId,
+        version: newVersion,
+        changeNote,
+        data: {
+          personalInfo: resume.personalInfo,
+          summary: resume.summary,
+          experience: resume.experience,
+          education: resume.education,
+          skills: resume.skills,
+          projects: resume.projects,
+          certifications: resume.certifications,
+          languages: resume.languages,
+          achievements: resume.achievements,
+          customSections: resume.customSections,
+          sectionOrder: resume.sectionOrder,
+          hiddenSections: resume.hiddenSections,
+          customStyles: resume.customStyles,
+          colorScheme: resume.colorScheme,
+          fontFamily: resume.fontFamily,
+        },
+      },
+    });
+
+    // Keep only last 20 versions
+    const versionsToDelete = await this.prisma.resumeVersion.findMany({
+      where: { resumeId },
+      orderBy: { version: 'desc' },
+      skip: 20,
+      select: { id: true },
+    });
+
+    if (versionsToDelete.length > 0) {
+      await this.prisma.resumeVersion.deleteMany({
+        where: {
+          id: { in: versionsToDelete.map(v => v.id) },
+        },
+      });
+    }
+  }
+
+  private calculateCompletionStatus(resume: any, contentUpdate?: Partial<ResumeContent>): boolean {
+    const content = {
+      personalInfo: contentUpdate?.personalInfo || resume.personalInfo,
+      experience: contentUpdate?.experience || resume.experience,
+      education: contentUpdate?.education || resume.education,
+      skills: contentUpdate?.skills || resume.skills,
+    };
+
+    // Check required sections
+    const hasPersonalInfo = content.personalInfo && 
+      content.personalInfo.firstName && 
+      content.personalInfo.lastName && 
+      content.personalInfo.email;
+
+    const hasExperience = content.experience && 
+      Array.isArray(content.experience) && 
+      content.experience.length > 0;
+
+    const hasEducation = content.education && 
+      Array.isArray(content.education) && 
+      content.education.length > 0;
+
+    const hasSkills = content.skills && 
+      Array.isArray(content.skills) && 
+      content.skills.length > 0;
+
+    return !!(hasPersonalInfo && (hasExperience || hasEducation) && hasSkills);
+  }
+
+  private mapTemplateToResponse(template: any): ResumeTemplateResponse {
+    return {
+      id: template.id,
+      name: template.name,
+      slug: template.slug,
+      description: template.description,
+      thumbnail: template.thumbnail,
+      category: template.category,
+      layout: template.layout as TemplateLayout,
+      styles: template.styles as TemplateStyles,
+      isPremium: template.isPremium,
+      popularity: template.popularity,
+    };
+  }
+
+  private mapResumeToResponse(resume: any): ResumeResponse {
+    return {
+      id: resume.id,
+      title: resume.title,
+      slug: resume.slug,
+      template: this.mapTemplateToResponse(resume.template),
+      content: {
+        personalInfo: resume.personalInfo || undefined,
+        summary: resume.summary || undefined,
+        experience: resume.experience || undefined,
+        education: resume.education || undefined,
+        skills: resume.skills || undefined,
+        projects: resume.projects || undefined,
+        certifications: resume.certifications || undefined,
+        languages: resume.languages || undefined,
+        achievements: resume.achievements || undefined,
+        customSections: resume.customSections || undefined,
+      },
+      customization: {
+        sectionOrder: resume.sectionOrder,
+        hiddenSections: resume.hiddenSections,
+        customStyles: resume.customStyles || undefined,
+        colorScheme: resume.colorScheme || undefined,
+        fontFamily: resume.fontFamily || undefined,
+      },
+      isComplete: resume.isComplete,
+      lastAtsScore: resume.lastAtsScore,
+      createdAt: resume.createdAt.toISOString(),
+      updatedAt: resume.updatedAt.toISOString(),
+    };
+  }
+}
