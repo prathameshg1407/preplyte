@@ -55,7 +55,7 @@ export const uploadProfilePicture = async (file: File): Promise<string> => {
   formData.append('file', file); // 'file' matches the backend Multer field name
 
   const response = await apiClient.post<ProfileApiResponse<{ url: string }>>(
-    '/profile/picture', // Assuming this endpoint structure, adjust if your routes differ
+    API_ENDPOINTS.PROFILE.PICTURE, // Usage of the constant ensures URL accuracy
     formData,
     {
       headers: {

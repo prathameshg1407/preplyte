@@ -26,7 +26,7 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { profileService } from '@/lib/api/services/profile.service';
-import { toast } from '@/components/ui/use-toast';
+import { useToast } from '@/components/ui/use-toast'; // Correct import
 
 const ROLE_COLORS: Record<string, string> = {
   STUDENT: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20',
@@ -35,6 +35,7 @@ const ROLE_COLORS: Record<string, string> = {
 };
 
 export function UserProfileCard() {
+  const { toast } = useToast(); // Call hook at top level
   const { userProfile, updateUserProfile, isUpdating } = useProfile();
   const [isEditing, setIsEditing] = useState(false);
   const [name, setName] = useState(userProfile?.name || '');
@@ -85,7 +86,7 @@ export function UserProfileCard() {
       // Upload using the service
       await profileService.uploadProfilePicture(file);
       // Force refresh profile data to show new image
-      window.location.reload(); // Simple refresh to ensure data sync
+      window.location.reload(); 
     } catch (error) {
       toast({
         title: 'Upload failed',
