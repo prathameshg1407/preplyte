@@ -27,17 +27,22 @@ export const createStudentProfileSchema = z.object({
 
   studentId: z
     .string()
-    .min(3, 'Student ID must be at least 3 characters')
+    .min(2, 'Student ID must be at least 2 characters')
     .max(30, 'Student ID must not exceed 30 characters')
-    .regex(/^[A-Z0-9_\-\/]+$/i, 'Student ID must be alphanumeric'),
+    .regex(/^[A-Z0-9_\-\/]+$/i, 'Student ID must be alphanumeric')
+    .optional()
+    .or(z.literal('')),
 
   departmentId: z
     .string()
-    .min(1, 'Please select a department'),
+    .optional()
+    .or(z.literal('')),
 
   courseYear: z.enum(COURSE_YEARS as unknown as [string, ...string[]], {
     errorMap: () => ({ message: 'Please select a valid course year' }),
-  }),
+  }).optional(),
+
+  collegeName: z.string().optional(),
 
   numberOfBacklogs: z
     .number()

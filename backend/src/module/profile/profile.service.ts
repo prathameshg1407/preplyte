@@ -1,13 +1,12 @@
 // src/module/profile/profile.service.ts
 
 import { prisma } from '../../lib/db';
-import { uploadResume, deleteFile, uploadImage } from '../../utils/cloudinary'; // Added uploadFile import
+import { uploadResume, deleteFile, uploadImage } from '../../utils/cloudinary'; 
 import {
   NotFoundError,
   BadRequestError,
   InternalError,
   ConflictError,
-  ForbiddenError,
 } from '../../utils/errors';
 import { logger } from '../../utils/logger';
 import {
@@ -33,6 +32,12 @@ import {
 } from './profile.validation';
 import { RESUME_LIMITS } from './profile.constants';
 import pdfParse from 'pdf-parse';
+import { StudentProfile, Department } from '@prisma/client';
+
+// Extended Type for Internal Casting
+type StudentProfileWithDepartment = StudentProfile & {
+  department: Department | null;
+};
 
 // =====================================================
 // SERVICE CLASS
@@ -93,8 +98,6 @@ class ProfileService {
     });
 
     if (!user?.instituteId) {
-      // Individual users shouldn't be setting department IDs
-      // But if they send one, we treat it as invalid since they have no institute scope
       throw new BadRequestError('User is not associated with any institute');
     }
 
@@ -158,7 +161,7 @@ class ProfileService {
     return {
       user: mapUserToProfileResponse(user),
       studentProfile: user.profile
-        ? mapStudentProfileToResponse(user.profile)
+        ? mapStudentProfileToResponse(user.profile as unknown as StudentProfileWithDepartment)
         : null,
       resumes: user.resumes.map(mapResumeToResponse),
       profileCompletion,
@@ -247,13 +250,15 @@ class ProfileService {
       throw new ConflictError('Student profile already exists');
     }
 
-    // Check if studentId is unique
-    const existingStudentId = await prisma.studentProfile.findUnique({
-      where: { studentId: input.studentId },
-    });
+    // Check if studentId is unique (Only if provided and not empty)
+    if (input.studentId && input.studentId.trim().length > 0) {
+      const existingStudentId = await prisma.studentProfile.findUnique({
+        where: { studentId: input.studentId },
+      });
 
-    if (existingStudentId) {
-      throw new ConflictError('Student ID already registered');
+      if (existingStudentId) {
+        throw new ConflictError('Student ID already registered');
+      }
     }
 
     // Determine User Context (Institute vs Individual)
@@ -270,28 +275,31 @@ class ProfileService {
         }
         await this.validateDepartmentForUser(userId, input.departmentId);
     } 
-    // Individual users might provide collegeName instead of departmentId
-    // If they provide departmentId but have no institute, we can either ignore it or throw error.
-    // For safety, we force departmentId to null if not institute student.
 
     // Calculate average CGPA if semesters provided
     const averageCgpa = this.calculateAverageCgpa(input.cgpaSemesters);
+
+    // Prepare nullable fields safely
+    const studentIdValue = (input.studentId && input.studentId.trim() !== '') ? input.studentId : null;
+    const departmentIdValue = (isInstituteStudent && input.departmentId) ? input.departmentId : null;
+    const courseYearValue = (isInstituteStudent && input.courseYear) ? input.courseYear : null;
+    const collegeNameValue = (!isInstituteStudent && input.collegeName) ? input.collegeName : null;
 
     const profile = await prisma.studentProfile.create({
       data: {
         userId,
         fullName: input.fullName,
-        studentId: input.studentId,
+        studentId: studentIdValue,
         
         // CONDITIONAL FIELDS
-        departmentId: isInstituteStudent ? input.departmentId : null,
-        courseYear: isInstituteStudent ? input.courseYear : null,
-        collegeName: !isInstituteStudent ? (input as any).collegeName : null, // Assuming input might have it
+        departmentId: departmentIdValue,
+        courseYear: courseYearValue,
+        collegeName: collegeNameValue,
 
         numberOfBacklogs: input.numberOfBacklogs || 0,
         skills: input.skills || [],
-        marks10: input.marks10,
-        marks12: input.marks12,
+        marks10: input.marks10 ?? null,
+        marks12: input.marks12 ?? null,
         cgpaSemesters: input.cgpaSemesters || [],
         averageCgpa,
       },
@@ -305,7 +313,7 @@ class ProfileService {
       userId,
     });
 
-    return mapStudentProfileToResponse(profile);
+    return mapStudentProfileToResponse(profile as unknown as StudentProfileWithDepartment);
   }
 
   /**
@@ -321,7 +329,7 @@ class ProfileService {
       },
     });
 
-    return profile ? mapStudentProfileToResponse(profile) : null;
+    return profile ? mapStudentProfileToResponse(profile as unknown as StudentProfileWithDepartment) : null;
   }
 
   /**
@@ -357,12 +365,19 @@ class ProfileService {
     const cgpaSemesters = input.cgpaSemesters ?? existingProfile.cgpaSemesters;
     const averageCgpa = this.calculateAverageCgpa(cgpaSemesters);
 
+    // Prepare fields for update
+    // Note: undefined in Prisma update means "do not change"
+    const departmentIdValue = isInstituteStudent ? input.departmentId : undefined;
+    const courseYearValue = isInstituteStudent ? input.courseYear : undefined;
+    const collegeNameValue = !isInstituteStudent ? input.collegeName : undefined;
+
     const profile = await prisma.studentProfile.update({
       where: { userId },
       data: {
         ...input,
-        // Ensure we don't set departmentId for individual users even if they try
-        departmentId: isInstituteStudent ? input.departmentId : undefined,
+        departmentId: departmentIdValue,
+        courseYear: courseYearValue,
+        collegeName: collegeNameValue, // Ensures college name is updated
         averageCgpa,
         updatedAt: new Date(),
       },
@@ -372,7 +387,7 @@ class ProfileService {
     });
 
     logger.info('[ProfileService] Student profile updated', { userId });
-    return mapStudentProfileToResponse(profile);
+    return mapStudentProfileToResponse(profile as unknown as StudentProfileWithDepartment);
   }
 
   /**
@@ -422,7 +437,7 @@ class ProfileService {
       include: { department: true },
     });
 
-    return mapStudentProfileToResponse(updatedProfile);
+    return mapStudentProfileToResponse(updatedProfile as unknown as StudentProfileWithDepartment);
   }
 
   /**
@@ -451,7 +466,7 @@ class ProfileService {
       include: { department: true },
     });
 
-    return mapStudentProfileToResponse(updatedProfile);
+    return mapStudentProfileToResponse(updatedProfile as unknown as StudentProfileWithDepartment);
   }
 
   /**
@@ -490,7 +505,7 @@ class ProfileService {
       include: { department: true },
     });
 
-    return mapStudentProfileToResponse(updatedProfile);
+    return mapStudentProfileToResponse(updatedProfile as unknown as StudentProfileWithDepartment);
   }
 
   // =================================================
@@ -739,18 +754,10 @@ class ProfileService {
   async updateProfilePicture(userId: string, file: Express.Multer.File): Promise<string> {
     logger.info('[ProfileService] Updating profile picture', { userId });
 
-    // Upload to Cloudinary (using 'image' type which usually works with uploadResume utils if configured for any file)
-    // OR ideally import a specific 'uploadImage' function if you have one. 
-    // Assuming uploadResume is generic enough or we use uploadFile from cloudinary utils.
-    
-    // NOTE: You need to make sure 'uploadFile' or 'uploadResume' supports image types in your util
-    // Here I assume we can use a generic upload function.
-    
-    // Use a unique ID for the profile picture to avoid caching issues
     const publicId = `profile_pic_${userId}_${Date.now()}`;
-    const uploadResult = await uploadResume(file.buffer, publicId, userId); // Reusing existing util
+    // Using uploadImage assuming it accepts options object
+    const uploadResult = await uploadImage(file.buffer, { publicId, overwrite: true });
 
-    // Update User Record
     await prisma.user.update({
         where: { id: userId },
         data: { profilePictureUrl: uploadResult.secureUrl }
@@ -788,9 +795,9 @@ class ProfileService {
     name: string | null;
     profile: {
       fullName: string;
-      studentId: string;
-      departmentId: string | null; // Changed to nullable
-      courseYear: string | null; // Changed to nullable
+      studentId: string | null;
+      departmentId: string | null; 
+      courseYear: string | null; 
       skills: string[];
       marks10: number | null;
       marks12: number | null;
@@ -814,16 +821,14 @@ class ProfileService {
     if (user.profile) {
       const profileFields = [
         { key: 'fullName', value: user.profile.fullName },
-        { key: 'studentId', value: user.profile.studentId },
         { key: 'skills', value: user.profile.skills.length > 0 },
         { key: 'marks10', value: user.profile.marks10 !== null },
         { key: 'marks12', value: user.profile.marks12 !== null },
         { key: 'cgpa', value: user.profile.cgpaSemesters.length > 0 },
       ];
 
-      // Only check department/courseYear if they are NOT null (meaning Institute User)
-      // Or if you want to force them for institute users, we'd need the instituteId check here too.
-      // For calculation simplicity, we just check if value exists.
+      // Logic: Only penalize missing studentId/department/year if they are present in DB (Institute users)
+      if (user.profile.studentId) profileFields.push({ key: 'studentId', value: true });
       if (user.profile.departmentId) profileFields.push({ key: 'department', value: true });
       if (user.profile.courseYear) profileFields.push({ key: 'courseYear', value: true });
 
@@ -837,7 +842,7 @@ class ProfileService {
         }
       });
     } else {
-      totalFields += 8;
+      totalFields += 6;
       missingFields.push('studentProfile');
     }
 

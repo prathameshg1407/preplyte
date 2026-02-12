@@ -50,6 +50,22 @@ export const updateUserProfile = async (
   return response.data.data;
 };
 
+export const uploadProfilePicture = async (file: File): Promise<string> => {
+  const formData = new FormData();
+  formData.append('file', file); // 'file' matches the backend Multer field name
+
+  const response = await apiClient.post<ProfileApiResponse<{ url: string }>>(
+    '/profile/picture', // Assuming this endpoint structure, adjust if your routes differ
+    formData,
+    {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    }
+  );
+  return response.data.data.url;
+};
+
 // =====================================================
 // DEPARTMENTS
 // =====================================================
@@ -211,6 +227,7 @@ export const profileService = {
   // User profile
   getUserProfile,
   updateUserProfile,
+  uploadProfilePicture,
 
   // Departments
   getDepartments,
