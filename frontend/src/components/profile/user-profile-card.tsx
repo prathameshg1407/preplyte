@@ -22,11 +22,12 @@ import {
   Camera,
 } from 'lucide-react';
 import { useProfile } from '@/lib/hooks/use-profile';
+import { useAuth } from '@/lib/hooks/use-auth';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { profileService } from '@/lib/api/services/profile.service';
-import { useToast } from '@/components/ui/use-toast'; // Correct import
+import { useToast } from '@/components/ui/use-toast';
 
 const ROLE_COLORS: Record<string, string> = {
   STUDENT: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20',
@@ -35,8 +36,12 @@ const ROLE_COLORS: Record<string, string> = {
 };
 
 export function UserProfileCard() {
-  const { toast } = useToast(); // Call hook at top level
-  const { userProfile, updateUserProfile, isUpdating } = useProfile();
+  const { toast } = useToast();
+  
+  // updateUser allows us to manually update the Auth Store (Navbar)
+  const { refreshUser, updateUser } = useAuth(); 
+
+  const { userProfile, updateUserProfile, fetchUserProfile, isUpdating } = useProfile();
   const [isEditing, setIsEditing] = useState(false);
   const [name, setName] = useState(userProfile?.name || '');
   const [showSuccess, setShowSuccess] = useState(false);
@@ -49,6 +54,9 @@ export function UserProfileCard() {
       setIsEditing(false);
       setShowSuccess(true);
       setTimeout(() => setShowSuccess(false), 2000);
+      
+      // Update name in navbar immediately
+      updateUser({ name });
     } catch (error) {
       // Error handled by store
     }
@@ -83,11 +91,23 @@ export function UserProfileCard() {
 
     try {
       setIsUploading(true);
-      // Upload using the service
-      await profileService.uploadProfilePicture(file);
-      // Force refresh profile data to show new image
-      window.location.reload(); 
+      
+      // 1. Upload to backend and GET THE NEW URL
+      const newImageUrl = await profileService.uploadProfilePicture(file);
+      
+      // 2. Direct Update to Auth Store (Fixes Navbar instantly without reload)
+      updateUser({ profilePictureUrl: newImageUrl });
+
+      // 3. Refresh Profile Store (Updates Card Image)
+      await fetchUserProfile();
+
+      toast({
+        title: 'Success',
+        description: 'Profile picture updated',
+      });
+
     } catch (error) {
+      console.error(error);
       toast({
         title: 'Upload failed',
         description: 'Failed to upload profile picture',
@@ -95,6 +115,8 @@ export function UserProfileCard() {
       });
     } finally {
       setIsUploading(false);
+      // Reset input
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
@@ -124,7 +146,6 @@ export function UserProfileCard() {
 
       {/* Header Background */}
       <div className="relative h-24 bg-gradient-to-br from-primary/20 via-primary/10 to-transparent">
-        {/* Settings Button */}
         <Button
           variant="ghost"
           size="icon"
@@ -146,7 +167,11 @@ export function UserProfileCard() {
           >
             <Avatar className="h-20 w-20 border-4 border-background shadow-lg">
               {userProfile.profilePictureUrl ? (
-                <AvatarImage src={userProfile.profilePictureUrl} alt={userProfile.name || 'User'} />
+                <AvatarImage 
+                    src={userProfile.profilePictureUrl} 
+                    alt={userProfile.name || 'User'} 
+                    className="object-cover"
+                />
               ) : null}
               <AvatarFallback className="bg-primary text-xl font-semibold text-primary-foreground">
                 {initials}
@@ -245,7 +270,6 @@ export function UserProfileCard() {
             )}
           </AnimatePresence>
 
-          {/* Role Badge */}
           <Badge
             variant="outline"
             className={cn('font-normal', ROLE_COLORS[userProfile.role] || ROLE_COLORS.STUDENT)}
