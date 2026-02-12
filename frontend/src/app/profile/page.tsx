@@ -37,6 +37,7 @@ export default function ProfilePage() {
   const {
     isLoading,
     error,
+    userProfile, // We need this to check role
     profileCompletion,
     hasStudentProfile,
     fetchUserProfile,
@@ -72,6 +73,10 @@ export default function ProfilePage() {
     );
   }
 
+  // LOGIC: Who sees what?
+  const isStudentOrIndividual = userProfile?.role === 'USER'; 
+  // Admins only see UserProfileCard. Students/Individuals see everything.
+
   return (
     <div className="container max-w-6xl py-8">
       {/* Header */}
@@ -88,12 +93,14 @@ export default function ProfilePage() {
         </div>
 
         <div className="flex gap-2">
-          <Button variant="outline" asChild className="gap-2">
-            <Link href="/profile/resumes">
-              <FileText className="h-4 w-4" />
-              Resumes
-            </Link>
-          </Button>
+          {isStudentOrIndividual && (
+            <Button variant="outline" asChild className="gap-2">
+              <Link href="/profile/resumes">
+                <FileText className="h-4 w-4" />
+                Resumes
+              </Link>
+            </Button>
+          )}
           <Button variant="outline" asChild className="gap-2">
             <Link href="/profile/settings">
               <Settings className="h-4 w-4" />
@@ -116,11 +123,15 @@ export default function ProfilePage() {
             <UserProfileCard />
           </motion.div>
 
-          <motion.div variants={itemVariants}>
-            <StudentProfileCard />
-          </motion.div>
+          {/* Only show Student Profile card for Students/Individuals */}
+          {isStudentOrIndividual && (
+            <motion.div variants={itemVariants}>
+              <StudentProfileCard />
+            </motion.div>
+          )}
 
-          {hasStudentProfile && (
+          {/* Only show Skills if profile exists (for Students/Individuals) */}
+          {isStudentOrIndividual && hasStudentProfile && (
             <motion.div variants={itemVariants}>
               <SkillsManager />
             </motion.div>
@@ -129,42 +140,48 @@ export default function ProfilePage() {
 
         {/* Right Column - Sidebar */}
         <div className="space-y-6">
-          <motion.div variants={itemVariants}>
-            <ProfileCompletionCard completion={profileCompletion} />
-          </motion.div>
+          
+          {/* Only show Completion/Resume cards for Students/Individuals */}
+          {isStudentOrIndividual && (
+            <>
+              <motion.div variants={itemVariants}>
+                <ProfileCompletionCard completion={profileCompletion} />
+              </motion.div>
 
-          <motion.div variants={itemVariants}>
-            <ResumeUploadCard />
-          </motion.div>
+              <motion.div variants={itemVariants}>
+                <ResumeUploadCard />
+              </motion.div>
 
-          <motion.div variants={itemVariants}>
-            <ResumeListCard />
-          </motion.div>
+              <motion.div variants={itemVariants}>
+                <ResumeListCard />
+              </motion.div>
 
-          {/* Quick Tips Card */}
-          <motion.div
-            variants={itemVariants}
-            className="rounded-xl border bg-gradient-to-br from-primary/5 to-transparent p-5"
-          >
-            <div className="flex items-center gap-2 mb-3">
-              <Sparkles className="h-4 w-4 text-primary" />
-              <h3 className="font-medium">Quick Tips</h3>
-            </div>
-            <ul className="space-y-2 text-sm text-muted-foreground">
-              <li className="flex items-start gap-2">
-                <span className="text-primary">•</span>
-                Complete your profile to increase visibility to recruiters
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-primary">•</span>
-                Keep your resume updated with latest projects
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-primary">•</span>
-                Add relevant skills to match with job requirements
-              </li>
-            </ul>
-          </motion.div>
+              {/* Quick Tips Card */}
+              <motion.div
+                variants={itemVariants}
+                className="rounded-xl border bg-gradient-to-br from-primary/5 to-transparent p-5"
+              >
+                <div className="flex items-center gap-2 mb-3">
+                  <Sparkles className="h-4 w-4 text-primary" />
+                  <h3 className="font-medium">Quick Tips</h3>
+                </div>
+                <ul className="space-y-2 text-sm text-muted-foreground">
+                  <li className="flex items-start gap-2">
+                    <span className="text-primary">•</span>
+                    Complete your profile to increase visibility to recruiters
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-primary">•</span>
+                    Keep your resume updated with latest projects
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-primary">•</span>
+                    Add relevant skills to match with job requirements
+                  </li>
+                </ul>
+              </motion.div>
+            </>
+          )}
         </div>
       </motion.div>
     </div>
@@ -188,19 +205,13 @@ function ProfileSkeleton() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
-          {/* User Profile Skeleton */}
           <Skeleton className="h-[220px] w-full rounded-xl" />
-          {/* Student Profile Skeleton */}
           <Skeleton className="h-[350px] w-full rounded-xl" />
-          {/* Skills Skeleton */}
           <Skeleton className="h-[200px] w-full rounded-xl" />
         </div>
         <div className="space-y-6">
-          {/* Completion Skeleton */}
           <Skeleton className="h-[180px] w-full rounded-xl" />
-          {/* Upload Skeleton */}
           <Skeleton className="h-[200px] w-full rounded-xl" />
-          {/* Resume List Skeleton */}
           <Skeleton className="h-[250px] w-full rounded-xl" />
         </div>
       </div>

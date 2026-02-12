@@ -28,19 +28,32 @@ export const createStudentProfileSchema = z.object({
     .max(100, 'Full name must not exceed 100 characters')
     .trim(),
 
+  // FIX: Allow empty string, null, or undefined for Individual Users
   studentId: z
-    .string()
-    .regex(STUDENT_ID_PATTERN, 'Invalid student ID format (3-30 alphanumeric characters)')
-    .toUpperCase(),
+    .union([
+      z.string().regex(STUDENT_ID_PATTERN, 'Invalid student ID format').min(3),
+      z.string().length(0),
+      z.null(),
+      z.undefined()
+    ])
+    .optional(),
 
+  // FIX: Allow empty string for Individual Users
   departmentId: z
     .string()
-    .min(1, 'Department is required')
-    .trim(),
+    .optional()
+    .or(z.literal(''))
+    .or(z.null()),
 
-  courseYear: z.enum(COURSE_YEARS as unknown as [string, ...string[]], {
-    errorMap: () => ({ message: 'Invalid course year' }),
-  }),
+  // FIX: Allow empty string/null for Individual Users
+  courseYear: z
+    .enum(COURSE_YEARS as unknown as [string, ...string[]])
+    .optional()
+    .or(z.literal(''))
+    .or(z.null()),
+
+  // FIX: Added collegeName
+  collegeName: z.string().max(200).optional().or(z.literal('')),
 
   numberOfBacklogs: z
     .number()
@@ -60,13 +73,15 @@ export const createStudentProfileSchema = z.object({
     .number()
     .min(0, 'Marks cannot be negative')
     .max(100, 'Marks cannot exceed 100')
-    .optional(),
+    .optional()
+    .nullable(),
 
   marks12: z
     .number()
     .min(0, 'Marks cannot be negative')
     .max(100, 'Marks cannot exceed 100')
-    .optional(),
+    .optional()
+    .nullable(),
 
   cgpaSemesters: z
     .array(
@@ -90,15 +105,17 @@ export const updateStudentProfileSchema = z.object({
 
   departmentId: z
     .string()
-    .min(1, 'Department ID cannot be empty')
-    .trim()
-    .optional(),
+    .optional()
+    .or(z.literal(''))
+    .or(z.null()),
 
   courseYear: z
-    .enum(COURSE_YEARS as unknown as [string, ...string[]], {
-      errorMap: () => ({ message: 'Invalid course year' }),
-    })
-    .optional(),
+    .enum(COURSE_YEARS as unknown as [string, ...string[]])
+    .optional()
+    .or(z.literal(''))
+    .or(z.null()),
+
+  collegeName: z.string().max(200).optional().or(z.literal('')),
 
   numberOfBacklogs: z
     .number()
@@ -116,13 +133,15 @@ export const updateStudentProfileSchema = z.object({
     .number()
     .min(0, 'Marks cannot be negative')
     .max(100, 'Marks cannot exceed 100')
-    .optional(),
+    .optional()
+    .nullable(),
 
   marks12: z
     .number()
     .min(0, 'Marks cannot be negative')
     .max(100, 'Marks cannot exceed 100')
-    .optional(),
+    .optional()
+    .nullable(),
 
   cgpaSemesters: z
     .array(

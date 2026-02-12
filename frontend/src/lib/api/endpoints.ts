@@ -42,6 +42,7 @@ export const API_ENDPOINTS = {
     COMPLETE: '/api/profile',
     USER: '/api/profile/user',
     STUDENT: '/api/profile/student',
+    PICTURE: '/api/profile/picture',
     STUDENT_SKILLS: '/api/profile/student/skills',
     STUDENT_ACADEMICS: '/api/profile/student/academics',
     DEPARTMENTS: '/api/profile/departments',

@@ -19,13 +19,16 @@ import {
   Sparkles,
   ArrowRight,
   Building2,
+  School,
 } from 'lucide-react';
 import { useProfile } from '@/lib/hooks/use-profile';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 
 export function StudentProfileCard() {
-  const { studentProfile } = useProfile();
+  const { studentProfile, userProfile } = useProfile(); // Added userProfile to check role context
+
+  const isInstituteStudent = !!userProfile?.instituteId;
 
   if (!studentProfile) {
     return (
@@ -41,7 +44,9 @@ export function StudentProfileCard() {
             >
               <GraduationCap className="h-10 w-10 text-primary" />
             </motion.div>
-            <h3 className="mb-2 text-xl font-semibold">Create Your Student Profile</h3>
+            <h3 className="mb-2 text-xl font-semibold">
+              {isInstituteStudent ? "Create Your Student Profile" : "Create Academic Profile"}
+            </h3>
             <p className="mx-auto mb-6 max-w-sm text-muted-foreground">
               Add your academic details to unlock personalized opportunities and recommendations
             </p>
@@ -110,101 +115,115 @@ export function StudentProfileCard() {
 
       <CardContent className="p-6 space-y-6">
         {/* Info Grid */}
-        <div className="grid grid-cols-2 gap-4">
-          <div className="flex items-center gap-3 rounded-lg bg-muted/50 p-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-background">
-              <Building2 className="h-4 w-4 text-muted-foreground" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-xs text-muted-foreground">Department</p>
-              <p className="font-medium text-sm truncate" title={studentProfile.departmentName}>
-                {studentProfile.departmentCode ? (
-                  <span className="flex items-center gap-1">
-                    <span className="font-semibold">{studentProfile.departmentCode}</span>
-                    <span className="text-muted-foreground">•</span>
-                    <span className="truncate">{studentProfile.departmentName}</span>
-                  </span>
-                ) : (
-                  studentProfile.departmentName
-                )}
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3 rounded-lg bg-muted/50 p-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-background">
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Year</p>
-              <p className="font-medium text-sm">{studentProfile.courseYear}</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Backlogs Info */}
-        <div className="flex items-center gap-3 rounded-lg bg-muted/50 p-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-background">
-            <BookOpen className="h-4 w-4 text-muted-foreground" />
-          </div>
-          <div className="flex-1">
-            <p className="text-xs text-muted-foreground">Number of Backlogs</p>
-            <p
-              className={cn(
-                'font-medium text-sm',
-                (studentProfile.numberOfBacklogs ?? 0) === 0
-                  ? 'text-emerald-600 dark:text-emerald-400'
-                  : (studentProfile.numberOfBacklogs ?? 0) <= 2
-                    ? 'text-amber-600 dark:text-amber-400'
-                    : 'text-rose-600 dark:text-rose-400'
-              )}
-            >
-              {studentProfile.numberOfBacklogs ?? 0}
-              {(studentProfile.numberOfBacklogs ?? 0) === 0 && (
-                <span className="ml-1 text-xs text-emerald-600 dark:text-emerald-400">✓</span>
-              )}
-            </p>
-          </div>
-        </div>
-
-        {/* Academic Performance */}
-        <div className="space-y-3">
-          <div className="flex items-center gap-2">
-            <Award className="h-4 w-4 text-muted-foreground" />
-            <h3 className="text-sm font-medium">Academic Performance</h3>
-          </div>
-          <div className="grid grid-cols-3 gap-3">
-            {[
-              { label: '10th', value: studentProfile.marks10, max: 100, suffix: '%' },
-              { label: '12th', value: studentProfile.marks12, max: 100, suffix: '%' },
-              { label: 'CGPA', value: studentProfile.averageCgpa, max: 10, suffix: '' },
-            ].map((item) => (
-              <motion.div
-                key={item.label}
-                whileHover={{ scale: 1.02 }}
-                className="relative overflow-hidden rounded-xl bg-muted/50 p-4 text-center"
-              >
-                <p className={cn('text-2xl font-bold', getGradeColor(item.value, item.max))}>
-                  {item.value?.toFixed(item.suffix === '%' ? 1 : 2) || '-'}
-                  <span className="text-sm font-normal text-muted-foreground">{item.suffix}</span>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          
+          {/* Show Department OR College Name */}
+          {studentProfile.departmentName || studentProfile.collegeName ? (
+            <div className="flex items-center gap-3 rounded-lg bg-muted/50 p-3">
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-background">
+                {studentProfile.departmentName ? <Building2 className="h-4 w-4 text-muted-foreground" /> : <School className="h-4 w-4 text-muted-foreground" />}
+                </div>
+                <div className="min-w-0 flex-1">
+                <p className="text-xs text-muted-foreground">
+                    {studentProfile.departmentName ? "Department" : "College"}
                 </p>
-                <p className="mt-1 text-xs text-muted-foreground">{item.label}</p>
-                {item.value && (
-                  <div className="absolute bottom-0 left-0 right-0 h-1 bg-muted">
-                    <motion.div
-                      className={cn(
-                        'h-full',
-                        getGradeColor(item.value, item.max).replace('text-', 'bg-')
-                      )}
-                      initial={{ width: 0 }}
-                      animate={{ width: `${Math.min((item.value / item.max) * 100, 100)}%` }}
-                      transition={{ duration: 0.5, delay: 0.2 }}
-                    />
-                  </div>
-                )}
-              </motion.div>
-            ))}
-          </div>
+                <p className="font-medium text-sm truncate" title={studentProfile.departmentName || studentProfile.collegeName || ''}>
+                    {studentProfile.departmentCode ? (
+                    <span className="flex items-center gap-1">
+                        <span className="font-semibold">{studentProfile.departmentCode}</span>
+                        <span className="text-muted-foreground">•</span>
+                        <span className="truncate">{studentProfile.departmentName}</span>
+                    </span>
+                    ) : (
+                    studentProfile.departmentName || studentProfile.collegeName
+                    )}
+                </p>
+                </div>
+            </div>
+          ) : null}
+
+          {/* Show Year Only if Available */}
+          {studentProfile.courseYear && (
+            <div className="flex items-center gap-3 rounded-lg bg-muted/50 p-3">
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-background">
+                <Calendar className="h-4 w-4 text-muted-foreground" />
+                </div>
+                <div>
+                <p className="text-xs text-muted-foreground">Year</p>
+                <p className="font-medium text-sm">{studentProfile.courseYear}</p>
+                </div>
+            </div>
+          )}
         </div>
+
+        {/* Backlogs Info - Only show for Institute Students or if value > 0 */}
+        {(isInstituteStudent || studentProfile.numberOfBacklogs > 0) && (
+            <div className="flex items-center gap-3 rounded-lg bg-muted/50 p-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-background">
+                <BookOpen className="h-4 w-4 text-muted-foreground" />
+            </div>
+            <div className="flex-1">
+                <p className="text-xs text-muted-foreground">Number of Backlogs</p>
+                <p
+                className={cn(
+                    'font-medium text-sm',
+                    (studentProfile.numberOfBacklogs ?? 0) === 0
+                    ? 'text-emerald-600 dark:text-emerald-400'
+                    : (studentProfile.numberOfBacklogs ?? 0) <= 2
+                        ? 'text-amber-600 dark:text-amber-400'
+                        : 'text-rose-600 dark:text-rose-400'
+                )}
+                >
+                {studentProfile.numberOfBacklogs ?? 0}
+                {(studentProfile.numberOfBacklogs ?? 0) === 0 && (
+                    <span className="ml-1 text-xs text-emerald-600 dark:text-emerald-400">✓</span>
+                )}
+                </p>
+            </div>
+            </div>
+        )}
+
+        {/* Academic Performance - Only show if data exists or user is Institute Student */}
+        {(isInstituteStudent || studentProfile.averageCgpa) && (
+            <div className="space-y-3">
+            <div className="flex items-center gap-2">
+                <Award className="h-4 w-4 text-muted-foreground" />
+                <h3 className="text-sm font-medium">Academic Performance</h3>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+                {[
+                { label: '10th', value: studentProfile.marks10, max: 100, suffix: '%' },
+                { label: '12th', value: studentProfile.marks12, max: 100, suffix: '%' },
+                { label: 'CGPA', value: studentProfile.averageCgpa, max: 10, suffix: '' },
+                ].map((item) => (
+                <motion.div
+                    key={item.label}
+                    whileHover={{ scale: 1.02 }}
+                    className="relative overflow-hidden rounded-xl bg-muted/50 p-4 text-center"
+                >
+                    <p className={cn('text-2xl font-bold', getGradeColor(item.value, item.max))}>
+                    {item.value?.toFixed(item.suffix === '%' ? 1 : 2) || '-'}
+                    <span className="text-sm font-normal text-muted-foreground">{item.suffix}</span>
+                    </p>
+                    <p className="mt-1 text-xs text-muted-foreground">{item.label}</p>
+                    {item.value && (
+                    <div className="absolute bottom-0 left-0 right-0 h-1 bg-muted">
+                        <motion.div
+                        className={cn(
+                            'h-full',
+                            getGradeColor(item.value, item.max).replace('text-', 'bg-')
+                        )}
+                        initial={{ width: 0 }}
+                        animate={{ width: `${Math.min((item.value / item.max) * 100, 100)}%` }}
+                        transition={{ duration: 0.5, delay: 0.2 }}
+                        />
+                    </div>
+                    )}
+                </motion.div>
+                ))}
+            </div>
+            </div>
+        )}
 
         {/* Skills */}
         {studentProfile.skills.length > 0 && (

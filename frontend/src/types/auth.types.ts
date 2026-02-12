@@ -11,6 +11,7 @@ export interface Institute {
 }
 
 export interface User {
+  profilePictureUrl: string | Blob | undefined;
   id: string;
   email: string;
   name: string | null;

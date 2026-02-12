@@ -52,10 +52,14 @@ export interface StudentProfile {
   userId: string;
   fullName: string;
   studentId: string;
-  departmentId: string;
-  departmentName: string;
+  
+  // Updated: Nullable for Individual Users
+  departmentId: string | null;
+  departmentName: string | null;
   departmentCode: string | null;
-  courseYear: string;
+  courseYear: string | null;
+  collegeName: string | null; // Added
+
   numberOfBacklogs: number;
   skills: string[];
   marks10: number | null;
@@ -71,8 +75,12 @@ export interface StudentProfile {
 export interface CreateStudentProfileInput {
   fullName: string;
   studentId: string;
-  departmentId: string;
-  courseYear: string;
+  
+  // Optional inputs
+  departmentId?: string;
+  courseYear?: string;
+  collegeName?: string;
+
   numberOfBacklogs?: number;
   skills?: string[];
   marks10?: number;
@@ -84,6 +92,7 @@ export interface UpdateStudentProfileInput {
   fullName?: string;
   departmentId?: string;
   courseYear?: string;
+  collegeName?: string;
   numberOfBacklogs?: number;
   skills?: string[];
   marks10?: number;
@@ -103,6 +112,7 @@ export interface UserProfile {
   isActive: boolean;
   instituteId: string | null;
   instituteName: string | null;
+  profilePictureUrl: string | null; // Added
   createdAt: string;
   lastLoginAt: string | null;
   studentProfile: StudentProfile | null;

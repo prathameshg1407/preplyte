@@ -182,9 +182,28 @@ export const useInterviewStore = create<InterviewState>()(
 
         addMessage: (message) =>
           set((state) => {
-            if (!state.messages.some(m => m.id === message.id)) {
-              state.messages.push(message);
+            // 1. Prevent exact duplicate IDs
+            if (state.messages.some((m) => m.id === message.id)) {
+              return;
             }
+
+            // 2. Prevent duplicate content (Fix for double questions)
+            // If the last message is from the same role and has the same text, skip adding.
+            const lastMessage = state.messages[state.messages.length - 1];
+            if (
+                lastMessage && 
+                lastMessage.role === message.role && 
+                lastMessage.content.trim() === message.content.trim()
+            ) {
+                // Optimization: If the new message has a real DB ID (doesn't start with 'ai-') 
+                // and the old one was temporary, update the ID.
+                if (!message.id.startsWith('ai-') && lastMessage.id.startsWith('ai-')) {
+                    lastMessage.id = message.id;
+                }
+                return;
+            }
+
+            state.messages.push(message);
           }),
 
         updateMessage: (id, updates) =>
@@ -205,15 +224,22 @@ export const useInterviewStore = create<InterviewState>()(
         setCurrentQuestion: (question) =>
           set((state) => {
             state.currentQuestion = question;
-            if (question && !state.messages.some(m => m.id === question.id)) {
-               state.messages.push({
-                 id: question.id, // Use the same ID so we don't duplicate
-                 role: 'assistant',
-                 content: question.question,
-                 timestamp: new Date(), // Or question.startedAt if available
-                 category: question.category,
-                 isFollowUp: question.isFollowUp
-               });
+            // Also ensure this question exists in chat history (for resumed sessions)
+            if (question) {
+                const alreadyExists = state.messages.some(
+                    m => m.id === question.id || m.content.trim() === question.question.trim()
+                );
+                
+                if (!alreadyExists) {
+                    state.messages.push({
+                        id: question.id,
+                        role: 'assistant',
+                        content: question.question,
+                        timestamp: new Date(), // Or question.startedAt
+                        category: question.category,
+                        isFollowUp: question.isFollowUp
+                    });
+                }
             }
           }),
 
