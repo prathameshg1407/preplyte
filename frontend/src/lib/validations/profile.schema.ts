@@ -25,32 +25,39 @@ export const createStudentProfileSchema = z.object({
     .min(2, 'Full name must be at least 2 characters')
     .max(100, 'Full name must not exceed 100 characters'),
 
+  // FIX: Explicitly allow empty string or null
   studentId: z
     .string()
     .min(2, 'Student ID must be at least 2 characters')
     .max(30, 'Student ID must not exceed 30 characters')
     .regex(/^[A-Z0-9_\-\/]+$/i, 'Student ID must be alphanumeric')
     .optional()
-    .or(z.literal('')),
+    .or(z.literal(''))
+    .or(z.null()),
 
+  // FIX: Explicitly allow empty string or null
   departmentId: z
     .string()
     .optional()
-    .or(z.literal('')),
+    .or(z.literal(''))
+    .or(z.null()),
 
+  // FIX: Explicitly allow empty string (CRITICAL for Individual Users)
   courseYear: z.enum(COURSE_YEARS as unknown as [string, ...string[]], {
     errorMap: () => ({ message: 'Please select a valid course year' }),
-  }).optional(),
+  })
+  .optional()
+  .or(z.literal(''))
+  .or(z.null()),
 
-  collegeName: z.string().optional(),
+  // FIX: Ensure collegeName is validated
+  collegeName: z.string().optional().or(z.literal('')),
 
   numberOfBacklogs: z
     .number()
-    .int('Backlogs must be a whole number')
-    .min(0, 'Backlogs cannot be negative')
-    .max(50, 'Backlogs cannot exceed 50')
+    .or(z.nan()) // Allow NaN if field is cleared
     .optional()
-    .default(0),
+    .transform(val => (isNaN(val as number) ? 0 : val)),
 
   skills: z
     .array(z.string().min(1).max(50))
@@ -62,13 +69,17 @@ export const createStudentProfileSchema = z.object({
     .number()
     .min(0, 'Marks cannot be negative')
     .max(100, 'Marks cannot exceed 100')
-    .optional(),
+    .or(z.nan()) // FIX: Handle empty input (NaN)
+    .optional()
+    .nullable(),
 
   marks12: z
     .number()
     .min(0, 'Marks cannot be negative')
     .max(100, 'Marks cannot exceed 100')
-    .optional(),
+    .or(z.nan()) // FIX: Handle empty input (NaN)
+    .optional()
+    .nullable(),
 
   cgpaSemesters: z
     .array(z.number().min(0).max(10))
@@ -101,12 +112,14 @@ export const academicsSchema = z.object({
     .number()
     .min(0, 'Marks cannot be negative')
     .max(100, 'Marks cannot exceed 100')
+    .or(z.nan())
     .optional(),
 
   marks12: z
     .number()
     .min(0, 'Marks cannot be negative')
     .max(100, 'Marks cannot exceed 100')
+    .or(z.nan())
     .optional(),
 
   cgpaSemesters: z
