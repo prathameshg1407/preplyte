@@ -1,24 +1,22 @@
-// // src/types/express.d.ts
+// src/types/express.d.ts
 
-// import { UserRole } from '@prisma/client';
+import { UserRole } from '@prisma/client';
 
-// declare global {
-//   namespace Express {
-//     interface Request {
-//       user?: {
-//         id: string;
-//         email: string;
-//         role: UserRole;
-//         instituteId: string | null;
-//       };
-//     }
-//   }
-// }
+declare global {
+  namespace Express {
+    interface Request {
+      user?: {
+        id: string;
+        email: string;
+        role: UserRole;
+        instituteId: string | null;
+        tokenVersion: number;
+      };
+    }
+  }
+}
 
-// export {};
-
-
-import { Request } from 'express';
+export {};import { Request } from 'express';
 
 declare global {
   namespace Express {

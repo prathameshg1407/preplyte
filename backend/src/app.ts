@@ -24,6 +24,7 @@ import { requestIdMiddleware } from './middleware/request-id.middleware';
 import { logger } from './utils/logger';
 import { AppError } from './utils/errors';
 import { prisma } from './lib/db';
+import lmsRoutes from './module/lms/lms.routes';
 
 // =====================================================
 // APP INITIALIZATION
@@ -341,6 +342,8 @@ app.use(
 // Admin routes with specific rate limiter
 app.use('/api/admin', adminLimiter, adminRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/lms', lmsRoutes);
+
 
 // =====================================================
 // 8. ERROR HANDLING

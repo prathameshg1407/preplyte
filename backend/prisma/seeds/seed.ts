@@ -1,5 +1,7 @@
+// prisma/seed.ts
+
 import { PrismaClient } from '@prisma/client';
-import { seedLmsData } from './seeds/lms-seed';
+import { seedLmsData } from './lms-seed';
 
 const prisma = new PrismaClient();
 
