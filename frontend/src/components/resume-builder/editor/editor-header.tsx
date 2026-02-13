@@ -44,7 +44,9 @@ import {
   ZoomIn,
   ZoomOut,
   Palette,
+  Award,
 } from 'lucide-react';
+import { ATSCheckDialog } from './ats-check-dialog';
 
 interface EditorHeaderProps {
   resume: Resume;
@@ -72,6 +74,7 @@ export function EditorHeader({
   const router = useRouter();
   const [isTemplateDialogOpen, setIsTemplateDialogOpen] = useState(false);
   const [isHistoryDialogOpen, setIsHistoryDialogOpen] = useState(false);
+  const [isATSDialogOpen, setIsATSDialogOpen] = useState(false);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [titleValue, setTitleValue] = useState(resume.title);
 
@@ -139,6 +142,10 @@ export function EditorHeader({
               
               @page {
                 size: A4;
+                margin: 20mm 0 0 0;
+              }
+              
+              @page :first {
                 margin: 0;
               }
               
@@ -427,6 +434,17 @@ export function EditorHeader({
           Download PDF
         </Button>
 
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={() => setIsATSDialogOpen(true)}
+          disabled={!resume.isComplete}
+          title={!resume.isComplete ? 'Complete your resume to check ATS score' : 'Check ATS score'}
+        >
+          <Award className="mr-2 h-4 w-4" />
+          Check ATS Score
+        </Button>
+
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon">
@@ -468,6 +486,13 @@ export function EditorHeader({
         open={isHistoryDialogOpen}
         onOpenChange={setIsHistoryDialogOpen}
         resumeId={resume.id}
+      />
+
+      {/* ATS Score Check Dialog */}
+      <ATSCheckDialog
+        open={isATSDialogOpen}
+        onOpenChange={setIsATSDialogOpen}
+        resume={resume}
       />
     </header>
   );
