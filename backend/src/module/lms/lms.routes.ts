@@ -179,6 +179,14 @@ router.post(
   lmsController.submitFinalTest
 );
 
+// Feedback
+router.post(
+  '/courses/:courseSlug/feedback',
+  authenticate,
+  validateParams(courseSlugParamSchema),
+  lmsController.addCourseFeedback
+);
+
 // User Dashboard
 router.get('/my-courses', authenticate, lmsController.getMyCourses);
 router.get('/dashboard', authenticate, lmsController.getMyDashboard);

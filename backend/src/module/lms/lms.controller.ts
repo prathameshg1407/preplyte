@@ -193,6 +193,17 @@ class LmsController {
       next(error);
     }
   }
+  async addCourseFeedback(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { courseSlug } = req.params;
+      const userId = req.user!.id;
+      const data = req.body;
+      const result = await lmsService.addCourseFeedback(courseSlug, userId, data);
+      sendSuccess(res, result, 'Feedback added successfully');
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 export const lmsController = new LmsController();

@@ -38,7 +38,7 @@ export const API_ENDPOINTS = {
   // ============================================
   // Profile Management
   // ============================================
- PROFILE: {
+  PROFILE: {
     COMPLETE: '/api/profile',
     USER: '/api/profile/user',
     STUDENT: '/api/profile/student',
@@ -52,7 +52,7 @@ export const API_ENDPOINTS = {
     RESUME_TEXT: (id: string) => `/api/profile/resumes/${id}/text` as const,
     RESUME_LINK: (id: string) => `/api/profile/resumes/${id}/link` as const,
   },
-  
+
 
   // ============================================
   // Aptitude Practice
@@ -141,13 +141,13 @@ export const API_ENDPOINTS = {
     MOCK_DRIVE_CANCEL: (id: string) => `/api/institute/mock-drive/${id}/cancel` as const,
     MOCK_DRIVE_DUPLICATE: (id: string) => `/api/institute/mock-drive/${id}/duplicate` as const,
     MOCK_DRIVE_STATS: (id: string) => `/api/institute/mock-drive/${id}/stats` as const,
- DEPARTMENTS: '/api/institute/departments',
+    DEPARTMENTS: '/api/institute/departments',
     DEPARTMENTS_STATS: '/api/institute/departments/stats',
     DEPARTMENTS_ACTIVE: '/api/institute/departments/active',
     DEPARTMENTS_BULK: '/api/institute/departments/bulk',
     DEPARTMENT: (id: string) => `/api/institute/departments/${id}` as const,
     DEPARTMENT_STATUS: (id: string) => `/api/institute/departments/${id}/status` as const,
-  
+
     // Eligibility
     MOCK_DRIVE_ELIGIBILITY: (id: string) =>
       `/api/institute/mock-drive/${id}/eligibility` as const,
@@ -420,7 +420,7 @@ export const EndpointBuilders = {
     myRankWithParams: (id: string, params: { batchId?: string }) =>
       buildUrlWithParams(API_ENDPOINTS.MOCK_DRIVES.MY_RANK(id), params),
   },
- instituteDepartments: {
+  instituteDepartments: {
     list: () => buildUrl(API_ENDPOINTS.INSTITUTE.DEPARTMENTS),
     listWithParams: (params: {
       page?: number;
@@ -498,36 +498,37 @@ export const EndpointBuilders = {
 export const LMS_ENDPOINTS = {
   // Categories
   CATEGORIES: '/api/lms/categories',
-  
+
   // Courses
   COURSES: '/api/lms/courses',
   COURSE_BY_SLUG: (slug: string) => `/api/lms/courses/${slug}`,
   COURSE_ENROLL: (slug: string) => `/api/lms/courses/${slug}/enroll`,
-  
+  COURSE_FEEDBACK: (slug: string) => `/api/lms/courses/${slug}/feedback`,
+
   // Modules
-  MODULE_DETAILS: (courseSlug: string, moduleOrder: number) => 
+  MODULE_DETAILS: (courseSlug: string, moduleOrder: number) =>
     `/api/lms/courses/${courseSlug}/modules/${moduleOrder}`,
-  
+
   // Topics
-  TOPIC_DETAILS: (courseSlug: string, moduleOrder: number, topicOrder: number) => 
+  TOPIC_DETAILS: (courseSlug: string, moduleOrder: number, topicOrder: number) =>
     `/api/lms/courses/${courseSlug}/modules/${moduleOrder}/topics/${topicOrder}`,
-  TOPIC_PROGRESS: (courseSlug: string, moduleOrder: number, topicOrder: number) => 
+  TOPIC_PROGRESS: (courseSlug: string, moduleOrder: number, topicOrder: number) =>
     `/api/lms/courses/${courseSlug}/modules/${moduleOrder}/topics/${topicOrder}/progress`,
-  
+
   // Tests
-  MODULE_TEST_START: (courseSlug: string, moduleOrder: number) => 
+  MODULE_TEST_START: (courseSlug: string, moduleOrder: number) =>
     `/api/lms/courses/${courseSlug}/modules/${moduleOrder}/test/start`,
-  MODULE_TEST_SUBMIT: (courseSlug: string, moduleOrder: number) => 
+  MODULE_TEST_SUBMIT: (courseSlug: string, moduleOrder: number) =>
     `/api/lms/courses/${courseSlug}/modules/${moduleOrder}/test/submit`,
-  FINAL_TEST_START: (courseSlug: string) => 
+  FINAL_TEST_START: (courseSlug: string) =>
     `/api/lms/courses/${courseSlug}/final-test/start`,
-  FINAL_TEST_SUBMIT: (courseSlug: string) => 
+  FINAL_TEST_SUBMIT: (courseSlug: string) =>
     `/api/lms/courses/${courseSlug}/final-test/submit`,
-  
+
   // User Dashboard
   MY_COURSES: '/api/lms/my-courses',
   MY_DASHBOARD: '/api/lms/dashboard',
-  
+
   // Stats
   STATS: '/api/lms/stats',
 };

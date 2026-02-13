@@ -423,7 +423,11 @@ export class CourseService {
                                         ...qData,
                                         finalTestId: course.finalTest.id,
                                         options: {
-                                            create: q.options
+                                            create: q.options?.map(o => ({
+                                                text: o.text,
+                                                isCorrect: o.isCorrect,
+                                                order: o.order
+                                            }))
                                         }
                                     }
                                 });
@@ -432,20 +436,25 @@ export class CourseService {
                     }
 
                 } else {
+                    const { questions, ...testData } = finalTest as any;
                     await tx.lmsFinalTest.create({
                         data: {
-                            ...(finalTest as any),
+                            ...testData,
                             courseId: id,
                             totalPoints: finalTestPoints,
-                            questions: finalTest.questions ? {
-                                create: finalTest.questions.map((q: any) => ({
+                            questions: questions ? {
+                                create: questions.map((q: any) => ({
                                     questionText: q.questionText,
                                     explanation: q.explanation,
                                     order: q.order,
-                                    points: q.points,
-                                    isActive: q.isActive,
+                                    points: q.points || 1,
+                                    isActive: q.isActive !== false,
                                     options: {
-                                        create: q.options
+                                        create: q.options?.map((o: any) => ({
+                                            text: o.text,
+                                            isCorrect: o.isCorrect,
+                                            order: o.order
+                                        }))
                                     }
                                 }))
                             } : undefined
@@ -587,7 +596,11 @@ export class CourseService {
                                                 ...qData,
                                                 moduleTestId: existingTest.id,
                                                 options: {
-                                                    create: q.options
+                                                    create: q.options?.map((o: any) => ({
+                                                        text: o.text,
+                                                        isCorrect: o.isCorrect,
+                                                        order: o.order
+                                                    }))
                                                 }
                                             }
                                         });
@@ -596,20 +609,25 @@ export class CourseService {
                             }
 
                         } else {
+                            const { questions, ...testData } = m.moduleTest as any;
                             await tx.lmsModuleTest.create({
                                 data: {
-                                    ...(m.moduleTest as any),
+                                    ...testData,
                                     moduleId,
                                     totalPoints: testPoints,
-                                    questions: m.moduleTest.questions ? {
-                                        create: m.moduleTest.questions.map((q: any) => ({
+                                    questions: questions ? {
+                                        create: questions.map((q: any) => ({
                                             questionText: q.questionText,
                                             explanation: q.explanation,
                                             order: q.order,
-                                            points: q.points,
-                                            isActive: q.isActive,
+                                            points: q.points || 1,
+                                            isActive: q.isActive !== false,
                                             options: {
-                                                create: q.options
+                                                create: q.options?.map((o: any) => ({
+                                                    text: o.text,
+                                                    isCorrect: o.isCorrect,
+                                                    order: o.order
+                                                }))
                                             }
                                         }))
                                     } : undefined

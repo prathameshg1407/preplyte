@@ -6,8 +6,7 @@ import { createModuleSchema, updateModuleSchema } from './module.validation';
 
 export class ModuleController {
     create = asyncHandler(async (req: Request, res: Response) => {
-        const validated = createModuleSchema.parse(req.body);
-        const module = await moduleService.create(validated);
+        const module = await moduleService.create(req.body);
         return sendCreated(res, module, 'Module created successfully');
     });
 
@@ -17,8 +16,7 @@ export class ModuleController {
     });
 
     update = asyncHandler(async (req: Request, res: Response) => {
-        const validated = updateModuleSchema.parse(req.body);
-        const module = await moduleService.update(req.params.id, validated);
+        const module = await moduleService.update(req.params.id, req.body);
         return sendSuccess(res, module, 'Module updated successfully');
     });
 

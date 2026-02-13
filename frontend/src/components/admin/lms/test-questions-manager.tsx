@@ -116,7 +116,10 @@ interface QuestionEditorProps {
 
 function QuestionEditor({ question, index, onUpdate, onDelete, isUpdating, isDeleting }: QuestionEditorProps) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [localData, setLocalData] = useState(question);
+  const [localData, setLocalData] = useState({
+    ...question,
+    options: question.options || []
+  });
   const [isDirty, setIsDirty] = useState(false);
 
   const handleFieldChange = (field: string, value: any) => {
@@ -125,7 +128,7 @@ function QuestionEditor({ question, index, onUpdate, onDelete, isUpdating, isDel
   };
 
   const handleOptionChange = (optIndex: number, field: string, value: any) => {
-    const newOptions = [...localData.options];
+    const newOptions = [...(localData.options || [])];
     newOptions[optIndex] = { ...newOptions[optIndex], [field]: value };
 
     // If setting isCorrect to true, set all others to false
@@ -143,15 +146,15 @@ function QuestionEditor({ question, index, onUpdate, onDelete, isUpdating, isDel
     setLocalData({
       ...localData,
       options: [
-        ...localData.options,
-        { text: '', isCorrect: false, order: localData.options.length + 1 } as any
+        ...(localData.options || []),
+        { text: '', isCorrect: false, order: (localData.options?.length || 0) + 1 } as any
       ]
     });
     setIsDirty(true);
   };
 
   const removeOption = (optIndex: number) => {
-    const newOptions = localData.options.filter((_, i) => i !== optIndex);
+    const newOptions = (localData.options || []).filter((_, i) => i !== optIndex);
     setLocalData({ ...localData, options: newOptions });
     setIsDirty(true);
   };
@@ -165,7 +168,7 @@ function QuestionEditor({ question, index, onUpdate, onDelete, isUpdating, isDel
         order: localData.order,
         points: localData.points,
         isActive: localData.isActive,
-        options: localData.options.map(opt => ({
+        options: (localData.options || []).map(opt => ({
           text: opt.text,
           isCorrect: opt.isCorrect,
           order: opt.order
@@ -191,7 +194,7 @@ function QuestionEditor({ question, index, onUpdate, onDelete, isUpdating, isDel
             <span className="font-medium line-clamp-1">{localData.questionText}</span>
           </div>
           <div className="flex items-center gap-2">
-            <Badge variant="outline">{localData.options.length} options</Badge>
+            <Badge variant="outline">{(localData.options?.length || 0)} options</Badge>
             {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
           </div>
         </div>
@@ -212,7 +215,7 @@ function QuestionEditor({ question, index, onUpdate, onDelete, isUpdating, isDel
             <div className="grid gap-2">
               <Label>Options</Label>
               <div className="space-y-2">
-                {localData.options.map((option, optIdx) => (
+                {(localData.options || []).map((option, optIdx) => (
                   <div key={optIdx} className="flex items-center gap-3">
                     <Button
                       type="button"
@@ -235,7 +238,7 @@ function QuestionEditor({ question, index, onUpdate, onDelete, isUpdating, isDel
                       size="icon"
                       className="text-muted-foreground"
                       onClick={() => removeOption(optIdx)}
-                      disabled={localData.options.length <= 2}
+                      disabled={(localData.options?.length || 0) <= 2}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>

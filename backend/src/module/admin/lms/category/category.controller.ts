@@ -6,8 +6,7 @@ import { createCategorySchema, updateCategorySchema } from './category.validatio
 
 export class CategoryController {
     create = asyncHandler(async (req: Request, res: Response) => {
-        const validated = createCategorySchema.parse(req.body);
-        const category = await categoryService.create(validated);
+        const category = await categoryService.create(req.body);
         return sendCreated(res, category, 'Category created successfully');
     });
 
@@ -22,8 +21,7 @@ export class CategoryController {
     });
 
     update = asyncHandler(async (req: Request, res: Response) => {
-        const validated = updateCategorySchema.parse(req.body);
-        const category = await categoryService.update(req.params.id, validated);
+        const category = await categoryService.update(req.params.id, req.body);
         return sendSuccess(res, category, 'Category updated successfully');
     });
 

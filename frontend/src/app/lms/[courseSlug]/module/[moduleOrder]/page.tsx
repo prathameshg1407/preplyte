@@ -48,16 +48,27 @@ export default function ModulePage() {
   }
 
   if (error || !module) {
+    const isLocked = (error as any)?.response?.status === 403;
     return (
       <div className="container mx-auto px-4 py-12 text-center">
-        <AlertCircle className="h-12 w-12 mx-auto text-destructive mb-4" />
-        <h1 className="text-2xl font-bold mb-2">Module Not Found</h1>
-        <p className="text-muted-foreground mb-4">
-          This module doesn't exist or you don't have access to it.
-        </p>
-        <Button asChild>
-          <Link href={`/lms/${courseSlug}`}>Back to Course</Link>
-        </Button>
+        <div className="max-w-md mx-auto">
+          {isLocked ? (
+            <Lock className="h-12 w-12 mx-auto text-orange-500 mb-4" />
+          ) : (
+            <AlertCircle className="h-12 w-12 mx-auto text-destructive mb-4" />
+          )}
+          <h1 className="text-2xl font-bold mb-2">
+            {isLocked ? "Module Locked" : "Module Not Found"}
+          </h1>
+          <p className="text-muted-foreground mb-4">
+            {isLocked
+              ? "This module is locked. Please complete the previous modules and tests to unlock it."
+              : "This module doesn't exist or you don't have access to it."}
+          </p>
+          <Button asChild>
+            <Link href={`/lms/${courseSlug}`}>Back to Course</Link>
+          </Button>
+        </div>
       </div>
     );
   }
@@ -173,13 +184,12 @@ export default function ModulePage() {
                   return (
                     <div
                       key={topic.id}
-                      className={`flex items-center gap-4 p-4 rounded-lg border transition-all ${
-                        isCompleted
+                      className={`flex items-center gap-4 p-4 rounded-lg border transition-all ${isCompleted
                           ? "bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-900"
                           : isAccessible
                             ? "hover:bg-muted/50 cursor-pointer"
                             : "opacity-60"
-                      }`}
+                        }`}
                     >
                       {/* Status Icon */}
                       <div className="flex-shrink-0">
@@ -274,13 +284,12 @@ export default function ModulePage() {
               transition={{ delay: 0.25 }}
             >
               <Card
-                className={`${
-                  progress?.testPassed
+                className={`${progress?.testPassed
                     ? "border-green-200 dark:border-green-900 bg-green-50 dark:bg-green-950/20"
                     : canTakeTest
                       ? "border-primary"
                       : ""
-                }`}
+                  }`}
               >
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -331,11 +340,10 @@ export default function ModulePage() {
                   {/* Test Status */}
                   {progress?.testAttempted && (
                     <div
-                      className={`p-4 rounded-lg ${
-                        progress.testPassed
+                      className={`p-4 rounded-lg ${progress.testPassed
                           ? "bg-green-100 dark:bg-green-900/30"
                           : "bg-red-100 dark:bg-red-900/30"
-                      }`}
+                        }`}
                     >
                       <div className="flex items-center justify-between">
                         <div>

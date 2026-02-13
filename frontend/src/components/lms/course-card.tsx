@@ -28,8 +28,9 @@ const difficultyLabels = {
 };
 
 export function CourseCard({ course }: CourseCardProps) {
-  const hasDiscount = course.discountPrice && course.discountPrice < course.price;
-  const isFree = course.price === 0;
+  const hasDiscount = !!(course.discountPrice && course.discountPrice > 0);
+  const finalPrice = hasDiscount ? course.price - (course.discountPrice || 0) : course.price;
+  const isFree = finalPrice <= 0;
 
   return (
     <Card className="overflow-hidden hover:shadow-lg transition-shadow h-full flex flex-col">
@@ -90,6 +91,12 @@ export function CourseCard({ course }: CourseCardProps) {
             <Award className="h-3 w-3" />
             <span>{course.totalPoints} pts</span>
           </div>
+          {course.averageRating !== undefined && course.averageRating > 0 && (
+            <div className="flex items-center gap-1">
+              <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+              <span>{course.averageRating.toFixed(1)}</span>
+            </div>
+          )}
         </div>
 
         {/* Enrollment Progress */}
@@ -112,7 +119,7 @@ export function CourseCard({ course }: CourseCardProps) {
           ) : (
             <>
               <span className="text-lg font-bold">
-                {course.currency} {hasDiscount ? course.discountPrice : course.price}
+                {course.currency} {finalPrice}
               </span>
               {hasDiscount && (
                 <span className="text-sm text-muted-foreground line-through">

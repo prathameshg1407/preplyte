@@ -6,8 +6,7 @@ import { createTopicSchema, updateTopicSchema } from './topic.validation';
 
 export class TopicController {
     create = asyncHandler(async (req: Request, res: Response) => {
-        const validated = createTopicSchema.parse(req.body);
-        const topic = await topicService.create(validated);
+        const topic = await topicService.create(req.body);
         return sendCreated(res, topic, 'Topic created successfully');
     });
 
@@ -17,8 +16,7 @@ export class TopicController {
     });
 
     update = asyncHandler(async (req: Request, res: Response) => {
-        const validated = updateTopicSchema.parse(req.body);
-        const topic = await topicService.update(req.params.id, validated);
+        const topic = await topicService.update(req.params.id, req.body);
         return sendSuccess(res, topic, 'Topic updated successfully');
     });
 

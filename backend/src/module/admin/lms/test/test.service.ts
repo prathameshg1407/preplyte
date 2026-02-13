@@ -45,7 +45,10 @@ export class TestService {
                         courseId: true,
                     },
                 },
-                questions: true,
+                questions: {
+                    include: { options: { orderBy: { order: 'asc' } } },
+                    orderBy: { order: 'asc' }
+                },
             },
         });
 
@@ -67,6 +70,7 @@ export class TestService {
                     },
                 },
                 questions: {
+                    include: { options: { orderBy: { order: 'asc' } } },
                     orderBy: { order: 'asc' },
                 },
             },
@@ -83,7 +87,10 @@ export class TestService {
         return await prisma.lmsModuleTest.findMany({
             where: { moduleId },
             include: {
-                questions: true,
+                questions: {
+                    include: { options: { orderBy: { order: 'asc' } } },
+                    orderBy: { order: 'asc' }
+                },
             },
             orderBy: { createdAt: 'desc' },
         });
@@ -111,7 +118,10 @@ export class TestService {
             data: { ...data, totalPoints },
             include: {
                 module: true,
-                questions: true,
+                questions: {
+                    include: { options: { orderBy: { order: 'asc' } } },
+                    orderBy: { order: 'asc' }
+                },
             },
         });
 
@@ -182,7 +192,10 @@ export class TestService {
                         title: true,
                     },
                 },
-                questions: true,
+                questions: {
+                    include: { options: { orderBy: { order: 'asc' } } },
+                    orderBy: { order: 'asc' }
+                },
             },
         });
 
@@ -203,6 +216,7 @@ export class TestService {
                     },
                 },
                 questions: {
+                    include: { options: { orderBy: { order: 'asc' } } },
                     orderBy: { order: 'asc' },
                 },
             },
@@ -219,7 +233,10 @@ export class TestService {
         return await prisma.lmsFinalTest.findMany({
             where: { courseId },
             include: {
-                questions: true,
+                questions: {
+                    include: { options: { orderBy: { order: 'asc' } } },
+                    orderBy: { order: 'asc' }
+                },
             },
             orderBy: { createdAt: 'desc' },
         });
@@ -246,7 +263,10 @@ export class TestService {
             data: { ...data, totalPoints },
             include: {
                 course: true,
-                questions: true,
+                questions: {
+                    include: { options: { orderBy: { order: 'asc' } } },
+                    orderBy: { order: 'asc' }
+                },
             },
         });
 

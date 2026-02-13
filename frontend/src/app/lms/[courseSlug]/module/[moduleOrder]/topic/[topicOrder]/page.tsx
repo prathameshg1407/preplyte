@@ -22,6 +22,7 @@ import {
   AlertCircle,
   Download,
   ExternalLink,
+  Lock,
 } from 'lucide-react';
 import { useTopicDetails, useUpdateTopicProgress } from '@/lib/hooks/lms/use-lms';
 import { useLmsStore } from '@/lib/store/lms-store';
@@ -133,16 +134,29 @@ export default function TopicPage() {
   }
 
   if (error || !topic) {
+    const isLocked = (error as any)?.response?.status === 403;
     return (
       <div className="container mx-auto px-4 py-12 text-center">
-        <AlertCircle className="h-12 w-12 mx-auto text-destructive mb-4" />
-        <h1 className="text-2xl font-bold mb-2">Topic Not Found</h1>
-        <p className="text-muted-foreground mb-4">
-          This topic doesn&apos;t exist or you don&apos;t have access to it.
-        </p>
-        <Button asChild>
-          <Link href={`/lms/${courseSlug}/module/${moduleOrder}`}>Back to Module</Link>
-        </Button>
+        <div className="max-w-md mx-auto">
+          {isLocked ? (
+            <Lock className="h-12 w-12 mx-auto text-orange-500 mb-4" />
+          ) : (
+            <AlertCircle className="h-12 w-12 mx-auto text-destructive mb-4" />
+          )}
+          <h1 className="text-2xl font-bold mb-2">
+            {isLocked ? 'Module Locked' : 'Topic Not Found'}
+          </h1>
+          <p className="text-muted-foreground mb-4">
+            {isLocked
+              ? 'This module is locked. Please complete the previous modules and tests to unlock it.'
+              : "This topic doesn't exist or you don't have access to it."}
+          </p>
+          <Button asChild>
+            <Link href={`/lms/${courseSlug}/module/${moduleOrder}`}>
+              {isLocked ? 'Back to Module' : 'Back to Module'}
+            </Link>
+          </Button>
+        </div>
       </div>
     );
   }

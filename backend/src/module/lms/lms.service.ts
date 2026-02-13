@@ -211,6 +211,8 @@ class LmsService {
       category: course.category,
       isEnrolled: userEnrollments.has(course.id),
       enrollmentProgress: userEnrollments.get(course.id),
+      averageRating: course.averageRating,
+      ratingsCount: course.ratingsCount,
     }));
 
     return {
@@ -261,6 +263,19 @@ class LmsService {
           },
         },
         finalTest: true,
+        feedbacks: {
+          take: 5,
+          orderBy: { createdAt: 'desc' },
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                profile: { select: { fullName: true } },
+              },
+            },
+          },
+        },
       },
     });
 
@@ -268,20 +283,41 @@ class LmsService {
       throw new AppError('COURSE_NOT_FOUND', LMS_ERROR_MESSAGES.COURSE_NOT_FOUND, 404);
     }
 
+    // Format feedbacks
+    const feedbacks = course.feedbacks.map((fb) => ({
+      id: fb.id,
+      userId: fb.userId,
+      userName: fb.user.profile?.fullName || fb.user.name || 'Anonymous User',
+      rating: fb.rating,
+      comment: fb.comment,
+      createdAt: fb.createdAt,
+    }));
+
     // Get enrollment and progress if user is logged in
     let enrollment: EnrollmentResponse | null = null;
     let moduleProgressMap: Map<string, ModuleProgressResponse> = new Map();
     let topicProgressMap: Map<string, TopicProgressResponse> = new Map();
 
     if (userId) {
-      const userEnrollment = await prisma.lmsEnrollment.findUnique({
-        where: {
-          userId_courseId: { userId, courseId: course.id },
-        },
-      });
+      const [userEnrollment, userFeedback] = await Promise.all([
+        prisma.lmsEnrollment.findUnique({
+          where: {
+            userId_courseId: { userId, courseId: course.id },
+          },
+        }),
+        prisma.lmsCourseFeedback.findUnique({
+          where: {
+            userId_courseId: { userId, courseId: course.id },
+          },
+        }),
+      ]);
 
       if (userEnrollment) {
-        enrollment = userEnrollment as EnrollmentResponse;
+        enrollment = {
+          ...userEnrollment,
+          hasGivenFeedback: !!userFeedback,
+        } as EnrollmentResponse;
+
 
         // Get module progress
         const moduleProgress = await prisma.lmsModuleProgress.findMany({
@@ -361,6 +397,9 @@ class LmsService {
           isActive: course.category.isActive,
           coursesCount: 0,
         },
+        averageRating: course.averageRating,
+        ratingsCount: course.ratingsCount,
+        feedbacks,
       },
       modules,
       enrollment,
@@ -401,7 +440,19 @@ class LmsService {
     });
 
     if (existingEnrollment) {
-      throw new AppError('ALREADY_ENROLLED', LMS_ERROR_MESSAGES.ALREADY_ENROLLED, 400);
+      const hasFeedback = await prisma.lmsCourseFeedback.findUnique({
+        where: {
+          userId_courseId: { userId, courseId: course.id },
+        },
+      });
+
+      return {
+        enrollment: {
+          ...existingEnrollment,
+          hasGivenFeedback: !!hasFeedback,
+        } as EnrollmentResponse,
+        message: 'You are already enrolled in this course.',
+      };
     }
 
     // Create enrollment and initialize progress in a transaction
@@ -446,7 +497,7 @@ class LmsService {
     });
 
     return {
-      enrollment: enrollment as EnrollmentResponse,
+      enrollment: { ...enrollment, hasGivenFeedback: false } as EnrollmentResponse,
       message: 'Successfully enrolled in the course',
     };
   }
@@ -501,14 +552,33 @@ class LmsService {
     }
 
     // Get module progress
-    const moduleProgress = await prisma.lmsModuleProgress.findUnique({
+    let moduleProgress = await prisma.lmsModuleProgress.findUnique({
       where: {
         userId_moduleId: { userId, moduleId: module.id },
       },
     });
 
+    // Auto-initialize if missing (added module post-enrollment)
+    if (!moduleProgress) {
+      // Find if this is the first module
+      const firstModule = await prisma.lmsModule.findFirst({
+        where: { courseId: course.id, isActive: true },
+        orderBy: { order: 'asc' },
+        select: { id: true }
+      });
+
+      moduleProgress = await prisma.lmsModuleProgress.create({
+        data: {
+          userId,
+          moduleId: module.id,
+          status: firstModule?.id === module.id ? LmsModuleStatus.AVAILABLE : LmsModuleStatus.LOCKED,
+          totalTopics: module.topics.length
+        }
+      });
+    }
+
     // Check if module is accessible
-    if (moduleProgress?.status === LmsModuleStatus.LOCKED) {
+    if (moduleProgress.status === LmsModuleStatus.LOCKED) {
       throw new AppError('MODULE_LOCKED', LMS_ERROR_MESSAGES.MODULE_LOCKED, 403);
     }
 
@@ -624,6 +694,35 @@ class LmsService {
       throw new AppError('MODULE_NOT_FOUND', LMS_ERROR_MESSAGES.MODULE_NOT_FOUND, 404);
     }
 
+    // Check if module is accessible
+    let moduleProgress = await prisma.lmsModuleProgress.findUnique({
+      where: {
+        userId_moduleId: { userId, moduleId: module.id },
+      },
+    });
+
+    if (!moduleProgress) {
+      // Auto-initialize if missing
+      const firstModule = await prisma.lmsModule.findFirst({
+        where: { courseId: course.id, isActive: true },
+        orderBy: { order: 'asc' },
+        select: { id: true }
+      });
+
+      moduleProgress = await prisma.lmsModuleProgress.create({
+        data: {
+          userId,
+          moduleId: module.id,
+          status: firstModule?.id === module.id ? LmsModuleStatus.AVAILABLE : LmsModuleStatus.LOCKED,
+          totalTopics: module.topics.length
+        }
+      });
+    }
+
+    if (moduleProgress.status === LmsModuleStatus.LOCKED) {
+      throw new AppError('MODULE_LOCKED', LMS_ERROR_MESSAGES.MODULE_LOCKED, 403);
+    }
+
     // Get topic
     const topic = module.topics.find((t) => t.order === topicOrder);
 
@@ -722,6 +821,35 @@ class LmsService {
 
     if (!module) {
       throw new AppError('MODULE_NOT_FOUND', LMS_ERROR_MESSAGES.MODULE_NOT_FOUND, 404);
+    }
+
+    // Check if module is accessible
+    let moduleProgress = await prisma.lmsModuleProgress.findUnique({
+      where: {
+        userId_moduleId: { userId, moduleId: module.id },
+      },
+    });
+
+    if (!moduleProgress) {
+      // Auto-initialize
+      const firstModule = await prisma.lmsModule.findFirst({
+        where: { courseId: course.id, isActive: true },
+        orderBy: { order: 'asc' },
+        select: { id: true }
+      });
+
+      moduleProgress = await prisma.lmsModuleProgress.create({
+        data: {
+          userId,
+          moduleId: module.id,
+          status: firstModule?.id === module.id ? LmsModuleStatus.AVAILABLE : LmsModuleStatus.LOCKED,
+          totalTopics: module.topics.length
+        }
+      });
+    }
+
+    if (moduleProgress.status === LmsModuleStatus.LOCKED) {
+      throw new AppError('MODULE_LOCKED', LMS_ERROR_MESSAGES.MODULE_LOCKED, 403);
     }
 
     const topic = module.topics.find((t) => t.order === topicOrder);
@@ -861,6 +989,12 @@ class LmsService {
 
     const progressPercent = totalTopics > 0 ? (completedTopics / totalTopics) * 100 : 0;
 
+    const enrollment = await prisma.lmsEnrollment.findUnique({
+      where: { userId_courseId: { userId, courseId } },
+    });
+
+    if (!enrollment) return;
+
     await prisma.lmsEnrollment.update({
       where: {
         userId_courseId: { userId, courseId },
@@ -869,7 +1003,7 @@ class LmsService {
         completedTopics,
         completedModules,
         progressPercent,
-        startedAt: { set: new Date() },
+        startedAt: enrollment.startedAt ? undefined : new Date(),
       },
     });
   }
@@ -1377,6 +1511,12 @@ class LmsService {
       },
     });
 
+    const hasFeedback = await prisma.lmsCourseFeedback.findUnique({
+      where: {
+        userId_courseId: { userId, courseId: course?.id || '' },
+      },
+    });
+
     if (!course || !course.finalTest) {
       throw new AppError('TEST_NOT_AVAILABLE', LMS_ERROR_MESSAGES.TEST_NOT_AVAILABLE, 404);
     }
@@ -1501,6 +1641,7 @@ class LmsService {
       },
       pointsEarned,
       passed: isPassed,
+      hasGivenFeedback: !!hasFeedback,
       message: isPassed
         ? 'Congratulations! You have completed the course and earned your certificate!'
         : 'You did not pass the final test. Unfortunately, the final test can only be taken once.',
@@ -1575,6 +1716,8 @@ class LmsService {
         category: e.course.category,
         isEnrolled: true,
         enrollmentProgress: e.progressPercent,
+        averageRating: e.course.averageRating,
+        ratingsCount: e.course.ratingsCount,
       }));
 
     return {
@@ -1584,6 +1727,89 @@ class LmsService {
       inProgressCourses,
       totalPointsEarned,
       certificatesEarned,
+    };
+  }
+
+  // =====================================================
+  // FEEDBACK
+  // =====================================================
+
+  async addCourseFeedback(
+    courseSlug: string,
+    userId: string,
+    data: { rating: number; comment?: string }
+  ) {
+    const course = await prisma.lmsCourse.findUnique({
+      where: { slug: courseSlug },
+    });
+
+    if (!course) {
+      throw new AppError('COURSE_NOT_FOUND', LMS_ERROR_MESSAGES.COURSE_NOT_FOUND, 404);
+    }
+
+    // Verify enrollment
+    const enrollment = await prisma.lmsEnrollment.findUnique({
+      where: {
+        userId_courseId: { userId, courseId: course.id },
+      },
+    });
+
+    if (!enrollment) {
+      throw new AppError('NOT_ENROLLED', LMS_ERROR_MESSAGES.NOT_ENROLLED, 403);
+    }
+
+    // Create feedback
+    const feedback = await prisma.$transaction(async (tx) => {
+      // Create or update feedback
+      const newFeedback = await tx.lmsCourseFeedback.upsert({
+        where: {
+          userId_courseId: { userId, courseId: course.id },
+        },
+        create: {
+          userId,
+          courseId: course.id,
+          rating: data.rating,
+          comment: data.comment,
+        },
+        update: {
+          rating: data.rating,
+          comment: data.comment,
+        },
+        include: {
+          user: {
+            select: {
+              name: true,
+              profile: { select: { fullName: true } },
+            },
+          },
+        },
+      });
+
+      // Update course rating stats
+      const stats = await tx.lmsCourseFeedback.aggregate({
+        where: { courseId: course.id },
+        _avg: { rating: true },
+        _count: { rating: true },
+      });
+
+      await tx.lmsCourse.update({
+        where: { id: course.id },
+        data: {
+          averageRating: stats._avg.rating || 0,
+          ratingsCount: stats._count.rating || 0,
+        },
+      });
+
+      return newFeedback;
+    });
+
+    return {
+      id: feedback.id,
+      userId: feedback.userId,
+      userName: feedback.user.profile?.fullName || feedback.user.name || 'Anonymous User',
+      rating: feedback.rating,
+      comment: feedback.comment,
+      createdAt: feedback.createdAt,
     };
   }
 }

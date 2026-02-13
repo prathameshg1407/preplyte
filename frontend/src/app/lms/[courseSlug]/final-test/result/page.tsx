@@ -24,7 +24,9 @@ import {
   FileText,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
-
+import { useState } from 'react';
+import { lmsService } from '@/lib/api/services/lms.service';
+import { FeedbackModal } from '@/components/lms/feedback-modal';
 export default function FinalTestResultPage() {
   const params = useParams();
   const searchParams = useSearchParams();
@@ -82,9 +84,66 @@ export default function FinalTestResultPage() {
   };
 
   const gradeInfo = getGrade(score);
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+
+
+  const [hasGivenFeedback, setHasGivenFeedback] = useState(false);
+
+  // Check if user has given feedback from URL param or local state
+  // ideally we should fetch from server, but for now we rely on the URL param passed from the test submission response
+  // or we can fetch course details here. 
+  // Let's assume the previous page passed 'hasGivenFeedback' in URL, but wait, useSearchParams only gets strings.
+  // The 'passed' param comes from the router.push in final-test/page.tsx.
+
+  // We need to fetch the course details to know if feedback is given, OR pass it in URL.
+  // Ideally, the submitTest response should have returned it, and we should have passed it here.
+  // But since we are here now, let's just use a simple state for now, assuming the user just finished.
+  // Wait, if they refresh, the modal might pop up again if we don't check server.
+
+  // Let's look at how we got here. In final-test/page.tsx, we did router.push.
+  // We should update final-test/page.tsx to include hasGivenFeedback in URL if possible, OR
+  // fetch it here.
+
+  // Let's fetch the course details to be sure.
+  useEffect(() => {
+    async function checkFeedbackStatus() {
+      if (passed) {
+        const hasFeedbackParam = searchParams.get('hasFeedback') === 'true';
+
+        if (hasFeedbackParam) {
+          setHasGivenFeedback(true);
+          setShowFeedbackModal(false);
+          return;
+        }
+
+        try {
+          const data = await lmsService.getCourseBySlug(courseSlug);
+          if (data.enrollment?.hasGivenFeedback) {
+            setHasGivenFeedback(true);
+            setShowFeedbackModal(false);
+          } else {
+            setShowFeedbackModal(true);
+          }
+        } catch (e) {
+          console.error("Failed to check feedback status", e);
+          // If fetch fails, we still show the modal as the final test was passed
+          setShowFeedbackModal(true);
+        }
+      }
+    }
+    checkFeedbackStatus();
+  }, [courseSlug, passed, searchParams]);
 
   return (
     <div className="container mx-auto px-4 py-12">
+      <FeedbackModal
+        isOpen={showFeedbackModal}
+        onClose={() => {
+          setShowFeedbackModal(false);
+          setHasGivenFeedback(true);
+        }}
+        courseSlug={courseSlug}
+      />
       <div className="max-w-2xl mx-auto space-y-6">
         {/* Main Result Card */}
         <motion.div
@@ -98,11 +157,10 @@ export default function FinalTestResultPage() {
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
-                className={`mx-auto h-24 w-24 rounded-full flex items-center justify-center mb-4 ${
-                  passed
-                    ? 'bg-gradient-to-br from-green-400 to-green-600'
-                    : 'bg-gradient-to-br from-red-400 to-red-600'
-                }`}
+                className={`mx-auto h-24 w-24 rounded-full flex items-center justify-center mb-4 ${passed
+                  ? 'bg-gradient-to-br from-green-400 to-green-600'
+                  : 'bg-gradient-to-br from-red-400 to-red-600'
+                  }`}
               >
                 {passed ? (
                   <Trophy className="h-12 w-12 text-white" />

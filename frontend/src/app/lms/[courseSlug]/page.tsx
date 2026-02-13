@@ -71,6 +71,10 @@ export default function CourseDetailsPage() {
   const enrollment = data?.enrollment;
   const finalTest = data?.finalTest;
 
+  const totalModules = modules.length;
+  const completedModules = modules.filter(m => m.progress?.status === LmsModuleStatus.COMPLETED).length;
+  const allModulesCompleted = enrollment && totalModules > 0 && completedModules === totalModules;
+
   const handleEnroll = async () => {
     await enrollMutation.mutateAsync(courseSlug);
   };
@@ -107,8 +111,9 @@ export default function CourseDetailsPage() {
     );
   }
 
-  const hasDiscount = course.discountPrice && course.discountPrice < course.price;
-  const isFree = course.price === 0;
+  const hasDiscount = !!(course.discountPrice && course.discountPrice > 0);
+  const finalPrice = hasDiscount ? course.price - (course.discountPrice || 0) : course.price;
+  const isFree = finalPrice <= 0;
 
   return (
     <div className="container mx-auto px-4 py-6">
@@ -166,6 +171,14 @@ export default function CourseDetailsPage() {
                 <Award className="h-4 w-4" />
                 <span>{course.totalPoints} Points</span>
               </div>
+              {course.averageRating > 0 && (
+                <div className="flex items-center gap-1">
+                  <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                  <span>
+                    {course.averageRating.toFixed(1)} ({course.ratingsCount} ratings)
+                  </span>
+                </div>
+              )}
             </div>
           </motion.div>
 
@@ -345,15 +358,69 @@ export default function CourseDetailsPage() {
                         </Badge>
                       )}
                     </div>
+                    {allModulesCompleted && !enrollment?.finalTestAttempted && (
+                      <div className="mt-4 flex justify-end">
+                        <Button asChild>
+                          <Link href={`/lms/${courseSlug}/final-test`}>
+                            <Play className="h-4 w-4 mr-2" />
+                            Take Final Test
+                          </Link>
+                        </Button>
+                      </div>
+                    )}
                     <p className="text-sm text-muted-foreground mt-2">
-                      Complete all modules to unlock the final assessment. You only have one
-                      attempt!
+                      {allModulesCompleted
+                        ? "You have completed all modules and are eligible for the final assessment."
+                        : "Complete all modules to unlock the final assessment. You only have one attempt!"}
                     </p>
                   </div>
                 )}
               </CardContent>
             </Card>
           </motion.div>
+
+          {/* Feedbacks */}
+          {course.feedbacks && course.feedbacks.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+            >
+              <Card>
+                <CardHeader>
+                  <CardTitle>Student Feedback</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {course.feedbacks.map((feedback) => (
+                    <div key={feedback.id} className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center font-semibold text-primary">
+                            {feedback.userName.charAt(0)}
+                          </div>
+                          <div>
+                            <div className="font-medium text-sm">{feedback.userName}</div>
+                            <div className="text-xs text-muted-foreground">{new Date(feedback.createdAt).toLocaleDateString()}</div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                          <span className="text-sm font-medium">{feedback.rating}</span>
+                        </div>
+                      </div>
+                      {feedback.comment && (
+                        <p className="text-sm text-muted-foreground pl-10">
+                          {feedback.comment}
+                        </p>
+                      )}
+                      <Separator />
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
+
         </div>
 
         {/* Sidebar */}
@@ -400,7 +467,7 @@ export default function CourseDetailsPage() {
                   ) : (
                     <div className="flex items-center justify-center gap-2">
                       <span className="text-3xl font-bold">
-                        {course.currency} {hasDiscount ? course.discountPrice : course.price}
+                        {course.currency} {finalPrice}
                       </span>
                       {hasDiscount && (
                         <span className="text-lg text-muted-foreground line-through">

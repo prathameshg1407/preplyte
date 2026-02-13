@@ -25,3 +25,60 @@ export const validate = (schema: ZodSchema) => {
     }
   };
 };
+
+export const validateBody = (schema: ZodSchema) => {
+  return (req: Request, res: Response, next: NextFunction): void => {
+    try {
+      req.body = schema.parse(req.body);
+      next();
+    } catch (error) {
+      if (error instanceof ZodError) {
+        const details = error.errors.map((err) => ({
+          field: err.path.join('.'),
+          message: err.message,
+        }));
+        sendError(res, 'VALIDATION_ERROR', 'Invalid request body', 400, details);
+        return;
+      }
+      next(error);
+    }
+  };
+};
+
+export const validateParams = (schema: ZodSchema) => {
+  return (req: Request, res: Response, next: NextFunction): void => {
+    try {
+      req.params = schema.parse(req.params);
+      next();
+    } catch (error) {
+      if (error instanceof ZodError) {
+        const details = error.errors.map((err) => ({
+          field: err.path.join('.'),
+          message: err.message,
+        }));
+        sendError(res, 'VALIDATION_ERROR', 'Invalid parameters', 400, details);
+        return;
+      }
+      next(error);
+    }
+  };
+};
+
+export const validateQuery = (schema: ZodSchema) => {
+  return (req: Request, res: Response, next: NextFunction): void => {
+    try {
+      req.query = schema.parse(req.query);
+      next();
+    } catch (error) {
+      if (error instanceof ZodError) {
+        const details = error.errors.map((err) => ({
+          field: err.path.join('.'),
+          message: err.message,
+        }));
+        sendError(res, 'VALIDATION_ERROR', 'Invalid query parameters', 400, details);
+        return;
+      }
+      next(error);
+    }
+  };
+};

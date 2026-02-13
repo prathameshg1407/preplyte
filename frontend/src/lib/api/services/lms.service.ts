@@ -136,4 +136,16 @@ export const lmsService = {
     const response = await apiClient.get(LMS_ENDPOINTS.STATS);
     return response.data.data;
   },
+
+  // Feedback
+  addCourseFeedback: async (
+    courseSlug: string,
+    data: { rating: number; comment?: string }
+  ): Promise<any> => {
+    const response = await apiClient.post(
+      LMS_ENDPOINTS.COURSE_FEEDBACK(courseSlug),
+      data
+    );
+    return response.data.data;
+  },
 };

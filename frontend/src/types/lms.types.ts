@@ -44,6 +44,17 @@ export enum DifficultyLevel {
   HARD = 'HARD',
 }
 
+// Feedback
+export interface FeedbackResponse {
+  id: string;
+  userId: string;
+  userName: string;
+  userAvatar?: string | null;
+  rating: number;
+  comment: string | null;
+  createdAt: string;
+}
+
 // Category
 export interface LmsCategory {
   id: string;
@@ -87,6 +98,9 @@ export interface LmsCourse {
   category?: LmsCategory;
   modules?: LmsModule[];
   enrollment?: LmsEnrollment;
+  averageRating: number;
+  ratingsCount: number;
+  feedbacks?: FeedbackResponse[];
 }
 
 // Course Card (for listing)
@@ -111,6 +125,8 @@ export interface LmsCourseCard {
   };
   isEnrolled: boolean;
   enrollmentProgress?: number;
+  averageRating?: number;
+  ratingsCount?: number;
 }
 
 // Module
@@ -219,6 +235,7 @@ export interface LmsEnrollment {
   finalTestPassed: boolean;
   finalTestScore?: number;
   finalTestMarks?: number;
+  hasGivenFeedback?: boolean;
   enrolledAt: string;
   startedAt?: string;
   completedAt?: string;
@@ -357,6 +374,7 @@ export interface SubmitTestResponse {
   pointsEarned: number;
   passed: boolean;
   message: string;
+  hasGivenFeedback?: boolean;
 }
 
 export interface UpdateTopicProgressRequest {

@@ -19,6 +19,7 @@ const nestedQuestionSchema = z.object({
 });
 
 const nestedTopicSchema = z.object({
+    id: z.string().optional(),
     title: z.string().min(1),
     description: z.string().optional().nullable(),
     order: z.number().int(),
@@ -36,14 +37,15 @@ const nestedModuleTestSchema = z.object({
     passingScore: z.number().int().min(0).max(100).default(60),
     timeLimitMinutes: z.number().int().positive().default(30),
     maxAttempts: z.number().int().positive().default(3),
-    pointsPerQuestion: z.number().positive().default(10),
+    pointsPerQuestion: z.number().int().positive().default(10),
     isActive: z.boolean().default(true),
     questions: z.array(nestedQuestionSchema).optional().default([]),
 });
 
 const nestedModuleSchema = z.object({
+    id: z.string().optional(),
     title: z.string().min(1),
-    shortDescription: z.string().optional().nullable(),
+    shortDescription: z.string().max(500).optional().nullable(),
     description: z.string().optional().nullable(),
     order: z.number().int(),
     points: z.number().int().min(0).default(0),
@@ -60,7 +62,7 @@ const nestedFinalTestSchema = z.object({
     passingScore: z.number().int().min(0).max(100).default(60),
     timeLimitMinutes: z.number().int().positive().default(120),
     maxAttempts: z.number().int().positive().default(1),
-    pointsPerQuestion: z.number().positive().default(10),
+    pointsPerQuestion: z.number().int().positive().default(10),
     isActive: z.boolean().default(true),
     questions: z.array(nestedQuestionSchema).optional().default([]),
 });
@@ -71,7 +73,7 @@ export const createCourseSchema = z.object({
     title: z.string().min(1),
     slug: z.string().min(1),
 
-    shortDescription: z.string().optional().nullable(),
+    shortDescription: z.string().max(255).optional().nullable(),
     description: z.string().optional().nullable(),
 
     thumbnailUrl: z.preprocess((val) => val === '' ? null : val, z.string().url().nullable().optional()),
