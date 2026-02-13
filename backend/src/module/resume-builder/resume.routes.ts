@@ -3,6 +3,7 @@ import { ResumeController } from './resume.controller';
 import { ResumeService } from './resume.service';
 import { authenticate } from '../../middleware/auth.middleware';
 import { validate } from '../../middleware/validate.middleware';
+import { resumeUpload } from '../../middleware/upload.middleware';
 import { 
   createResumeSchema, 
   updateResumeSchema, 
@@ -71,5 +72,10 @@ router.post('/:resumeId/versions/:versionId/restore', resumeController.restoreVe
 
 // Import from profile
 router.post('/:resumeId/import-profile', resumeController.importFromProfile);
+
+// ============ ATS Score Checker Routes ============
+
+// Check ATS score for uploaded resume
+router.post('/ats-check', resumeUpload, resumeController.checkATSScore);
 
 export default router;

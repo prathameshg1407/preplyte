@@ -225,6 +225,14 @@ export const resumeFiltersSchema = z.object({
   limit: z.coerce.number().int().positive().max(50).optional().default(10),
 });
 
+// ============ ATS Score Checker Schemas ============
+
+export const atsCheckSchema = z.object({
+  body: z.object({
+    jobDescription: z.string().max(5000).optional(),
+  }),
+});
+
 // ============ Type Exports ============
 
 export type TemplateFiltersInput = z.infer<typeof templateFiltersSchema>;
@@ -234,3 +242,4 @@ export type UpdateSectionInput = z.infer<typeof updateSectionSchema>['body'];
 export type DuplicateResumeInput = z.infer<typeof duplicateResumeSchema>['body'];
 export type ChangeTemplateInput = z.infer<typeof changeTemplateSchema>['body'];
 export type ResumeFiltersInput = z.infer<typeof resumeFiltersSchema>;
+export type ATSCheckInput = z.infer<typeof atsCheckSchema>['body'];
