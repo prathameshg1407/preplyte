@@ -189,6 +189,9 @@ class LmsService {
           category: {
             select: { id: true, name: true, slug: true },
           },
+          _count: {
+            select: { enrollments: true },
+          },
         },
       }),
       prisma.lmsCourse.count({ where }),
@@ -213,6 +216,7 @@ class LmsService {
       enrollmentProgress: userEnrollments.get(course.id),
       averageRating: course.averageRating,
       ratingsCount: course.ratingsCount,
+      enrollmentCount: course._count?.enrollments || 0,
     }));
 
     return {
@@ -275,6 +279,9 @@ class LmsService {
               },
             },
           },
+        },
+        _count: {
+          select: { enrollments: true },
         },
       },
     });
@@ -400,6 +407,7 @@ class LmsService {
         averageRating: course.averageRating,
         ratingsCount: course.ratingsCount,
         feedbacks,
+        enrollmentCount: course._count?.enrollments || 0,
       },
       modules,
       enrollment,
@@ -1660,12 +1668,20 @@ class LmsService {
         course: {
           include: {
             category: true,
+            _count: { select: { enrollments: true } },
           },
         },
       },
     });
 
-    return enrollments as any;
+    return enrollments.map((e) => ({
+      ...e,
+      course: {
+        ...e.course,
+        isEnrolled: true,
+        enrollmentCount: e.course._count?.enrollments || 0,
+      },
+    })) as any;
   }
 
   async getMyDashboard(userId: string): Promise<UserDashboardResponse> {
@@ -1678,6 +1694,7 @@ class LmsService {
             category: {
               select: { id: true, name: true, slug: true },
             },
+            _count: { select: { enrollments: true } },
           },
         },
       },
@@ -1718,10 +1735,18 @@ class LmsService {
         enrollmentProgress: e.progressPercent,
         averageRating: e.course.averageRating,
         ratingsCount: e.course.ratingsCount,
+        enrollmentCount: e.course._count?.enrollments || 0,
       }));
 
     return {
-      enrolledCourses: enrollments as any,
+      enrolledCourses: enrollments.map((e) => ({
+        ...e,
+        course: {
+          ...e.course,
+          isEnrolled: true,
+          enrollmentCount: e.course._count?.enrollments || 0,
+        },
+      })) as any,
       recentlyAccessed,
       completedCourses,
       inProgressCourses,

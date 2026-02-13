@@ -88,6 +88,7 @@ export interface CourseCardResponse {
   enrollmentProgress?: number;
   averageRating: number;
   ratingsCount: number;
+  enrollmentCount: number; // NEW: Total number of enrollments
 }
 
 export interface CoursesListResponse {
@@ -252,6 +253,7 @@ export interface CourseDetailsResponse {
     averageRating: number;
     ratingsCount: number;
     feedbacks: FeedbackResponse[];
+    enrollmentCount: number; // NEW: Total number of enrollments
   };
   modules: ModuleResponse[];
   enrollment: EnrollmentResponse | null;

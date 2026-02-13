@@ -57,6 +57,17 @@ const difficultyLabels = {
   HARD: 'Advanced',
 };
 
+// Helper function to format enrollment count
+function formatEnrollmentCount(count: number): string {
+  if (count >= 1000000) {
+    return `${(count / 1000000).toFixed(1)}M`;
+  }
+  if (count >= 1000) {
+    return `${(count / 1000).toFixed(1)}K`;
+  }
+  return count.toString();
+}
+
 export default function CourseDetailsPage() {
   const params = useParams();
   const router = useRouter();
@@ -170,6 +181,11 @@ export default function CourseDetailsPage() {
               <div className="flex items-center gap-1">
                 <Award className="h-4 w-4" />
                 <span>{course.totalPoints} Points</span>
+              </div>
+              {/* NEW: Enrollment Count in Header */}
+              <div className="flex items-center gap-1">
+                <Users className="h-4 w-4" />
+                <span>{formatEnrollmentCount(course.enrollmentCount)} students enrolled</span>
               </div>
               {course.averageRating > 0 && (
                 <div className="flex items-center gap-1">
@@ -476,6 +492,12 @@ export default function CourseDetailsPage() {
                       )}
                     </div>
                   )}
+                </div>
+
+                {/* NEW: Enrollment Count in Sidebar */}
+                <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                  <Users className="h-4 w-4" />
+                  <span>{formatEnrollmentCount(course.enrollmentCount)} students enrolled</span>
                 </div>
 
                 {/* Enrollment Progress */}

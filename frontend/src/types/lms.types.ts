@@ -101,6 +101,7 @@ export interface LmsCourse {
   averageRating: number;
   ratingsCount: number;
   feedbacks?: FeedbackResponse[];
+  enrollmentCount: number; // NEW: Total number of enrollments
 }
 
 // Course Card (for listing)
@@ -127,6 +128,7 @@ export interface LmsCourseCard {
   enrollmentProgress?: number;
   averageRating?: number;
   ratingsCount?: number;
+  enrollmentCount: number; // NEW: Total number of enrollments
 }
 
 // Module
