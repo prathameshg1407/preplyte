@@ -1,37 +1,28 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   FileText,
-  Download,
-  Eye,
-  Star,
   Zap,
   CheckCircle,
-  AlertCircle,
   TrendingUp,
   Users,
   Award,
-  Briefcase,
-  GraduationCap,
-  Mail,
-  Phone,
-  MapPin,
+  List,
   Plus,
 } from 'lucide-react';
-import { ResumeTemplates } from '@/components/resume-builder/resume-templates';
+import { TemplateSelector } from '@/components/resume-builder/template-selector';
+import { ResumeListNew } from '@/components/resume-builder/resume-list-new';
 import { ATSScoreChecker } from '@/components/resume-builder/ats-score-checker';
-import { ResumeEditor } from '@/components/resume-builder/resume-editor';
 
 const RESUME_STATS = [
   {
     title: 'Templates Available',
-    value: '12+',
+    value: '6+',
     description: 'Industry-ready designs',
     icon: FileText,
     color: 'text-blue-600 dark:text-blue-400',
@@ -60,8 +51,16 @@ const RESUME_STATS = [
 ];
 
 export default function ResumeBuilderPage() {
-  const [activeTab, setActiveTab] = useState('templates');
-  const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState('my-resumes');
+
+  // Handle tab from URL query parameter
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tab = params.get('tab');
+    if (tab && ['my-resumes', 'templates', 'ats-checker'].includes(tab)) {
+      setActiveTab(tab);
+    }
+  }, []);
 
   return (
     <div className="container mx-auto px-4 py-6 space-y-6">
@@ -92,7 +91,7 @@ export default function ResumeBuilderPage() {
           transition={{ delay: 0.1 }}
           className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8"
         >
-          {RESUME_STATS.map((stat, index) => (
+          {RESUME_STATS.map((stat) => (
             <Card key={stat.title} className="text-center">
               <CardContent className="pt-4">
                 <div className="flex justify-center mb-2">
@@ -116,13 +115,13 @@ export default function ResumeBuilderPage() {
       >
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="templates" className="gap-2">
-              <FileText className="h-4 w-4" />
-              Templates
+            <TabsTrigger value="my-resumes" className="gap-2">
+              <List className="h-4 w-4" />
+              My Resumes
             </TabsTrigger>
-            <TabsTrigger value="builder" className="gap-2">
+            <TabsTrigger value="templates" className="gap-2">
               <Plus className="h-4 w-4" />
-              Build Resume
+              Create New
             </TabsTrigger>
             <TabsTrigger value="ats-checker" className="gap-2">
               <Award className="h-4 w-4" />
@@ -130,15 +129,12 @@ export default function ResumeBuilderPage() {
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="templates" className="space-y-6">
-            <ResumeTemplates 
-              onSelectTemplate={setSelectedTemplate}
-              selectedTemplate={selectedTemplate}
-            />
+          <TabsContent value="my-resumes" className="space-y-6">
+            <ResumeListNew />
           </TabsContent>
 
-          <TabsContent value="builder" className="space-y-6">
-            <ResumeEditor selectedTemplate={selectedTemplate} />
+          <TabsContent value="templates" className="space-y-6">
+            <TemplateSelector />
           </TabsContent>
 
           <TabsContent value="ats-checker" className="space-y-6">

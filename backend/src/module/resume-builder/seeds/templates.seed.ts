@@ -1,0 +1,335 @@
+import { PrismaClient, ResumeTemplateCategory } from '@prisma/client';
+
+const templates = [
+  {
+    name: 'Professional Classic',
+    slug: 'professional-classic',
+    description: 'A clean, traditional resume template perfect for corporate roles and experienced professionals.',
+    thumbnail: '/templates/professional-classic.png',
+    category: ResumeTemplateCategory.PROFESSIONAL,
+    isPremium: false,
+    layout: {
+      columns: 1,
+      headerStyle: 'centered',
+      sections: [
+        { id: 'personal', name: 'Personal Information', type: 'personalInfo', required: true, defaultVisible: true },
+        { id: 'summary', name: 'Professional Summary', type: 'summary', required: false, defaultVisible: true },
+        { id: 'experience', name: 'Work Experience', type: 'experience', required: false, maxItems: 10, defaultVisible: true },
+        { id: 'education', name: 'Education', type: 'education', required: false, maxItems: 5, defaultVisible: true },
+        { id: 'skills', name: 'Skills', type: 'skills', required: false, defaultVisible: true },
+        { id: 'certifications', name: 'Certifications', type: 'certifications', required: false, maxItems: 10, defaultVisible: false },
+        { id: 'projects', name: 'Projects', type: 'projects', required: false, maxItems: 5, defaultVisible: false },
+      ],
+    },
+    styles: {
+      primaryColor: '#1e40af',
+      secondaryColor: '#3b82f6',
+      textColor: '#1f2937',
+      backgroundColor: '#ffffff',
+      accentColor: '#60a5fa',
+      fontFamily: {
+        heading: 'Georgia, serif',
+        body: 'Arial, sans-serif',
+      },
+      fontSize: {
+        name: '32px',
+        sectionTitle: '18px',
+        body: '13px',
+        small: '11px',
+      },
+      spacing: {
+        sectionGap: '28px',
+        itemGap: '14px',
+        padding: '48px',
+      },
+      borderRadius: '0px',
+      lineHeight: '1.6',
+    },
+  },
+  {
+    name: 'Modern Minimal',
+    slug: 'modern-minimal',
+    description: 'A sleek, minimalist design with clean lines and modern typography.',
+    thumbnail: '/templates/modern-minimal.png',
+    category: ResumeTemplateCategory.MINIMAL,
+    isPremium: false,
+    layout: {
+      columns: 1,
+      headerStyle: 'left',
+      sections: [
+        { id: 'personal', name: 'Personal Information', type: 'personalInfo', required: true, defaultVisible: true },
+        { id: 'summary', name: 'About', type: 'summary', required: false, defaultVisible: true },
+        { id: 'experience', name: 'Experience', type: 'experience', required: false, maxItems: 8, defaultVisible: true },
+        { id: 'education', name: 'Education', type: 'education', required: false, maxItems: 3, defaultVisible: true },
+        { id: 'skills', name: 'Skills', type: 'skills', required: false, defaultVisible: true },
+      ],
+    },
+    styles: {
+      primaryColor: '#18181b',
+      secondaryColor: '#52525b',
+      textColor: '#27272a',
+      backgroundColor: '#ffffff',
+      accentColor: '#71717a',
+      fontFamily: {
+        heading: 'Inter, sans-serif',
+        body: 'Inter, sans-serif',
+      },
+      fontSize: {
+        name: '36px',
+        sectionTitle: '16px',
+        body: '12px',
+        small: '10px',
+      },
+      spacing: {
+        sectionGap: '24px',
+        itemGap: '12px',
+        padding: '56px',
+      },
+      borderRadius: '0px',
+      lineHeight: '1.7',
+    },
+  },
+  {
+    name: 'Tech Developer',
+    slug: 'tech-developer',
+    description: 'Designed for software developers and tech professionals with focus on skills and projects.',
+    thumbnail: '/templates/tech-developer.png',
+    category: ResumeTemplateCategory.TECHNICAL,
+    isPremium: false,
+    layout: {
+      columns: 2,
+      headerStyle: 'split',
+      sidebarPosition: 'left',
+      sections: [
+        { id: 'personal', name: 'Contact', type: 'personalInfo', required: true, defaultVisible: true },
+        { id: 'skills', name: 'Tech Stack', type: 'skills', required: false, defaultVisible: true },
+        { id: 'summary', name: 'Profile', type: 'summary', required: false, defaultVisible: true },
+        { id: 'experience', name: 'Experience', type: 'experience', required: false, maxItems: 6, defaultVisible: true },
+        { id: 'projects', name: 'Projects', type: 'projects', required: false, maxItems: 4, defaultVisible: true },
+        { id: 'education', name: 'Education', type: 'education', required: false, maxItems: 3, defaultVisible: true },
+        { id: 'certifications', name: 'Certifications', type: 'certifications', required: false, maxItems: 5, defaultVisible: true },
+      ],
+    },
+    styles: {
+      primaryColor: '#059669',
+      secondaryColor: '#10b981',
+      textColor: '#111827',
+      backgroundColor: '#f9fafb',
+      accentColor: '#34d399',
+      fontFamily: {
+        heading: 'JetBrains Mono, monospace',
+        body: 'system-ui, sans-serif',
+      },
+      fontSize: {
+        name: '28px',
+        sectionTitle: '15px',
+        body: '12px',
+        small: '10px',
+      },
+      spacing: {
+        sectionGap: '20px',
+        itemGap: '10px',
+        padding: '40px',
+      },
+      borderRadius: '6px',
+      lineHeight: '1.6',
+    },
+  },
+  {
+    name: 'Creative Portfolio',
+    slug: 'creative-portfolio',
+    description: 'A visually striking template for creative professionals, designers, and artists.',
+    thumbnail: '/templates/creative-portfolio.png',
+    category: ResumeTemplateCategory.CREATIVE,
+    isPremium: true,
+    layout: {
+      columns: 2,
+      headerStyle: 'centered',
+      sidebarPosition: 'right',
+      sections: [
+        { id: 'personal', name: 'Hello', type: 'personalInfo', required: true, defaultVisible: true },
+        { id: 'summary', name: 'About Me', type: 'summary', required: false, defaultVisible: true },
+        { id: 'experience', name: 'Career', type: 'experience', required: false, maxItems: 5, defaultVisible: true },
+        { id: 'projects', name: 'Portfolio', type: 'projects', required: false, maxItems: 6, defaultVisible: true },
+        { id: 'skills', name: 'Expertise', type: 'skills', required: false, defaultVisible: true },
+        { id: 'achievements', name: 'Awards', type: 'achievements', required: false, maxItems: 5, defaultVisible: true },
+        { id: 'education', name: 'Education', type: 'education', required: false, maxItems: 2, defaultVisible: true },
+      ],
+    },
+    styles: {
+      primaryColor: '#7c3aed',
+      secondaryColor: '#a78bfa',
+      textColor: '#1f2937',
+      backgroundColor: '#faf5ff',
+      accentColor: '#c084fc',
+      fontFamily: {
+        heading: 'Playfair Display, serif',
+        body: 'Nunito, sans-serif',
+      },
+      fontSize: {
+        name: '40px',
+        sectionTitle: '20px',
+        body: '13px',
+        small: '11px',
+      },
+      spacing: {
+        sectionGap: '32px',
+        itemGap: '16px',
+        padding: '52px',
+      },
+      borderRadius: '12px',
+      lineHeight: '1.8',
+    },
+  },
+  {
+    name: 'Academic CV',
+    slug: 'academic-cv',
+    description: 'Comprehensive template for academics, researchers, and educators.',
+    thumbnail: '/templates/academic-cv.png',
+    category: ResumeTemplateCategory.ACADEMIC,
+    isPremium: true,
+    layout: {
+      columns: 1,
+      headerStyle: 'left',
+      sections: [
+        { id: 'personal', name: 'Contact Information', type: 'personalInfo', required: true, defaultVisible: true },
+        { id: 'summary', name: 'Research Interests', type: 'summary', required: false, defaultVisible: true },
+        { id: 'education', name: 'Education', type: 'education', required: false, maxItems: 5, defaultVisible: true },
+        { id: 'experience', name: 'Academic Positions', type: 'experience', required: false, maxItems: 10, defaultVisible: true },
+        { id: 'projects', name: 'Research Projects', type: 'projects', required: false, maxItems: 10, defaultVisible: true },
+        { id: 'achievements', name: 'Publications & Awards', type: 'achievements', required: false, maxItems: 20, defaultVisible: true },
+        { id: 'certifications', name: 'Grants & Fellowships', type: 'certifications', required: false, maxItems: 10, defaultVisible: true },
+        { id: 'languages', name: 'Languages', type: 'languages', required: false, defaultVisible: true },
+      ],
+    },
+    styles: {
+      primaryColor: '#1e293b',
+      secondaryColor: '#475569',
+      textColor: '#0f172a',
+      backgroundColor: '#ffffff',
+      accentColor: '#64748b',
+      fontFamily: {
+        heading: 'Crimson Text, serif',
+        body: 'Crimson Text, serif',
+      },
+      fontSize: {
+        name: '26px',
+        sectionTitle: '15px',
+        body: '12px',
+        small: '11px',
+      },
+      spacing: {
+        sectionGap: '22px',
+        itemGap: '10px',
+        padding: '44px',
+      },
+      borderRadius: '0px',
+      lineHeight: '1.5',
+    },
+  },
+  {
+    name: 'Executive',
+    slug: 'executive',
+    description: 'Premium template for senior executives and leadership positions.',
+    thumbnail: '/templates/executive.png',
+    category: ResumeTemplateCategory.PROFESSIONAL,
+    isPremium: true,
+    layout: {
+      columns: 1,
+      headerStyle: 'centered',
+      sections: [
+        { id: 'personal', name: 'Contact', type: 'personalInfo', required: true, defaultVisible: true },
+        { id: 'summary', name: 'Executive Summary', type: 'summary', required: false, defaultVisible: true },
+        { id: 'experience', name: 'Professional Experience', type: 'experience', required: false, maxItems: 8, defaultVisible: true },
+        { id: 'achievements', name: 'Key Achievements', type: 'achievements', required: false, maxItems: 10, defaultVisible: true },
+        { id: 'education', name: 'Education', type: 'education', required: false, maxItems: 3, defaultVisible: true },
+        { id: 'certifications', name: 'Board Memberships & Certifications', type: 'certifications', required: false, maxItems: 8, defaultVisible: true },
+      ],
+    },
+    styles: {
+      primaryColor: '#0369a1',
+      secondaryColor: '#0284c7',
+      textColor: '#0c4a6e',
+      backgroundColor: '#ffffff',
+      accentColor: '#0ea5e9',
+      fontFamily: {
+        heading: 'Merriweather, serif',
+        body: 'Source Sans Pro, sans-serif',
+      },
+      fontSize: {
+        name: '34px',
+        sectionTitle: '17px',
+        body: '13px',
+        small: '11px',
+      },
+      spacing: {
+        sectionGap: '30px',
+        itemGap: '16px',
+        padding: '56px',
+      },
+      borderRadius: '0px',
+      lineHeight: '1.65',
+    },
+  },
+  // NEW TEMPLATE EXAMPLE - Add your new template here
+  {
+    name: 'Simple Clean',
+    slug: 'simple-clean',
+    description: 'A straightforward, easy-to-read template perfect for any industry.',
+    thumbnail: '/templates/simple-clean.png',
+    category: ResumeTemplateCategory.MINIMAL,
+    isPremium: false,
+    layout: {
+      columns: 1,
+      headerStyle: 'left',
+      sections: [
+        { id: 'personal', name: 'Contact', type: 'personalInfo', required: true, defaultVisible: true },
+        { id: 'summary', name: 'Summary', type: 'summary', required: false, defaultVisible: true },
+        { id: 'experience', name: 'Experience', type: 'experience', required: false, maxItems: 10, defaultVisible: true },
+        { id: 'education', name: 'Education', type: 'education', required: false, maxItems: 5, defaultVisible: true },
+        { id: 'skills', name: 'Skills', type: 'skills', required: false, defaultVisible: true },
+        { id: 'projects', name: 'Projects', type: 'projects', required: false, maxItems: 5, defaultVisible: false },
+        { id: 'certifications', name: 'Certifications', type: 'certifications', required: false, maxItems: 10, defaultVisible: false },
+      ],
+    },
+    styles: {
+      primaryColor: '#2563eb',
+      secondaryColor: '#3b82f6',
+      textColor: '#1f2937',
+      backgroundColor: '#ffffff',
+      accentColor: '#60a5fa',
+      fontFamily: {
+        heading: 'Arial, sans-serif',
+        body: 'Arial, sans-serif',
+      },
+      fontSize: {
+        name: '28px',
+        sectionTitle: '16px',
+        body: '12px',
+        small: '10px',
+      },
+      spacing: {
+        sectionGap: '24px',
+        itemGap: '12px',
+        padding: '48px',
+      },
+      borderRadius: '0px',
+      lineHeight: '1.6',
+    },
+  },
+];
+
+export async function seedResumeTemplates(prisma: PrismaClient) {
+  console.log('🌱 Seeding resume templates...');
+
+  for (const template of templates) {
+    await prisma.resumeTemplate.upsert({
+      where: { slug: template.slug },
+      update: template,
+      create: template,
+    });
+    console.log(`  ✓ Template: ${template.name}`);
+  }
+
+  console.log('✅ Resume templates seeded successfully!');
+}

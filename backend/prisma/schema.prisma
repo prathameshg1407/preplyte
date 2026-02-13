@@ -195,6 +195,7 @@ model User {
   refreshTokens    RefreshToken[]
   profile          StudentProfile?
   resumes          Resume[]
+  userResumes      UserResume[]
 
   // Practice Sessions
   aptitudeSessions AptitudePracticeSession[]
@@ -373,6 +374,97 @@ model Resume {
   @@index([userId])
   @@index([userId, isDefault])
   @@map("resumes")
+}
+
+// =====================================================
+// RESUME BUILDER
+// =====================================================
+
+enum ResumeTemplateCategory {
+  PROFESSIONAL
+  CREATIVE
+  MODERN
+  MINIMAL
+  ACADEMIC
+  TECHNICAL
+}
+
+model ResumeTemplate {
+  id          String                  @id @default(cuid())
+  name        String
+  slug        String                  @unique
+  description String?
+  thumbnail   String?
+  category    ResumeTemplateCategory  @default(PROFESSIONAL)
+  layout      Json
+  styles      Json
+  isActive    Boolean                 @default(true)
+  isPremium   Boolean                 @default(false)
+  popularity  Int                     @default(0)
+  
+  createdAt   DateTime                @default(now())
+  updatedAt   DateTime                @updatedAt
+
+  userResumes UserResume[]
+
+  @@index([category, isActive])
+  @@index([slug])
+}
+
+model UserResume {
+  id             String   @id @default(cuid())
+  userId         String
+  templateId     String
+  title          String   @default("Untitled Resume")
+  slug           String?
+  
+  // Content sections (stored as JSON)
+  personalInfo   Json?
+  summary        Json?
+  experience     Json?
+  education      Json?
+  skills         Json?
+  projects       Json?
+  certifications Json?
+  languages      Json?
+  achievements   Json?
+  customSections Json?
+  
+  // Customization
+  sectionOrder   String[] @default(["personalInfo", "summary", "experience", "education", "skills", "projects"])
+  hiddenSections String[] @default([])
+  customStyles   Json?
+  colorScheme    String?
+  fontFamily     String?
+  
+  // Metadata
+  isComplete     Boolean  @default(false)
+  lastAtsScore   Int?
+  
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  template       ResumeTemplate  @relation(fields: [templateId], references: [id])
+  versions       ResumeVersion[]
+
+  @@unique([userId, slug])
+  @@index([userId])
+  @@index([templateId])
+}
+
+model ResumeVersion {
+  id         String   @id @default(cuid())
+  resumeId   String
+  version    Int
+  data       Json
+  changeNote String?
+  createdAt  DateTime @default(now())
+
+  resume     UserResume @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+
+  @@unique([resumeId, version])
+  @@index([resumeId])
 }
 
 // =====================================================
