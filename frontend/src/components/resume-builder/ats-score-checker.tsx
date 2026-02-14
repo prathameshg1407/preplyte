@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
 import { useState, useCallback } from 'react';
@@ -71,17 +72,7 @@ export function ATSScoreChecker() {
     setCurrentStatus((prev) => (prev + 1) % statusMessages.length);
   };
 
-  // Test animation without API call
-  const testAnimation = () => {
-    setIsAnalyzing(true);
-    setTimeout(() => {
-      setIsAnalyzing(false);
-      toast({
-        title: 'Animation Test Complete',
-        description: 'The Lottie animation is working!',
-      });
-    }, 5000); // Show animation for 5 seconds
-  };
+
 
   const analyzeResume = async (file: File) => {
     setIsAnalyzing(true);
@@ -191,15 +182,7 @@ export function ATSScoreChecker() {
         <p className="text-muted-foreground">
           Upload your resume to get an instant ATS compatibility score powered by AI
         </p>
-        {/* Test Animation Button */}
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onClick={testAnimation}
-          className="mt-2"
-        >
-          🎬 Test Animation (No API Call)
-        </Button>
+        
       </div>
 
       {/* Job Role and Description (Optional) */}
@@ -216,7 +199,7 @@ export function ATSScoreChecker() {
               disabled={isAnalyzing}
             />
             <p className="text-xs text-muted-foreground mt-2">
-              Specify the job role you're targeting
+              Specify the job role you are targeting
             </p>
           </div>
           <div>
