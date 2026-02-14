@@ -687,7 +687,9 @@ class ProfileService {
     });
 
     if (!profile) {
-      throw new NotFoundError('Student profile');
+      throw new BadRequestError(
+        'Student profile not found. Please complete your profile setup before linking a resume.'
+      );
     }
 
     await prisma.studentProfile.update({

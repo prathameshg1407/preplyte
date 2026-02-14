@@ -528,12 +528,13 @@ export const LMS_ENDPOINTS = {
   // User Dashboard
   MY_COURSES: '/api/lms/my-courses',
   MY_DASHBOARD: '/api/lms/dashboard',
-  
+
   DASHBOARD: {
-  STUDENT: '/api/dashboard/student',
-  INSTITUTE_ADMIN: '/api/dashboard/institute-admin',
-  PLATFORM_ADMIN: '/api/dashboard/platform-admin',
-},
+    STUDENT: '/api/dashboard/student',
+    INSTITUTE_ADMIN: '/api/dashboard/institute-admin',
+    PLATFORM_ADMIN: '/api/dashboard/platform-admin',
+    STUDENT_FOR_ADMIN: (id: string) => `/api/dashboard/student/${id}`,
+  },
 
   // Stats
   STATS: '/api/lms/stats',

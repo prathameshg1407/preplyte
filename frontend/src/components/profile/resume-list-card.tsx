@@ -63,6 +63,7 @@ interface ResumeItemProps {
   onDelete: (id: string) => Promise<void>;
   onLink: (id: string) => Promise<void>;
   isUpdating: boolean;
+  hasStudentProfile: boolean;
 }
 
 function ResumeItem({
@@ -72,6 +73,7 @@ function ResumeItem({
   onDelete,
   onLink,
   isUpdating,
+  hasStudentProfile,
 }: ResumeItemProps) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -201,14 +203,16 @@ function ResumeItem({
               </DropdownMenuItem>
             )}
 
-            <DropdownMenuItem onClick={handleLink} disabled={isLinking}>
-              {isLinking ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              ) : (
-                <Link2 className="h-4 w-4 mr-2" />
-              )}
-              Link to Profile
-            </DropdownMenuItem>
+            {hasStudentProfile && (
+              <DropdownMenuItem onClick={handleLink} disabled={isLinking}>
+                {isLinking ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Link2 className="h-4 w-4 mr-2" />
+                )}
+                Link to Profile
+              </DropdownMenuItem>
+            )}
 
             <DropdownMenuSeparator />
 
@@ -261,7 +265,7 @@ function ResumeItem({
 }
 
 export function ResumeListCard() {
-  const { resumes, deleteResume, setDefaultResume, linkResumeToProfile, isUpdating } =
+  const { resumes, deleteResume, setDefaultResume, linkResumeToProfile, isUpdating, hasStudentProfile } =
     useProfile();
 
   if (resumes.length === 0) {
@@ -294,6 +298,7 @@ export function ResumeListCard() {
               onDelete={deleteResume}
               onLink={linkResumeToProfile}
               isUpdating={isUpdating}
+              hasStudentProfile={hasStudentProfile}
             />
           ))}
         </AnimatePresence>

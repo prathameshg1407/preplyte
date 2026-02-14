@@ -1,7 +1,7 @@
 // src/module/dashboard/dashboard.service.ts
 
 import { prisma } from '../../lib/db';
-import { NotFoundError, ForbiddenError } from '../../utils/errors';
+import { NotFoundError, ForbiddenError, BadRequestError } from '../../utils/errors';
 import { logger } from '../../utils/logger';
 import {
   StudentDashboardResponse,
@@ -26,8 +26,8 @@ import {
   RecommendedCourse,
 } from './dashboard.types';
 import { DASHBOARD_LIMITS, getDateRanges } from './dashboard.constants';
-import { 
-  MockDriveStatus, 
+import {
+  MockDriveStatus,
   MockDriveRegistrationStatus,
   LmsEnrollmentStatus,
   LmsModuleStatus,
@@ -333,9 +333,9 @@ class DashboardService {
     );
     const averageProgress = activeEnrollments.length > 0
       ? Math.round(
-          activeEnrollments.reduce((sum, e) => sum + e.progressPercent, 0) /
-          activeEnrollments.length
-        )
+        activeEnrollments.reduce((sum, e) => sum + e.progressPercent, 0) /
+        activeEnrollments.length
+      )
       : 0;
 
     // Get module tests passed
@@ -409,11 +409,11 @@ class DashboardService {
     });
 
     const allEnrollments = enrollments.map(mapEnrollment);
-    
+
     const inProgress = allEnrollments.filter(
       (e) => e.status === LmsEnrollmentStatus.ACTIVE
     );
-    
+
     const completed = allEnrollments.filter(
       (e) => e.status === LmsEnrollmentStatus.COMPLETED
     );
@@ -531,9 +531,8 @@ class DashboardService {
           id: `test-${attempt.id}`,
           type: 'TEST_PASSED',
           title: attempt.finalTest ? 'Final Test Passed' : 'Module Test Passed',
-          description: `Scored ${Math.round(attempt.score)}% on ${
-            attempt.finalTest ? 'final assessment' : 'module test'
-          }`,
+          description: `Scored ${Math.round(attempt.score)}% on ${attempt.finalTest ? 'final assessment' : 'module test'
+            }`,
           courseSlug: course.slug,
           courseTitle: course.title,
           timestamp: attempt.completedAt!.toISOString(),
@@ -673,6 +672,55 @@ class DashboardService {
     };
   }
 
+  async getStudentDashboardForAdmin(
+    adminUserId: string,
+    studentUserId: string,
+    instituteId: string
+  ): Promise<any> {
+    logger.debug('[DashboardService] Fetching student dashboard for admin', {
+      adminUserId,
+      studentUserId,
+      instituteId,
+    });
+
+    // Verify student belongs to this institute
+    const studentUser = await prisma.user.findUnique({
+      where: { id: studentUserId },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        instituteId: true,
+        role: true,
+        profile: {
+          include: {
+            department: true
+          }
+        }
+      },
+    });
+
+    if (!studentUser || studentUser.instituteId !== instituteId) {
+      throw new ForbiddenError('Student does not belong to your institute');
+    }
+
+    if (studentUser.role !== 'USER') {
+      throw new BadRequestError('Target user is not a student');
+    }
+
+    const dashboard = await this.getStudentDashboard(studentUserId);
+
+    return {
+      profile: {
+        id: studentUser.id,
+        email: studentUser.email,
+        name: studentUser.name,
+        ...studentUser.profile,
+      },
+      dashboard,
+    };
+  }
+
   private async getInstituteStats(instituteId: string): Promise<InstituteAdminDashboardStats> {
     const { startOfThisMonth, startOfLastMonth, endOfLastMonth } = getDateRanges();
 
@@ -709,7 +757,7 @@ class DashboardService {
 
     // Get registration stats
     const driveIds = drives.map((d) => d.id);
-    
+
     const [totalRegistrations, registrationsThisMonth] = await Promise.all([
       prisma.mockDriveRegistration.count({
         where: { mockDriveId: { in: driveIds } },
@@ -747,12 +795,12 @@ class DashboardService {
 
     const avgScoreThisMonth = currentMonthAttempts.length > 0
       ? currentMonthAttempts.reduce((sum, a) => sum + (a.percentageScore || 0), 0) /
-        currentMonthAttempts.length
+      currentMonthAttempts.length
       : 0;
 
     const avgScoreLastMonth = lastMonthAttempts.length > 0
       ? lastMonthAttempts.reduce((sum, a) => sum + (a.percentageScore || 0), 0) /
-        lastMonthAttempts.length
+      lastMonthAttempts.length
       : 0;
 
     const scoreChange = avgScoreThisMonth - avgScoreLastMonth;

@@ -1,7 +1,7 @@
 // src/lib/api/services/dashboard.service.ts
 
 import { apiClient } from '../axios-instance';
-import type { StudentDashboardData } from '@/types/dashboard.types';
+import type { StudentDashboardData, AdminViewStudentDashboardData } from '@/types/dashboard.types';
 
 interface ApiResponse<T> {
   success: boolean;
@@ -15,6 +15,16 @@ export const dashboardService = {
   getStudentDashboard: async (): Promise<StudentDashboardData> => {
     const response = await apiClient.get<ApiResponse<StudentDashboardData>>(
       '/api/dashboard/student'
+    );
+    return response.data.data;
+  },
+
+  /**
+   * Get specific student dashboard data for institute admin
+   */
+  getStudentDashboardForAdmin: async (id: string): Promise<AdminViewStudentDashboardData> => {
+    const response = await apiClient.get<ApiResponse<AdminViewStudentDashboardData>>(
+      `/api/dashboard/student/${id}`
     );
     return response.data.data;
   },

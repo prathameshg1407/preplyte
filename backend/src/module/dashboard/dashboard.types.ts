@@ -168,6 +168,34 @@ export interface InstituteAdminDashboardResponse {
   topPerformers: TopPerformer[];
 }
 
+export interface AdminViewStudentDashboardResponse {
+  profile: {
+    id: string;
+    email: string;
+    name: string | null;
+    fullName?: string;
+    studentId?: string;
+    resumeUrl?: string | null;
+    resumeName?: string | null;
+    skills?: string[];
+    departmentId?: string;
+    department?: {
+      id: string;
+      name: string;
+      code: string | null;
+    };
+    courseYear?: string;
+    numberOfBacklogs?: number;
+    marks10?: number | null;
+    marks12?: number | null;
+    cgpaSemesters?: number[];
+    averageCgpa?: number | null;
+    createdAt?: Date;
+    updatedAt?: Date;
+  };
+  dashboard: StudentDashboardResponse;
+}
+
 // =====================================================
 // PLATFORM ADMIN DASHBOARD TYPES
 // =====================================================

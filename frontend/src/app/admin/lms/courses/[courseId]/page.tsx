@@ -283,6 +283,7 @@ export default function CourseDetailsPage() {
                                 </Link>
                             </Button>
                         </CardContent>
+           
                     </Card>
 
                     {course.thumbnailUrl && (
