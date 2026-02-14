@@ -928,10 +928,18 @@ class LmsService {
       include: {
         topics: { where: { isActive: true } },
         course: { select: { id: true } },
+        moduleTest: true,
       },
     });
 
     if (!module) return;
+
+    // Get current module progress to check test status
+    const currentProgress = await prisma.lmsModuleProgress.findUnique({
+      where: {
+        userId_moduleId: { userId, moduleId },
+      },
+    });
 
     // Count completed topics
     const completedTopics = await prisma.lmsTopicProgress.count({
@@ -942,19 +950,67 @@ class LmsService {
       },
     });
 
-    const progressPercent = (completedTopics / module.topics.length) * 100;
+    const totalTopics = module.topics.length;
+    const progressPercent = totalTopics > 0 ? (completedTopics / totalTopics) * 100 : 100;
+    const allTopicsCompleted = completedTopics >= totalTopics;
+
+    // Check if module has an active test
+    const hasActiveTest = !!module.moduleTest && module.moduleTest.isActive;
+
+    // Determine new status
+    let newStatus: LmsModuleStatus = LmsModuleStatus.IN_PROGRESS;
+    if (allTopicsCompleted) {
+      if (!hasActiveTest || currentProgress?.testPassed) {
+        newStatus = LmsModuleStatus.COMPLETED;
+      } else {
+        newStatus = LmsModuleStatus.IN_PROGRESS; // Waiting for test
+      }
+    } else if (completedTopics === 0 && (currentProgress?.status === LmsModuleStatus.AVAILABLE || !currentProgress)) {
+      newStatus = LmsModuleStatus.AVAILABLE;
+    }
 
     // Update module progress
-    await prisma.lmsModuleProgress.update({
+    const updatedProgress = await prisma.lmsModuleProgress.update({
       where: {
         userId_moduleId: { userId, moduleId },
       },
       data: {
         completedTopics,
         progressPercent,
-        status: completedTopics === module.topics.length ? LmsModuleStatus.COMPLETED : LmsModuleStatus.IN_PROGRESS,
+        status: newStatus,
+        completedAt: newStatus === LmsModuleStatus.COMPLETED && !currentProgress?.completedAt ? new Date() : undefined,
       },
     });
+
+    // If module just became COMPLETED, unlock the next module
+    if (newStatus === LmsModuleStatus.COMPLETED) {
+      const nextModule = await prisma.lmsModule.findFirst({
+        where: {
+          courseId: module.course.id,
+          order: module.order + 1,
+          isActive: true,
+        },
+      });
+
+      if (nextModule) {
+        await prisma.lmsModuleProgress.upsert({
+          where: {
+            userId_moduleId: { userId, moduleId: nextModule.id },
+          },
+          create: {
+            userId,
+            moduleId: nextModule.id,
+            status: LmsModuleStatus.AVAILABLE,
+            totalTopics: nextModule.totalTopics,
+            completedTopics: 0,
+            progressPercent: 0,
+          },
+          update: {
+            status: LmsModuleStatus.AVAILABLE,
+          },
+        });
+      }
+    }
 
     // Update enrollment progress
     await this.updateEnrollmentProgress(userId, module.course.id);

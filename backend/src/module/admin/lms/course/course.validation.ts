@@ -28,6 +28,11 @@ const nestedTopicSchema = z.object({
     videoDuration: z.number().int().optional().nullable(),
     estimatedMinutes: z.number().int().default(10),
     isActive: z.boolean().default(true),
+    resources: z.array(z.object({
+        name: z.string().min(1),
+        url: z.string().url(),
+        type: z.enum(['pdf', 'link', 'file']),
+    })).optional().default([]),
 });
 
 const nestedModuleTestSchema = z.object({

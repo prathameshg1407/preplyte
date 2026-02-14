@@ -172,39 +172,6 @@ export default function LmsAdminPage() {
                     return <div key={stat.title}>{CardComponent}</div>;
                 })}
             </div>
-
-            {/* Top Courses */}
-            {analytics?.topCourses && analytics.topCourses.length > 0 && (
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Top Performing Courses</CardTitle>
-                        <CardDescription>Your most popular courses by enrollment</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="space-y-4">
-                            {analytics.topCourses.map((course) => (
-                                <div
-                                    key={course.id}
-                                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50 transition-colors"
-                                >
-                                    <div className="flex-1">
-                                        <h3 className="font-semibold">{course.title}</h3>
-                                        <div className="flex gap-4 text-sm text-muted-foreground mt-1">
-                                            <span>{course.enrollments} enrollments</span>
-                                            <span>${course.revenue.toFixed(2)} revenue</span>
-                                            <span>{course.averageProgress.toFixed(1)}% avg progress</span>
-                                        </div>
-                                    </div>
-                                    <Button variant="outline" size="sm" asChild>
-                                        <Link href={`/admin/lms/courses/${course.id}`}>View</Link>
-                                    </Button>
-                                </div>
-                            ))}
-                        </div>
-                    </CardContent>
-                </Card>
-            )}
-
             {/* Quick Actions */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <Card className="hover:shadow-lg transition-shadow">
@@ -243,6 +210,40 @@ export default function LmsAdminPage() {
                     </CardContent>
                 </Card>
             </div>
+
+            {/* Top Courses */}
+            {analytics?.topCourses && analytics.topCourses.length > 0 && (
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Top Performing Courses</CardTitle>
+                        <CardDescription>Your most popular courses by enrollment</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="space-y-4">
+                            {analytics.topCourses.map((course) => (
+                                <div
+                                    key={course.id}
+                                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50 transition-colors"
+                                >
+                                    <div className="flex-1">
+                                        <h3 className="font-semibold">{course.title}</h3>
+                                        <div className="flex gap-4 text-sm text-muted-foreground mt-1">
+                                            <span>{course.enrollments} enrollments</span>
+                                            <span>${course.revenue.toFixed(2)} revenue</span>
+                                            <span>{course.averageProgress.toFixed(1)}% avg progress</span>
+                                        </div>
+                                    </div>
+                                    <Button variant="outline" size="sm" asChild>
+                                        <Link href={`/admin/lms/courses/${course.id}`}>View</Link>
+                                    </Button>
+                                </div>
+                            ))}
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
+
+            
         </div>
     );
 }

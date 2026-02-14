@@ -31,7 +31,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { useLmsCategories } from '@/lib/hooks/admin/use-lms-admin';
 import { DifficultyLevel, LmsCourseStatus } from '@/types/lms.types';
 import { CreateCourseDto } from '@/types/lms-admin.types';
-import { Loader2, Plus, Trash2, GripVertical, FileText, Video, HelpCircle, Layout, Settings } from 'lucide-react';
+import { Loader2, Plus, Trash2, GripVertical, FileText, Video, HelpCircle, Layout, Settings, Link2 } from 'lucide-react';
 import { LocalTestQuestionsManager } from './local-test-questions-manager';
 
 const topicSchema = z.object({
@@ -42,6 +42,13 @@ const topicSchema = z.object({
     videoUrl: z.string().url().nullable().optional().or(z.literal('')),
     estimatedMinutes: z.coerce.number().min(0).default(10),
     order: z.number().default(0),
+    videoDuration: z.coerce.number().min(0).optional(),
+    isActive: z.boolean().default(true),
+    resources: z.array(z.object({
+        name: z.string().min(1, 'Resource name is required'),
+        url: z.string().url('Invalid URL'),
+        type: z.enum(['pdf', 'link', 'file']),
+    })).optional().default([]),
 });
 
 const questionOptionSchema = z.object({
@@ -79,6 +86,7 @@ const moduleSchema = z.object({
     points: z.coerce.number().min(0).default(0),
     estimatedMinutes: z.coerce.number().min(0).default(0),
     order: z.number().default(0),
+    isActive: z.boolean().default(true),
     topics: z.array(topicSchema).default([]),
     moduleTest: moduleTestSchema.nullable().optional(),
 });
@@ -651,6 +659,7 @@ export function CourseForm({ initialData, onSubmit, isLoading }: CourseFormProps
                                         points: 0,
                                         estimatedMinutes: 0,
                                         order: moduleFields.length + 1,
+                                        isActive: true,
                                         topics: []
                                     })}
                                 >
@@ -719,6 +728,33 @@ export function CourseForm({ initialData, onSubmit, isLoading }: CourseFormProps
                                                             )}
                                                         />
                                                     </div>
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                        <FormField
+                                                            control={form.control}
+                                                            name={`modules.${moduleIndex}.estimatedMinutes`}
+                                                            render={({ field }) => (
+                                                                <FormItem>
+                                                                    <FormLabel className="text-xs">Estimated Minutes</FormLabel>
+                                                                    <FormControl>
+                                                                        <Input type="number" {...field} value={field.value ?? 0} className="h-8 text-sm" />
+                                                                    </FormControl>
+                                                                    <FormMessage />
+                                                                </FormItem>
+                                                            )}
+                                                        />
+                                                        <FormField
+                                                            control={form.control}
+                                                            name={`modules.${moduleIndex}.isActive`}
+                                                            render={({ field }) => (
+                                                                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-2 h-10 mt-5">
+                                                                    <FormLabel className="text-xs">Active Module</FormLabel>
+                                                                    <FormControl>
+                                                                        <Switch checked={field.value} onCheckedChange={field.onChange} className="scale-75" />
+                                                                    </FormControl>
+                                                                </FormItem>
+                                                            )}
+                                                        />
+                                                    </div>
                                                     <FormField
                                                         control={form.control}
                                                         name={`modules.${moduleIndex}.shortDescription`}
@@ -727,6 +763,20 @@ export function CourseForm({ initialData, onSubmit, isLoading }: CourseFormProps
                                                                 <FormLabel className="text-xs">Short Description</FormLabel>
                                                                 <FormControl>
                                                                     <Textarea placeholder="What will they learn?" {...field} value={field.value ?? ''} className="min-h-[60px] text-sm resize-none" />
+                                                                </FormControl>
+                                                                <FormMessage />
+                                                            </FormItem>
+                                                        )}
+                                                    />
+
+                                                    <FormField
+                                                        control={form.control}
+                                                        name={`modules.${moduleIndex}.description`}
+                                                        render={({ field }) => (
+                                                            <FormItem>
+                                                                <FormLabel className="text-xs">Detailed Description (Optional)</FormLabel>
+                                                                <FormControl>
+                                                                    <Textarea placeholder="Full details about this module..." {...field} value={field.value ?? ''} className="min-h-[100px] text-sm" />
                                                                 </FormControl>
                                                                 <FormMessage />
                                                             </FormItem>
@@ -814,7 +864,7 @@ export function CourseForm({ initialData, onSubmit, isLoading }: CourseFormProps
                                                                     const currentTopics = form.getValues(`modules.${moduleIndex}.topics`) || [];
                                                                     form.setValue(`modules.${moduleIndex}.topics`, [
                                                                         ...currentTopics,
-                                                                        { title: '', theoryContent: '', order: currentTopics.length + 1, estimatedMinutes: 10 }
+                                                                        { title: '', theoryContent: '', order: currentTopics.length + 1, estimatedMinutes: 10, isActive: true, resources: [] }
                                                                     ]);
                                                                 }}
                                                             >
@@ -853,12 +903,12 @@ export function CourseForm({ initialData, onSubmit, isLoading }: CourseFormProps
                                                                         )}
                                                                     />
 
-                                                                    <div className="grid grid-cols-2 gap-3">
+                                                                    <div className="grid grid-cols-3 gap-3">
                                                                         <FormField
                                                                             control={form.control}
                                                                             name={`modules.${moduleIndex}.topics.${topicIndex}.videoUrl`}
                                                                             render={({ field }) => (
-                                                                                <FormItem className="space-y-1">
+                                                                                <FormItem className="space-y-1 col-span-1">
                                                                                     <FormLabel className="text-[10px] text-muted-foreground flex items-center gap-1">
                                                                                         <Video className="h-2 w-2" />
                                                                                         Video URL
@@ -871,12 +921,38 @@ export function CourseForm({ initialData, onSubmit, isLoading }: CourseFormProps
                                                                         />
                                                                         <FormField
                                                                             control={form.control}
+                                                                            name={`modules.${moduleIndex}.topics.${topicIndex}.videoDuration`}
+                                                                            render={({ field }) => (
+                                                                                <FormItem className="space-y-1 col-span-1">
+                                                                                    <FormLabel className="text-[10px] text-muted-foreground">Video Secs</FormLabel>
+                                                                                    <FormControl>
+                                                                                        <Input type="number" {...field} value={field.value ?? 0} className="h-7 text-xs bg-card" />
+                                                                                    </FormControl>
+                                                                                </FormItem>
+                                                                            )}
+                                                                        />
+                                                                        <FormField
+                                                                            control={form.control}
                                                                             name={`modules.${moduleIndex}.topics.${topicIndex}.estimatedMinutes`}
                                                                             render={({ field }) => (
-                                                                                <FormItem className="space-y-1">
-                                                                                    <FormLabel className="text-[10px] text-muted-foreground">Duration (Min)</FormLabel>
+                                                                                <FormItem className="space-y-1 col-span-1">
+                                                                                    <FormLabel className="text-[10px] text-muted-foreground">Total Min</FormLabel>
                                                                                     <FormControl>
                                                                                         <Input type="number" {...field} value={field.value ?? 10} className="h-7 text-xs bg-card" />
+                                                                                    </FormControl>
+                                                                                </FormItem>
+                                                                            )}
+                                                                        />
+                                                                    </div>
+                                                                    <div className="flex justify-start">
+                                                                        <FormField
+                                                                            control={form.control}
+                                                                            name={`modules.${moduleIndex}.topics.${topicIndex}.isActive`}
+                                                                            render={({ field }) => (
+                                                                                <FormItem className="flex flex-row items-center justify-between rounded border p-1 h-7 bg-card w-[100px]">
+                                                                                    <FormLabel className="text-[10px] text-muted-foreground">Active</FormLabel>
+                                                                                    <FormControl>
+                                                                                        <Switch checked={field.value} onCheckedChange={field.onChange} className="scale-[0.5]" />
                                                                                     </FormControl>
                                                                                 </FormItem>
                                                                             )}
@@ -896,6 +972,95 @@ export function CourseForm({ initialData, onSubmit, isLoading }: CourseFormProps
                                                                             </FormItem>
                                                                         )}
                                                                     />
+
+                                                                    {/* Topic Resources */}
+                                                                    <div className="space-y-2 pt-2 border-t border-dashed">
+                                                                        <div className="flex items-center justify-between">
+                                                                            <span className="text-[10px] font-bold text-muted-foreground uppercase flex items-center gap-1">
+                                                                                <Link2 className="h-2 w-2" />
+                                                                                Resources
+                                                                            </span>
+                                                                            <Button
+                                                                                type="button"
+                                                                                variant="outline"
+                                                                                size="sm"
+                                                                                className="h-5 text-[9px] px-2"
+                                                                                onClick={() => {
+                                                                                    const currentRes = form.getValues(`modules.${moduleIndex}.topics.${topicIndex}.resources`) || [];
+                                                                                    form.setValue(`modules.${moduleIndex}.topics.${topicIndex}.resources`, [
+                                                                                        ...currentRes,
+                                                                                        { name: '', url: '', type: 'link' }
+                                                                                    ]);
+                                                                                }}
+                                                                            >
+                                                                                <Plus className="h-2 w-2 mr-1" />
+                                                                                Add
+                                                                            </Button>
+                                                                        </div>
+
+                                                                        <div className="space-y-1">
+                                                                            {(form.watch(`modules.${moduleIndex}.topics.${topicIndex}.resources`) || []).map((_, resIndex) => (
+                                                                                <div key={resIndex} className="grid grid-cols-12 gap-1 items-center bg-card/50 p-1 rounded border border-dashed">
+                                                                                    <div className="col-span-4">
+                                                                                        <FormField
+                                                                                            control={form.control}
+                                                                                            name={`modules.${moduleIndex}.topics.${topicIndex}.resources.${resIndex}.name`}
+                                                                                            render={({ field }) => (
+                                                                                                <FormControl>
+                                                                                                    <Input placeholder="Name" {...field} value={field.value ?? ''} className="h-6 text-[9px] px-1" />
+                                                                                                </FormControl>
+                                                                                            )}
+                                                                                        />
+                                                                                    </div>
+                                                                                    <div className="col-span-4">
+                                                                                        <FormField
+                                                                                            control={form.control}
+                                                                                            name={`modules.${moduleIndex}.topics.${topicIndex}.resources.${resIndex}.url`}
+                                                                                            render={({ field }) => (
+                                                                                                <FormControl>
+                                                                                                    <Input placeholder="URL" {...field} value={field.value ?? ''} className="h-6 text-[9px] px-1" />
+                                                                                                </FormControl>
+                                                                                            )}
+                                                                                        />
+                                                                                    </div>
+                                                                                    <div className="col-span-3">
+                                                                                        <FormField
+                                                                                            control={form.control}
+                                                                                            name={`modules.${moduleIndex}.topics.${topicIndex}.resources.${resIndex}.type`}
+                                                                                            render={({ field }) => (
+                                                                                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                                                                    <FormControl>
+                                                                                                        <SelectTrigger className="h-6 text-[9px] px-1">
+                                                                                                            <SelectValue placeholder="Type" />
+                                                                                                        </SelectTrigger>
+                                                                                                    </FormControl>
+                                                                                                    <SelectContent>
+                                                                                                        <SelectItem value="link">Link</SelectItem>
+                                                                                                        <SelectItem value="pdf">PDF</SelectItem>
+                                                                                                        <SelectItem value="file">File</SelectItem>
+                                                                                                    </SelectContent>
+                                                                                                </Select>
+                                                                                            )}
+                                                                                        />
+                                                                                    </div>
+                                                                                    <div className="col-span-1 flex justify-center">
+                                                                                        <Button
+                                                                                            type="button"
+                                                                                            variant="ghost"
+                                                                                            size="icon"
+                                                                                            className="h-5 w-5 text-destructive"
+                                                                                            onClick={() => {
+                                                                                                const currentRes = form.getValues(`modules.${moduleIndex}.topics.${topicIndex}.resources`);
+                                                                                                form.setValue(`modules.${moduleIndex}.topics.${topicIndex}.resources`, currentRes.filter((__, i) => i !== resIndex));
+                                                                                            }}
+                                                                                        >
+                                                                                            <Trash2 className="h-2 w-2" />
+                                                                                        </Button>
+                                                                                    </div>
+                                                                                </div>
+                                                                            ))}
+                                                                        </div>
+                                                                    </div>
                                                                 </div>
                                                             ))}
                                                         </div>

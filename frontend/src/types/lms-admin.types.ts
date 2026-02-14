@@ -150,6 +150,11 @@ export interface NestedTopicDto {
     videoDuration?: number;
     estimatedMinutes?: number;
     isActive?: boolean;
+    resources?: Array<{
+        name: string;
+        url: string;
+        type: 'pdf' | 'link' | 'file';
+    }>;
 }
 
 export interface NestedOptionDto {

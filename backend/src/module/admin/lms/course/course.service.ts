@@ -56,7 +56,8 @@ export class CourseService {
                         videoUrl: t.videoUrl || null,
                         videoDuration: t.videoDuration || null,
                         estimatedMinutes: t.estimatedMinutes,
-                        isActive: t.isActive
+                        isActive: t.isActive,
+                        resources: t.resources || []
                     }))
                 } : undefined,
                 moduleTest: m.moduleTest ? {
@@ -662,7 +663,8 @@ export class CourseService {
                                 videoUrl: t.videoUrl || null,
                                 videoDuration: t.videoDuration || null,
                                 estimatedMinutes: t.estimatedMinutes,
-                                isActive: t.isActive
+                                isActive: t.isActive,
+                                resources: t.resources || []
                             };
 
                             const existingTopic = (t as any).id ? existingTopics.find(et => et.id === (t as any).id) : null;
