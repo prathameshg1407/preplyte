@@ -80,18 +80,6 @@ export function ATSCheckDialog({ open, onOpenChange, resume }: ATSCheckDialogPro
     setCurrentStatus((prev) => (prev + 1) % statusMessages.length);
   };
 
-  // Test animation without API call
-  const testAnimation = () => {
-    setIsAnalyzing(true);
-    setTimeout(() => {
-      setIsAnalyzing(false);
-      toast({
-        title: 'Animation Test Complete',
-        description: 'The Lottie animation is working!',
-      });
-    }, 5000); // Show animation for 5 seconds
-  };
-
   const handleCheckATS = async () => {
     setIsAnalyzing(true);
     setAnalysisComplete(false);
@@ -205,15 +193,6 @@ export function ATSCheckDialog({ open, onOpenChange, resume }: ATSCheckDialogPro
           <DialogDescription>
             Analyze your resume for ATS compatibility and get actionable feedback
           </DialogDescription>
-          {/* Test Animation Button */}
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={testAnimation}
-            className="mt-2"
-          >
-            🎬 Test Animation (No API Call)
-          </Button>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
