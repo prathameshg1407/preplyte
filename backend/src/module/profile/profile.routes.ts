@@ -22,10 +22,13 @@ const resumeUpload = multer({
   },
   fileFilter: (_req, file, cb) => {
     const allowedTypes = ALLOWED_RESUME_MIME_TYPES as readonly string[];
-    if (allowedTypes.includes(file.mimetype)) {
+    // Allow images for profile picture too
+    const allowedImageTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    
+    if (allowedTypes.includes(file.mimetype) || allowedImageTypes.includes(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new Error('Invalid file type. Only PDF and Word documents are allowed.'));
+      cb(new Error('Invalid file type.'));
     }
   },
 });
@@ -52,6 +55,13 @@ router.get('/user', profileController.getUserProfile);
 
 // PATCH /profile/user - Update basic user profile
 router.patch('/user', profileController.updateUserProfile);
+
+// POST /profile/picture - Upload profile picture (NEW)
+router.post(
+    '/picture',
+    resumeUpload.single('file'), // Expecting field name 'file'
+    profileController.uploadProfilePicture
+);
 
 // =====================================================
 // DEPARTMENT ROUTES

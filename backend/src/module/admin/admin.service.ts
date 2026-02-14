@@ -314,7 +314,26 @@ class AdminService {
       include: instituteInclude,
     });
 
+    // We run this in the background (no await) so the admin doesn't wait
+    this.retroactiveLinkUsersToInstitute(inst.id, input.domain).catch(err => 
+      console.error('[AdminService] Failed to retroactively link users', err)
+    );
+
     return inst as InstituteWithStats;
+  }
+
+  // Helper function for Late Binding
+  private async retroactiveLinkUsersToInstitute(instituteId: string, domain: string) {
+    const result = await prisma.user.updateMany({
+      where: {
+        email: { endsWith: `@${domain}` },
+        instituteId: null // Only link users who aren't already linked
+      },
+      data: {
+        instituteId: instituteId
+      }
+    });
+    console.log(`[AdminService] Retroactively linked ${result.count} users to institute ${domain}`);
   }
 
   async updateInstitute(id: string, input: UpdateInstituteInput): Promise<InstituteWithStats> {

@@ -267,3 +267,30 @@ export interface PaginationParams {
   page?: number;
   limit?: number;
 }
+
+// ============ ATS Score Checker Types ============
+
+export interface ATSCheckRequest {
+  jobDescription?: string;
+}
+
+export interface ATSCheckResponse {
+  score: number;
+  strengths: string[];
+  weaknesses: string[];
+  suggestions: string[];
+  keywordAnalysis: {
+    found: string[];
+    missing: string[];
+  };
+  formatting: {
+    score: number;
+    issues: string[];
+  };
+  sections: {
+    name: string;
+    present: boolean;
+    quality: 'excellent' | 'good' | 'fair' | 'poor' | 'missing';
+  }[];
+  analyzedAt: string;
+}

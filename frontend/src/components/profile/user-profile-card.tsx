@@ -2,12 +2,12 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import {
   Pencil,
@@ -19,11 +19,15 @@ import {
   Calendar,
   Settings,
   Shield,
+  Camera,
 } from 'lucide-react';
 import { useProfile } from '@/lib/hooks/use-profile';
+import { useAuth } from '@/lib/hooks/use-auth';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
+import { profileService } from '@/lib/api/services/profile.service';
+import { useToast } from '@/components/ui/use-toast';
 
 const ROLE_COLORS: Record<string, string> = {
   STUDENT: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20',
@@ -32,10 +36,17 @@ const ROLE_COLORS: Record<string, string> = {
 };
 
 export function UserProfileCard() {
-  const { userProfile, updateUserProfile, isUpdating } = useProfile();
+  const { toast } = useToast();
+  
+  // updateUser allows us to manually update the Auth Store (Navbar)
+  const { refreshUser, updateUser } = useAuth(); 
+
+  const { userProfile, updateUserProfile, fetchUserProfile, isUpdating } = useProfile();
   const [isEditing, setIsEditing] = useState(false);
   const [name, setName] = useState(userProfile?.name || '');
   const [showSuccess, setShowSuccess] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSave = async () => {
     try {
@@ -43,6 +54,9 @@ export function UserProfileCard() {
       setIsEditing(false);
       setShowSuccess(true);
       setTimeout(() => setShowSuccess(false), 2000);
+      
+      // Update name in navbar immediately
+      updateUser({ name });
     } catch (error) {
       // Error handled by store
     }
@@ -56,6 +70,54 @@ export function UserProfileCard() {
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') handleSave();
     if (e.key === 'Escape') handleCancel();
+  };
+
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: 'Invalid file',
+        description: 'Please upload an image file',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      setIsUploading(true);
+      
+      // 1. Upload to backend and GET THE NEW URL
+      const newImageUrl = await profileService.uploadProfilePicture(file);
+      
+      // 2. Direct Update to Auth Store (Fixes Navbar instantly without reload)
+      updateUser({ profilePictureUrl: newImageUrl });
+
+      // 3. Refresh Profile Store (Updates Card Image)
+      await fetchUserProfile();
+
+      toast({
+        title: 'Success',
+        description: 'Profile picture updated',
+      });
+
+    } catch (error) {
+      console.error(error);
+      toast({
+        title: 'Upload failed',
+        description: 'Failed to upload profile picture',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsUploading(false);
+      // Reset input
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
   };
 
   if (!userProfile) {
@@ -73,9 +135,17 @@ export function UserProfileCard() {
 
   return (
     <Card className="overflow-hidden">
+      {/* Hidden File Input */}
+      <input 
+        type="file" 
+        ref={fileInputRef} 
+        className="hidden" 
+        accept="image/*" 
+        onChange={handleFileChange} 
+      />
+
       {/* Header Background */}
       <div className="relative h-24 bg-gradient-to-br from-primary/20 via-primary/10 to-transparent">
-        {/* Settings Button */}
         <Button
           variant="ghost"
           size="icon"
@@ -92,13 +162,30 @@ export function UserProfileCard() {
           <motion.div
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            className="relative"
+            className="relative group cursor-pointer"
+            onClick={handleAvatarClick}
           >
             <Avatar className="h-20 w-20 border-4 border-background shadow-lg">
+              {userProfile.profilePictureUrl ? (
+                <AvatarImage 
+                    src={userProfile.profilePictureUrl} 
+                    alt={userProfile.name || 'User'} 
+                    className="object-cover"
+                />
+              ) : null}
               <AvatarFallback className="bg-primary text-xl font-semibold text-primary-foreground">
                 {initials}
               </AvatarFallback>
             </Avatar>
+            
+            {/* Upload Overlay */}
+            <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
+              {isUploading ? (
+                <Loader2 className="h-6 w-6 text-white animate-spin" />
+              ) : (
+                <Camera className="h-6 w-6 text-white" />
+              )}
+            </div>
           </motion.div>
         </div>
       </div>
@@ -183,7 +270,6 @@ export function UserProfileCard() {
             )}
           </AnimatePresence>
 
-          {/* Role Badge */}
           <Badge
             variant="outline"
             className={cn('font-normal', ROLE_COLORS[userProfile.role] || ROLE_COLORS.STUDENT)}
@@ -205,17 +291,17 @@ export function UserProfileCard() {
             </div>
           </div>
 
-          {userProfile.instituteName && (
-            <div className="flex items-center gap-3 rounded-lg bg-muted/50 p-3 transition-colors hover:bg-muted">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-background">
-                <Building2 className="h-4 w-4 text-muted-foreground" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-xs text-muted-foreground">Institute</p>
-                <p className="truncate font-medium text-sm">{userProfile.instituteName}</p>
-              </div>
+          <div className="flex items-center gap-3 rounded-lg bg-muted/50 p-3 transition-colors hover:bg-muted">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-background">
+              <Building2 className="h-4 w-4 text-muted-foreground" />
             </div>
-          )}
+            <div className="min-w-0 flex-1">
+              <p className="text-xs text-muted-foreground">Institute</p>
+              <p className="truncate font-medium text-sm">
+                {userProfile.instituteName || "Individual User"}
+              </p>
+            </div>
+          </div>
 
           <div className="flex items-center gap-3 rounded-lg bg-muted/50 p-3 transition-colors hover:bg-muted">
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-background">
