@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { ResumeService } from './resume.service';
+import { ATSService } from './ats.service';
 import { 
   createResumeSchema, 
   updateResumeSchema, 
@@ -13,7 +14,11 @@ import { sendSuccess } from '../../utils/response';
 import { AppError } from '../../utils/errors';
 
 export class ResumeController {
-  constructor(private resumeService: ResumeService) {}
+  private atsService: ATSService;
+
+  constructor(private resumeService: ResumeService) {
+    this.atsService = new ATSService();
+  }
 
   // ============ Template Endpoints ============
 
@@ -235,6 +240,37 @@ export class ResumeController {
       const resume = await this.resumeService.importFromProfile(userId, resumeId);
       
       sendSuccess(res, resume, 'Profile data imported successfully');
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  // ============ ATS Score Checker Endpoints ============
+
+  checkATSScore = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const file = req.file;
+      const { jobRole, jobDescription } = req.body;
+
+      if (!file) {
+        throw new AppError('NO_FILE', 'Please upload a resume file', 400);
+      }
+
+      // Validate file
+      this.atsService.validateFile(file);
+
+      // Extract text from file
+      const resumeText = await this.atsService.extractText(file);
+
+      // Analyze resume
+      const analysis = await this.atsService.analyzeResume(resumeText, jobRole, jobDescription);
+
+      const response = {
+        ...analysis,
+        analyzedAt: new Date().toISOString(),
+      };
+
+      sendSuccess(res, response, 'Resume analyzed successfully');
     } catch (error) {
       next(error);
     }
