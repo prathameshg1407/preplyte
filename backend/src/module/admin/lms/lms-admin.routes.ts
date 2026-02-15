@@ -45,6 +45,7 @@ router.get('/courses', courseController.findAll);
 router.get('/courses/:id', courseController.findOne);
 router.patch('/courses/:id', validateBody(updateCourseSchema), courseController.update);
 router.delete('/courses/:id', courseController.delete);
+router.get('/courses/:id/enrollments', courseController.getEnrollments);
 
 // Modules
 router.post('/modules', validateBody(createModuleSchema), moduleController.create);

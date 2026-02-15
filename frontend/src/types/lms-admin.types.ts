@@ -24,7 +24,6 @@ export interface PaginatedResponse<T> {
 
 // Admin Course with additional fields
 export interface LmsCourseAdmin extends LmsCourse {
-    enrollmentCount?: number;
     moduleCount?: number;
     topicCount?: number;
     averageProgress?: number;
@@ -313,3 +312,28 @@ export interface CreateTestQuestionDto {
 }
 
 export interface UpdateTestQuestionDto extends Partial<CreateTestQuestionDto> { }
+
+export interface CourseEnrollmentAdmin {
+    id: string;
+    userId: string;
+    user: {
+        id: string;
+        name: string | null;
+        email: string;
+        image?: string;
+    };
+    status: 'IN_PROGRESS' | 'COMPLETED' | 'DROPPED' | 'EXPIRED';
+    progress: number;
+    enrolledAt: string;
+    completedAt?: string;
+    lastAccessedAt?: string;
+}
+
+export interface EnrollmentStatsAdmin {
+    total: number;
+    inProgress: number;
+    completed: number;
+    dropped: number;
+    averageProgress: number;
+    completionRate: number;
+}

@@ -112,6 +112,14 @@ export function useLmsCourseStats(courseId: string) {
     });
 }
 
+export function useCourseEnrollments(courseId: string) {
+    return useQuery({
+        queryKey: ['lms-admin', 'courses', courseId, 'enrollments'],
+        queryFn: () => lmsCourseAdminService.getEnrollments(courseId),
+        enabled: !!courseId,
+    });
+}
+
 export function useAddCourse() {
     const queryClient = useQueryClient();
     return useMutation({

@@ -22,6 +22,8 @@ import {
     UpdateTestQuestionDto,
     ModuleFilters,
     TopicFilters,
+    CourseEnrollmentAdmin,
+    EnrollmentStatsAdmin,
 } from '@/types/lms-admin.types';
 import {
     LmsCategory,
@@ -93,6 +95,14 @@ export const lmsCourseAdminService = {
 
     async getStats(id: string): Promise<any> {
         const response = await apiClient.get(`/api/admin/lms/courses/${id}/stats`);
+        return response.data.data || response.data;
+    },
+
+    async getEnrollments(id: string): Promise<{
+        enrollments: CourseEnrollmentAdmin[];
+        stats: EnrollmentStatsAdmin;
+    }> {
+        const response = await apiClient.get(`/api/admin/lms/courses/${id}/enrollments`);
         return response.data.data || response.data;
     },
 };

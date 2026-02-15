@@ -85,3 +85,27 @@ export interface CourseStats {
     averageRating: number;
     totalRevenue: number;
 }
+
+export interface CourseEnrollmentAdmin {
+    id: string;
+    userId: string;
+    user: {
+        id: string;
+        name: string | null;
+        email: string;
+    };
+    status: string;
+    progress: number;
+    enrolledAt: Date;
+    completedAt: Date | null;
+    lastAccessedAt: Date | null;
+}
+
+export interface EnrollmentStatsAdmin {
+    total: number;
+    inProgress: number;
+    completed: number;
+    dropped: number;
+    averageProgress: number;
+    completionRate: number;
+}

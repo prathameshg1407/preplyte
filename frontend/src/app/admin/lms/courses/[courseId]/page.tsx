@@ -1,13 +1,16 @@
 'use client';
 
 import { useParams } from 'next/navigation';
-import { useCourse, useModulesByCourse } from '@/lib/hooks/admin/use-lms-admin';
+import { useCourse, useModulesByCourse, useCourseEnrollments } from '@/lib/hooks/admin/use-lms-admin';
 import { LmsCourseStatus } from '@/types/lms.types';
+import type { CourseEnrollmentAdmin, EnrollmentStatsAdmin } from '@/types/lms-admin.types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import Link from 'next/link';
 import {
     Edit,
@@ -18,8 +21,12 @@ import {
     Settings,
     Video,
     HelpCircle,
-    Users
+    Users,
+    TrendingUp,
+    Award,
+    Clock
 } from 'lucide-react';
+import { formatDistanceToNow } from 'date-fns';
 
 export default function CourseDetailsPage() {
     const params = useParams();
@@ -27,6 +34,7 @@ export default function CourseDetailsPage() {
 
     const { data: course, isLoading: courseLoading } = useCourse(courseId);
     const { data: modules, isLoading: modulesLoading } = useModulesByCourse(courseId);
+    const { data: enrollmentData, isLoading: enrollmentsLoading } = useCourseEnrollments(courseId);
 
     if (courseLoading) {
         return (
@@ -55,6 +63,9 @@ export default function CourseDetailsPage() {
             </div>
         );
     }
+
+    const enrollments = enrollmentData?.enrollments || [];
+    const stats = enrollmentData?.stats;
 
     return (
         <div className="container mx-auto p-6 space-y-6">
@@ -97,9 +108,17 @@ export default function CourseDetailsPage() {
                 {/* Main Content Area */}
                 <div className="lg:col-span-2 space-y-6">
                     <Tabs defaultValue="modules" className="w-full">
-                        <TabsList className="grid w-full grid-cols-2">
+                        <TabsList className="grid w-full grid-cols-3">
                             <TabsTrigger value="modules">Curriculum / Modules</TabsTrigger>
                             <TabsTrigger value="details">Course Information</TabsTrigger>
+                            <TabsTrigger value="enrollments">
+                                Enrollments
+                                {stats && (
+                                    <Badge variant="secondary" className="ml-2">
+                                        {stats.total}
+                                    </Badge>
+                                )}
+                            </TabsTrigger>
                         </TabsList>
 
                         <TabsContent value="modules" className="mt-6">
@@ -257,10 +276,187 @@ export default function CourseDetailsPage() {
                                 </Card>
                             </div>
                         </TabsContent>
+
+                        <TabsContent value="enrollments" className="mt-6 space-y-6">
+                            {/* Enrollment Stats */}
+                            {enrollmentsLoading ? (
+                                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                    {[...Array(4)].map((_, i) => (
+                                        <Skeleton key={i} className="h-24" />
+                                    ))}
+                                </div>
+                            ) : stats ? (
+                                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                    <Card>
+                                        <CardContent className="pt-6">
+                                            <div className="flex items-center gap-3">
+                                                <div className="h-10 w-10 rounded-lg bg-blue-100 dark:bg-blue-950/30 flex items-center justify-center">
+                                                    <Users className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                                                </div>
+                                                <div>
+                                                    <p className="text-2xl font-bold">{stats.total}</p>
+                                                    <p className="text-xs text-muted-foreground">Total Enrolled</p>
+                                                </div>
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+
+                                    <Card>
+                                        <CardContent className="pt-6">
+                                            <div className="flex items-center gap-3">
+                                                <div className="h-10 w-10 rounded-lg bg-orange-100 dark:bg-orange-950/30 flex items-center justify-center">
+                                                    <TrendingUp className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+                                                </div>
+                                                <div>
+                                                    <p className="text-2xl font-bold">{stats.inProgress}</p>
+                                                    <p className="text-xs text-muted-foreground">In Progress</p>
+                                                </div>
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+
+                                    <Card>
+                                        <CardContent className="pt-6">
+                                            <div className="flex items-center gap-3">
+                                                <div className="h-10 w-10 rounded-lg bg-green-100 dark:bg-green-950/30 flex items-center justify-center">
+                                                    <Award className="h-5 w-5 text-green-600 dark:text-green-400" />
+                                                </div>
+                                                <div>
+                                                    <p className="text-2xl font-bold">{stats.completed}</p>
+                                                    <p className="text-xs text-muted-foreground">Completed</p>
+                                                </div>
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+
+                                    <Card>
+                                        <CardContent className="pt-6">
+                                            <div className="flex items-center gap-3">
+                                                <div className="h-10 w-10 rounded-lg bg-purple-100 dark:bg-purple-950/30 flex items-center justify-center">
+                                                    <TrendingUp className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                                                </div>
+                                                <div>
+                                                    <p className="text-2xl font-bold">{stats.averageProgress}%</p>
+                                                    <p className="text-xs text-muted-foreground">Avg Progress</p>
+                                                </div>
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                </div>
+                            ) : null}
+
+                            {/* Enrollments List */}
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Student Enrollments</CardTitle>
+                                    <CardDescription>
+                                        View and manage student progress in this course
+                                    </CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    {enrollmentsLoading ? (
+                                        <div className="space-y-4">
+                                            {[...Array(5)].map((_, i) => (
+                                                <Skeleton key={i} className="h-20 w-full" />
+                                            ))}
+                                        </div>
+                                    ) : enrollments.length === 0 ? (
+                                        <div className="text-center py-12 border-2 border-dashed rounded-lg">
+                                            <Users className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                                            <h3 className="text-lg font-medium">No enrollments yet</h3>
+                                            <p className="text-muted-foreground">
+                                                Students will appear here once they enroll in this course.
+                                            </p>
+                                        </div>
+                                    ) : (
+                                        <ScrollArea className="h-[500px] pr-4">
+                                            <div className="space-y-4">
+                                                {enrollments.map((enrollment) => (
+                                                    <div
+                                                        key={enrollment.id}
+                                                        className="border rounded-lg p-4 hover:bg-accent/50 transition-colors"
+                                                    >
+                                                        <div className="flex items-start justify-between gap-4">
+                                                            <div className="flex items-center gap-3 flex-1">
+                                                                <Avatar>
+                                                                    <AvatarImage src={enrollment.user.image} />
+                                                                    <AvatarFallback>
+                                                                        {enrollment.user.name
+                                                                            ? enrollment.user.name
+                                                                                .split(' ')
+                                                                                .map((n: string) => n[0])
+                                                                                .join('')
+                                                                                .toUpperCase()
+                                                                            : '?'}
+                                                                    </AvatarFallback>
+                                                                </Avatar>
+                                                                <div className="flex-1 min-w-0">
+                                                                    <p className="font-medium truncate">
+                                                                        {enrollment.user.name}
+                                                                    </p>
+                                                                    <p className="text-sm text-muted-foreground truncate">
+                                                                        {enrollment.user.email}
+                                                                    </p>
+                                                                    <div className="flex items-center gap-2 mt-1">
+                                                                        <Badge
+                                                                            variant={
+                                                                                enrollment.status === 'COMPLETED'
+                                                                                    ? 'default'
+                                                                                    : enrollment.status === 'IN_PROGRESS'
+                                                                                        ? 'secondary'
+                                                                                        : 'destructive'
+                                                                            }
+                                                                            className="text-xs"
+                                                                        >
+                                                                            {enrollment.status.replace('_', ' ')}
+                                                                        </Badge>
+                                                                        <span className="text-xs text-muted-foreground flex items-center gap-1">
+                                                                            <Clock className="h-3 w-3" />
+                                                                            Enrolled{' '}
+                                                                            {formatDistanceToNow(new Date(enrollment.enrolledAt), {
+                                                                                addSuffix: true,
+                                                                            })}
+                                                                        </span>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            <div className="text-right space-y-2">
+                                                                <div>
+                                                                    <p className="text-2xl font-bold">
+                                                                        {Math.round(enrollment.progress)}%
+                                                                    </p>
+                                                                    <p className="text-xs text-muted-foreground">Progress</p>
+                                                                </div>
+                                                                {enrollment.completedAt && (
+                                                                    <p className="text-xs text-muted-foreground">
+                                                                        Completed{' '}
+                                                                        {formatDistanceToNow(new Date(enrollment.completedAt), {
+                                                                            addSuffix: true,
+                                                                        })}
+                                                                    </p>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                        <div className="mt-3">
+                                                            <div className="w-full bg-secondary rounded-full h-2">
+                                                                <div
+                                                                    className="bg-primary h-2 rounded-full transition-all"
+                                                                    style={{ width: `${enrollment.progress}%` }}
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </ScrollArea>
+                                    )}
+                                </CardContent>
+                            </Card>
+                        </TabsContent>
                     </Tabs>
                 </div>
 
-                {/* Sidebar Sidebar Area */}
+                {/* Sidebar Area */}
                 <div className="space-y-6">
                     <Card>
                         <CardHeader>
@@ -273,18 +469,61 @@ export default function CourseDetailsPage() {
                                     Course Final Test
                                 </Link>
                             </Button>
-                            <Button variant="outline" className="w-full justify-start" disabled>
+                            {/* <Button
+                                variant="outline"
+                                className="w-full justify-start"
+                                onClick={() => {
+                                    // Switch to enrollments tab
+                                    const enrollmentsTab = document.querySelector('[value="enrollments"]') as HTMLButtonElement;
+                                    enrollmentsTab?.click();
+                                }}
+                            >
                                 <Users className="mr-2 h-4 w-4" />
-                                Enrollments (Coming Soon)
-                            </Button>
+                                View Enrollments
+                                {stats && (
+                                    <Badge variant="secondary" className="ml-auto">
+                                        {stats.total}
+                                    </Badge>
+                                )}
+                            </Button> */}
                             <Button variant="link" className="w-full text-center" asChild>
                                 <Link href={`/preview/courses/${courseId}`}>
                                     View Public Preview
                                 </Link>
                             </Button>
                         </CardContent>
-           
                     </Card>
+
+                    {/* Enrollment Summary Card */}
+                    {stats && (
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="text-lg">Enrollment Summary</CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-3">
+                                <div className="flex justify-between items-center">
+                                    <span className="text-sm text-muted-foreground">Total Students</span>
+                                    <span className="font-bold">{stats.total}</span>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                    <span className="text-sm text-muted-foreground">Completion Rate</span>
+                                    <span className="font-bold text-green-600">
+                                        {stats.completionRate.toFixed(1)}%
+                                    </span>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                    <span className="text-sm text-muted-foreground">Avg Progress</span>
+                                    <span className="font-bold">{stats.averageProgress}%</span>
+                                </div>
+                                <div className="w-full bg-secondary rounded-full h-2 mt-2">
+                                    <div
+                                        className="bg-primary h-2 rounded-full transition-all"
+                                        style={{ width: `${stats.averageProgress}%` }}
+                                    />
+                                </div>
+                            </CardContent>
+                        </Card>
+                    )}
 
                     {course.thumbnailUrl && (
                         <Card>

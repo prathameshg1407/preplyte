@@ -31,6 +31,11 @@ export class CourseController {
         await courseService.delete(req.params.id);
         return sendNoContent(res);
     });
+
+    getEnrollments = asyncHandler(async (req: Request, res: Response) => {
+        const result = await courseService.getEnrollments(req.params.id);
+        return sendSuccess(res, result);
+    });
 }
 
 export const courseController = new CourseController();

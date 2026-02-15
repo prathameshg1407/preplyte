@@ -702,6 +702,52 @@ export class CourseService {
             where: { id },
         });
     }
+
+    async getEnrollments(courseId: string) {
+        const enrollments = await prisma.lmsEnrollment.findMany({
+            where: { courseId },
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        name: true,
+                        email: true
+                    }
+                }
+            },
+            orderBy: { enrolledAt: 'desc' }
+        });
+
+        const total = enrollments.length;
+        const inProgress = enrollments.filter(e => e.status === 'ACTIVE').length;
+        const completed = enrollments.filter(e => e.status === 'COMPLETED').length;
+        const dropped = enrollments.filter(e => e.status === 'DROPPED').length;
+
+        const totalProgress = enrollments.reduce((sum, e) => sum + e.progressPercent, 0);
+        const averageProgress = total > 0 ? Math.round(totalProgress / total) : 0;
+        const completionRate = total > 0 ? (completed / total) * 100 : 0;
+
+        return {
+            enrollments: enrollments.map(e => ({
+                id: e.id,
+                userId: e.userId,
+                user: e.user,
+                status: e.status === 'ACTIVE' ? 'IN_PROGRESS' : e.status,
+                progress: e.progressPercent,
+                enrolledAt: e.enrolledAt,
+                completedAt: e.completedAt,
+                lastAccessedAt: e.lastAccessedAt
+            })),
+            stats: {
+                total,
+                inProgress,
+                completed,
+                dropped,
+                averageProgress,
+                completionRate
+            }
+        };
+    }
 }
 
 export const courseService = new CourseService();
