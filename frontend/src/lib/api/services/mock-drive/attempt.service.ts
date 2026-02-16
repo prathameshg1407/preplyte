@@ -202,6 +202,19 @@ export const attemptService = {
   },
 
   /**
+   * Get audio for the current question
+   */
+  getInterviewAudioQuestion: async (
+    driveId: string,
+    moduleId: string
+  ): Promise<ModuleActionResponse> => {
+    const response = await apiClient.post(
+      API_ENDPOINTS.MOCK_DRIVES.INTERVIEW_AUDIO_QUESTION(driveId, moduleId)
+    );
+    return response.data.data;
+  },
+
+  /**
    * Get next interview question
    */
   getNextInterviewQuestion: async (
@@ -227,16 +240,5 @@ export const attemptService = {
     return response.data.data;
   },
 
-  /**
-   * Get audio version of current question
-   */
-  getInterviewAudioQuestion: async (
-    driveId: string,
-    moduleId: string
-  ): Promise<ModuleActionResponse> => {
-    const response = await apiClient.get(
-      API_ENDPOINTS.MOCK_DRIVES.INTERVIEW_AUDIO_QUESTION(driveId, moduleId)
-    );
-    return response.data.data;
-  },
+
 };

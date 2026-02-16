@@ -18,8 +18,10 @@ import {
   InterviewRespondPayload,
   InterviewSkipPayload,
 } from '@/types/mockdrive.types';
-import { useInterviewRespond, useInterviewSkip } from '@/lib/hooks/mock-drive/use-attempt';
+import { useInterviewRespond, useInterviewSkip, useGetInterviewAudioQuestion } from '@/lib/hooks/mock-drive/use-attempt';
 import { useAttemptStore } from '@/lib/store/mock-drive/attempt-store';
+import { useAudioRecorder } from '@/lib/hooks/use-audio-recorder';
+import { useAudioPlayer } from '@/lib/hooks/use-audio-player';
 
 interface InterviewModuleProps {
   driveId: string;
@@ -51,6 +53,28 @@ export const InterviewModule: FC<InterviewModuleProps> = ({
 
   const respondMutation = useInterviewRespond();
   const skipMutation = useInterviewSkip();
+
+  // Audio Hooks
+  const getAudioMutation = useGetInterviewAudioQuestion();
+  const audioChunks = useRef<ArrayBuffer[]>([]);
+
+  const {
+    isRecording,
+    startRecording,
+    stopRecording,
+    volume,
+  } = useAudioRecorder({
+    onAudioData: (data) => {
+      audioChunks.current.push(data);
+    },
+  });
+
+  const {
+    isPlaying: isAudioPlaying,
+    queueAudio,
+    playAccumulated,
+    stop: stopAudio,
+  } = useAudioPlayer();
 
   useEffect(() => {
     if (interviewData && !localData) {
@@ -132,8 +156,106 @@ export const InterviewModule: FC<InterviewModuleProps> = ({
     );
   };
 
+  // ============================================
+  // Audio Handling
+  // ============================================
+
+  const handleStartRecording = async () => {
+    audioChunks.current = [];
+    await startRecording();
+  };
+
+  const handleStopRecording = () => {
+    stopRecording();
+
+    // Small delay to ensure all chunks are captured
+    setTimeout(() => {
+      const chunks = audioChunks.current;
+      if (chunks.length === 0) return;
+
+      const totalLength = chunks.reduce((acc, chunk) => acc + chunk.byteLength, 0);
+      const result = new Uint8Array(totalLength);
+      let offset = 0;
+      for (const chunk of chunks) {
+        result.set(new Uint8Array(chunk), offset);
+        offset += chunk.byteLength;
+      }
+
+      const buffer = result.buffer;
+      const bytes = new Uint8Array(buffer);
+      let binary = '';
+      for (let i = 0; i < bytes.byteLength; i++) {
+        binary += String.fromCharCode(bytes[i]);
+      }
+      const base64Audio = window.btoa(binary);
+
+      const timeTaken = Math.floor((Date.now() - answerStartTime) / 1000);
+
+      const payload: InterviewRespondPayload = {
+        answer: '[AUDIO_RESPONSE]',
+        audioBuffer: base64Audio,
+        timeTaken,
+      };
+
+      respondMutation.mutate(
+        {
+          driveId,
+          moduleId,
+          payload,
+        },
+        {
+          onSuccess: (response) => {
+            if (response.updatedData) {
+              updateLocalModuleData(response.updatedData);
+            }
+            setAnswer('');
+          },
+        }
+      );
+    }, 200);
+  };
+
+  const handlePlayQuestion = () => {
+    getAudioMutation.mutate(
+      { driveId, moduleId },
+      {
+        onSuccess: (response) => {
+          if (response.updatedData && (response.updatedData as any).pendingTranscription) {
+            updateLocalModuleData(response.updatedData);
+          }
+        }
+      }
+    );
+  };
+
+  useEffect(() => {
+    const pending = localData?.pendingTranscription;
+    if (pending && pending.startsWith('AUDIO:')) {
+      const base64 = pending.substring(6);
+      try {
+        const binaryString = window.atob(base64);
+        const len = binaryString.length;
+        const bytes = new Uint8Array(len);
+        for (let i = 0; i < len; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+
+        queueAudio(bytes.buffer);
+        playAccumulated();
+
+        if (localData) {
+          const newData = { ...localData, pendingTranscription: undefined };
+          updateLocalModuleData(newData);
+        }
+
+      } catch (e) {
+        console.error("Failed to decode audio", e);
+      }
+    }
+  }, [localData?.pendingTranscription, queueAudio, playAccumulated, updateLocalModuleData, localData]);
+
   // Prevent accidental submission while AI is "thinking"
-  const isInteractionDisabled = respondMutation.isPending || skipMutation.isPending || isSubmitting;
+  const isInteractionDisabled = respondMutation.isPending || skipMutation.isPending || isSubmitting || isAudioPlaying;
 
   return (
     <div className="max-w-4xl mx-auto space-y-4">

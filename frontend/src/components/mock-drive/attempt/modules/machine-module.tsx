@@ -16,14 +16,17 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
+import ReactMarkdown from 'react-markdown';
+import Editor from '@monaco-editor/react';
 import {
   MachineModuleConfig,
   MachineModuleData,
   ModuleConfig,
   ModuleData,
   MachineSubmitPayload,
+  MachineRunPayload,
 } from '@/types/mockdrive.types';
-import { useMachineSubmit } from '@/lib/hooks/mock-drive/use-attempt';
+import { useMachineSubmit, useMachineRun } from '@/lib/hooks/mock-drive/use-attempt';
 import { useAttemptStore } from '@/lib/store/mock-drive/attempt-store';
 
 interface MachineModuleProps {
@@ -57,11 +60,13 @@ export const MachineModule: FC<MachineModuleProps> = ({
   const [code, setCode] = useState('');
   const [languageId, setLanguageId] = useState(71);
   const [activeTab, setActiveTab] = useState('description');
+  const [runResult, setRunResult] = useState<any>(null); // Type this properly later if needed
 
   const { localModuleData, updateLocalModuleData } = useAttemptStore();
   const localData = localModuleData as MachineModuleData | null;
 
   const submitCodeMutation = useMachineSubmit();
+  const runCodeMutation = useMachineRun();
 
   useEffect(() => {
     if (machineData && !localData) {
@@ -79,10 +84,39 @@ export const MachineModule: FC<MachineModuleProps> = ({
         setCode(lastSubmission.code);
         setLanguageId(lastSubmission.languageId);
       } else {
-        setCode('# Write your code here\n');
+        setCode(currentQuestion.defaultCode || '// Write your code here\n');
       }
     }
   }, [currentQuestion]);
+
+  const handleRunCode = () => {
+    if (!currentQuestion) return;
+
+    setActiveTab('output');
+    setRunResult(null);
+
+    const payload: MachineRunPayload = {
+      questionId: currentQuestion.questionId,
+      code,
+      languageId,
+    };
+
+    runCodeMutation.mutate(
+      {
+        driveId,
+        moduleId,
+        payload,
+      },
+      {
+        onSuccess: (response) => {
+          const data = response.updatedData as Partial<MachineModuleData>;
+          if (data?._runResult) {
+            setRunResult(data._runResult);
+          }
+        },
+      }
+    );
+  };
 
   const handleSubmitCode = () => {
     if (!currentQuestion) return;
@@ -103,6 +137,7 @@ export const MachineModule: FC<MachineModuleProps> = ({
         onSuccess: (response) => {
           if (response.updatedData) {
             updateLocalModuleData(response.updatedData);
+            setActiveTab('submissions');
           }
         },
       }
@@ -158,25 +193,50 @@ export const MachineModule: FC<MachineModuleProps> = ({
             <Tabs value={activeTab} onValueChange={setActiveTab}>
               <TabsList>
                 <TabsTrigger value="description">Description</TabsTrigger>
+                <TabsTrigger value="output">Output</TabsTrigger>
                 <TabsTrigger value="submissions">
                   Submissions ({currentQuestion.submissions.length})
                 </TabsTrigger>
               </TabsList>
 
               <TabsContent value="description" className="space-y-4 mt-4">
-                <div>
-                  <h3 className="font-medium mb-2">Problem Statement</h3>
-                  <p className="text-muted-foreground">
-                    Sample problem description for question {currentQuestion.machineQuestionId}.
-                  </p>
+                <div className="prose dark:prose-invert max-w-none">
+                  <h3 className="font-medium mb-2">{currentQuestion.title}</h3>
+                  <ReactMarkdown>{currentQuestion.description}</ReactMarkdown>
                 </div>
-                <div>
-                  <h3 className="font-medium mb-2">Example</h3>
-                  <div className="bg-muted p-4 rounded-lg font-mono text-sm">
-                    <p>Input: [1, 2, 3]</p>
-                    <p>Output: 6</p>
+              </TabsContent>
+
+              <TabsContent value="output" className="space-y-4 mt-4">
+                {runCodeMutation.isPending ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground mr-2" />
+                    <span className="text-muted-foreground">Running code...</span>
                   </div>
-                </div>
+                ) : runResult ? (
+                  <div className="space-y-4">
+                    <div>
+                      <h4 className="font-medium mb-1">Standard Output</h4>
+                      <pre className="bg-muted p-3 rounded-md overflow-x-auto text-sm disabled:cursor-not-allowed">
+                        {runResult.stdout || <span className="text-muted-foreground italic">No output</span>}
+                      </pre>
+                    </div>
+                    {runResult.stderr && (
+                      <div>
+                        <h4 className="font-medium mb-1 text-red-500">Error Output</h4>
+                        <pre className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 p-3 rounded-md overflow-x-auto text-sm">
+                          {runResult.stderr}
+                        </pre>
+                      </div>
+                    )}
+                    <div className="text-xs text-muted-foreground">
+                      Execution Time: {runResult.executionTime}s
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center text-muted-foreground py-8">
+                    Run your code to see output here
+                  </div>
+                )}
               </TabsContent>
 
               <TabsContent value="submissions" className="mt-4">
@@ -220,8 +280,8 @@ export const MachineModule: FC<MachineModuleProps> = ({
 
       {/* Right Panel - Code Editor */}
       <div className="flex flex-col gap-4">
-        <Card className="flex-1 overflow-hidden">
-          <CardHeader className="pb-2">
+        <Card className="flex-1 overflow-hidden flex flex-col">
+          <CardHeader className="pb-2 flex-none">
             <div className="flex items-center justify-between">
               <Select value={languageId.toString()} onValueChange={(v) => setLanguageId(parseInt(v))}>
                 <SelectTrigger className="w-[180px]">
@@ -239,14 +299,23 @@ export const MachineModule: FC<MachineModuleProps> = ({
                 </SelectContent>
               </Select>
               <div className="flex gap-2">
-                <Button variant="outline" size="sm">
-                  <Play className="h-4 w-4 mr-1" />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleRunCode}
+                  disabled={runCodeMutation.isPending || isSubmitting}
+                >
+                  {runCodeMutation.isPending ? (
+                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                  ) : (
+                    <Play className="h-4 w-4 mr-1" />
+                  )}
                   Run
                 </Button>
                 <Button
                   size="sm"
                   onClick={handleSubmitCode}
-                  disabled={submitCodeMutation.isPending}
+                  disabled={submitCodeMutation.isPending || isSubmitting}
                 >
                   {submitCodeMutation.isPending ? (
                     <Loader2 className="h-4 w-4 mr-1 animate-spin" />
@@ -258,17 +327,24 @@ export const MachineModule: FC<MachineModuleProps> = ({
               </div>
             </div>
           </CardHeader>
-          <CardContent className="h-full pb-20">
-            <textarea
+          <CardContent className="h-full p-0 flex-1 relative min-h-[400px]">
+            <Editor
+              height="100%"
+              language={LANGUAGES.find(l => l.id === languageId)?.monacoId || 'javascript'}
               value={code}
-              onChange={(e) => setCode(e.target.value)}
-              className="w-full h-full font-mono text-sm p-4 bg-muted rounded-lg resize-none"
-              placeholder="Write your code here..."
+              onChange={(value) => setCode(value || '')}
+              theme="vs-dark"
+              options={{
+                minimap: { enabled: false },
+                fontSize: 14,
+                scrollBeyondLastLine: false,
+                padding: { top: 16, bottom: 16 },
+              }}
             />
           </CardContent>
         </Card>
 
-        {/* Question Navigator & Submit */}
+        {/* Question Navigator */}
         <div className="flex items-center justify-between">
           <div className="flex gap-2">
             {questions.map((q, idx) => (

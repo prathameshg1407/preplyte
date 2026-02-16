@@ -147,6 +147,7 @@ export class DiscoveryService {
       MockDriveStatus.REGISTRATION_OPEN,
       MockDriveStatus.REGISTRATION_CLOSED,
       MockDriveStatus.IN_PROGRESS,
+      MockDriveStatus.COMPLETED,
     ];
 
     // Build where clause
@@ -198,7 +199,7 @@ export class DiscoveryService {
         where,
         skip,
         take: limitNum,
-        orderBy: [{ driveStartDate: 'asc' }, { createdAt: 'desc' }],
+        orderBy: [{ driveStartDate: 'desc' }, { createdAt: 'desc' }],
         include: {
           institute: {
             select: { id: true, name: true },

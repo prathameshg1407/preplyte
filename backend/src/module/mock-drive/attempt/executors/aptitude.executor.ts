@@ -102,13 +102,18 @@ export class AptitudeModuleExecutor extends BaseModuleExecutor {
     const shuffledQuestions = this.shuffleWithSeed(moduleQuestions, context.attemptId);
 
     const questions: AptitudeQuestionAttempt[] = shuffledQuestions.map((mq, index) => {
-      if (!mq.aptitudeQuestionId) {
-        throw new InternalError(`Invalid question configuration for module question ${mq.id}`);
+      if (!mq.aptitudeQuestion) {
+        throw new InternalError(`Question data missing for module question ${mq.id}`);
       }
 
       return {
         questionId: mq.id,
-        aptitudeQuestionId: mq.aptitudeQuestionId,
+        aptitudeQuestionId: mq.aptitudeQuestionId!,
+        content: mq.aptitudeQuestion.questionText,
+        options: mq.aptitudeQuestion.options.map((opt) => ({
+          id: opt.id,
+          content: opt.text,
+        })),
         displayOrder: index,
         selectedOptionId: null,
         isCorrect: null,

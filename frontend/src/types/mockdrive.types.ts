@@ -354,9 +354,16 @@ export type ModuleConfig = AptitudeModuleConfig | MachineModuleConfig | AiInterv
 
 // Aptitude Module Data
 // ✅ FIXED: Merged with isMarkedForReview field
+export interface AptitudeQuestionOption {
+  id: string;
+  content: string;
+}
+
 export interface AptitudeQuestionAttempt {
   questionId: string;
   aptitudeQuestionId: string;
+  content: string;
+  options: AptitudeQuestionOption[];
   displayOrder: number;
   selectedOptionId: string | null;
   isCorrect: boolean | null;
@@ -401,6 +408,9 @@ export interface MachineSubmissionData {
 export interface MachineQuestionAttempt {
   questionId: string;
   machineQuestionId: string;
+  title: string;
+  description: string;
+  defaultCode: string;
   displayOrder: number;
   submissions: MachineSubmissionData[];
   bestSubmissionId: string | null;
@@ -491,6 +501,8 @@ export interface AiInterviewModuleData {
   conversation: ConversationMessage[];
   responses: InterviewResponseData[];
   summary?: InterviewModuleSummary;
+  isVoiceEnabled?: boolean;
+  pendingTranscription?: string;
 }
 
 export type ModuleData = AptitudeModuleData | MachineModuleData | AiInterviewModuleData;
@@ -532,6 +544,7 @@ export interface MachineRunPayload {
 export interface InterviewRespondPayload {
   answer: string;
   timeTaken?: number;
+  audioBuffer?: string;
 }
 
 export interface InterviewSkipPayload {

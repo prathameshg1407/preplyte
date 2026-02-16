@@ -231,6 +231,8 @@ export function useMachineRun() {
   });
 }
 
+
+
 export function useMachineSubmit() {
   const queryClient = useQueryClient();
 
@@ -297,7 +299,6 @@ export function useInterviewSkip() {
     }) => attemptService.skipInterviewQuestion(driveId, moduleId, payload),
     onSuccess: (data: ModuleActionResponse, { driveId }) => {
       queryClient.invalidateQueries({ queryKey: attemptKeys.state(driveId) });
-      toast.info('Question skipped');
     },
     onError: (error: any) => {
       const message = error.response?.data?.message || 'Failed to skip question';
@@ -305,6 +306,25 @@ export function useInterviewSkip() {
     },
   });
 }
+
+export function useGetInterviewAudioQuestion() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      driveId,
+      moduleId,
+    }: {
+      driveId: string;
+      moduleId: string;
+    }) => attemptService.getInterviewAudioQuestion(driveId, moduleId),
+    onError: (error: any) => {
+      const message = error.response?.data?.message || 'Failed to get audio question';
+      toast.error(message);
+    },
+  });
+}
+
 
 export function useInterviewNextQuestion() {
   const queryClient = useQueryClient();
