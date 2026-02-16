@@ -105,6 +105,17 @@ export const lmsCourseAdminService = {
         const response = await apiClient.get(`/api/admin/lms/courses/${id}/enrollments`);
         return response.data.data || response.data;
     },
+
+    async uploadResource(file: File): Promise<{ url: string; name: string; type: string }> {
+        const formData = new FormData();
+        formData.append('file', file);
+        const response = await apiClient.post('/api/admin/lms/courses/resources/upload', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        });
+        return response.data.data || response.data;
+    },
 };
 
 // ============================================

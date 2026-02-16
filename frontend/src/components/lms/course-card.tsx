@@ -90,27 +90,35 @@ export function CourseCard({ course }: CourseCardProps) {
 
         {/* Stats */}
         <div className="flex items-center gap-4 text-xs text-muted-foreground">
-          <div className="flex items-center gap-1">
-            <BookOpen className="h-3 w-3" />
-            <span>{course.totalModules} modules</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <Clock className="h-3 w-3" />
-            <span>{course.totalHours}h</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <Award className="h-3 w-3" />
-            <span>{course.totalPoints} pts</span>
-          </div>
+          {course.totalModules > 0 && (
+            <div className="flex items-center gap-1">
+              <BookOpen className="h-3 w-3" />
+              <span>{course.totalModules} modules</span>
+            </div>
+          )}
+          {course.totalHours > 0 && (
+            <div className="flex items-center gap-1">
+              <Clock className="h-3 w-3" />
+              <span>{course.totalHours}h</span>
+            </div>
+          )}
+          {course.totalPoints > 0 && (
+            <div className="flex items-center gap-1">
+              <Award className="h-3 w-3" />
+              <span>{course.totalPoints} pts</span>
+            </div>
+          )}
         </div>
 
         {/* NEW: Enrollment Count & Rating Row */}
         <div className="flex items-center gap-4 text-xs text-muted-foreground">
           {/* Enrollment Count */}
-          <div className="flex items-center gap-1">
-            <Users className="h-3 w-3" />
-            <span>{formatEnrollmentCount(course.enrollmentCount)} enrolled</span>
-          </div>
+          {course.enrollmentCount > 0 && (
+            <div className="flex items-center gap-1">
+              <Users className="h-3 w-3" />
+              <span>{formatEnrollmentCount(course.enrollmentCount)} enrolled</span>
+            </div>
+          )}
           {/* Rating */}
           {course.averageRating !== undefined && course.averageRating > 0 && (
             <div className="flex items-center gap-1">

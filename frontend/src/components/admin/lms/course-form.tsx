@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -31,8 +31,9 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { useLmsCategories } from '@/lib/hooks/admin/use-lms-admin';
 import { DifficultyLevel, LmsCourseStatus } from '@/types/lms.types';
 import { CreateCourseDto } from '@/types/lms-admin.types';
-import { Loader2, Plus, Trash2, GripVertical, FileText, Video, HelpCircle, Layout, Settings, Link2 } from 'lucide-react';
+import { Loader2, Plus, Trash2, GripVertical, FileText, Video, HelpCircle, Layout, Settings, Link2, Upload } from 'lucide-react';
 import { LocalTestQuestionsManager } from './local-test-questions-manager';
+import { lmsCourseAdminService } from '@/lib/api/services/lms-admin.service';
 
 const topicSchema = z.object({
     id: z.string().optional(),
@@ -46,7 +47,7 @@ const topicSchema = z.object({
     isActive: z.boolean().default(true),
     resources: z.array(z.object({
         name: z.string().min(1, 'Resource name is required'),
-        url: z.string().url('Invalid URL'),
+        url: z.string().url('Resource URL must be a valid URL (e.g. https://example.com)'),
         type: z.enum(['pdf', 'link', 'file']),
     })).optional().default([]),
 });
@@ -132,6 +133,7 @@ interface CourseFormProps {
 
 export function CourseForm({ initialData, onSubmit, isLoading }: CourseFormProps) {
     const { data: categoriesData, isLoading: categoriesLoading } = useLmsCategories();
+    const [uploadingResource, setUploadingResource] = useState<string | null>(null);
 
     const form = useForm<CourseFormValues>({
         resolver: zodResolver(courseSchema),
@@ -204,6 +206,39 @@ export function CourseForm({ initialData, onSubmit, isLoading }: CourseFormProps
         }
     }, [initialData, form]);
 
+    const handleResourceUpload = async (
+        file: File,
+        moduleIndex: number,
+        topicIndex: number,
+        resIndex: number
+    ) => {
+        const uploadId = `${moduleIndex}-${topicIndex}-${resIndex}`;
+        setUploadingResource(uploadId);
+        try {
+            const result = await lmsCourseAdminService.uploadResource(file);
+
+            form.setValue(`modules.${moduleIndex}.topics.${topicIndex}.resources.${resIndex}.url`, result.url);
+            // Only set name if empty
+            const currentName = form.getValues(`modules.${moduleIndex}.topics.${topicIndex}.resources.${resIndex}.name`);
+            if (!currentName) {
+                form.setValue(`modules.${moduleIndex}.topics.${topicIndex}.resources.${resIndex}.name`, result.name);
+            }
+
+            // Update type based on response or file extension
+            let finalType = 'file';
+            if (result.type === 'pdf' || file.type === 'application/pdf') finalType = 'pdf';
+
+            form.setValue(`modules.${moduleIndex}.topics.${topicIndex}.resources.${resIndex}.type`, finalType as any);
+
+            toast.success(`Uploaded ${result.name}`);
+        } catch (error) {
+            console.error(error);
+            toast.error('Upload failed');
+        } finally {
+            setUploadingResource(null);
+        }
+    };
+
     const handleFormSubmit = (values: CourseFormValues) => {
         // Transform tags back to array
         const tagsArray = values.tags ? values.tags.split(',').map(t => t.trim()).filter(Boolean) : [];
@@ -217,7 +252,14 @@ export function CourseForm({ initialData, onSubmit, isLoading }: CourseFormProps
         for (const key in obj) {
             if (typeof obj[key] === 'object') {
                 const nested = findFirstErrorMessage(obj[key]);
-                if (nested) return nested;
+                if (nested) {
+                    // Enrich error message with context if possible
+                    if (key === 'modules') return `In Modules: ${nested}`;
+                    if (key === 'topics') return `In Topics: ${nested}`;
+                    if (key === 'resources') return `In Resources: ${nested}`;
+                    if (!isNaN(Number(key))) return nested; // Skip array indices in message
+                    return nested;
+                }
             }
         }
 
@@ -230,7 +272,8 @@ export function CourseForm({ initialData, onSubmit, isLoading }: CourseFormProps
                 onSubmit={form.handleSubmit(
                     handleFormSubmit,
                     (err) => {
-                        console.error('Submit Errors:', err);
+                        console.error('Submit Errors:', JSON.stringify(err, null, 2));
+                        console.log('Form Values at Error:', form.getValues());
                         const firstError = findFirstErrorMessage(err);
                         toast.error(firstError ? `Validation Error: ${firstError}` : 'Please check all fields. Some required info is missing.');
                     }
@@ -999,66 +1042,127 @@ export function CourseForm({ initialData, onSubmit, isLoading }: CourseFormProps
                                                                         </div>
 
                                                                         <div className="space-y-1">
-                                                                            {(form.watch(`modules.${moduleIndex}.topics.${topicIndex}.resources`) || []).map((_, resIndex) => (
-                                                                                <div key={resIndex} className="grid grid-cols-12 gap-1 items-center bg-card/50 p-1 rounded border border-dashed">
-                                                                                    <div className="col-span-4">
-                                                                                        <FormField
-                                                                                            control={form.control}
-                                                                                            name={`modules.${moduleIndex}.topics.${topicIndex}.resources.${resIndex}.name`}
-                                                                                            render={({ field }) => (
-                                                                                                <FormControl>
-                                                                                                    <Input placeholder="Name" {...field} value={field.value ?? ''} className="h-6 text-[9px] px-1" />
-                                                                                                </FormControl>
-                                                                                            )}
-                                                                                        />
-                                                                                    </div>
-                                                                                    <div className="col-span-4">
-                                                                                        <FormField
-                                                                                            control={form.control}
-                                                                                            name={`modules.${moduleIndex}.topics.${topicIndex}.resources.${resIndex}.url`}
-                                                                                            render={({ field }) => (
-                                                                                                <FormControl>
-                                                                                                    <Input placeholder="URL" {...field} value={field.value ?? ''} className="h-6 text-[9px] px-1" />
-                                                                                                </FormControl>
-                                                                                            )}
-                                                                                        />
-                                                                                    </div>
-                                                                                    <div className="col-span-3">
-                                                                                        <FormField
-                                                                                            control={form.control}
-                                                                                            name={`modules.${moduleIndex}.topics.${topicIndex}.resources.${resIndex}.type`}
-                                                                                            render={({ field }) => (
-                                                                                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                                            {(form.watch(`modules.${moduleIndex}.topics.${topicIndex}.resources`) || []).map((resource, resIndex) => {
+                                                                                const type = form.watch(`modules.${moduleIndex}.topics.${topicIndex}.resources.${resIndex}.type`);
+                                                                                const url = form.watch(`modules.${moduleIndex}.topics.${topicIndex}.resources.${resIndex}.url`);
+                                                                                const isUploading = uploadingResource === `${moduleIndex}-${topicIndex}-${resIndex}`;
+
+                                                                                return (
+                                                                                    <div key={resIndex} className="grid grid-cols-12 gap-2 items-center bg-card/50 p-2 rounded border border-dashed">
+                                                                                        {/* Type Selection */}
+                                                                                        <div className="col-span-3">
+                                                                                            <FormField
+                                                                                                control={form.control}
+                                                                                                name={`modules.${moduleIndex}.topics.${topicIndex}.resources.${resIndex}.type`}
+                                                                                                render={({ field }) => (
+                                                                                                    <Select
+                                                                                                        onValueChange={(val) => {
+                                                                                                            field.onChange(val);
+                                                                                                            // Optional: clear url if switching to/from link to avoid confusion
+                                                                                                            if (val === 'link' && url && !url.startsWith('http')) {
+                                                                                                                form.setValue(`modules.${moduleIndex}.topics.${topicIndex}.resources.${resIndex}.url`, '');
+                                                                                                            }
+                                                                                                        }}
+                                                                                                        defaultValue={field.value}
+                                                                                                    >
+                                                                                                        <FormControl>
+                                                                                                            <SelectTrigger className="h-7 text-xs">
+                                                                                                                <SelectValue placeholder="Type" />
+                                                                                                            </SelectTrigger>
+                                                                                                        </FormControl>
+                                                                                                        <SelectContent>
+                                                                                                            <SelectItem value="link">Link</SelectItem>
+                                                                                                            <SelectItem value="pdf">PDF</SelectItem>
+                                                                                                            <SelectItem value="file">File</SelectItem>
+                                                                                                        </SelectContent>
+                                                                                                    </Select>
+                                                                                                )}
+                                                                                            />
+                                                                                        </div>
+
+                                                                                        {/* Name Input */}
+                                                                                        <div className="col-span-4">
+                                                                                            <FormField
+                                                                                                control={form.control}
+                                                                                                name={`modules.${moduleIndex}.topics.${topicIndex}.resources.${resIndex}.name`}
+                                                                                                render={({ field }) => (
                                                                                                     <FormControl>
-                                                                                                        <SelectTrigger className="h-6 text-[9px] px-1">
-                                                                                                            <SelectValue placeholder="Type" />
-                                                                                                        </SelectTrigger>
+                                                                                                        <Input placeholder="Name" {...field} value={field.value ?? ''} className="h-7 text-xs bg-background" />
                                                                                                     </FormControl>
-                                                                                                    <SelectContent>
-                                                                                                        <SelectItem value="link">Link</SelectItem>
-                                                                                                        <SelectItem value="pdf">PDF</SelectItem>
-                                                                                                        <SelectItem value="file">File</SelectItem>
-                                                                                                    </SelectContent>
-                                                                                                </Select>
+                                                                                                )}
+                                                                                            />
+                                                                                        </div>
+
+                                                                                        {/* Content Input (URL or File) */}
+                                                                                        <div className="col-span-4">
+                                                                                            {type === 'link' ? (
+                                                                                                <FormField
+                                                                                                    control={form.control}
+                                                                                                    name={`modules.${moduleIndex}.topics.${topicIndex}.resources.${resIndex}.url`}
+                                                                                                    render={({ field }) => (
+                                                                                                        <FormControl>
+                                                                                                            <Input placeholder="https://..." {...field} value={field.value ?? ''} className="h-7 text-xs bg-background" />
+                                                                                                        </FormControl>
+                                                                                                    )}
+                                                                                                />
+                                                                                            ) : (
+                                                                                                <div className="flex items-center gap-2">
+                                                                                                    {url ? (
+                                                                                                        <div className="flex-1 flex items-center justify-between bg-background border rounded px-2 h-7 text-xs">
+                                                                                                            <a href={url} target="_blank" rel="noopener noreferrer" className="truncate hover:underline text-primary max-w-[100px] block" title={url}>
+                                                                                                                View File
+                                                                                                            </a>
+                                                                                                            <Button
+                                                                                                                type="button"
+                                                                                                                variant="ghost"
+                                                                                                                size="icon"
+                                                                                                                className="h-5 w-5 text-muted-foreground hover:text-destructive"
+                                                                                                                onClick={() => form.setValue(`modules.${moduleIndex}.topics.${topicIndex}.resources.${resIndex}.url`, '')}
+                                                                                                            >
+                                                                                                                <span className="text-[10px]">✕</span>
+                                                                                                            </Button>
+                                                                                                        </div>
+                                                                                                    ) : (
+                                                                                                        <div className="flex-1 relative">
+                                                                                                            <Input
+                                                                                                                type="file"
+                                                                                                                accept={type === 'pdf' ? '.pdf' : '*'}
+                                                                                                                disabled={isUploading}
+                                                                                                                className="h-7 text-[10px] file:text-[10px] pr-8 bg-background file:bg-muted file:border-0 file:mr-2 file:cursor-pointer"
+                                                                                                                onChange={(e) => {
+                                                                                                                    const file = e.target.files?.[0];
+                                                                                                                    if (file) handleResourceUpload(file, moduleIndex, topicIndex, resIndex);
+                                                                                                                }}
+                                                                                                            />
+                                                                                                            {isUploading && (
+                                                                                                                <div className="absolute right-2 top-1.5 bg-background rounded-full p-0.5">
+                                                                                                                    <Loader2 className="h-3 w-3 animate-spin text-primary" />
+                                                                                                                </div>
+                                                                                                            )}
+                                                                                                        </div>
+                                                                                                    )}
+                                                                                                </div>
                                                                                             )}
-                                                                                        />
+                                                                                        </div>
+
+                                                                                        {/* Delete Button */}
+                                                                                        <div className="col-span-1 flex justify-center">
+                                                                                            <Button
+                                                                                                type="button"
+                                                                                                variant="ghost"
+                                                                                                size="icon"
+                                                                                                className="h-6 w-6 text-destructive hover:bg-destructive/10"
+                                                                                                onClick={() => {
+                                                                                                    const currentRes = form.getValues(`modules.${moduleIndex}.topics.${topicIndex}.resources`);
+                                                                                                    form.setValue(`modules.${moduleIndex}.topics.${topicIndex}.resources`, currentRes.filter((__, i) => i !== resIndex));
+                                                                                                }}
+                                                                                            >
+                                                                                                <Trash2 className="h-3 w-3" />
+                                                                                            </Button>
+                                                                                        </div>
                                                                                     </div>
-                                                                                    <div className="col-span-1 flex justify-center">
-                                                                                        <Button
-                                                                                            type="button"
-                                                                                            variant="ghost"
-                                                                                            size="icon"
-                                                                                            className="h-5 w-5 text-destructive"
-                                                                                            onClick={() => {
-                                                                                                const currentRes = form.getValues(`modules.${moduleIndex}.topics.${topicIndex}.resources`);
-                                                                                                form.setValue(`modules.${moduleIndex}.topics.${topicIndex}.resources`, currentRes.filter((__, i) => i !== resIndex));
-                                                                                            }}
-                                                                                        >
-                                                                                            <Trash2 className="h-2 w-2" />
-                                                                                        </Button>
-                                                                                    </div>
-                                                                                </div>
-                                                                            ))}
+                                                                                );
+                                                                            })}
                                                                         </div>
                                                                     </div>
                                                                 </div>

@@ -8,6 +8,7 @@ import { questionController } from './test/question.controller';
 import { analyticsController } from './analytics/analytics.controller';
 import { authenticate, authorize } from '../../../middleware/auth.middleware';
 import { validateBody } from '../../../middleware/validate.middleware';
+import { resumeUpload, resourceUpload } from '../../../middleware/upload.middleware';
 import { UserRole } from '@prisma/client';
 
 // Schemas
@@ -42,6 +43,8 @@ router.delete('/categories/:id', categoryController.delete);
 // Courses
 router.post('/courses', validateBody(createCourseSchema), courseController.create);
 router.get('/courses', courseController.findAll);
+// New route for resource upload
+router.post('/courses/resources/upload', resourceUpload, courseController.uploadResource);
 router.get('/courses/:id', courseController.findOne);
 router.patch('/courses/:id', validateBody(updateCourseSchema), courseController.update);
 router.delete('/courses/:id', courseController.delete);

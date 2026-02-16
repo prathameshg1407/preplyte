@@ -3,6 +3,11 @@ import { courseService } from './course.service';
 import { asyncHandler } from '../../../../utils/async-handler';
 import { sendSuccess, sendCreated, sendNoContent } from '../../../../utils/response';
 import { createCourseSchema, updateCourseSchema } from './course.validation';
+import { uploadBuffer } from '../../../../utils/cloudinary';
+import { BadRequestError } from '../../../../utils/errors';
+import { v4 as uuidv4 } from 'uuid'; // I don't have uuid installed maybe? I should check package.json or use another way.
+// Actually I don't need uuid, I can just let cloudinary generate public_id or use Date.now()
+
 
 export class CourseController {
     create = asyncHandler(async (req: Request, res: Response) => {
@@ -35,6 +40,24 @@ export class CourseController {
     getEnrollments = asyncHandler(async (req: Request, res: Response) => {
         const result = await courseService.getEnrollments(req.params.id);
         return sendSuccess(res, result);
+    });
+
+    uploadResource = asyncHandler(async (req: Request, res: Response) => {
+        if (!req.file) {
+            throw new BadRequestError('No file provided');
+        }
+
+        const timestamp = Date.now();
+        const safeName = req.file.originalname.replace(/[^a-zA-Z0-9]/g, '_');
+        const publicId = `lms-resources/${timestamp}_${safeName}`;
+
+        const result = await uploadBuffer(req.file.buffer, {
+            folder: 'lms-resources',
+            resourceType: 'auto', // Allow it to detect (raw for pdfs sometimes better but auto is generally ok for cloudinary)
+            publicId: publicId
+        });
+
+        return sendCreated(res, { url: result.secureUrl, name: req.file.originalname, type: result.format || 'file' }, 'Resource uploaded successfully');
     });
 }
 

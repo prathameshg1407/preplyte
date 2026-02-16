@@ -185,10 +185,10 @@ export default function ModulePage() {
                     <div
                       key={topic.id}
                       className={`flex items-center gap-4 p-4 rounded-lg border transition-all ${isCompleted
-                          ? "bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-900"
-                          : isAccessible
-                            ? "hover:bg-muted/50 cursor-pointer"
-                            : "opacity-60"
+                        ? "bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-900"
+                        : isAccessible
+                          ? "hover:bg-muted/50 cursor-pointer"
+                          : "opacity-60"
                         }`}
                     >
                       {/* Status Icon */}
@@ -225,10 +225,12 @@ export default function ModulePage() {
                               </span>
                             </div>
                           )}
-                          <div className="flex items-center gap-1">
-                            <Clock className="h-3 w-3" />
-                            <span>{topic.estimatedMinutes} min</span>
-                          </div>
+                          {topic.estimatedMinutes > 0 && (
+                            <div className="flex items-center gap-1">
+                              <Clock className="h-3 w-3" />
+                              <span>{topic.estimatedMinutes} min</span>
+                            </div>
+                          )}
                         </div>
 
                         {/* Topic Progress */}
@@ -285,10 +287,10 @@ export default function ModulePage() {
             >
               <Card
                 className={`${progress?.testPassed
-                    ? "border-green-200 dark:border-green-900 bg-green-50 dark:bg-green-950/20"
-                    : canTakeTest
-                      ? "border-primary"
-                      : ""
+                  ? "border-green-200 dark:border-green-900 bg-green-50 dark:bg-green-950/20"
+                  : canTakeTest
+                    ? "border-primary"
+                    : ""
                   }`}
               >
                 <CardHeader>
@@ -341,8 +343,8 @@ export default function ModulePage() {
                   {progress?.testAttempted && (
                     <div
                       className={`p-4 rounded-lg ${progress.testPassed
-                          ? "bg-green-100 dark:bg-green-900/30"
-                          : "bg-red-100 dark:bg-red-900/30"
+                        ? "bg-green-100 dark:bg-green-900/30"
+                        : "bg-red-100 dark:bg-red-900/30"
                         }`}
                     >
                       <div className="flex items-center justify-between">
@@ -461,21 +463,35 @@ export default function ModulePage() {
 
                   <div className="flex items-center justify-between text-sm">
                     <div className="flex items-center gap-2 text-muted-foreground">
-                      <Clock className="h-4 w-4" />
-                      <span>Time Required</span>
+                      <FileText className="h-4 w-4" />
+                      <span>Topics Completed</span>
                     </div>
                     <span className="font-medium">
-                      {module.estimatedMinutes} min
+                      {completedTopics} / {topics.length}
                     </span>
                   </div>
 
-                  <div className="flex items-center justify-between text-sm">
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <Award className="h-4 w-4" />
-                      <span>Points Available</span>
+                  {(module.estimatedMinutes > 0) && (
+                    <div className="flex items-center justify-between text-sm">
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <Clock className="h-4 w-4" />
+                        <span>Time Required</span>
+                      </div>
+                      <span className="font-medium">
+                        {module.estimatedMinutes} min
+                      </span>
                     </div>
-                    <span className="font-medium">{module.points} pts</span>
-                  </div>
+                  )}
+
+                  {(module.points > 0) && (
+                    <div className="flex items-center justify-between text-sm">
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <Award className="h-4 w-4" />
+                        <span>Points Available</span>
+                      </div>
+                      <span className="font-medium">{module.points} pts</span>
+                    </div>
+                  )}
 
                   {progress && (
                     <div className="flex items-center justify-between text-sm">

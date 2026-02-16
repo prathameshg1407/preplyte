@@ -170,18 +170,24 @@ export default function CourseDetailsPage() {
                   <span>By {course.instructor}</span>
                 </div>
               )}
-              <div className="flex items-center gap-1">
-                <BookOpen className="h-4 w-4" />
-                <span>{course.totalModules} Modules</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <Clock className="h-4 w-4" />
-                <span>{course.totalHours} Hours</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <Award className="h-4 w-4" />
-                <span>{course.totalPoints} Points</span>
-              </div>
+              {course.totalModules > 0 && (
+                <div className="flex items-center gap-1">
+                  <BookOpen className="h-4 w-4" />
+                  <span>{course.totalModules} Modules</span>
+                </div>
+              )}
+              {course.totalHours > 0 && (
+                <div className="flex items-center gap-1">
+                  <Clock className="h-4 w-4" />
+                  <span>{course.totalHours} Hours</span>
+                </div>
+              )}
+              {course.totalPoints > 0 && (
+                <div className="flex items-center gap-1">
+                  <Award className="h-4 w-4" />
+                  <span>{course.totalPoints} Points</span>
+                </div>
+              )}
               {/* NEW: Enrollment Count in Header */}
               <div className="flex items-center gap-1">
                 <Users className="h-4 w-4" />
@@ -495,10 +501,12 @@ export default function CourseDetailsPage() {
                 </div>
 
                 {/* NEW: Enrollment Count in Sidebar */}
-                <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-                  <Users className="h-4 w-4" />
-                  <span>{formatEnrollmentCount(course.enrollmentCount)} students enrolled</span>
-                </div>
+                {course.enrollmentCount > 0 && (
+                  <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                    <Users className="h-4 w-4" />
+                    <span>{formatEnrollmentCount(course.enrollmentCount)} students enrolled</span>
+                  </div>
+                )}
 
                 {/* Enrollment Progress */}
                 {enrollment && (
@@ -562,22 +570,30 @@ export default function CourseDetailsPage() {
                 <div className="space-y-3 pt-4">
                   <h4 className="font-medium">This course includes:</h4>
                   <ul className="space-y-2 text-sm text-muted-foreground">
-                    <li className="flex items-center gap-2">
-                      <Video className="h-4 w-4" />
-                      {course.totalHours} hours of video content
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <FileText className="h-4 w-4" />
-                      {course.totalTopics} detailed topics
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <Trophy className="h-4 w-4" />
-                      {course.totalModules} module tests + final exam
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <Award className="h-4 w-4" />
-                      {course.totalPoints} total points to earn
-                    </li>
+                    {course.totalHours > 0 && (
+                      <li className="flex items-center gap-2">
+                        <Video className="h-4 w-4" />
+                        {course.totalHours} hours of video content
+                      </li>
+                    )}
+                    {course.totalTopics > 0 && (
+                      <li className="flex items-center gap-2">
+                        <FileText className="h-4 w-4" />
+                        {course.totalTopics} detailed topics
+                      </li>
+                    )}
+                    {course.totalModules > 0 && (
+                      <li className="flex items-center gap-2">
+                        <Trophy className="h-4 w-4" />
+                        {course.totalModules} module tests {finalTest ? '+ final exam' : ''}
+                      </li>
+                    )}
+                    {course.totalPoints > 0 && (
+                      <li className="flex items-center gap-2">
+                        <Award className="h-4 w-4" />
+                        {course.totalPoints} total points to earn
+                      </li>
+                    )}
                     {course.certificateEnabled && (
                       <li className="flex items-center gap-2">
                         <CheckCircle className="h-4 w-4" />

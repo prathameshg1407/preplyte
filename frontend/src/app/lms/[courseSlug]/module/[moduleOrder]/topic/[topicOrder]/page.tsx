@@ -214,10 +214,12 @@ export default function TopicPage() {
 
           {/* Topic Meta */}
           <div className="flex items-center gap-4 mt-4 text-sm text-muted-foreground">
-            <div className="flex items-center gap-1">
-              <Clock className="h-4 w-4" />
-              <span>{topic.estimatedMinutes} min read</span>
-            </div>
+            {topic.estimatedMinutes > 0 && (
+              <div className="flex items-center gap-1">
+                <Clock className="h-4 w-4" />
+                <span>{topic.estimatedMinutes} min read</span>
+              </div>
+            )}
             {topic.videoUrl && topic.videoDuration && (
               <div className="flex items-center gap-1">
                 <Video className="h-4 w-4" />
@@ -263,50 +265,50 @@ export default function TopicPage() {
           </Card>
         </motion.div>
 
-        {/* Content Tabs */}
+        {/* Content Tabs or Single Content */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
         >
-          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'theory' | 'video')}>
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="theory" className="gap-2">
-                <FileText className="h-4 w-4" />
-                Theory
-                {theoryCompleted && <CheckCircle className="h-4 w-4 text-green-600" />}
-              </TabsTrigger>
-              <TabsTrigger value="video" className="gap-2">
-                <Video className="h-4 w-4" />
-                Video
-                {videoWatched && <CheckCircle className="h-4 w-4 text-green-600" />}
-              </TabsTrigger>
-            </TabsList>
+          {topic.videoUrl ? (
+            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'theory' | 'video')}>
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="theory" className="gap-2">
+                  <FileText className="h-4 w-4" />
+                  Theory
+                  {theoryCompleted && <CheckCircle className="h-4 w-4 text-green-600" />}
+                </TabsTrigger>
+                <TabsTrigger value="video" className="gap-2">
+                  <Video className="h-4 w-4" />
+                  Video
+                  {videoWatched && <CheckCircle className="h-4 w-4 text-green-600" />}
+                </TabsTrigger>
+              </TabsList>
 
-            {/* Theory Content */}
-            <TabsContent value="theory" className="mt-6">
-              <Card>
-                <CardContent className="p-6">
-                  <div
-                    className="prose dark:prose-invert max-w-none"
-                    dangerouslySetInnerHTML={{ __html: topic.theoryContent }}
-                  />
+              {/* Theory Content */}
+              <TabsContent value="theory" className="mt-6">
+                <Card>
+                  <CardContent className="p-6">
+                    <div
+                      className="prose dark:prose-invert max-w-none"
+                      dangerouslySetInnerHTML={{ __html: topic.theoryContent }}
+                    />
 
-                  {!theoryCompleted && (
-                    <div className="mt-8 pt-6 border-t">
-                      <Button onClick={handleMarkTheoryComplete}>
-                        <CheckCircle className="h-4 w-4 mr-2" />
-                        Mark as Read
-                      </Button>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
+                    {!theoryCompleted && (
+                      <div className="mt-8 pt-6 border-t">
+                        <Button onClick={handleMarkTheoryComplete}>
+                          <CheckCircle className="h-4 w-4 mr-2" />
+                          Mark as Read
+                        </Button>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
 
-            {/* Video Content */}
-            <TabsContent value="video" className="mt-6">
-              {topic.videoUrl ? (
+              {/* Video Content */}
+              <TabsContent value="video" className="mt-6">
                 <Card>
                   <CardContent className="p-6">
                     <div className="aspect-video bg-black rounded-lg overflow-hidden mb-4">
@@ -349,30 +351,30 @@ export default function TopicPage() {
                     )}
                   </CardContent>
                 </Card>
-              ) : (
-                <Card>
-                  <CardContent className="p-12 text-center">
-                    <div className="bg-muted w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <Video className="h-8 w-8 text-muted-foreground opacity-50" />
+              </TabsContent>
+            </Tabs>
+          ) : (
+            /* Only Theory if no video */
+            <div className="mt-6">
+              <Card>
+                <CardContent className="p-6">
+                  <div
+                    className="prose dark:prose-invert max-w-none"
+                    dangerouslySetInnerHTML={{ __html: topic.theoryContent }}
+                  />
+
+                  {!theoryCompleted && (
+                    <div className="mt-8 pt-6 border-t">
+                      <Button onClick={handleMarkTheoryComplete}>
+                        <CheckCircle className="h-4 w-4 mr-2" />
+                        Mark as Read
+                      </Button>
                     </div>
-                    <h3 className="text-xl font-semibold mb-2">No Video Content</h3>
-                    <p className="text-muted-foreground max-w-sm mx-auto">
-                      There is no video tutorial available for this specific topic yet.
-                      Please refer to the theory section for your learning.
-                    </p>
-                    <Button
-                      variant="outline"
-                      className="mt-6"
-                      onClick={() => setActiveTab('theory')}
-                    >
-                      <FileText className="h-4 w-4 mr-2" />
-                      Switch to Theory
-                    </Button>
-                  </CardContent>
-                </Card>
-              )}
-            </TabsContent>
-          </Tabs>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          )}
         </motion.div>
 
         {/* Resources */}
