@@ -118,27 +118,37 @@ export class AttemptService {
   }
 
   async submitAttempt(userId: string, driveId: string): Promise<void> {
+    // 1. Check if user found registration
     const registration = await this.prisma.mockDriveRegistration.findUnique({
       where: {
         mockDriveId_userId: { mockDriveId: driveId, userId },
       },
-      include: {
-        attempt: true,
+    });
+
+    if (!registration) {
+      throw new AppError('REGISTRATION_NOT_FOUND', 'User is not registered for this drive', 404);
+    }
+
+    // 2. Fetch the attempt directly
+    const attempt = await this.prisma.mockDriveAttempt.findFirst({
+      where: {
+        mockDriveId: driveId,
+        userId: userId,
       },
     });
 
-    if (!registration?.attempt) {
+    if (!attempt) {
       throw new AppError('ATTEMPT_NOT_FOUND', 'No active attempt found', 404);
     }
 
-    if (registration.attempt.status === 'COMPLETED') {
+    if (attempt.status === 'COMPLETED') {
       return;
     }
 
     // Auto-submit all in-progress modules
     const inProgressModules = await this.prisma.mockDriveModuleAttempt.findMany({
       where: {
-        attemptId: registration.attempt.id,
+        attemptId: attempt.id,
         status: 'IN_PROGRESS',
       },
     });
@@ -156,7 +166,7 @@ export class AttemptService {
     }
 
     // Complete the attempt
-    await this.updateAttemptStatus(registration.attempt.id, 'COMPLETED');
+    await this.updateAttemptStatus(attempt.id, 'COMPLETED');
   }
 
   async startModule(
