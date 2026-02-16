@@ -193,6 +193,7 @@ export const MachineModule: FC<MachineModuleProps> = ({
             <Tabs value={activeTab} onValueChange={setActiveTab}>
               <TabsList>
                 <TabsTrigger value="description">Description</TabsTrigger>
+                <TabsTrigger value="testcases">Test Cases</TabsTrigger>
                 <TabsTrigger value="output">Output</TabsTrigger>
                 <TabsTrigger value="submissions">
                   Submissions ({currentQuestion.submissions.length})
@@ -203,6 +204,29 @@ export const MachineModule: FC<MachineModuleProps> = ({
                 <div className="prose dark:prose-invert max-w-none">
                   <h3 className="font-medium mb-2">{currentQuestion.title}</h3>
                   <ReactMarkdown>{currentQuestion.description}</ReactMarkdown>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="testcases" className="mt-4">
+                <div className="space-y-4">
+                  {currentQuestion.testCases?.map((tc, idx) => (
+                    <div key={idx} className="bg-muted p-4 rounded-lg">
+                      <h4 className="font-medium mb-2">Sample Case {idx + 1}</h4>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <div className="text-xs text-muted-foreground mb-1">Input</div>
+                          <pre className="bg-background p-2 rounded text-sm">{tc.input}</pre>
+                        </div>
+                        <div>
+                          <div className="text-xs text-muted-foreground mb-1">Expected Output</div>
+                          <pre className="bg-background p-2 rounded text-sm">{tc.expectedOutput}</pre>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  {!currentQuestion.testCases?.length && (
+                    <p className="text-muted-foreground text-center py-8">No sample test cases available.</p>
+                  )}
                 </div>
               </TabsContent>
 
@@ -288,10 +312,14 @@ export const MachineModule: FC<MachineModuleProps> = ({
                   <SelectValue placeholder="Select language" />
                 </SelectTrigger>
                 <SelectContent>
-                  {LANGUAGES.filter((l) =>
-                    machineConfig.allowedLanguages?.includes(l.monacoId) ||
-                    !machineConfig.allowedLanguages?.length
-                  ).map((lang) => (
+                  {LANGUAGES.filter((l) => {
+                    // Filter logic: Check if language name or monacoId is in allowedLanguages (case-insensitive)
+                    if (!machineConfig.allowedLanguages?.length) return true;
+                    return machineConfig.allowedLanguages.some(allowed =>
+                      allowed.toLowerCase() === l.name.toLowerCase() ||
+                      allowed.toLowerCase() === l.monacoId.toLowerCase()
+                    );
+                  }).map((lang) => (
                     <SelectItem key={lang.id} value={lang.id.toString()}>
                       {lang.name}
                     </SelectItem>

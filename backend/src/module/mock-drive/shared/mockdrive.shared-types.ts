@@ -112,6 +112,12 @@ export interface MachineQuestionAttempt {
   bestSubmissionId: string | null;
   bestScore: number;
   isSolved: boolean;
+  testCases: TestCaseAttempt[]; // Sample test cases for display
+}
+
+export interface TestCaseAttempt {
+  input: string;
+  expectedOutput: string;
 }
 
 export interface MachineModuleSummary {

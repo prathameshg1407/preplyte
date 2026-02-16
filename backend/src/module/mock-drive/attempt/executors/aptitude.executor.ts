@@ -156,10 +156,51 @@ export class AptitudeModuleExecutor extends BaseModuleExecutor {
       throw new InternalError('Module data not found');
     }
 
-    const summary = this.calculateSummary(context.existingData.questions, config);
+    // 1. Fetch correct answers
+    const questionIds = context.existingData.questions.map(q => q.questionId);
+    const moduleQuestions = await this.prisma.mockDriveModuleQuestion.findMany({
+      where: { id: { in: questionIds } },
+      include: {
+        aptitudeQuestion: {
+          include: { options: true }
+        }
+      }
+    });
+
+    // 2. Map correct options
+    const correctOptionsMap = new Map<string, string>(); // questionId -> correctOptionId
+    moduleQuestions.forEach(mq => {
+      // Cast to any or helper type to avoid conflict with shared types
+      const aptQuestion = mq.aptitudeQuestion as any;
+      if (aptQuestion && aptQuestion.options) {
+        const correctOpt = aptQuestion.options.find((o: any) => o.isCorrect);
+        if (correctOpt) {
+          correctOptionsMap.set(mq.id, correctOpt.id);
+        }
+      }
+    });
+
+    // 3. Grade questions
+    const gradedQuestions: AptitudeQuestionAttempt[] = context.existingData.questions.map(q => {
+      const correctOptionId = correctOptionsMap.get(q.questionId);
+      let isCorrect: boolean | null = false;
+
+      if (!q.selectedOptionId) {
+        isCorrect = null; // Unanswered
+      } else if (correctOptionId && q.selectedOptionId === correctOptionId) {
+        isCorrect = true;
+      }
+
+      return {
+        ...q,
+        isCorrect
+      };
+    });
+
+    const summary = this.calculateSummary(gradedQuestions, config);
 
     const finalData: AptitudeModuleData = {
-      questions: context.existingData.questions,
+      questions: gradedQuestions,
       summary,
     };
 

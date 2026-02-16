@@ -3,7 +3,7 @@
 'use client';
 
 import { FC, useState, useEffect, useRef } from 'react';
-import { Send, SkipForward, Check, Loader2, User, Bot } from 'lucide-react';
+import { Square, Send, SkipForward, Check, Loader2, User, Bot } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -355,46 +355,47 @@ export const InterviewModule: FC<InterviewModuleProps> = ({
         </CardContent>
 
         {!isComplete && (
-          <div className="p-4 border-t">
-            <div className="flex gap-2">
-              <Textarea
-                value={answer}
-                onChange={(e) => setAnswer(e.target.value)}
-                placeholder="Type your answer here..."
-                className="min-h-[80px] resize-none"
-                disabled={isInteractionDisabled}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && e.ctrlKey) {
-                    handleSubmitAnswer();
-                  }
-                }}
-              />
+          <div className="p-6 border-t flex flex-col items-center gap-6">
+            <div className="text-center space-y-2">
+              <h3 className="font-medium text-lg">
+                {isRecording ? "Listening..." : "Tap to Speak"}
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                {isRecording ? "Speak your answer clearly" : "Your answer will be recorded and analyzed"}
+              </p>
             </div>
-            <div className="flex justify-between items-center mt-2">
-              <p className="text-xs text-muted-foreground">Press Ctrl+Enter to submit</p>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleSkip}
-                  disabled={isInteractionDisabled}
-                >
-                  <SkipForward className="h-4 w-4 mr-1" />
-                  Skip
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={handleSubmitAnswer}
-                  disabled={!answer.trim() || isInteractionDisabled}
-                >
-                  {respondMutation.isPending ? (
-                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                  ) : (
-                    <Send className="h-4 w-4 mr-1" />
-                  )}
-                  Submit Answer
-                </Button>
-              </div>
+
+            <div className="relative">
+              {isRecording && (
+                <span className="absolute inset-0 rounded-full animate-ping bg-red-400 opacity-75" />
+              )}
+              <Button
+                variant={isRecording ? "destructive" : "default"}
+                size="icon"
+                className={cn(
+                  "h-20 w-20 rounded-full shadow-lg transition-all transform hover:scale-105",
+                  isRecording ? "bg-red-500 hover:bg-red-600" : "bg-primary hover:bg-primary/90"
+                )}
+                onClick={isRecording ? handleStopRecording : handleStartRecording}
+                disabled={isInteractionDisabled && !isRecording}
+              >
+                {isRecording ? (
+                  <Square className="h-8 w-8 text-white" />
+                ) : (
+                  <span className="text-4xl">🎤</span>
+                )}
+              </Button>
+            </div>
+
+            <div className="flex gap-4">
+              <Button
+                variant="ghost"
+                onClick={handleSkip}
+                disabled={isInteractionDisabled}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                Skip Question
+              </Button>
             </div>
           </div>
         )}

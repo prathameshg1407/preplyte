@@ -134,7 +134,13 @@ export class MachineModuleExecutor extends BaseModuleExecutor {
     const moduleQuestions = await this.prisma.mockDriveModuleQuestion.findMany({
       where: { moduleId: context.moduleId },
       orderBy: { order: 'asc' },
-      include: { machineQuestion: true },
+      include: {
+        machineQuestion: {
+          include: {
+            testCases: true,
+          },
+        },
+      },
     });
 
     if (moduleQuestions.length === 0) {
@@ -167,6 +173,12 @@ export class MachineModuleExecutor extends BaseModuleExecutor {
         bestSubmissionId: null,
         bestScore: 0,
         isSolved: false,
+        testCases: mq.machineQuestion.testCases
+          .filter(tc => tc.type === 'SAMPLE') // Only show SAMPLE test cases
+          .map(tc => ({
+            input: tc.input,
+            expectedOutput: tc.expectedOutput,
+          })),
       };
     });
 
