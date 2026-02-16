@@ -11,6 +11,7 @@ import { ModuleInstructions } from '../module-instructions';
 import { ModuleComplete } from '../module-complete';
 import { AttemptComplete } from './attempt-complete';
 import { AutoSubmitWarning } from '../auto-submit-warning';
+import { FullscreenPrompt } from '../proctoring/fullscreen-prompt';
 import { AptitudeModule } from './aptitude-module';
 import { MachineModule } from './machine-module';
 import { InterviewModule } from './interview-module';
@@ -19,11 +20,14 @@ import {
   useAttemptState,
   useStartModule,
   useSubmitModule,
+  useSubmitAttempt
 } from '@/lib/hooks/mock-drive/use-attempt';
 import { useAttemptStore } from '@/lib/store/mock-drive/attempt-store';
+import { useProctoring } from '@/lib/hooks/mock-drive/use-proctoring';
 import {
   MockDriveModuleAttemptStatus,
   SubmitModuleResponse,
+  ProctoringSettings
 } from '@/types/mockdrive.types';
 
 interface AttemptContainerProps {
@@ -39,6 +43,7 @@ export const AttemptContainer: FC<AttemptContainerProps> = ({ driveId, driveTitl
   const { data: attemptData, isLoading, refetch } = useAttemptState(driveId);
   const startModuleMutation = useStartModule();
   const submitModuleMutation = useSubmitModule();
+  const submitAttemptMutation = useSubmitAttempt();
 
   const {
     setAttemptState,
@@ -56,6 +61,21 @@ export const AttemptContainer: FC<AttemptContainerProps> = ({ driveId, driveTitl
       }
     }
   }, [attemptData, moduleResult, setAttemptState, setCurrentModule]);
+
+  // Handle final attempt submission (used for violations or manual finish)
+  const handleAttemptSubmit = useCallback(() => {
+    submitAttemptMutation.mutate(driveId, {
+      onSuccess: () => {
+        setAttemptCompleted(true);
+      }
+    });
+  }, [driveId, submitAttemptMutation]);
+
+  const { isFullscreen, enterFullscreen, warnings } = useProctoring({
+    settings: attemptData?.attempt.proctoringSettings as ProctoringSettings | null,
+    onViolationLimitExceeded: handleAttemptSubmit,
+    isAttemptActive: !attemptCompleted && attemptData?.attempt.status === 'IN_PROGRESS'
+  });
 
   // Timer for current module
   const handleTimeExpire = useCallback(() => {
@@ -88,7 +108,7 @@ export const AttemptContainer: FC<AttemptContainerProps> = ({ driveId, driveTitl
           onSuccess: (data) => {
             setCurrentModule({
               ...currentModule,
-status: MockDriveModuleAttemptStatus.IN_PROGRESS,
+              status: MockDriveModuleAttemptStatus.IN_PROGRESS,
               startedAt: data.startedAt,
               expiresAt: data.expiresAt,
               timeRemainingSeconds: data.timeRemainingSeconds,
@@ -150,6 +170,16 @@ status: MockDriveModuleAttemptStatus.IN_PROGRESS,
   // Show completion screen
   if (attemptCompleted || attempt.status === 'COMPLETED') {
     return <AttemptComplete driveId={driveId} driveTitle={driveTitle} />;
+  }
+
+  // Enforce Fullscreen if required
+  if (!isFullscreen) {
+    return (
+      <FullscreenPrompt
+        onEnterFullscreen={enterFullscreen}
+        message="This mock drive requires fullscreen mode. Please enter fullscreen to continue."
+      />
+    );
   }
 
   // Show module result if just completed

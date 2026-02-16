@@ -220,6 +220,7 @@ export interface AttemptState {
   currentModuleOrder: number;
   startedAt: string | null;
   modules: ModuleAttemptState[];
+  proctoringSettings?: ProctoringSettings;
 }
 
 export interface ModuleAttemptState {
@@ -714,6 +715,20 @@ export interface LeaderboardFilters {
 }
 
 // ============================================
+// Proctoring
+// ============================================
+
+export interface ProctoringSettings {
+  enableProctoring: boolean;
+  requireFullscreen: boolean;
+  detectTabSwitch: boolean;
+  maxWarnings: number;
+  tabSwitchLimit: number;
+  autoSubmitOnViolation: boolean;
+  fullscreenEnabled?: boolean; // legacy support if needed
+}
+
+// ============================================
 // Constants (matching backend)
 // ============================================
 
@@ -1095,11 +1110,11 @@ export function getDifficultyColor(difficulty: DifficultyLevel): StatusColor {
 
 export function formatTimeRemaining(seconds: number): string {
   if (seconds <= 0) return '00:00';
-  
+
   const hours = Math.floor(seconds / 3600);
   const minutes = Math.floor((seconds % 3600) / 60);
   const secs = seconds % 60;
-  
+
   if (hours > 0) {
     return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   }

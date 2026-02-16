@@ -44,6 +44,7 @@ export const InterviewModule: FC<InterviewModuleProps> = ({
   const [answer, setAnswer] = useState('');
   const [answerStartTime, setAnswerStartTime] = useState<number>(Date.now());
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const scrollViewportRef = useRef<HTMLDivElement>(null); // Ref for the viewport inside ScrollArea
 
   const { localModuleData, updateLocalModuleData } = useAttemptStore();
   const localData = localModuleData as AiInterviewModuleData | null;
@@ -61,13 +62,23 @@ export const InterviewModule: FC<InterviewModuleProps> = ({
   const responses = localData?.responses || interviewData?.responses || [];
   const targetQuestions = interviewConfig.targetQuestions;
   const questionsAnswered = responses.length;
+  // Determine if complete: when the number of responses meets the target
   const isComplete = questionsAnswered >= targetQuestions;
 
+  // Auto-scroll to bottom when conversation updates
+  const scrollToBottom = () => {
+    // Small timeout to allow DOM to update
+    setTimeout(() => {
+      const scrollableNode = scrollAreaRef.current?.querySelector('[data-radix-scroll-area-viewport]');
+      if (scrollableNode) {
+        scrollableNode.scrollTop = scrollableNode.scrollHeight;
+      }
+    }, 100);
+  };
+
   useEffect(() => {
-    if (scrollAreaRef.current) {
-      scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
-    }
-  }, [conversation]);
+    scrollToBottom();
+  }, [conversation.length, respondMutation.isPending, skipMutation.isPending]);
 
   useEffect(() => {
     setAnswerStartTime(Date.now());
@@ -121,6 +132,9 @@ export const InterviewModule: FC<InterviewModuleProps> = ({
     );
   };
 
+  // Prevent accidental submission while AI is "thinking"
+  const isInteractionDisabled = respondMutation.isPending || skipMutation.isPending || isSubmitting;
+
   return (
     <div className="max-w-4xl mx-auto space-y-4">
       {/* Header */}
@@ -150,9 +164,9 @@ export const InterviewModule: FC<InterviewModuleProps> = ({
 
       {/* Conversation */}
       <Card className="h-[500px] flex flex-col">
-        <CardContent className="flex-1 p-0 overflow-hidden">
+        <CardContent className="flex-1 p-0 overflow-hidden relative">
           <ScrollArea className="h-full p-4" ref={scrollAreaRef}>
-            <div className="space-y-4">
+            <div className="space-y-4 pb-4">
               {conversation.map((message) => (
                 <div
                   key={message.id}
@@ -198,13 +212,19 @@ export const InterviewModule: FC<InterviewModuleProps> = ({
                 </div>
               ))}
 
+              {/* Typing Indicator */}
               {(respondMutation.isPending || skipMutation.isPending) && (
                 <div className="flex gap-3">
-                  <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center animate-pulse">
                     <Bot className="h-4 w-4" />
                   </div>
-                  <div className="bg-muted rounded-lg p-4">
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                  <div className="bg-muted rounded-lg p-4 flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">AI is thinking</span>
+                    <span className="flex gap-1">
+                      <span className="w-1.5 h-1.5 bg-muted-foreground/50 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
+                      <span className="w-1.5 h-1.5 bg-muted-foreground/50 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
+                      <span className="w-1.5 h-1.5 bg-muted-foreground/50 rounded-full animate-bounce"></span>
+                    </span>
                   </div>
                 </div>
               )}
@@ -220,7 +240,7 @@ export const InterviewModule: FC<InterviewModuleProps> = ({
                 onChange={(e) => setAnswer(e.target.value)}
                 placeholder="Type your answer here..."
                 className="min-h-[80px] resize-none"
-                disabled={respondMutation.isPending || skipMutation.isPending}
+                disabled={isInteractionDisabled}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && e.ctrlKey) {
                     handleSubmitAnswer();
@@ -235,7 +255,7 @@ export const InterviewModule: FC<InterviewModuleProps> = ({
                   variant="outline"
                   size="sm"
                   onClick={handleSkip}
-                  disabled={respondMutation.isPending || skipMutation.isPending}
+                  disabled={isInteractionDisabled}
                 >
                   <SkipForward className="h-4 w-4 mr-1" />
                   Skip
@@ -243,7 +263,7 @@ export const InterviewModule: FC<InterviewModuleProps> = ({
                 <Button
                   size="sm"
                   onClick={handleSubmitAnswer}
-                  disabled={!answer.trim() || respondMutation.isPending || skipMutation.isPending}
+                  disabled={!answer.trim() || isInteractionDisabled}
                 >
                   {respondMutation.isPending ? (
                     <Loader2 className="h-4 w-4 mr-1 animate-spin" />
@@ -260,7 +280,7 @@ export const InterviewModule: FC<InterviewModuleProps> = ({
 
       {/* Submit Module */}
       <div className="flex justify-end">
-        <Button onClick={onSubmit} disabled={isSubmitting} size="lg">
+        <Button onClick={onSubmit} disabled={isSubmitting || respondMutation.isPending} size="lg">
           {isSubmitting ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />

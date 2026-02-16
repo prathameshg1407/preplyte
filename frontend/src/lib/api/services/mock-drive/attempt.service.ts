@@ -39,6 +39,14 @@ export const attemptService = {
     return response.data.data;
   },
 
+  /**
+   * Submit/End an attempt
+   */
+  submitAttempt: async (driveId: string): Promise<void> => {
+    const response = await apiClient.post(API_ENDPOINTS.MOCK_DRIVES.SUBMIT_ATTEMPT(driveId));
+    return response.data.data;
+  },
+
   // =====================================================
   // Module Lifecycle
   // =====================================================

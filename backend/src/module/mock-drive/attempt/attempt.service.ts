@@ -117,6 +117,48 @@ export class AttemptService {
     };
   }
 
+  async submitAttempt(userId: string, driveId: string): Promise<void> {
+    const registration = await this.prisma.mockDriveRegistration.findUnique({
+      where: {
+        mockDriveId_userId: { mockDriveId: driveId, userId },
+      },
+      include: {
+        attempt: true,
+      },
+    });
+
+    if (!registration?.attempt) {
+      throw new AppError('ATTEMPT_NOT_FOUND', 'No active attempt found', 404);
+    }
+
+    if (registration.attempt.status === 'COMPLETED') {
+      return;
+    }
+
+    // Auto-submit all in-progress modules
+    const inProgressModules = await this.prisma.mockDriveModuleAttempt.findMany({
+      where: {
+        attemptId: registration.attempt.id,
+        status: 'IN_PROGRESS',
+      },
+    });
+
+    for (const moduleAttempt of inProgressModules) {
+      // We can reuse cancel/submit logic here, or just force complete
+      // For now, let's just mark them completed
+      await this.prisma.mockDriveModuleAttempt.update({
+        where: { id: moduleAttempt.id },
+        data: {
+          status: 'COMPLETED',
+          completedAt: new Date(),
+        },
+      });
+    }
+
+    // Complete the attempt
+    await this.updateAttemptStatus(registration.attempt.id, 'COMPLETED');
+  }
+
   async startModule(
     userId: string,
     driveId: string,
@@ -670,6 +712,19 @@ export class AttemptService {
         })
       )
     );
+  }
+
+  private async updateAttemptStatus(
+    attemptId: string,
+    status: MockDriveAttemptStatus
+  ): Promise<void> {
+    await this.prisma.mockDriveAttempt.update({
+      where: { id: attemptId },
+      data: {
+        status,
+        ...(status === 'COMPLETED' ? { completedAt: new Date() } : {}),
+      },
+    });
   }
 
   // ============================================

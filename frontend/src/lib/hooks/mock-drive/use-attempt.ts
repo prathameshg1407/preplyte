@@ -1,6 +1,7 @@
 // src/lib/hooks/mock-drive/use-attempt.ts
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useRouter } from 'next/navigation';
 import { attemptService } from '@/lib/api/services/mock-drive/attempt.service';
 import { toast } from 'sonner';
 import {
@@ -70,6 +71,24 @@ export function useStartAttempt() {
     },
     onError: (error: any) => {
       const message = error.response?.data?.message || 'Failed to start mock drive';
+      toast.error(message);
+    },
+  });
+}
+
+export function useSubmitAttempt() {
+  const queryClient = useQueryClient();
+  const router = useRouter();
+
+  return useMutation({
+    mutationFn: (driveId: string) => attemptService.submitAttempt(driveId),
+    onSuccess: (data: any, driveId) => {
+      queryClient.invalidateQueries({ queryKey: attemptKeys.state(driveId) });
+      toast.success('Mock drive submitted successfully!');
+      router.push(`/mock-drive/${driveId}/result`);
+    },
+    onError: (error: any) => {
+      const message = error.response?.data?.message || 'Failed to submit mock drive';
       toast.error(message);
     },
   });
