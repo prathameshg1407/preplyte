@@ -15,17 +15,18 @@ import { checkEligibility } from '../utils/eligibility.utils';
 import { isWithinRegistrationPeriod } from '../utils/time.utils';
 import { MOCKDRIVE_CONSTANTS } from '../shared/mockdrive.constants';
 import { logger } from '../../../utils/logger';
+import { updateMockDriveStatuses } from '../utils/status.utils';
 
 // Roles that can see all institutes' drives
 const SUPER_ADMIN_ROLES = ['SUPER_ADMIN'] as const;
 
 export class DiscoveryService {
-  constructor(private prisma: PrismaClient) {}
+  constructor(private prisma: PrismaClient) { }
 
   // ============================================
   // Helper: Get user with institute validation
   // ============================================
-  
+
   private async getUserWithInstituteValidation(
     userId: string,
     userRole?: string
@@ -102,6 +103,9 @@ export class DiscoveryService {
     params: DiscoveryListParams,
     userRole?: string
   ): Promise<DiscoveryListResponse> {
+    // Auto-update statuses
+    await updateMockDriveStatuses(this.prisma);
+
     const {
       page = 1,
       limit = MOCKDRIVE_CONSTANTS.DEFAULT_PAGE_SIZE,
@@ -263,6 +267,9 @@ export class DiscoveryService {
     driveId: string,
     userRole?: string
   ): Promise<MockDriveDetail> {
+    // Auto-update statuses
+    await updateMockDriveStatuses(this.prisma);
+
     // Validate user can access this drive
     await this.validateDriveAccess(userId, driveId, userRole);
 
@@ -335,15 +342,15 @@ export class DiscoveryService {
       modules: drive.modules,
       eligibilityCriteria: drive.eligibilityCriteria
         ? {
-            minCgpa: drive.eligibilityCriteria.minCgpa,
-            maxCgpa: drive.eligibilityCriteria.maxCgpa,
-            minMarks10: drive.eligibilityCriteria.minMarks10,
-            minMarks12: drive.eligibilityCriteria.minMarks12,
-            allowedDepartmentIds: drive.eligibilityCriteria.allowedDepartmentIds,
-            allowedCourseYears: drive.eligibilityCriteria.allowedCourseYears,
-            requiredSkills: drive.eligibilityCriteria.requiredSkills,
-            maxBacklogs: drive.eligibilityCriteria.maxBacklogs,
-          }
+          minCgpa: drive.eligibilityCriteria.minCgpa,
+          maxCgpa: drive.eligibilityCriteria.maxCgpa,
+          minMarks10: drive.eligibilityCriteria.minMarks10,
+          minMarks12: drive.eligibilityCriteria.minMarks12,
+          allowedDepartmentIds: drive.eligibilityCriteria.allowedDepartmentIds,
+          allowedCourseYears: drive.eligibilityCriteria.allowedCourseYears,
+          requiredSkills: drive.eligibilityCriteria.requiredSkills,
+          maxBacklogs: drive.eligibilityCriteria.maxBacklogs,
+        }
         : null,
       totalTimeLimit,
     };
@@ -358,6 +365,9 @@ export class DiscoveryService {
     driveId: string,
     userRole?: string
   ): Promise<EligibilityCheckResponse> {
+    // Auto-update statuses
+    await updateMockDriveStatuses(this.prisma);
+
     // Validate user can access this drive
     await this.validateDriveAccess(userId, driveId, userRole);
 
