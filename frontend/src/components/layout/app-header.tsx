@@ -23,7 +23,7 @@ import {
 } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'; // Added AvatarImage
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -238,6 +238,14 @@ export function AppHeader() {
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="h-9 gap-2 px-2">
                       <Avatar className="h-7 w-7 border border-border">
+                        {/* CHANGED: Show Profile Picture if available */}
+                        {user?.profilePictureUrl && (
+                          <AvatarImage 
+                            src={user.profilePictureUrl} 
+                            alt={user.name || 'User'} 
+                            className="object-cover"
+                          />
+                        )}
                         <AvatarFallback className="bg-primary/10 text-xs font-medium text-primary">
                           {initials}
                         </AvatarFallback>

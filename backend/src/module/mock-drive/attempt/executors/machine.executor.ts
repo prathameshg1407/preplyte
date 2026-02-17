@@ -134,7 +134,13 @@ export class MachineModuleExecutor extends BaseModuleExecutor {
     const moduleQuestions = await this.prisma.mockDriveModuleQuestion.findMany({
       where: { moduleId: context.moduleId },
       orderBy: { order: 'asc' },
-      include: { machineQuestion: true },
+      include: {
+        machineQuestion: {
+          include: {
+            testCases: true,
+          },
+        },
+      },
     });
 
     if (moduleQuestions.length === 0) {
@@ -142,18 +148,37 @@ export class MachineModuleExecutor extends BaseModuleExecutor {
     }
 
     const questions: MachineQuestionAttempt[] = moduleQuestions.map((mq, index) => {
-      if (!mq.machineQuestionId) {
-        throw new InternalError(`Invalid question configuration for module question ${mq.id}`);
+      if (!mq.machineQuestion) {
+        throw new InternalError(`Question data missing for module question ${mq.id}`);
       }
+
+      const fullDescription = [
+        mq.machineQuestion.description,
+        '\n**Input Format**',
+        mq.machineQuestion.inputFormat,
+        '\n**Output Format**',
+        mq.machineQuestion.outputFormat,
+        '\n**Constraints**',
+        ...(mq.machineQuestion.constraints || []).map(c => `- ${c}`),
+      ].join('\n');
 
       return {
         questionId: mq.id,
-        machineQuestionId: mq.machineQuestionId,
+        machineQuestionId: mq.machineQuestionId!,
+        title: mq.machineQuestion.title,
+        description: fullDescription,
+        defaultCode: '// Write your code here\n',
         displayOrder: index,
         submissions: [],
         bestSubmissionId: null,
         bestScore: 0,
         isSolved: false,
+        testCases: mq.machineQuestion.testCases
+          .filter(tc => tc.type === 'SAMPLE') // Only show SAMPLE test cases
+          .map(tc => ({
+            input: tc.input,
+            expectedOutput: tc.expectedOutput,
+          })),
       };
     });
 
@@ -340,7 +365,7 @@ export class MachineModuleExecutor extends BaseModuleExecutor {
     config: MachineModuleConfig
   ): Promise<ExecutionResult> {
     const timeLimit = (config as { timeLimit?: number }).timeLimit || DEFAULT_TIME_LIMIT;
-    
+
     logger.info('[MachineExecutor] Executing code against test cases', {
       languageId,
       testCaseCount: testCases.length,
@@ -527,7 +552,7 @@ export class MachineModuleExecutor extends BaseModuleExecutor {
         (allowed) => allowed.toLowerCase() === language.name.toLowerCase() ||
           language.name.toLowerCase().includes(allowed.toLowerCase())
       );
-      
+
       if (!isAllowed) {
         throw new BadRequestError(
           `Language "${language.name}" not allowed. Allowed: ${config.allowedLanguages.join(', ')}`
@@ -576,8 +601,8 @@ export class MachineModuleExecutor extends BaseModuleExecutor {
     const existingQuestion = data.questions[questionIndex];
     const updatedQuestions = [...data.questions];
 
-    const isSolved = submission.testCasesPassed === testCasesTotal && 
-                     submission.status === 'ACCEPTED';
+    const isSolved = submission.testCasesPassed === testCasesTotal &&
+      submission.status === 'ACCEPTED';
     const isBetterScore = submissionScore > existingQuestion.bestScore;
 
     updatedQuestions[questionIndex] = {

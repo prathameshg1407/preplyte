@@ -31,6 +31,7 @@ import {
   Sparkles,
   AlertCircle,
   Building2,
+  School, // Added icon for College
 } from 'lucide-react';
 import { useProfile, useDepartments } from '@/lib/hooks/use-profile';
 import {
@@ -45,14 +46,9 @@ interface StudentProfileFormProps {
   onSuccess?: () => void;
 }
 
-const STEPS = [
-  { id: 'basic', title: 'Basic Info', icon: User },
-  { id: 'academic', title: 'Academic', icon: GraduationCap },
-  { id: 'marks', title: 'Marks', icon: Award },
-];
-
 export function StudentProfileForm({ mode, onSuccess }: StudentProfileFormProps) {
   const {
+    userProfile, // Fetch user profile to check instituteId
     studentProfile,
     createStudentProfile,
     updateStudentProfile,
@@ -60,6 +56,16 @@ export function StudentProfileForm({ mode, onSuccess }: StudentProfileFormProps)
   } = useProfile();
 
   const { departments, isLoading: isDepartmentsLoading, error: departmentsError } = useDepartments();
+
+  // LOGIC: Check if user belongs to an institute
+  const isInstituteStudent = !!userProfile?.instituteId;
+
+  // DYNAMIC STEPS: Only show Marks for Institute Students
+  const STEPS = [
+    { id: 'basic', title: 'Basic Info', icon: User },
+    { id: 'academic', title: 'Academic', icon: GraduationCap },
+    ...(isInstituteStudent ? [{ id: 'marks', title: 'Marks', icon: Award }] : []),
+  ];
 
   const [currentStep, setCurrentStep] = useState(0);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -70,6 +76,7 @@ export function StudentProfileForm({ mode, onSuccess }: StudentProfileFormProps)
     setValue,
     watch,
     trigger,
+    setError,
     formState: { errors },
     reset,
   } = useForm<CreateStudentProfileFormData>({
@@ -79,6 +86,7 @@ export function StudentProfileForm({ mode, onSuccess }: StudentProfileFormProps)
       studentId: '',
       departmentId: '',
       courseYear: undefined,
+      collegeName: '', // Added default
       numberOfBacklogs: 0,
       skills: [],
       marks10: undefined,
@@ -94,7 +102,8 @@ export function StudentProfileForm({ mode, onSuccess }: StudentProfileFormProps)
       reset({
         fullName: studentProfile.fullName,
         studentId: studentProfile.studentId,
-        departmentId: studentProfile.departmentId,
+        departmentId: studentProfile.departmentId || '',
+        collegeName: studentProfile.collegeName || '', // Populate college name
         courseYear: studentProfile.courseYear as any,
         numberOfBacklogs: studentProfile.numberOfBacklogs,
         skills: studentProfile.skills,
@@ -110,12 +119,16 @@ export function StudentProfileForm({ mode, onSuccess }: StudentProfileFormProps)
   // Calculate completion percentage
   const calculateCompletion = () => {
     let filled = 0;
-    const total = 4; // Required fields
+    // Adjust total fields based on user type
+    const total = isInstituteStudent ? 4 : 2; 
 
     if (watchedFields.fullName) filled++;
     if (watchedFields.studentId) filled++;
-    if (watchedFields.departmentId) filled++;
-    if (watchedFields.courseYear) filled++;
+    
+    if (isInstituteStudent) {
+        if (watchedFields.departmentId) filled++;
+        if (watchedFields.courseYear) filled++;
+    }
 
     return Math.round((filled / total) * 100);
   };
@@ -142,14 +155,29 @@ export function StudentProfileForm({ mode, onSuccess }: StudentProfileFormProps)
   };
 
   const nextStep = async () => {
-    const fieldsToValidate =
-      currentStep === 0
-        ? ['fullName', 'studentId']
-        : currentStep === 1
-          ? ['departmentId', 'courseYear']
-          : [];
+    let fieldsToValidate: any[] = [];
 
-    const isValid = await trigger(fieldsToValidate as any);
+    if (currentStep === 0) {
+        fieldsToValidate = ['fullName', 'studentId'];
+    } else if (currentStep === 1) {
+        if (isInstituteStudent) {
+            // Strict check for institute students
+            if (!watchedFields.departmentId) {
+                setError('departmentId', { message: 'Please select a department' });
+                return; // Stop if invalid
+            }
+            if (!watchedFields.courseYear) {
+                setError('courseYear', { message: 'Please select a course year' });
+                return; // Stop if invalid
+            }
+            fieldsToValidate = ['departmentId', 'courseYear', 'numberOfBacklogs'];
+        } else {
+            // Check for college name for individuals (optional but recommended)
+            fieldsToValidate = ['collegeName'];
+        }
+    }
+
+    const isValid = await trigger(fieldsToValidate);
     if (isValid && currentStep < STEPS.length - 1) {
       setCurrentStep(currentStep + 1);
     }
@@ -270,7 +298,7 @@ export function StudentProfileForm({ mode, onSuccess }: StudentProfileFormProps)
       <CardContent className="p-6">
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           <AnimatePresence mode="wait">
-            {/* Step 1: Basic Info */}
+           {/* Step 1: Basic Info */}
             {(mode === 'edit' || currentStep === 0) && (
               <motion.div
                 key="step-1"
@@ -286,14 +314,14 @@ export function StudentProfileForm({ mode, onSuccess }: StudentProfileFormProps)
                       Basic Information
                     </h3>
                     <p className="text-sm text-muted-foreground">
-                      Let's start with your name and student ID
+                      Let us start with your name{isInstituteStudent ? " and student ID" : ""}
                     </p>
                   </div>
                 )}
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Full Name */}
-                  <div className="space-y-2">
+                  {/* Full Name - Always Visible */}
+                  <div className={cn("space-y-2", !isInstituteStudent && "md:col-span-2")}>
                     <Label htmlFor="fullName" className="flex items-center gap-1">
                       Full Name
                       <span className="text-destructive">*</span>
@@ -312,49 +340,36 @@ export function StudentProfileForm({ mode, onSuccess }: StudentProfileFormProps)
                       />
                     </div>
                     {errors.fullName && (
-                      <motion.p
-                        initial={{ opacity: 0, y: -5 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="text-sm text-destructive"
-                      >
-                        {errors.fullName.message}
-                      </motion.p>
+                      <p className="text-sm text-destructive">{errors.fullName.message}</p>
                     )}
                   </div>
 
-                  {/* Student ID */}
-                  <div className="space-y-2">
-                    <Label htmlFor="studentId" className="flex items-center gap-1">
-                      Student ID
-                      <span className="text-destructive">*</span>
-                    </Label>
-                    <div className="relative">
-                      <Hash className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                      <Input
-                        id="studentId"
-                        placeholder="e.g., STU2024001"
-                        {...register('studentId')}
-                        disabled={isUpdating || mode === 'edit'}
-                        className={cn(
-                          'pl-10',
-                          errors.studentId && 'border-destructive focus-visible:ring-destructive',
-                          mode === 'edit' && 'bg-muted cursor-not-allowed'
-                        )}
-                      />
+                  {/* Student ID - ONLY visible for Institute Students */}
+                  {isInstituteStudent && (
+                    <div className="space-y-2">
+                      <Label htmlFor="studentId" className="flex items-center gap-1">
+                        Student ID
+                        <span className="text-destructive">*</span>
+                      </Label>
+                      <div className="relative">
+                        <Hash className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                        <Input
+                          id="studentId"
+                          placeholder="e.g., STU2024001"
+                          {...register('studentId')}
+                          disabled={isUpdating || mode === 'edit'}
+                          className={cn(
+                            'pl-10',
+                            errors.studentId && 'border-destructive focus-visible:ring-destructive',
+                            mode === 'edit' && 'bg-muted cursor-not-allowed'
+                          )}
+                        />
+                      </div>
+                      {errors.studentId && (
+                        <p className="text-sm text-destructive">{errors.studentId.message}</p>
+                      )}
                     </div>
-                    {errors.studentId && (
-                      <motion.p
-                        initial={{ opacity: 0, y: -5 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="text-sm text-destructive"
-                      >
-                        {errors.studentId.message}
-                      </motion.p>
-                    )}
-                    {mode === 'edit' && (
-                      <p className="text-xs text-muted-foreground">Student ID cannot be changed</p>
-                    )}
-                  </div>
+                  )}
                 </div>
               </motion.div>
             )}
@@ -375,163 +390,193 @@ export function StudentProfileForm({ mode, onSuccess }: StudentProfileFormProps)
                       Academic Details
                     </h3>
                     <p className="text-sm text-muted-foreground">
-                      Tell us about your course and department
+                      Tell us about your educational background
                     </p>
                   </div>
                 )}
 
-                {/* Department Error Alert */}
-                {departmentsError && (
-                  <Alert variant="destructive">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription>
-                      Failed to load departments. Please refresh the page.
-                    </AlertDescription>
-                  </Alert>
-                )}
+                {/* CONDITIONAL RENDER: Institute vs Individual */}
+                {isInstituteStudent ? (
+                  /* ================= INSTIUTE STUDENT VIEW ================= */
+                  <>
+                    {departmentsError && (
+                      <Alert variant="destructive">
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertDescription>
+                          Failed to load departments. Please refresh the page.
+                        </AlertDescription>
+                      </Alert>
+                    )}
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Department */}
-                  <div className="space-y-2">
-                    <Label htmlFor="departmentId" className="flex items-center gap-1">
-                      Department
-                      <span className="text-destructive">*</span>
-                    </Label>
-                    {isDepartmentsLoading ? (
-                      <Skeleton className="h-10 w-full" />
-                    ) : (
-                      <Select
-                        value={watchedFields.departmentId}
-                        onValueChange={(value) =>
-                          setValue('departmentId', value, { shouldValidate: true })
-                        }
-                        disabled={isUpdating || departments.length === 0}
-                      >
-                        <SelectTrigger
-                          className={cn(
-                            errors.departmentId && 'border-destructive focus:ring-destructive'
-                          )}
-                        >
-                          <div className="flex items-center gap-2">
-                            <Building2 className="h-4 w-4 text-muted-foreground" />
-                            <SelectValue placeholder="Select your department" />
-                          </div>
-                        </SelectTrigger>
-                        <SelectContent>
-                          {departments.length === 0 ? (
-                            <div className="px-2 py-4 text-center text-sm text-muted-foreground">
-                              No departments available
-                            </div>
-                          ) : (
-                            departments.map((dept) => (
-                              <SelectItem key={dept.id} value={dept.id}>
-                                <div className="flex items-center gap-2">
-                                  {dept.code && (
-                                    <span className="font-medium text-primary">{dept.code}</span>
-                                  )}
-                                  <span>{dept.name}</span>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Department */}
+                      <div className="space-y-2">
+                        <Label htmlFor="departmentId" className="flex items-center gap-1">
+                          Department
+                          <span className="text-destructive">*</span>
+                        </Label>
+                        {isDepartmentsLoading ? (
+                          <Skeleton className="h-10 w-full" />
+                        ) : (
+                          <Select
+                            value={watchedFields.departmentId}
+                            onValueChange={(value) =>
+                              setValue('departmentId', value, { shouldValidate: true })
+                            }
+                            disabled={isUpdating || departments.length === 0}
+                          >
+                            <SelectTrigger
+                              className={cn(
+                                errors.departmentId && 'border-destructive focus:ring-destructive'
+                              )}
+                            >
+                              <div className="flex items-center gap-2">
+                                <Building2 className="h-4 w-4 text-muted-foreground" />
+                                <SelectValue placeholder="Select your department" />
+                              </div>
+                            </SelectTrigger>
+                            <SelectContent>
+                              {departments.length === 0 ? (
+                                <div className="px-2 py-4 text-center text-sm text-muted-foreground">
+                                  No departments available
                                 </div>
-                              </SelectItem>
-                            ))
-                          )}
-                        </SelectContent>
-                      </Select>
-                    )}
-                    {errors.departmentId && (
-                      <motion.p
-                        initial={{ opacity: 0, y: -5 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="text-sm text-destructive"
-                      >
-                        {errors.departmentId.message}
-                      </motion.p>
-                    )}
-                    {selectedDepartment?.description && (
-                      <p className="text-xs text-muted-foreground">
-                        {selectedDepartment.description}
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Course Year */}
-                  <div className="space-y-2">
-                    <Label htmlFor="courseYear" className="flex items-center gap-1">
-                      Course Year
-                      <span className="text-destructive">*</span>
-                    </Label>
-                    <Select
-                      value={watchedFields.courseYear}
-                      onValueChange={(value) =>
-                        setValue('courseYear', value as any, { shouldValidate: true })
-                      }
-                      disabled={isUpdating}
-                    >
-                      <SelectTrigger
-                        className={cn(
-                          errors.courseYear && 'border-destructive focus:ring-destructive'
+                              ) : (
+                                departments.map((dept) => (
+                                  <SelectItem key={dept.id} value={dept.id}>
+                                    <div className="flex items-center gap-2">
+                                      {dept.code && (
+                                        <span className="font-medium text-primary">{dept.code}</span>
+                                      )}
+                                      <span>{dept.name}</span>
+                                    </div>
+                                  </SelectItem>
+                                ))
+                              )}
+                            </SelectContent>
+                          </Select>
                         )}
-                      >
-                        <div className="flex items-center gap-2">
-                          <Calendar className="h-4 w-4 text-muted-foreground" />
-                          <SelectValue placeholder="Select your year" />
-                        </div>
-                      </SelectTrigger>
-                      <SelectContent>
-                        {COURSE_YEARS.map((year) => (
-                          <SelectItem key={year} value={year}>
-                            {year}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {errors.courseYear && (
-                      <motion.p
-                        initial={{ opacity: 0, y: -5 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="text-sm text-destructive"
-                      >
-                        {errors.courseYear.message}
-                      </motion.p>
-                    )}
-                  </div>
-                </div>
+                        {errors.departmentId && (
+                          <motion.p
+                            initial={{ opacity: 0, y: -5 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="text-sm text-destructive"
+                          >
+                            {errors.departmentId.message}
+                          </motion.p>
+                        )}
+                        {selectedDepartment?.description && (
+                          <p className="text-xs text-muted-foreground">
+                            {selectedDepartment.description}
+                          </p>
+                        )}
+                      </div>
 
-                {/* Number of Backlogs */}
-                <div className="space-y-2">
-                  <Label htmlFor="numberOfBacklogs">Number of Backlogs</Label>
-                  <div className="relative max-w-xs">
-                    <Input
-                      id="numberOfBacklogs"
-                      type="number"
-                      min="0"
-                      max="50"
-                      placeholder="0"
-                      {...register('numberOfBacklogs', { valueAsNumber: true })}
-                      disabled={isUpdating}
-                      className={cn(
-                        '[&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]',
-                        errors.numberOfBacklogs && 'border-destructive focus-visible:ring-destructive'
+                      {/* Course Year */}
+                      <div className="space-y-2">
+                        <Label htmlFor="courseYear" className="flex items-center gap-1">
+                          Course Year
+                          <span className="text-destructive">*</span>
+                        </Label>
+                        <Select
+                          value={watchedFields.courseYear}
+                          onValueChange={(value) =>
+                            setValue('courseYear', value as any, { shouldValidate: true })
+                          }
+                          disabled={isUpdating}
+                        >
+                          <SelectTrigger
+                            className={cn(
+                              errors.courseYear && 'border-destructive focus:ring-destructive'
+                            )}
+                          >
+                            <div className="flex items-center gap-2">
+                              <Calendar className="h-4 w-4 text-muted-foreground" />
+                              <SelectValue placeholder="Select your year" />
+                            </div>
+                          </SelectTrigger>
+                          <SelectContent>
+                            {COURSE_YEARS.map((year) => (
+                              <SelectItem key={year} value={year}>
+                                {year}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {errors.courseYear && (
+                          <motion.p
+                            initial={{ opacity: 0, y: -5 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="text-sm text-destructive"
+                          >
+                            {errors.courseYear.message}
+                          </motion.p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Number of Backlogs */}
+                    <div className="space-y-2">
+                      <Label htmlFor="numberOfBacklogs">Number of Backlogs</Label>
+                      <div className="relative max-w-xs">
+                        <Input
+                          id="numberOfBacklogs"
+                          type="number"
+                          min="0"
+                          max="50"
+                          placeholder="0"
+                          {...register('numberOfBacklogs', { valueAsNumber: true })}
+                          disabled={isUpdating}
+                          className={cn(
+                            '[&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]',
+                            errors.numberOfBacklogs && 'border-destructive focus-visible:ring-destructive'
+                          )}
+                        />
+                      </div>
+                      {errors.numberOfBacklogs && (
+                        <motion.p
+                          initial={{ opacity: 0, y: -5 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="text-sm text-destructive"
+                        >
+                          {errors.numberOfBacklogs.message}
+                        </motion.p>
                       )}
-                    />
+                      <p className="text-xs text-muted-foreground">
+                        Enter the total number of subjects you have backlogs in
+                      </p>
+                    </div>
+                  </>
+                ) : (
+                  /* ================= INDIVIDUAL USER VIEW ================= */
+                  <div className="grid grid-cols-1 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="collegeName" className="flex items-center gap-1">
+                        College / University Name
+                      </Label>
+                      <div className="relative">
+                        <School className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                        <Input
+                          id="collegeName"
+                          placeholder="e.g. Indian Institute of Technology, Bombay"
+                          {...register('collegeName')}
+                          disabled={isUpdating}
+                          className={cn(
+                            'pl-10',
+                            errors.collegeName && 'border-destructive focus-visible:ring-destructive'
+                          )}
+                        />
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Enter the name of the institute you are currently attending
+                      </p>
+                    </div>
                   </div>
-                  {errors.numberOfBacklogs && (
-                    <motion.p
-                      initial={{ opacity: 0, y: -5 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="text-sm text-destructive"
-                    >
-                      {errors.numberOfBacklogs.message}
-                    </motion.p>
-                  )}
-                  <p className="text-xs text-muted-foreground">
-                    Enter the total number of subjects you have backlogs in
-                  </p>
-                </div>
+                )}
               </motion.div>
             )}
 
-            {/* Step 3: Marks (Optional) */}
-            {(mode === 'edit' || currentStep === 2) && (
+            {/* Step 3: Marks (Optional) - ONLY FOR INSTITUTE STUDENTS */}
+            {isInstituteStudent && (mode === 'edit' || currentStep === 2) && (
               <motion.div
                 key="step-3"
                 initial={{ opacity: 0, x: 20 }}

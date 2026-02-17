@@ -24,6 +24,7 @@ import {
   PublishValidationResult,
 } from './mockdrive.types';
 import { ModuleResponse } from './modules';
+import { updateMockDriveStatuses } from '../../mock-drive/utils/status.utils';
 
 // ============================================
 // Custom Error Classes
@@ -65,7 +66,7 @@ export class MockDriveRaceConditionError extends MockDriveValidationError {
   ) {
     super(
       `Mock drive ${mockDriveId} status changed during operation. ` +
-        `Expected: ${expectedStatus}, Actual: ${actualStatus}. Please try again.`
+      `Expected: ${expectedStatus}, Actual: ${actualStatus}. Please try again.`
     );
     this.name = 'MockDriveRaceConditionError';
   }
@@ -254,6 +255,9 @@ export class MockDriveService {
   ): Promise<MockDriveDetails> {
     const startTime = Date.now();
 
+    // Auto-update statuses
+    await updateMockDriveStatuses(prisma);
+
     const mockDrive = await prisma.mockDrive.findUnique({
       where: { id: mockDriveId },
       include: this.getDetailedInclude(),
@@ -288,6 +292,10 @@ export class MockDriveService {
     query: ListMockDrivesQuery
   ): Promise<PaginatedResponse<MockDriveListItem>> {
     const startTime = Date.now();
+
+    // Auto-update statuses
+    await updateMockDriveStatuses(prisma);
+
     const {
       page = 1,
       limit = 10,
@@ -1198,8 +1206,8 @@ export class MockDriveService {
     if (invalidOrders.length > 0) {
       errors.push(
         'Module orders must be positive integers (found: ' +
-          invalidOrders.join(', ') +
-          ')'
+        invalidOrders.join(', ') +
+        ')'
       );
     }
 
@@ -1214,7 +1222,7 @@ export class MockDriveService {
     if (hasGaps && uniqueOrders.size === orders.length) {
       warnings.push(
         `Module orders have gaps (${sortedOrders.join(', ')}). ` +
-          `They will be automatically renumbered to ${expectedOrders.join(', ')} during publish.`
+        `They will be automatically renumbered to ${expectedOrders.join(', ')} during publish.`
       );
     }
 
@@ -1242,7 +1250,7 @@ export class MockDriveService {
 
         errors.push(
           `Module ${module.order} (${module.moduleType}): Insufficient questions. ` +
-            `Required: ${availability.required}, Available: ${availability.available} ${contextInfo}`
+          `Required: ${availability.required}, Available: ${availability.available} ${contextInfo}`
         );
       }
     }
@@ -1506,22 +1514,22 @@ export class MockDriveService {
     const eligibilityCriteria: EligibilityCriteriaResponse | null =
       mockDrive.eligibilityCriteria
         ? {
-            id: mockDrive.eligibilityCriteria.id,
-            minCgpa: mockDrive.eligibilityCriteria.minCgpa,
-            maxCgpa: mockDrive.eligibilityCriteria.maxCgpa,
-            minMarks10: mockDrive.eligibilityCriteria.minMarks10,
-            minMarks12: mockDrive.eligibilityCriteria.minMarks12,
-            allowedDepartmentIds:
-              mockDrive.eligibilityCriteria.allowedDepartmentIds,
-            allowedCourseYears:
-              mockDrive.eligibilityCriteria.allowedCourseYears,
-            requiredSkills: mockDrive.eligibilityCriteria.requiredSkills,
-            maxBacklogs: mockDrive.eligibilityCriteria.maxBacklogs,
-            customRules: mockDrive.eligibilityCriteria.customRules as Record<
-              string,
-              unknown
-            > | null,
-          }
+          id: mockDrive.eligibilityCriteria.id,
+          minCgpa: mockDrive.eligibilityCriteria.minCgpa,
+          maxCgpa: mockDrive.eligibilityCriteria.maxCgpa,
+          minMarks10: mockDrive.eligibilityCriteria.minMarks10,
+          minMarks12: mockDrive.eligibilityCriteria.minMarks12,
+          allowedDepartmentIds:
+            mockDrive.eligibilityCriteria.allowedDepartmentIds,
+          allowedCourseYears:
+            mockDrive.eligibilityCriteria.allowedCourseYears,
+          requiredSkills: mockDrive.eligibilityCriteria.requiredSkills,
+          maxBacklogs: mockDrive.eligibilityCriteria.maxBacklogs,
+          customRules: mockDrive.eligibilityCriteria.customRules as Record<
+            string,
+            unknown
+          > | null,
+        }
         : null;
 
     const modules: ModuleResponse[] = mockDrive.modules.map((m) => ({

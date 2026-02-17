@@ -117,6 +117,58 @@ export class AttemptService {
     };
   }
 
+  async submitAttempt(userId: string, driveId: string): Promise<void> {
+    // 1. Check if user found registration
+    const registration = await this.prisma.mockDriveRegistration.findUnique({
+      where: {
+        mockDriveId_userId: { mockDriveId: driveId, userId },
+      },
+    });
+
+    if (!registration) {
+      throw new AppError('REGISTRATION_NOT_FOUND', 'User is not registered for this drive', 404);
+    }
+
+    // 2. Fetch the attempt directly
+    const attempt = await this.prisma.mockDriveAttempt.findFirst({
+      where: {
+        mockDriveId: driveId,
+        userId: userId,
+      },
+    });
+
+    if (!attempt) {
+      throw new AppError('ATTEMPT_NOT_FOUND', 'No active attempt found', 404);
+    }
+
+    if (attempt.status === 'COMPLETED') {
+      return;
+    }
+
+    // Auto-submit all in-progress modules
+    const inProgressModules = await this.prisma.mockDriveModuleAttempt.findMany({
+      where: {
+        attemptId: attempt.id,
+        status: 'IN_PROGRESS',
+      },
+    });
+
+    for (const moduleAttempt of inProgressModules) {
+      // We can reuse cancel/submit logic here, or just force complete
+      // For now, let's just mark them completed
+      await this.prisma.mockDriveModuleAttempt.update({
+        where: { id: moduleAttempt.id },
+        data: {
+          status: 'COMPLETED',
+          completedAt: new Date(),
+        },
+      });
+    }
+
+    // Complete the attempt
+    await this.updateAttemptStatus(attempt.id, 'COMPLETED');
+  }
+
   async startModule(
     userId: string,
     driveId: string,
@@ -670,6 +722,19 @@ export class AttemptService {
         })
       )
     );
+  }
+
+  private async updateAttemptStatus(
+    attemptId: string,
+    status: MockDriveAttemptStatus
+  ): Promise<void> {
+    await this.prisma.mockDriveAttempt.update({
+      where: { id: attemptId },
+      data: {
+        status,
+        ...(status === 'COMPLETED' ? { completedAt: new Date() } : {}),
+      },
+    });
   }
 
   // ============================================

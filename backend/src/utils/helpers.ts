@@ -37,3 +37,13 @@ export const calculateAccuracy = (correct: number, attempted: number): number =>
   if (attempted === 0) return 0;
   return Math.round((correct / attempted) * 100 * 100) / 100;
 };
+
+export const generateSlug = (text: string): string => {
+  return text
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, '') // Remove special characters
+    .replace(/\s+/g, '-') // Replace spaces with hyphens
+    .replace(/-+/g, '-') // Replace multiple hyphens with single hyphen
+    .replace(/^-+|-+$/g, ''); // Remove leading/trailing hyphens
+};

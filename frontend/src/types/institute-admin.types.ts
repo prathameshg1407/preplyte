@@ -47,3 +47,21 @@ export interface InstituteDashboardStats {
   completedDrives: number;
   upcomingDrives: number;
 }
+
+
+//Student Profile
+
+export interface Student {
+  isActive: boolean;
+  id: string;
+  name: string;
+  email: string;
+  studentId: string;
+  departmentId: string | null;
+  courseYear: string | null;
+  numberOfBacklogs: number | null;
+  averageCgpa: number | null;
+  marks10: number | null;
+  marks12: number | null;
+  skills: string[];
+}

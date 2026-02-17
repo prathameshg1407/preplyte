@@ -34,14 +34,21 @@ const initialState: AuthState = {
 
 const syncTokensToStorage = (
   accessToken: string | null, 
-  refreshToken: string | null
+  refreshToken: string | null,
+  broadcastUpdate: boolean = false
 ): void => {
   if (typeof window === 'undefined') return;
 
   if (accessToken && refreshToken) {
     storage.set(AUTH_STORAGE_KEYS.ACCESS_TOKEN, accessToken);
     storage.set(AUTH_STORAGE_KEYS.REFRESH_TOKEN, refreshToken);
-    logger.debug('[AuthStore] Tokens synced to storage');
+    
+    // Broadcast to other tabs if requested
+    if (broadcastUpdate) {
+      window.localStorage.setItem('token-updated', Date.now().toString());
+    }
+    
+    logger.debug('[AuthStore] Tokens synced to storage', { broadcastUpdate });
   } else {
     clearAuthStorage();
     logger.debug('[AuthStore] Storage cleared');
@@ -75,7 +82,7 @@ export const useAuthStore = create<AuthStore>()(
 
       updateTokens: (accessToken, refreshToken) => {
         logger.debug('[AuthStore] updateTokens called');
-        syncTokensToStorage(accessToken, refreshToken);
+        syncTokensToStorage(accessToken, refreshToken, true); // Broadcast to other tabs
         
         set({
           accessToken,

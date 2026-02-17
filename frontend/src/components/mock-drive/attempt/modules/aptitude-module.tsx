@@ -173,10 +173,7 @@ export const AptitudeModule: FC<AptitudeModuleProps> = ({
 
             {/* Question Text */}
             <div className="mb-6">
-              <p className="text-lg">
-                {/* In real app, fetch question text from API */}
-                Sample question text for question {currentQuestion.questionId}
-              </p>
+              <p className="text-lg whitespace-pre-wrap">{currentQuestion.content}</p>
             </div>
 
             {/* Options */}
@@ -185,19 +182,20 @@ export const AptitudeModule: FC<AptitudeModuleProps> = ({
               onValueChange={handleAnswer}
               className="space-y-3"
             >
-              {['A', 'B', 'C', 'D'].map((opt, idx) => (
+              {currentQuestion.options.map((opt, idx) => (
                 <div
-                  key={idx}
+                  key={opt.id}
+                  onClick={() => handleAnswer(opt.id)}
                   className={cn(
                     'flex items-center space-x-3 p-4 rounded-lg border cursor-pointer transition-colors',
-                    currentQuestion.selectedOptionId === `option_${idx}`
+                    currentQuestion.selectedOptionId === opt.id
                       ? 'border-primary bg-primary/5'
                       : 'hover:border-primary/50'
                   )}
                 >
-                  <RadioGroupItem value={`option_${idx}`} id={`option_${idx}`} />
-                  <Label htmlFor={`option_${idx}`} className="flex-1 cursor-pointer">
-                    Option {opt}: Sample option text
+                  <RadioGroupItem value={opt.id} id={opt.id} />
+                  <Label htmlFor={opt.id} className="flex-1 cursor-pointer">
+                    {opt.content}
                   </Label>
                 </div>
               ))}
