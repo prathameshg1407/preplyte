@@ -1,6 +1,7 @@
 // src/lib/hooks/mock-drive/use-attempt.ts
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useRouter } from 'next/navigation';
 import { attemptService } from '@/lib/api/services/mock-drive/attempt.service';
 import { toast } from 'sonner';
 import {
@@ -70,6 +71,24 @@ export function useStartAttempt() {
     },
     onError: (error: any) => {
       const message = error.response?.data?.message || 'Failed to start mock drive';
+      toast.error(message);
+    },
+  });
+}
+
+export function useSubmitAttempt() {
+  const queryClient = useQueryClient();
+  const router = useRouter();
+
+  return useMutation({
+    mutationFn: (driveId: string) => attemptService.submitAttempt(driveId),
+    onSuccess: (data: any, driveId) => {
+      queryClient.invalidateQueries({ queryKey: attemptKeys.state(driveId) });
+      toast.success('Mock drive submitted successfully!');
+      router.push(`/mock-drive/${driveId}/result`);
+    },
+    onError: (error: any) => {
+      const message = error.response?.data?.message || 'Failed to submit mock drive';
       toast.error(message);
     },
   });
@@ -212,6 +231,8 @@ export function useMachineRun() {
   });
 }
 
+
+
 export function useMachineSubmit() {
   const queryClient = useQueryClient();
 
@@ -278,7 +299,6 @@ export function useInterviewSkip() {
     }) => attemptService.skipInterviewQuestion(driveId, moduleId, payload),
     onSuccess: (data: ModuleActionResponse, { driveId }) => {
       queryClient.invalidateQueries({ queryKey: attemptKeys.state(driveId) });
-      toast.info('Question skipped');
     },
     onError: (error: any) => {
       const message = error.response?.data?.message || 'Failed to skip question';
@@ -286,6 +306,25 @@ export function useInterviewSkip() {
     },
   });
 }
+
+export function useGetInterviewAudioQuestion() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      driveId,
+      moduleId,
+    }: {
+      driveId: string;
+      moduleId: string;
+    }) => attemptService.getInterviewAudioQuestion(driveId, moduleId),
+    onError: (error: any) => {
+      const message = error.response?.data?.message || 'Failed to get audio question';
+      toast.error(message);
+    },
+  });
+}
+
 
 export function useInterviewNextQuestion() {
   const queryClient = useQueryClient();

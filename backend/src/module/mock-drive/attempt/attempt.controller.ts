@@ -34,7 +34,7 @@ type TypedRequest<
 // ============================================
 
 export class AttemptController {
-  constructor(private readonly service: AttemptService) {}
+  constructor(private readonly service: AttemptService) { }
 
   // ============================================
   // Attempt Lifecycle
@@ -73,6 +73,23 @@ export class AttemptController {
       const result = await this.service.startAttempt(userId, driveId);
 
       sendSuccess(res, result, 'Attempt started successfully', 201);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  submitAttempt = async (
+    req: TypedRequest<MockDriveIdInput['params']>,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const userId = req.user!.id;
+      const { driveId } = req.params;
+
+      await this.service.submitAttempt(userId, driveId);
+
+      sendSuccess(res, null, 'Attempt submitted successfully');
     } catch (error) {
       next(error);
     }
