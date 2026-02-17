@@ -161,7 +161,8 @@ export function CourseForm({ initialData, onSubmit, isLoading }: CourseFormProps
                 title: 'Final Examination',
                 totalQuestions: 10,
                 passingScore: 60,
-                timeLimitMinutes: 30
+                timeLimitMinutes: 30,
+                questions: []
             }
         },
     });
@@ -200,7 +201,8 @@ export function CourseForm({ initialData, onSubmit, isLoading }: CourseFormProps
                     title: 'Final Examination',
                     totalQuestions: 10,
                     passingScore: 60,
-                    timeLimitMinutes: 30
+                    timeLimitMinutes: 30,
+                    questions: []
                 }
             });
         }

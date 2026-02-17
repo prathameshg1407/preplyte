@@ -4,6 +4,7 @@ import { AppError } from '../../../../utils/errors';
 
 export class CourseService {
     async create(input: CreateCourseDto) {
+        console.log('Creating course with finalTest:', JSON.stringify(input.finalTest, null, 2));
         const { modules, finalTest, ...data } = input;
 
         const existing = await prisma.lmsCourse.findUnique({ where: { slug: data.slug } });
@@ -301,6 +302,7 @@ export class CourseService {
 
     async update(id: string, input: UpdateCourseDto) {
         const course = await this.findOne(id);
+        console.log('Updating course:', id, 'finalTest input:', JSON.stringify(input.finalTest, null, 2));
 
         const { modules, finalTest, ...data } = input;
 
