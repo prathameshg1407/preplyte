@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 // Public routes (Unauthenticated users allowed)
-const PUBLIC_ROUTES = ['/', '/login', '/register', '/forgot-password'];
+// Updated to include OAuth callback route
+const PUBLIC_ROUTES = ['/', '/login', '/register', '/forgot-password', '/callback'];
 
 // Landing pages per role
 const ROLE_REDIRECT: Record<string, string> = {
@@ -13,6 +14,11 @@ const ROLE_REDIRECT: Record<string, string> = {
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // Allow OAuth callback route without authentication
+  if (pathname === '/callback') {
+    return NextResponse.next();
+  }
 
   const hasSession = request.cookies.get('has_session')?.value === 'true';
   const role = request.cookies.get('role')?.value as keyof typeof ROLE_REDIRECT | undefined;

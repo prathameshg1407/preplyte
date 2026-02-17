@@ -271,7 +271,7 @@ async refreshToken(token: string) {
       tokenVersion: user.tokenVersion,
     });
 
-    // Rotate refresh token - revoke old one and create new one
+    // Rotate refresh token - revoke old one and create new one atomically
     await prisma.$transaction([
       prisma.refreshToken.update({
         where: { id: storedToken.id },

@@ -7,6 +7,7 @@ import morgan from 'morgan';
 import compression from 'compression';
 import cookieParser from 'cookie-parser';
 import { rateLimit, RateLimitRequestHandler } from 'express-rate-limit';
+import { passport } from './module/auth/google-oauth.service';
 
 // Route Imports
 import { authRoutes } from './module/auth/auth.routes';
@@ -17,6 +18,7 @@ import { mockDriveRoutes } from './module/instituteadmin/mock-drive';
 import { departmentRoutes } from './module/instituteadmin/department';
 import { createMockDriveRoutes } from './module/mock-drive';
 import { dashboardRoutes } from './module/dashboard';
+import resumeRoutes from './module/resume-builder/resume.routes';
 
 // Middleware & Utils
 import { errorHandler, notFoundHandler } from './middleware/error.middleware';
@@ -157,6 +159,9 @@ app.use(express.json({ limit: config.bodyLimit }));
 app.use(express.urlencoded({ extended: true, limit: config.bodyLimit }));
 app.use(cookieParser(process.env.COOKIE_SECRET));
 
+// Initialize Passport
+app.use(passport.initialize());
+
 // =====================================================
 // 5. RATE LIMITERS
 // =====================================================
@@ -244,6 +249,12 @@ const mockDriveLimiter = createRateLimiter(
   config.rateLimits.mockDrive.windowMs,
   config.rateLimits.mockDrive.max,
   'Too many mock drive requests. Please try again later.'
+);
+
+const resumeBuilderLimiter = createRateLimiter(
+  15 * 60 * 1000, // 15 minutes
+  100, // 100 requests per 15 minutes
+  'Too many resume builder requests. Please try again later.'
 );
 
 // Apply general limiter to all API routes
@@ -347,6 +358,8 @@ app.use('/api/lms', lmsRoutes);
 app.use('/api/admin/lms', lmsAdminRoutes); // Add this
 
 
+// Resume Builder
+app.use('/api/resume-builder', resumeBuilderLimiter, resumeRoutes);
 
 // =====================================================
 // 8. ERROR HANDLING

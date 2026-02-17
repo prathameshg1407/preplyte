@@ -1,4 +1,7 @@
-// prisma/seed.ts
+import { PrismaClient } from '@prisma/client';
+import { seedLmsData } from './seeds/lms-seed';
+import { seedResumeTemplates } from '../src/module/resume-builder/seeds/templates.seed';
+import { seedAllData } from './seeds/comprehensive-seed';
 
 import {
   PrismaClient,
@@ -11,52 +14,19 @@ import bcrypt from 'bcryptjs';
 import { promises as fs } from 'fs';
 import path from 'path';
 
-// Create a dedicated Prisma client for seeding
-const prisma = new PrismaClient({
-  log: ['error', 'warn'],
-});
+async function main() {
+  console.log('Starting database seeding...\n');
 
-// Type definitions for aptitude questions JSON
-interface AptitudeOptionData {
-  id: string;
-  text: string;
-}
+  // Seed all data from JSON files
+  await seedAllData();
+  
+  // Seed LMS data
+  await seedLmsData();
+  
+  // Seed resume templates
+  await seedResumeTemplates(prisma);
 
-interface AptitudeQuestionData {
-  questionText: string;
-  questionType: 'QUANTITATIVE' | 'VERBAL' | 'LOGICAL';
-  difficulty: 'EASY' | 'MEDIUM' | 'HARD';
-  explanation?: string;
-  correctOptionId: string;
-  options: AptitudeOptionData[];
-}
-
-// Type definitions for machine questions JSON
-interface TestCaseData {
-  input: string;
-  expectedOutput: string;
-  type: 'SAMPLE' | 'HIDDEN';
-  order?: number;
-}
-
-interface MachineQuestionData {
-  title: string;
-  description: string;
-  difficulty: 'EASY' | 'MEDIUM' | 'HARD';
-  inputFormat: string;
-  outputFormat: string;
-  constraints: string[];
-  tags: string[];
-  testCases: TestCaseData[];
-}
-
-// Type definitions for programming languages JSON
-interface ProgrammingLanguageData {
-  name: string;
-  monacoId: string;
-  judge0Id: number;
-  template: string;
-  isActive?: boolean;
+  console.log('\n✅ All database seeding completed!');
 }
 
 async function seed() {

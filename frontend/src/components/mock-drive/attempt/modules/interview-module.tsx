@@ -3,7 +3,7 @@
 'use client';
 
 import { FC, useState, useEffect, useRef } from 'react';
-import { Send, SkipForward, Check, Loader2, User, Bot } from 'lucide-react';
+import { Square, Send, SkipForward, Check, Loader2, User, Bot } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -18,8 +18,10 @@ import {
   InterviewRespondPayload,
   InterviewSkipPayload,
 } from '@/types/mockdrive.types';
-import { useInterviewRespond, useInterviewSkip } from '@/lib/hooks/mock-drive/use-attempt';
+import { useInterviewRespond, useInterviewSkip, useGetInterviewAudioQuestion } from '@/lib/hooks/mock-drive/use-attempt';
 import { useAttemptStore } from '@/lib/store/mock-drive/attempt-store';
+import { useAudioRecorder } from '@/lib/hooks/use-audio-recorder';
+import { useAudioPlayer } from '@/lib/hooks/use-audio-player';
 
 interface InterviewModuleProps {
   driveId: string;
@@ -44,12 +46,35 @@ export const InterviewModule: FC<InterviewModuleProps> = ({
   const [answer, setAnswer] = useState('');
   const [answerStartTime, setAnswerStartTime] = useState<number>(Date.now());
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const scrollViewportRef = useRef<HTMLDivElement>(null); // Ref for the viewport inside ScrollArea
 
   const { localModuleData, updateLocalModuleData } = useAttemptStore();
   const localData = localModuleData as AiInterviewModuleData | null;
 
   const respondMutation = useInterviewRespond();
   const skipMutation = useInterviewSkip();
+
+  // Audio Hooks
+  const getAudioMutation = useGetInterviewAudioQuestion();
+  const audioChunks = useRef<ArrayBuffer[]>([]);
+
+  const {
+    isRecording,
+    startRecording,
+    stopRecording,
+    volume,
+  } = useAudioRecorder({
+    onAudioData: (data) => {
+      audioChunks.current.push(data);
+    },
+  });
+
+  const {
+    isPlaying: isAudioPlaying,
+    queueAudio,
+    playAccumulated,
+    stop: stopAudio,
+  } = useAudioPlayer();
 
   useEffect(() => {
     if (interviewData && !localData) {
@@ -61,13 +86,23 @@ export const InterviewModule: FC<InterviewModuleProps> = ({
   const responses = localData?.responses || interviewData?.responses || [];
   const targetQuestions = interviewConfig.targetQuestions;
   const questionsAnswered = responses.length;
+  // Determine if complete: when the number of responses meets the target
   const isComplete = questionsAnswered >= targetQuestions;
 
+  // Auto-scroll to bottom when conversation updates
+  const scrollToBottom = () => {
+    // Small timeout to allow DOM to update
+    setTimeout(() => {
+      const scrollableNode = scrollAreaRef.current?.querySelector('[data-radix-scroll-area-viewport]');
+      if (scrollableNode) {
+        scrollableNode.scrollTop = scrollableNode.scrollHeight;
+      }
+    }, 100);
+  };
+
   useEffect(() => {
-    if (scrollAreaRef.current) {
-      scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
-    }
-  }, [conversation]);
+    scrollToBottom();
+  }, [conversation.length, respondMutation.isPending, skipMutation.isPending]);
 
   useEffect(() => {
     setAnswerStartTime(Date.now());
@@ -121,6 +156,107 @@ export const InterviewModule: FC<InterviewModuleProps> = ({
     );
   };
 
+  // ============================================
+  // Audio Handling
+  // ============================================
+
+  const handleStartRecording = async () => {
+    audioChunks.current = [];
+    await startRecording();
+  };
+
+  const handleStopRecording = () => {
+    stopRecording();
+
+    // Small delay to ensure all chunks are captured
+    setTimeout(() => {
+      const chunks = audioChunks.current;
+      if (chunks.length === 0) return;
+
+      const totalLength = chunks.reduce((acc, chunk) => acc + chunk.byteLength, 0);
+      const result = new Uint8Array(totalLength);
+      let offset = 0;
+      for (const chunk of chunks) {
+        result.set(new Uint8Array(chunk), offset);
+        offset += chunk.byteLength;
+      }
+
+      const buffer = result.buffer;
+      const bytes = new Uint8Array(buffer);
+      let binary = '';
+      for (let i = 0; i < bytes.byteLength; i++) {
+        binary += String.fromCharCode(bytes[i]);
+      }
+      const base64Audio = window.btoa(binary);
+
+      const timeTaken = Math.floor((Date.now() - answerStartTime) / 1000);
+
+      const payload: InterviewRespondPayload = {
+        answer: '[AUDIO_RESPONSE]',
+        audioBuffer: base64Audio,
+        timeTaken,
+      };
+
+      respondMutation.mutate(
+        {
+          driveId,
+          moduleId,
+          payload,
+        },
+        {
+          onSuccess: (response) => {
+            if (response.updatedData) {
+              updateLocalModuleData(response.updatedData);
+            }
+            setAnswer('');
+          },
+        }
+      );
+    }, 200);
+  };
+
+  const handlePlayQuestion = () => {
+    getAudioMutation.mutate(
+      { driveId, moduleId },
+      {
+        onSuccess: (response) => {
+          if (response.updatedData && (response.updatedData as any).pendingTranscription) {
+            updateLocalModuleData(response.updatedData);
+          }
+        }
+      }
+    );
+  };
+
+  useEffect(() => {
+    const pending = localData?.pendingTranscription;
+    if (pending && pending.startsWith('AUDIO:')) {
+      const base64 = pending.substring(6);
+      try {
+        const binaryString = window.atob(base64);
+        const len = binaryString.length;
+        const bytes = new Uint8Array(len);
+        for (let i = 0; i < len; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+
+        queueAudio(bytes.buffer);
+        playAccumulated();
+
+        if (localData) {
+          const newData = { ...localData, pendingTranscription: undefined };
+          updateLocalModuleData(newData);
+        }
+
+      } catch (e) {
+        console.error("Failed to decode audio", e);
+      }
+    }
+  }, [localData?.pendingTranscription, queueAudio, playAccumulated, updateLocalModuleData, localData]);
+
+  // Prevent accidental submission while AI is "thinking"
+  const isInteractionDisabled = respondMutation.isPending || skipMutation.isPending || isSubmitting || isAudioPlaying;
+
   return (
     <div className="max-w-4xl mx-auto space-y-4">
       {/* Header */}
@@ -150,9 +286,9 @@ export const InterviewModule: FC<InterviewModuleProps> = ({
 
       {/* Conversation */}
       <Card className="h-[500px] flex flex-col">
-        <CardContent className="flex-1 p-0 overflow-hidden">
+        <CardContent className="flex-1 p-0 overflow-hidden relative">
           <ScrollArea className="h-full p-4" ref={scrollAreaRef}>
-            <div className="space-y-4">
+            <div className="space-y-4 pb-4">
               {conversation.map((message) => (
                 <div
                   key={message.id}
@@ -198,13 +334,19 @@ export const InterviewModule: FC<InterviewModuleProps> = ({
                 </div>
               ))}
 
+              {/* Typing Indicator */}
               {(respondMutation.isPending || skipMutation.isPending) && (
                 <div className="flex gap-3">
-                  <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center animate-pulse">
                     <Bot className="h-4 w-4" />
                   </div>
-                  <div className="bg-muted rounded-lg p-4">
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                  <div className="bg-muted rounded-lg p-4 flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">AI is thinking</span>
+                    <span className="flex gap-1">
+                      <span className="w-1.5 h-1.5 bg-muted-foreground/50 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
+                      <span className="w-1.5 h-1.5 bg-muted-foreground/50 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
+                      <span className="w-1.5 h-1.5 bg-muted-foreground/50 rounded-full animate-bounce"></span>
+                    </span>
                   </div>
                 </div>
               )}
@@ -213,46 +355,47 @@ export const InterviewModule: FC<InterviewModuleProps> = ({
         </CardContent>
 
         {!isComplete && (
-          <div className="p-4 border-t">
-            <div className="flex gap-2">
-              <Textarea
-                value={answer}
-                onChange={(e) => setAnswer(e.target.value)}
-                placeholder="Type your answer here..."
-                className="min-h-[80px] resize-none"
-                disabled={respondMutation.isPending || skipMutation.isPending}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && e.ctrlKey) {
-                    handleSubmitAnswer();
-                  }
-                }}
-              />
+          <div className="p-6 border-t flex flex-col items-center gap-6">
+            <div className="text-center space-y-2">
+              <h3 className="font-medium text-lg">
+                {isRecording ? "Listening..." : "Tap to Speak"}
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                {isRecording ? "Speak your answer clearly" : "Your answer will be recorded and analyzed"}
+              </p>
             </div>
-            <div className="flex justify-between items-center mt-2">
-              <p className="text-xs text-muted-foreground">Press Ctrl+Enter to submit</p>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleSkip}
-                  disabled={respondMutation.isPending || skipMutation.isPending}
-                >
-                  <SkipForward className="h-4 w-4 mr-1" />
-                  Skip
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={handleSubmitAnswer}
-                  disabled={!answer.trim() || respondMutation.isPending || skipMutation.isPending}
-                >
-                  {respondMutation.isPending ? (
-                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                  ) : (
-                    <Send className="h-4 w-4 mr-1" />
-                  )}
-                  Submit Answer
-                </Button>
-              </div>
+
+            <div className="relative">
+              {isRecording && (
+                <span className="absolute inset-0 rounded-full animate-ping bg-red-400 opacity-75" />
+              )}
+              <Button
+                variant={isRecording ? "destructive" : "default"}
+                size="icon"
+                className={cn(
+                  "h-20 w-20 rounded-full shadow-lg transition-all transform hover:scale-105",
+                  isRecording ? "bg-red-500 hover:bg-red-600" : "bg-primary hover:bg-primary/90"
+                )}
+                onClick={isRecording ? handleStopRecording : handleStartRecording}
+                disabled={isInteractionDisabled && !isRecording}
+              >
+                {isRecording ? (
+                  <Square className="h-8 w-8 text-white" />
+                ) : (
+                  <span className="text-4xl">🎤</span>
+                )}
+              </Button>
+            </div>
+
+            <div className="flex gap-4">
+              <Button
+                variant="ghost"
+                onClick={handleSkip}
+                disabled={isInteractionDisabled}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                Skip Question
+              </Button>
             </div>
           </div>
         )}
@@ -260,7 +403,7 @@ export const InterviewModule: FC<InterviewModuleProps> = ({
 
       {/* Submit Module */}
       <div className="flex justify-end">
-        <Button onClick={onSubmit} disabled={isSubmitting} size="lg">
+        <Button onClick={onSubmit} disabled={isSubmitting || respondMutation.isPending} size="lg">
           {isSubmitting ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />

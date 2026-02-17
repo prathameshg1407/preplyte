@@ -30,7 +30,8 @@ export const useProfile = () => {
     fetchDepartments,
     createStudentProfile,
     fetchStudentProfile,
-    updateStudentProfile,
+    // renamed internal update function to wrap it
+    updateStudentProfile: _updateStudentProfile,
     deleteStudentProfile,
     addSkills,
     removeSkills,
@@ -88,6 +89,18 @@ export const useProfile = () => {
     }
   }, [_profileFetched, isLoading, fetchCompleteProfile]);
 
+  // FIX: Wrap update to force data refresh
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const handleUpdateStudentProfile = useCallback(async (data: any) => {
+    try {
+        await _updateStudentProfile(data);
+        // Force refresh to ensure UI is in sync immediately
+        await fetchStudentProfile(); 
+    } catch (err) {
+        throw err;
+    }
+  }, [_updateStudentProfile, fetchStudentProfile]);
+
   return {
     // Data
     userProfile,
@@ -122,7 +135,7 @@ export const useProfile = () => {
     // Student profile actions
     createStudentProfile,
     fetchStudentProfile,
-    updateStudentProfile,
+    updateStudentProfile: handleUpdateStudentProfile, // Use wrapper
     deleteStudentProfile,
 
     // Skills actions

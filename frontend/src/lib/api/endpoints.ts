@@ -42,6 +42,7 @@ export const API_ENDPOINTS = {
     COMPLETE: '/api/profile',
     USER: '/api/profile/user',
     STUDENT: '/api/profile/student',
+    PICTURE: '/api/profile/picture',
     STUDENT_SKILLS: '/api/profile/student/skills',
     STUDENT_ACADEMICS: '/api/profile/student/academics',
     DEPARTMENTS: '/api/profile/departments',
@@ -205,7 +206,8 @@ export const API_ENDPOINTS = {
 
     // Attempt Management
     ATTEMPT: (id: string) => `/api/mock-drives/${id}/attempt` as const,
-    START: (id: string) => `/api/mock-drives/${id}/attempt/start` as const,
+    START: (id: string) => `/api/mock-drives/${id}/start` as const,
+    SUBMIT_ATTEMPT: (id: string) => `/api/mock-drives/${id}/submit` as const,
 
     // Module Operations
     MODULE: (driveId: string, moduleId: string) =>
@@ -543,4 +545,20 @@ export const LMS_ENDPOINTS = {
 
   // Stats
   STATS: '/api/lms/stats',
+};
+
+// ============================================
+// Resume Builder
+// ============================================
+export const RESUME_BUILDER_ENDPOINTS = {
+  // Templates
+  TEMPLATES: '/api/resume-builder/templates',
+  TEMPLATE: (id: string) => `/api/resume-builder/templates/${id}` as const,
+
+  // Resumes
+  RESUMES: '/api/resume-builder',
+  RESUME: (id: string) => `/api/resume-builder/${id}` as const,
+
+  // ATS Checker
+  ATS_CHECK: '/api/resume-builder/ats-check',
 };

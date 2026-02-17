@@ -4,7 +4,7 @@
 
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { format } from 'date-fns';
+import { format, isBefore, parseISO } from 'date-fns';
 import {
   Calendar,
   Clock,
@@ -64,11 +64,19 @@ export default function MockDriveDetailPage() {
   }
 
   const statusConfig = MOCKDRIVE_STATUS_CONFIG[drive.status];
+
+  // Check if batch time has started
+  const now = new Date();
+  const batchStarted = drive.batchInfo
+    ? isBefore(parseISO(drive.batchInfo.scheduledStartTime), now)
+    : false;
+
   const canStart =
     drive.isRegistered &&
     drive.registrationStatus === 'APPROVED' &&
     drive.batchInfo &&
-    drive.status === 'IN_PROGRESS';
+    drive.status === 'IN_PROGRESS' &&
+    batchStarted;
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -282,13 +290,29 @@ export default function MockDriveDetailPage() {
               />
 
               {/* Start Button */}
-              {canStart && (
-                <Link href={`/mock-drive/${driveId}/attempt`} className="block">
-                  <Button className="w-full" size="lg">
-                    <PlayCircle className="mr-2 h-4 w-4" />
-                    Start Mock Drive
-                  </Button>
-                </Link>
+              {drive.isRegistered && drive.registrationStatus === 'APPROVED' && drive.batchInfo && (
+                <div className="space-y-2">
+                  {canStart ? (
+                    <Link href={`/mock-drive/${driveId}/attempt`} className="block">
+                      <Button className="w-full" size="lg">
+                        <PlayCircle className="mr-2 h-4 w-4" />
+                        Start Mock Drive
+                      </Button>
+                    </Link>
+                  ) : (
+                    <Button className="w-full" size="lg" disabled>
+                      <Clock className="mr-2 h-4 w-4" />
+                      {!batchStarted
+                        ? 'Starts at ' + format(new Date(drive.batchInfo.scheduledStartTime), 'h:mm a')
+                        : 'Drive Not Active'}
+                    </Button>
+                  )}
+                  {!batchStarted && (
+                    <p className="text-xs text-center text-muted-foreground">
+                      Please wait for your batch start time.
+                    </p>
+                  )}
+                </div>
               )}
             </CardContent>
           </Card>

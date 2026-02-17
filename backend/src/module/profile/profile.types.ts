@@ -29,6 +29,7 @@ export interface ResumeResponse {
   fileSize: number | null;
   mimeType: string | null;
   isDefault: boolean;
+  linkedResumeId: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -59,10 +60,14 @@ export interface StudentProfileResponse {
   userId: string;
   fullName: string;
   studentId: string;
-  departmentId: string;
-  departmentName: string;
+  
+  // FIX: Allow nulls for Individual Users
+  departmentId: string | null;
+  departmentName: string | null;
   departmentCode: string | null;
-  courseYear: string;
+  courseYear: string | null;
+  collegeName: string | null; // Added field for Individual Users
+
   numberOfBacklogs: number;
   skills: string[];
   marks10: number | null;
@@ -78,8 +83,12 @@ export interface StudentProfileResponse {
 export interface CreateStudentProfileInput {
   fullName: string;
   studentId: string;
-  departmentId: string;
-  courseYear: string;
+  
+  // FIX: Optional for Individual Users
+  departmentId?: string;
+  courseYear?: string;
+  collegeName?: string; 
+
   numberOfBacklogs?: number;
   skills?: string[];
   marks10?: number;
@@ -91,6 +100,7 @@ export interface UpdateStudentProfileInput {
   fullName?: string;
   departmentId?: string;
   courseYear?: string;
+  collegeName?: string;
   numberOfBacklogs?: number;
   skills?: string[];
   marks10?: number;
@@ -110,6 +120,7 @@ export interface UserProfileResponse {
   isActive: boolean;
   instituteId: string | null;
   instituteName: string | null;
+  profilePictureUrl: string | null; // Added field
   createdAt: Date;
   lastLoginAt: Date | null;
   studentProfile: StudentProfileResponse | null;
@@ -143,8 +154,9 @@ export interface ProfileCompletionStatus {
 // EXTENDED PRISMA TYPES
 // =====================================================
 
+// FIX: Define department as nullable
 type StudentProfileWithDepartment = StudentProfile & {
-  department: Department;
+  department: Department | null;
 };
 
 // =====================================================
@@ -165,6 +177,7 @@ export const mapResumeToResponse = (resume: Resume): ResumeResponse => ({
   fileSize: resume.fileSize,
   mimeType: resume.mimeType,
   isDefault: resume.isDefault,
+  linkedResumeId: resume.linkedResumeId || null,
   createdAt: resume.createdAt,
   updatedAt: resume.updatedAt,
 });
@@ -176,10 +189,15 @@ export const mapStudentProfileToResponse = (
   userId: profile.userId,
   fullName: profile.fullName,
   studentId: profile.studentId,
+  
   departmentId: profile.departmentId,
-  departmentName: profile.department.name,
-  departmentCode: profile.department.code,
+  // FIX: Safe access for nullable department
+  departmentName: profile.department?.name || null,
+  departmentCode: profile.department?.code || null,
+  
   courseYear: profile.courseYear,
+  collegeName: profile.collegeName,
+  
   numberOfBacklogs: profile.numberOfBacklogs,
   skills: profile.skills,
   marks10: profile.marks10,
@@ -206,6 +224,7 @@ export const mapUserToProfileResponse = (
   isActive: user.isActive,
   instituteId: user.instituteId,
   instituteName: user.institute?.name ?? null,
+  profilePictureUrl: user.profilePictureUrl, // Added
   createdAt: user.createdAt,
   lastLoginAt: user.lastLoginAt,
   studentProfile: user.profile ? mapStudentProfileToResponse(user.profile) : null,

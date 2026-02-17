@@ -8,8 +8,10 @@ import {
   me,
   refreshToken,
   verifyToken,
+  googleAuthCallback,
 } from './auth.controller';
 import { authenticate } from '../../middleware/auth.middleware';
+import { passport } from './google-oauth.service';
 
 const router = Router();
 
@@ -71,6 +73,22 @@ const generalLimiter = createRateLimiter(
 router.post('/register', registerLimiter, register);
 router.post('/login', authLimiter, login);
 router.post('/refresh', refreshLimiter, refreshToken);
+
+// Google OAuth Routes
+router.get(
+  '/google',
+  authLimiter,
+  passport.authenticate('google', { scope: ['profile', 'email'] })
+);
+
+router.get(
+  '/google/callback',
+  passport.authenticate('google', { 
+    failureRedirect: process.env.FRONTEND_URL || 'http://localhost:3000/login?error=oauth_failed',
+    session: false 
+  }),
+  googleAuthCallback
+);
 
 // ============================================
 // Protected Routes

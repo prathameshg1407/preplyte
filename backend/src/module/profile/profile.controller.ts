@@ -43,6 +43,9 @@ class ProfileController {
     this.getDefaultResume = this.getDefaultResume.bind(this);
     this.extractResumeText = this.extractResumeText.bind(this);
     this.linkResumeToProfile = this.linkResumeToProfile.bind(this);
+    
+    // Bind new method
+    this.uploadProfilePicture = this.uploadProfilePicture.bind(this); 
   }
 
   // =================================================
@@ -117,6 +120,29 @@ class ProfileController {
     }
   }
 
+  /**
+   * POST /profile/picture
+   * Upload Profile Picture
+   */
+  async uploadProfilePicture(
+    req: AuthenticatedRequest, 
+    res: Response, 
+    next: NextFunction
+  ): Promise<void> {
+    try {
+        const userId = this.getUserId(req);
+        if (!req.file) throw new BadRequestError('No file provided');
+        
+        const url = await profileService.updateProfilePicture(userId, req.file);
+        
+        res.status(HTTP_STATUS.OK).json({ 
+            success: true, 
+            message: 'Profile picture updated', 
+            data: { url } 
+        });
+    } catch (error) { next(error); }
+  }
+
   // =================================================
   // DEPARTMENT ENDPOINTS
   // =================================================
@@ -162,7 +188,9 @@ class ProfileController {
   ): Promise<void> {
     try {
       const userId = this.getUserId(req);
-      const input = parseCreateStudentProfile(req.body);
+      // This input now accepts empty/null values for optional fields
+      const input = parseCreateStudentProfile(req.body); 
+      
       const profile = await profileService.createStudentProfile(userId, input);
 
       res.status(HTTP_STATUS.CREATED).json({

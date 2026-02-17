@@ -131,8 +131,9 @@ export interface UserWithDetails {
   profile?: {
     fullName: string;
     studentId: string;
-    departmentId: string;
-    courseYear: string;
+    // FIX: Allow null for individual users
+    departmentId: string | null;
+    courseYear: string | null;
     averageCgpa: number | null;
     skills: string[];
   } | null;
@@ -258,6 +259,7 @@ export interface ActivityReport {
   summary: {
     totalNewUsers: number;
     totalSessions: number;
+    totalInterviewSessions?: number; // Optional based on usage
     avgDailySessions: number;
   };
   generatedAt: Date;
