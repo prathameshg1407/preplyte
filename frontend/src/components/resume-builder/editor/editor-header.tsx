@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Resume } from '@/types/resume-builder.types';
-import { useChangeTemplate, useImportFromProfile } from '@/lib/hooks/use-resume-builder';
+import { useChangeTemplate, useImportFromProfile, useSaveToProfile } from '@/lib/hooks/use-resume-builder';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -45,6 +45,7 @@ import {
   ZoomOut,
   Palette,
   Award,
+  FolderDown,
 } from 'lucide-react';
 import { ATSCheckDialog } from './ats-check-dialog';
 
@@ -77,11 +78,23 @@ export function EditorHeader({
   const [isATSDialogOpen, setIsATSDialogOpen] = useState(false);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [titleValue, setTitleValue] = useState(resume.title);
+  const [isSaveToProfileDialogOpen, setIsSaveToProfileDialogOpen] = useState(false);
 
   const importFromProfile = useImportFromProfile();
+  const saveToProfile = useSaveToProfile();
 
   const handleImportProfile = async () => {
     await importFromProfile.mutateAsync(resume.id);
+  };
+
+  const handleSaveToProfile = async () => {
+    try {
+      await saveToProfile.mutateAsync({ resumeId: resume.id });
+      setIsSaveToProfileDialogOpen(false);
+    } catch (error: any) {
+      // Error is handled by the hook
+      console.error('Save to profile error:', error);
+    }
   };
 
   const handleDownloadPDF = () => {
@@ -460,6 +473,10 @@ export function EditorHeader({
               <Upload className="mr-2 h-4 w-4" />
               Import from Profile
             </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setIsSaveToProfileDialogOpen(true)}>
+              <FolderDown className="mr-2 h-4 w-4" />
+              Save to Profile
+            </DropdownMenuItem>
             <DropdownMenuItem onClick={() => setIsHistoryDialogOpen(true)}>
               <History className="mr-2 h-4 w-4" />
               Version History
@@ -493,6 +510,15 @@ export function EditorHeader({
         open={isATSDialogOpen}
         onOpenChange={setIsATSDialogOpen}
         resume={resume}
+      />
+
+      {/* Save to Profile Dialog */}
+      <SaveToProfileDialog
+        open={isSaveToProfileDialogOpen}
+        onOpenChange={setIsSaveToProfileDialogOpen}
+        onConfirm={handleSaveToProfile}
+        isLoading={saveToProfile.isPending}
+        resumeTitle={resume.title}
       />
     </header>
   );
@@ -635,6 +661,78 @@ function VersionHistoryDialog({
               ))}
             </div>
           )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// Save to Profile Dialog Component
+function SaveToProfileDialog({
+  open,
+  onOpenChange,
+  onConfirm,
+  isLoading,
+  resumeTitle,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onConfirm: () => void;
+  isLoading: boolean;
+  resumeTitle: string;
+}) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Save to Profile</DialogTitle>
+          <DialogDescription>
+            This will save your resume to your profile section where you can store up to 5 resumes.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="py-4">
+          <div className="rounded-lg border p-4 bg-muted/50">
+            <p className="text-sm font-medium mb-2">Resume Details:</p>
+            <p className="text-sm text-muted-foreground">
+              <span className="font-medium">Title:</span> {resumeTitle}
+            </p>
+            <p className="text-sm text-muted-foreground mt-1">
+              <span className="font-medium">File Name:</span> {resumeTitle}.pdf
+            </p>
+          </div>
+
+          <div className="mt-4 rounded-lg border border-blue-200 bg-blue-50 p-3">
+            <p className="text-sm text-blue-900">
+              <strong>Note:</strong> You can store up to 5 resumes in your profile. This resume will be linked to your profile and can be used for job applications.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex justify-end gap-2">
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={isLoading}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={onConfirm}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              <>
+                <FolderDown className="mr-2 h-4 w-4" />
+                Save to Profile
+              </>
+            )}
+          </Button>
         </div>
       </DialogContent>
     </Dialog>

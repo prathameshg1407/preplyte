@@ -204,3 +204,71 @@ export function useImportFromProfile() {
     },
   });
 }
+
+export function useSaveToProfile() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ resumeId, fileName }: { resumeId: string; fileName?: string }) =>
+      resumeBuilderService.saveToProfile(resumeId, fileName),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['resumes'] });
+      showToast('Success', data.message || 'Resume saved to profile successfully');
+    },
+    onError: (error: any) => {
+      showToast(
+        'Error',
+        error.response?.data?.message || 'Failed to save resume to profile',
+        'destructive'
+      );
+    },
+  });
+}
+
+export function useUnlinkFromProfile() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (resumeId: string) => resumeBuilderService.unlinkFromProfile(resumeId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['resumes'] });
+      showToast('Success', 'Resume unlinked from profile successfully');
+    },
+    onError: (error: any) => {
+      showToast(
+        'Error',
+        error.response?.data?.message || 'Failed to unlink resume from profile',
+        'destructive'
+      );
+    },
+  });
+}
+
+export function useResumeVersions(resumeId: string) {
+  return useQuery({
+    queryKey: ['resume-versions', resumeId],
+    queryFn: () => resumeBuilderService.getResumeVersions(resumeId),
+    enabled: !!resumeId,
+  });
+}
+
+export function useRestoreVersion() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ resumeId, versionId }: { resumeId: string; versionId: string }) =>
+      resumeBuilderService.restoreVersion(resumeId, versionId),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['resume', variables.resumeId] });
+      queryClient.invalidateQueries({ queryKey: ['resume-versions', variables.resumeId] });
+      showToast('Success', 'Version restored successfully');
+    },
+    onError: (error: any) => {
+      showToast(
+        'Error',
+        error.response?.data?.message || 'Failed to restore version',
+        'destructive'
+      );
+    },
+  });
+}

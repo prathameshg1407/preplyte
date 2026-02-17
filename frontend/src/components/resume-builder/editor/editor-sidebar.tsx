@@ -110,15 +110,23 @@ export function EditorSidebar({
 
   const toggleSectionVisibility = (section: ResumeSectionType) => {
     if (hiddenSections.includes(section)) {
-      // Show section
+      // Show section - remove from hidden and add to end of visible sections
+      const newHiddenSections = hiddenSections.filter((s) => s !== section);
+      const newSectionOrder = [...visibleSections, section, ...newHiddenSections];
+      
       updateCustomization({
-        hiddenSections: hiddenSections.filter((s) => s !== section),
-        sectionOrder: [...visibleSections, section, ...hiddenSections.filter((s) => s !== section)],
+        hiddenSections: newHiddenSections,
+        sectionOrder: newSectionOrder,
       });
     } else {
-      // Hide section
+      // Hide section - remove from visible and add to hidden
+      const newVisibleSections = visibleSections.filter((s) => s !== section);
+      const newHiddenSections = [...hiddenSections, section];
+      const newSectionOrder = [...newVisibleSections, ...newHiddenSections];
+      
       updateCustomization({
-        hiddenSections: [...hiddenSections, section],
+        hiddenSections: newHiddenSections,
+        sectionOrder: newSectionOrder,
       });
     }
   };

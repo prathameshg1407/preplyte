@@ -27,6 +27,7 @@ export interface Resume {
   fileSize: number | null;
   mimeType: string | null;
   isDefault: boolean;
+  linkedResumeId: string | null;
   createdAt: string;
   updatedAt: string;
 }
