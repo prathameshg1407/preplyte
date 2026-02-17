@@ -20,6 +20,11 @@ export interface InstituteStudent extends User {
     departmentId?: string;
     courseYear?: string;
     averageCgpa?: number;
+    department?: {
+      id: string;
+      name: string;
+      code?: string;
+    } | null;
   } | null;
   _count?: {
     aptitudeSessions: number;

@@ -280,7 +280,7 @@ export function InstituteStudentsList({
                     </TableCell>
                     <TableCell>
                       <Badge variant="outline" className="text-xs capitalize">
-                        {student.departmentId || '—'}
+                        {student.departmentName || student.departmentId || '—'}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-xs font-medium">

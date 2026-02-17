@@ -46,6 +46,7 @@ export interface Student {
   email: string;
   studentId: string;
   departmentId: string | null;
+  departmentName?: string;
   courseYear: string | null;
   numberOfBacklogs: number | null;
   averageCgpa: number | null;
