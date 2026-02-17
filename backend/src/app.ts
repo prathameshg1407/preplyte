@@ -7,6 +7,7 @@ import morgan from 'morgan';
 import compression from 'compression';
 import cookieParser from 'cookie-parser';
 import { rateLimit, RateLimitRequestHandler } from 'express-rate-limit';
+import { passport } from './module/auth/google-oauth.service';
 
 // Route Imports
 import { authRoutes } from './module/auth/auth.routes';
@@ -154,6 +155,9 @@ app.use(
 app.use(express.json({ limit: config.bodyLimit }));
 app.use(express.urlencoded({ extended: true, limit: config.bodyLimit }));
 app.use(cookieParser(process.env.COOKIE_SECRET));
+
+// Initialize Passport
+app.use(passport.initialize());
 
 // =====================================================
 // 5. RATE LIMITERS

@@ -199,6 +199,9 @@ export function LoginForm() {
         variant="outline"
         className="h-11 w-full gap-3 text-base font-medium"
         disabled={isDisabled}
+        onClick={() => {
+          window.location.href = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/auth/google`;
+        }}
       >
         <GoogleIcon />
         Google

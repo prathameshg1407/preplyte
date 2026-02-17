@@ -202,3 +202,31 @@ export const verifyToken = async (
 
   sendSuccess(res, { valid: true, user: req.user }, 'Token is valid');
 };
+
+// ============================================
+// Google OAuth Controllers
+// ============================================
+
+export const googleAuthCallback = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    if (!req.user) {
+      sendError(res, 'OAUTH_ERROR', 'Google authentication failed', 401);
+      return;
+    }
+
+    const { handleGoogleCallback } = await import('./google-oauth.service');
+    const result = await handleGoogleCallback(req.user);
+
+    // Redirect to frontend with tokens
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const redirectUrl = `${frontendUrl}/callback?accessToken=${result.accessToken}&refreshToken=${result.refreshToken}`;
+    
+    res.redirect(redirectUrl);
+  } catch (error) {
+    next(error);
+  }
+};
