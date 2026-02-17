@@ -274,3 +274,15 @@ export interface TemplateCategoryCount {
   category: ResumeTemplateCategory;
   count: number;
 }
+
+// ============ Save to Profile Types ============
+
+export interface SaveToProfileRequest {
+  fileName?: string;
+}
+
+export interface SaveToProfileResponse {
+  resumeId: string;
+  fileName: string;
+  message: string;
+}

@@ -73,6 +73,10 @@ router.post('/:resumeId/versions/:versionId/restore', resumeController.restoreVe
 // Import from profile
 router.post('/:resumeId/import-profile', resumeController.importFromProfile);
 
+// Save to profile
+router.post('/:resumeId/save-to-profile', resumeController.saveToProfile);
+router.delete('/:resumeId/unlink-from-profile', resumeController.unlinkFromProfile);
+
 // ============ ATS Score Checker Routes ============
 
 // Check ATS score for uploaded resume

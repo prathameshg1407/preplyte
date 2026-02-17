@@ -29,6 +29,7 @@ export interface ResumeResponse {
   fileSize: number | null;
   mimeType: string | null;
   isDefault: boolean;
+  linkedResumeId: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -176,6 +177,7 @@ export const mapResumeToResponse = (resume: Resume): ResumeResponse => ({
   fileSize: resume.fileSize,
   mimeType: resume.mimeType,
   isDefault: resume.isDefault,
+  linkedResumeId: resume.linkedResumeId || null,
   createdAt: resume.createdAt,
   updatedAt: resume.updatedAt,
 });

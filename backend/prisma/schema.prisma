@@ -367,6 +367,10 @@ model Resume {
   mimeType  String?
   isDefault Boolean @default(false)
 
+  // Link to resume builder
+  linkedResumeId String?     @unique
+  linkedResume   UserResume? @relation(fields: [linkedResumeId], references: [id], onDelete: SetNull)
+
   parsedTextHash String?
   lastParsedAt   DateTime?
 
@@ -378,6 +382,7 @@ model Resume {
 
   @@index([userId])
   @@index([userId, isDefault])
+  @@index([linkedResumeId])
   @@map("resumes")
 }
 
@@ -452,6 +457,7 @@ model UserResume {
   user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   template       ResumeTemplate  @relation(fields: [templateId], references: [id])
   versions       ResumeVersion[]
+  profileResume  Resume?         // Link to profile resume
 
   @@unique([userId, slug])
   @@index([userId])

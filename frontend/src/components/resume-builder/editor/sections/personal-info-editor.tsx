@@ -60,10 +60,18 @@ export function PersonalInfoEditor({ resume, onSave }: PersonalInfoEditorProps) 
 
   const onSubmit = async (data: PersonalInfoFormData) => {
     try {
-      // Clean empty strings
-      const cleanedData = Object.fromEntries(
-        Object.entries(data).map(([key, value]) => [key, value || undefined])
-      ) as PersonalInfo;
+      // Clean empty strings and ensure proper typing
+      const cleanedData: PersonalInfo = {
+        firstName: data.firstName,
+        lastName: data.lastName,
+        email: data.email,
+        phone: data.phone || undefined,
+        location: data.location || undefined,
+        linkedIn: data.linkedIn || undefined,
+        portfolio: data.portfolio || undefined,
+        github: data.github || undefined,
+        jobTitle: data.jobTitle || undefined,
+      };
       
       console.log('Saving personal info:', cleanedData);
       updateContent({ personalInfo: cleanedData });

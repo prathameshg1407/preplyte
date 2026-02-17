@@ -540,11 +540,15 @@ export class ResumeService {
       throw new AppError('Resume not found', 404);
     }
 
-    // Get user profile and student profile
+    // Get user profile and student profile with department
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       include: {
-        studentProfile: true,
+        studentProfile: {
+          include: {
+            department: true,
+          },
+        },
       },
     });
 
@@ -559,41 +563,37 @@ export class ResumeService {
       email: user.email,
     };
 
-    if (user.studentProfile) {
-      const sp = user.studentProfile;
-      personalInfo.phone = sp.phone || undefined;
-      personalInfo.linkedIn = sp.linkedIn || undefined;
-      personalInfo.github = sp.github || undefined;
-      personalInfo.portfolio = sp.portfolio || undefined;
-    }
+    // Note: StudentProfile doesn't have phone, linkedIn, github, portfolio fields
+    // These would need to be added to the schema if needed
 
     // Build education from student profile
     let education: any[] = [];
     if (user.studentProfile) {
       const sp = user.studentProfile;
+      const currentYear = new Date().getFullYear();
+      const courseYearNum = sp.courseYear ? parseInt(sp.courseYear) : undefined;
+      
       education.push({
         id: crypto.randomUUID(),
         institution: sp.collegeName || '',
-        degree: sp.degree || '',
-        field: sp.branch || '',
-        startDate: sp.yearOfStudy ? `${new Date().getFullYear() - sp.yearOfStudy + 1}` : '',
-        endDate: sp.passingYear?.toString() || '',
-        current: sp.yearOfStudy ? sp.yearOfStudy < 4 : false,
-        gpa: sp.cgpa?.toString() || undefined,
+        degree: 'Bachelor of Engineering', // Default, could be made configurable
+        field: sp.department?.name || '',
+        startDate: courseYearNum ? `${currentYear - courseYearNum + 1}` : '',
+        endDate: courseYearNum ? `${currentYear - courseYearNum + 4}` : '',
+        current: courseYearNum ? courseYearNum < 4 : false,
+        gpa: sp.averageCgpa?.toString() || undefined,
       });
     }
 
     // Build skills from profile
     let skills: any[] = [];
-    if (user.studentProfile?.skills) {
+    if (user.studentProfile?.skills && user.studentProfile.skills.length > 0) {
       const profileSkills = user.studentProfile.skills as string[];
-      if (profileSkills.length > 0) {
-        skills.push({
-          id: crypto.randomUUID(),
-          name: 'Technical Skills',
-          skills: profileSkills,
-        });
-      }
+      skills.push({
+        id: crypto.randomUUID(),
+        name: 'Technical Skills',
+        skills: profileSkills,
+      });
     }
 
     // Create version before import
@@ -610,6 +610,83 @@ export class ResumeService {
     });
 
     return this.mapResumeToResponse(updatedResume);
+  }
+
+  // ============ Save to Profile ============
+
+  async saveToProfile(userId: string, resumeId: string, fileName?: string): Promise<{ resumeId: string; fileName: string; message: string }> {
+    // Verify the resume exists and belongs to the user
+    const userResume = await this.prisma.userResume.findFirst({
+      where: { id: resumeId, userId },
+      include: { template: true },
+    });
+
+    if (!userResume) {
+      throw new AppError('Resume not found', 404);
+    }
+
+    // Check if user already has 5 resumes in profile
+    const existingResumesCount = await this.prisma.resume.count({
+      where: { userId },
+    });
+
+    if (existingResumesCount >= 5) {
+      throw new AppError('Maximum 5 resumes allowed in profile. Please delete one to add a new resume.', 400);
+    }
+
+    // Check if this resume is already linked to a profile resume
+    const existingLink = await this.prisma.resume.findFirst({
+      where: { linkedResumeId: resumeId },
+    });
+
+    if (existingLink) {
+      throw new AppError('This resume is already saved to your profile', 400);
+    }
+
+    // Generate file name
+    const finalFileName = fileName || `${userResume.title}.pdf`;
+
+    // Create a profile resume entry linked to the builder resume
+    const profileResume = await this.prisma.resume.create({
+      data: {
+        userId,
+        fileName: finalFileName,
+        fileUrl: '', // Will be generated when PDF is exported
+        linkedResumeId: resumeId,
+        mimeType: 'application/pdf',
+        isDefault: existingResumesCount === 0, // First resume is default
+      },
+    });
+
+    return {
+      resumeId: profileResume.id,
+      fileName: finalFileName,
+      message: 'Resume saved to profile successfully',
+    };
+  }
+
+  async unlinkFromProfile(userId: string, resumeId: string): Promise<void> {
+    // Verify the resume exists and belongs to the user
+    const userResume = await this.prisma.userResume.findFirst({
+      where: { id: resumeId, userId },
+    });
+
+    if (!userResume) {
+      throw new AppError('Resume not found', 404);
+    }
+
+    // Find and delete the linked profile resume
+    const profileResume = await this.prisma.resume.findFirst({
+      where: { linkedResumeId: resumeId, userId },
+    });
+
+    if (!profileResume) {
+      throw new AppError('Resume is not linked to profile', 404);
+    }
+
+    await this.prisma.resume.delete({
+      where: { id: profileResume.id },
+    });
   }
 
   // ============ Helper Methods ============

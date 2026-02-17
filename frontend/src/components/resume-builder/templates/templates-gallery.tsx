@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useTemplates, useTemplateCategories, useCreateResume } from '@/lib/hooks/use-resume-builder';
 import { useResumeStore } from '@/lib/store/resume-store';
 import { ResumeTemplate, ResumeTemplateCategory } from '@/types/resume-builder.types';
+import { TemplatePreview } from '@/components/resume-builder/TemplatePreview';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -92,8 +93,8 @@ export function TemplateGallery() {
       // Close the dialog
       setSelectedTemplate(null);
       
-      // Redirect to My Resumes tab to show the newly created resume
-      router.push('/resume-builder?tab=my-resumes');
+      // Redirect to the resume editor
+      router.push(`/resume-builder/${resume.id}`);
       
       // Optional: Show a success message
       console.log('Resume created successfully:', resume.title);
@@ -221,17 +222,9 @@ export function TemplateGallery() {
           </DialogHeader>
 
           <div className="py-4">
-            {previewTemplate?.thumbnail ? (
-              <img
-                src={previewTemplate.thumbnail}
-                alt={previewTemplate.name}
-                className="w-full rounded-lg border shadow-sm"
-              />
-            ) : (
-              <div className="aspect-[8.5/11] bg-muted rounded-lg flex items-center justify-center">
-                <p className="text-muted-foreground">Preview not available</p>
-              </div>
-            )}
+            <div className="aspect-[8.5/11] bg-white rounded-lg border shadow-sm overflow-hidden">
+              {previewTemplate && <TemplatePreview template={previewTemplate} />}
+            </div>
           </div>
 
           <DialogFooter>
@@ -262,20 +255,9 @@ interface TemplateCardProps {
 function TemplateCard({ template, onSelect, onPreview }: TemplateCardProps) {
   return (
     <Card className="group overflow-hidden transition-all hover:shadow-lg">
-      <div className="relative aspect-[8.5/11] bg-muted">
-        {template.thumbnail ? (
-          <img
-            src={template.thumbnail}
-            alt={template.name}
-            className="h-full w-full object-cover object-top"
-          />
-        ) : (
-          <div className="flex h-full items-center justify-center">
-            <span className="text-4xl font-bold text-muted-foreground/30">
-              {template.name.charAt(0)}
-            </span>
-          </div>
-        )}
+      <div className="relative aspect-[8.5/11] bg-white overflow-hidden">
+        {/* Dynamic Template Preview */}
+        <TemplatePreview template={template} />
 
         {/* Hover Overlay */}
         <div className="absolute inset-0 flex items-center justify-center gap-2 bg-black/60 opacity-0 transition-opacity group-hover:opacity-100">
