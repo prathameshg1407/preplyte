@@ -178,12 +178,17 @@ enum LmsTestAttemptStatus {
 model User {
   id          String   @id @default(cuid())
   email       String   @unique
-  password    String
+  password    String?
   name        String?
   role        UserRole @default(USER)
   isActive    Boolean  @default(true)
   instituteId String?
   profilePictureUrl String?
+
+  // OAuth fields
+  googleId    String?  @unique
+  provider    String?  @default("local")
+  avatar      String?
 
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
