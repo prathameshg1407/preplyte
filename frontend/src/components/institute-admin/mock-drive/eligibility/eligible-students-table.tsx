@@ -90,7 +90,7 @@ export function EligibleStudentsTable({
                   </div>
                 </TableCell>
                 <TableCell>
-                  <span className="text-sm">{student.departmentId || '-'}</span>
+                  <span className="text-sm">{student.departmentName || student.departmentId || '-'}</span>
                 </TableCell>
                 <TableCell>
                   <span className="text-sm">{student.courseYear || '-'}</span>

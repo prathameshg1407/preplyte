@@ -191,6 +191,7 @@ export interface EligibleStudent {
   fullName: string;
   studentId: string;
   departmentId: string;
+  departmentName?: string;
   courseYear: string;
   numberOfBacklogs: number;
   averageCgpa: number | null;
@@ -290,6 +291,7 @@ export interface RegistrationListItem {
   studentName: string;
   studentId: string | null;
   departmentId: string | null;
+  departmentName?: string | null;
   courseYear: string | null;
   numberOfBacklogs: number | null;
   averageCgpa: number | null;
@@ -364,6 +366,7 @@ export interface BatchStudent {
   studentName: string;
   studentId: string;
   departmentId: string;
+  departmentName?: string;
   courseYear: string;
   numberOfBacklogs: number;
   registrationStatus: MockDriveRegistrationStatus;

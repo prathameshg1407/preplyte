@@ -499,7 +499,19 @@ export class BatchService {
 
     const registrations = await prisma.mockDriveRegistration.findMany({
       where: { batchId },
-      include: { user: { include: { profile: true } } },
+      include: { 
+        user: { 
+          include: { 
+            profile: {
+              include: {
+                department: {
+                  select: { name: true, code: true },
+                },
+              },
+            },
+          },
+        },
+      },
     });
 
     const userIds = registrations.map((r) => r.userId);
@@ -518,6 +530,7 @@ export class BatchService {
         studentName: r.user.profile?.fullName ?? r.user.name ?? 'Unknown',
         studentId: r.user.profile?.studentId ?? 'N/A',
         departmentId: r.user.profile?.departmentId ?? 'N/A',
+        departmentName: (r.user.profile as any)?.department?.name ?? null,
         courseYear: r.user.profile?.courseYear ?? 'N/A',
         registrationStatus: r.status,
         attemptStatus: attempt?.status ?? null,
