@@ -1,0 +1,55 @@
+{"baseURL":"https://judge0-ce.p.rapidapi.com","level":"info","message":"Judge0 client initialized","service":"preplyte-api","timestamp":"2026-02-17 11:03:01","useRapidAPI":true}
+{"level":"info","message":"[TTS] Using Deepgram for text-to-speech","service":"preplyte-api","timestamp":"2026-02-17 11:03:01"}
+{"environment":"development","host":"0.0.0.0","level":"info","message":"Starting server...","port":4000,"service":"preplyte-api","timestamp":"2026-02-17 11:03:01"}
+{"level":"info","message":"Checking database connection...","service":"preplyte-api","timestamp":"2026-02-17 11:03:01"}
+{"level":"info","message":"✅ Database connected successfully","service":"preplyte-api","timestamp":"2026-02-17 11:03:02"}
+{"level":"info","message":"[WS Gateway] WebSocket server initialized","path":"/ws/interview/:sessionId","service":"preplyte-api","timestamp":"2026-02-17 11:03:02"}
+{"api":"http://localhost:4000/api","environment":"development","health":"http://localhost:4000/health","host":"0.0.0.0","level":"info","message":"🚀 Server running","port":4000,"service":"preplyte-api","timestamp":"2026-02-17 11:03:02","websocket":"ws://localhost:4000/ws/interview/:sessionId"}
+{"baseURL":"https://judge0-ce.p.rapidapi.com","level":"info","message":"Judge0 client initialized","service":"preplyte-api","timestamp":"2026-02-17 11:03:44","useRapidAPI":true}
+{"level":"info","message":"[TTS] Using Deepgram for text-to-speech","service":"preplyte-api","timestamp":"2026-02-17 11:03:44"}
+{"environment":"development","host":"0.0.0.0","level":"info","message":"Starting server...","port":4000,"service":"preplyte-api","timestamp":"2026-02-17 11:03:44"}
+{"level":"info","message":"Checking database connection...","service":"preplyte-api","timestamp":"2026-02-17 11:03:44"}
+{"level":"info","message":"✅ Database connected successfully","service":"preplyte-api","timestamp":"2026-02-17 11:03:44"}
+{"level":"info","message":"[WS Gateway] WebSocket server initialized","path":"/ws/interview/:sessionId","service":"preplyte-api","timestamp":"2026-02-17 11:03:44"}
+{"api":"http://localhost:4000/api","environment":"development","health":"http://localhost:4000/health","host":"0.0.0.0","level":"info","message":"🚀 Server running","port":4000,"service":"preplyte-api","timestamp":"2026-02-17 11:03:44","websocket":"ws://localhost:4000/ws/interview/:sessionId"}
+{"baseURL":"https://judge0-ce.p.rapidapi.com","level":"info","message":"Judge0 client initialized","service":"preplyte-api","timestamp":"2026-02-17 11:04:13","useRapidAPI":true}
+{"level":"info","message":"[TTS] Using Deepgram for text-to-speech","service":"preplyte-api","timestamp":"2026-02-17 11:04:13"}
+{"environment":"development","host":"0.0.0.0","level":"info","message":"Starting server...","port":4000,"service":"preplyte-api","timestamp":"2026-02-17 11:04:13"}
+{"level":"info","message":"Checking database connection...","service":"preplyte-api","timestamp":"2026-02-17 11:04:13"}
+{"level":"info","message":"✅ Database connected successfully","service":"preplyte-api","timestamp":"2026-02-17 11:04:13"}
+{"level":"info","message":"[WS Gateway] WebSocket server initialized","path":"/ws/interview/:sessionId","service":"preplyte-api","timestamp":"2026-02-17 11:04:13"}
+{"api":"http://localhost:4000/api","environment":"development","health":"http://localhost:4000/health","host":"0.0.0.0","level":"info","message":"🚀 Server running","port":4000,"service":"preplyte-api","timestamp":"2026-02-17 11:04:13","websocket":"ws://localhost:4000/ws/interview/:sessionId"}
+{"baseURL":"https://judge0-ce.p.rapidapi.com","level":"info","message":"Judge0 client initialized","service":"preplyte-api","timestamp":"2026-02-17 11:04:22","useRapidAPI":true}
+{"level":"info","message":"[TTS] Using Deepgram for text-to-speech","service":"preplyte-api","timestamp":"2026-02-17 11:04:22"}
+{"environment":"development","host":"0.0.0.0","level":"info","message":"Starting server...","port":4000,"service":"preplyte-api","timestamp":"2026-02-17 11:04:23"}
+{"level":"info","message":"Checking database connection...","service":"preplyte-api","timestamp":"2026-02-17 11:04:23"}
+{"level":"info","message":"✅ Database connected successfully","service":"preplyte-api","timestamp":"2026-02-17 11:04:23"}
+{"level":"info","message":"[WS Gateway] WebSocket server initialized","path":"/ws/interview/:sessionId","service":"preplyte-api","timestamp":"2026-02-17 11:04:23"}
+{"api":"http://localhost:4000/api","environment":"development","health":"http://localhost:4000/health","host":"0.0.0.0","level":"info","message":"🚀 Server running","port":4000,"service":"preplyte-api","timestamp":"2026-02-17 11:04:23","websocket":"ws://localhost:4000/ws/interview/:sessionId"}
+{"baseURL":"https://judge0-ce.p.rapidapi.com","level":"info","message":"Judge0 client initialized","service":"preplyte-api","timestamp":"2026-02-17 11:04:41","useRapidAPI":true}
+{"level":"info","message":"[TTS] Using Deepgram for text-to-speech","service":"preplyte-api","timestamp":"2026-02-17 11:04:42"}
+{"environment":"development","host":"0.0.0.0","level":"info","message":"Starting server...","port":4000,"service":"preplyte-api","timestamp":"2026-02-17 11:04:42"}
+{"level":"info","message":"Checking database connection...","service":"preplyte-api","timestamp":"2026-02-17 11:04:42"}
+{"level":"info","message":"✅ Database connected successfully","service":"preplyte-api","timestamp":"2026-02-17 11:04:42"}
+{"level":"info","message":"[WS Gateway] WebSocket server initialized","path":"/ws/interview/:sessionId","service":"preplyte-api","timestamp":"2026-02-17 11:04:42"}
+{"api":"http://localhost:4000/api","environment":"development","health":"http://localhost:4000/health","host":"0.0.0.0","level":"info","message":"🚀 Server running","port":4000,"service":"preplyte-api","timestamp":"2026-02-17 11:04:42","websocket":"ws://localhost:4000/ws/interview/:sessionId"}
+{"baseURL":"https://judge0-ce.p.rapidapi.com","level":"info","message":"Judge0 client initialized","service":"preplyte-api","timestamp":"2026-02-17 11:04:58","useRapidAPI":true}
+{"level":"info","message":"[TTS] Using Deepgram for text-to-speech","service":"preplyte-api","timestamp":"2026-02-17 11:04:58"}
+{"environment":"development","host":"0.0.0.0","level":"info","message":"Starting server...","port":4000,"service":"preplyte-api","timestamp":"2026-02-17 11:04:58"}
+{"level":"info","message":"Checking database connection...","service":"preplyte-api","timestamp":"2026-02-17 11:04:58"}
+{"level":"info","message":"✅ Database connected successfully","service":"preplyte-api","timestamp":"2026-02-17 11:04:58"}
+{"level":"info","message":"[WS Gateway] WebSocket server initialized","path":"/ws/interview/:sessionId","service":"preplyte-api","timestamp":"2026-02-17 11:04:58"}
+{"api":"http://localhost:4000/api","environment":"development","health":"http://localhost:4000/health","host":"0.0.0.0","level":"info","message":"🚀 Server running","port":4000,"service":"preplyte-api","timestamp":"2026-02-17 11:04:58","websocket":"ws://localhost:4000/ws/interview/:sessionId"}
+{"baseURL":"https://judge0-ce.p.rapidapi.com","level":"info","message":"Judge0 client initialized","service":"preplyte-api","timestamp":"2026-02-17 11:05:16","useRapidAPI":true}
+{"level":"info","message":"[TTS] Using Deepgram for text-to-speech","service":"preplyte-api","timestamp":"2026-02-17 11:05:16"}
+{"environment":"development","host":"0.0.0.0","level":"info","message":"Starting server...","port":4000,"service":"preplyte-api","timestamp":"2026-02-17 11:05:16"}
+{"level":"info","message":"Checking database connection...","service":"preplyte-api","timestamp":"2026-02-17 11:05:16"}
+{"level":"info","message":"✅ Database connected successfully","service":"preplyte-api","timestamp":"2026-02-17 11:05:16"}
+{"level":"info","message":"[WS Gateway] WebSocket server initialized","path":"/ws/interview/:sessionId","service":"preplyte-api","timestamp":"2026-02-17 11:05:16"}
+{"api":"http://localhost:4000/api","environment":"development","health":"http://localhost:4000/health","host":"0.0.0.0","level":"info","message":"🚀 Server running","port":4000,"service":"preplyte-api","timestamp":"2026-02-17 11:05:16","websocket":"ws://localhost:4000/ws/interview/:sessionId"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/courses?page=1&limit=10&search= \u001b[36m304\u001b[0m 135.368 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-17 11:05:47"}
+{"level":"info","message":"Received SIGINT. Closing database connection...","service":"preplyte-api","timestamp":"2026-02-17 11:49:49"}
+{"level":"info","message":"SIGINT received. Starting graceful shutdown...","service":"preplyte-api","timestamp":"2026-02-17 11:49:49"}
+{"level":"info","message":"[WS Gateway] WebSocket server shut down","service":"preplyte-api","timestamp":"2026-02-17 11:49:49"}
+{"level":"info","message":"HTTP server closed","service":"preplyte-api","timestamp":"2026-02-17 11:49:49"}
+{"level":"info","message":"Database connection closed","service":"preplyte-api","timestamp":"2026-02-17 11:49:49"}

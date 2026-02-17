@@ -1893,6 +1893,231 @@ class LmsService {
       createdAt: feedback.createdAt,
     };
   }
+  // =====================================================
+  // COMMENTS
+  // =====================================================
+
+  async getComments(
+    courseSlug: string,
+    query: { page?: number; limit?: number; sortBy?: 'newest' | 'top' },
+    userId?: string
+  ): Promise<{ comments: any[]; pagination: any }> {
+    const course = await prisma.lmsCourse.findUnique({
+      where: { slug: courseSlug },
+      select: { id: true },
+    });
+
+    if (!course) {
+      throw new AppError('COURSE_NOT_FOUND', LMS_ERROR_MESSAGES.COURSE_NOT_FOUND, 404);
+    }
+
+    const { page = 1, limit = 10, sortBy = 'newest' } = query;
+    const skip = (page - 1) * limit;
+
+    // Build orderBy
+    let orderBy: any = { createdAt: 'desc' };
+    if (sortBy === 'top') {
+      orderBy = { likes: { _count: 'desc' } };
+    }
+
+    // Get top-level comments
+    const [comments, total] = await Promise.all([
+      prisma.lmsCourseComment.findMany({
+        where: {
+          courseId: course.id,
+          parentId: null, // Only root comments
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              profile: { select: { fullName: true } },
+            },
+          },
+          _count: {
+            select: { likes: true, replies: true },
+          },
+          likes: userId ? { where: { userId } } : false,
+          replies: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  profile: { select: { fullName: true } },
+                },
+              },
+              _count: { select: { likes: true } },
+              likes: userId ? { where: { userId } } : false,
+            },
+            orderBy: { createdAt: 'asc' },
+          },
+        },
+        orderBy,
+        skip,
+        take: limit,
+      }),
+      prisma.lmsCourseComment.count({
+        where: { courseId: course.id, parentId: null },
+      }),
+    ]);
+
+    const formatComment = (c: any) => ({
+      id: c.id,
+      courseId: c.courseId,
+      userId: c.userId,
+      user: {
+        id: c.user.id,
+        name: c.user.profile?.fullName || c.user.name || 'User',
+        avatarUrl: null,
+      },
+      comment: c.comment,
+      parentId: c.parentId,
+      createdAt: c.createdAt,
+      updatedAt: c.updatedAt,
+      likesCount: c._count.likes,
+      isLiked: userId ? c.likes.length > 0 : false,
+      repliesCount: c._count.replies,
+      replies: c.replies?.map((r: any) => ({
+        id: r.id,
+        courseId: r.courseId,
+        userId: r.userId,
+        user: {
+          id: r.user.id,
+          name: r.user.profile?.fullName || r.user.name || 'User',
+          avatarUrl: null,
+        },
+        comment: r.comment,
+        parentId: r.parentId,
+        createdAt: r.createdAt,
+        updatedAt: r.updatedAt,
+        likesCount: r._count.likes,
+        isLiked: userId ? r.likes.length > 0 : false,
+      })),
+    });
+
+    return {
+      comments: comments.map(formatComment),
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  async addComment(
+    courseSlug: string,
+    userId: string,
+    data: { comment: string; parentId?: string }
+  ) {
+    const course = await prisma.lmsCourse.findUnique({
+      where: { slug: courseSlug },
+      select: { id: true },
+    });
+
+    if (!course) {
+      throw new AppError('COURSE_NOT_FOUND', LMS_ERROR_MESSAGES.COURSE_NOT_FOUND, 404);
+    }
+
+    if (data.parentId) {
+      const parent = await prisma.lmsCourseComment.findUnique({
+        where: { id: data.parentId },
+      });
+      if (!parent) {
+        throw new AppError('PARENT_COMMENT_NOT_FOUND', 'Parent comment not found', 404);
+      }
+    }
+
+    const comment = await prisma.lmsCourseComment.create({
+      data: {
+        courseId: course.id,
+        userId,
+        comment: data.comment,
+        parentId: data.parentId,
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            profile: { select: { fullName: true } },
+          },
+        },
+        _count: { select: { likes: true } },
+      },
+    });
+
+    return {
+      id: comment.id,
+      courseId: comment.courseId,
+      userId: comment.userId,
+      user: {
+        id: comment.user.id,
+        name: comment.user.profile?.fullName || comment.user.name || 'User',
+        avatarUrl: null,
+      },
+      comment: comment.comment,
+      parentId: comment.parentId,
+      createdAt: comment.createdAt,
+      updatedAt: comment.updatedAt,
+      likesCount: 0,
+      isLiked: false,
+      replies: [],
+    };
+  }
+
+  async toggleCommentLike(
+    courseSlug: string,
+    commentId: string,
+    userId: string
+  ) {
+    const comment = await prisma.lmsCourseComment.findUnique({
+      where: { id: commentId },
+    });
+
+    if (!comment) {
+      throw new AppError('COMMENT_NOT_FOUND', 'Comment not found', 404);
+    }
+
+    const existingLike = await prisma.lmsCourseCommentLike.findUnique({
+      where: {
+        userId_commentId: { userId, commentId },
+      },
+    });
+
+    if (existingLike) {
+      await prisma.lmsCourseCommentLike.delete({
+        where: { id: existingLike.id },
+      });
+      return { liked: false };
+    } else {
+      await prisma.lmsCourseCommentLike.create({
+        data: { userId, commentId },
+      });
+      return { liked: true };
+    }
+  }
+
+  async deleteComment(courseSlug: string, commentId: string, userId: string) {
+    const comment = await prisma.lmsCourseComment.findUnique({
+      where: { id: commentId },
+    });
+
+    if (!comment) throw new AppError('COMMENT_NOT_FOUND', 'Comment not found', 404);
+
+    if (comment.userId !== userId) {
+      throw new AppError('FORBIDDEN', 'You can only delete your own comments', 403);
+    }
+
+    await prisma.lmsCourseComment.delete({
+      where: { id: commentId },
+    });
+
+    return { success: true };
+  }
 }
 
 export const lmsService = new LmsService();

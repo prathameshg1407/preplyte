@@ -505,6 +505,11 @@ export const LMS_ENDPOINTS = {
   COURSE_ENROLL: (slug: string) => `/api/lms/courses/${slug}/enroll`,
   COURSE_FEEDBACK: (slug: string) => `/api/lms/courses/${slug}/feedback`,
 
+  // Comments
+  COURSE_COMMENTS: (slug: string) => `/api/lms/courses/${slug}/comments`,
+  COURSE_COMMENT_LIKE: (slug: string, commentId: string) => `/api/lms/courses/${slug}/comments/${commentId}/like`,
+  COURSE_COMMENT_DELETE: (slug: string, commentId: string) => `/api/lms/courses/${slug}/comments/${commentId}`,
+
   // Modules
   MODULE_DETAILS: (courseSlug: string, moduleOrder: number) =>
     `/api/lms/courses/${courseSlug}/modules/${moduleOrder}`,

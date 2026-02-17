@@ -187,6 +187,35 @@ router.post(
   lmsController.addCourseFeedback
 );
 
+// Comments
+router.get(
+  '/courses/:courseSlug/comments',
+  optionalAuth,
+  validateParams(courseSlugParamSchema),
+  lmsController.getComments
+);
+
+router.post(
+  '/courses/:courseSlug/comments',
+  authenticate,
+  validateParams(courseSlugParamSchema),
+  lmsController.addComment
+);
+
+router.post(
+  '/courses/:courseSlug/comments/:commentId/like',
+  authenticate,
+  validateParams(courseSlugParamSchema),
+  lmsController.toggleCommentLike
+);
+
+router.delete(
+  '/courses/:courseSlug/comments/:commentId',
+  authenticate,
+  validateParams(courseSlugParamSchema),
+  lmsController.deleteComment
+);
+
 // User Dashboard
 router.get('/my-courses', authenticate, lmsController.getMyCourses);
 router.get('/dashboard', authenticate, lmsController.getMyDashboard);

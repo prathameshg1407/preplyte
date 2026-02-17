@@ -44,6 +44,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { CourseComments } from '@/components/lms/course-comments/course-comments';
 
 const difficultyColors = {
   EASY: 'bg-green-100 text-green-800',
@@ -442,6 +443,19 @@ export default function CourseDetailsPage() {
               </Card>
             </motion.div>
           )}
+
+          {/* Comments */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+          >
+            <Card>
+              <CardContent className="pt-6">
+                <CourseComments courseSlug={courseSlug} />
+              </CardContent>
+            </Card>
+          </motion.div>
 
         </div>
 

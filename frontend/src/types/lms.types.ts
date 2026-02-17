@@ -412,3 +412,37 @@ export interface LmsUserDashboard {
   totalPointsEarned: number;
   certificatesEarned: number;
 }
+
+export interface CommentResponse {
+  id: string;
+  courseId: string;
+  userId: string;
+  user: {
+    id: string;
+    name: string;
+    avatarUrl: string | null;
+  };
+  comment: string;
+  parentId: string | null;
+  createdAt: string;
+  updatedAt: string;
+  replies?: CommentResponse[];
+  likesCount: number;
+  isLiked: boolean;
+  repliesCount?: number;
+}
+
+export interface CreateCommentBody {
+  comment: string;
+  parentId?: string;
+}
+
+export interface CommentsListResponse {
+  comments: CommentResponse[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}

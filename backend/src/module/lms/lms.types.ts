@@ -50,6 +50,11 @@ export interface SubmitTestBody {
   answers: SubmitTestAnswerBody[];
 }
 
+export interface CreateCommentBody {
+  comment: string;
+  parentId?: string;
+}
+
 // =====================================================
 // RESPONSE TYPES
 // =====================================================
@@ -343,4 +348,32 @@ export interface UserDashboardResponse {
   inProgressCourses: number;
   totalPointsEarned: number;
   certificatesEarned: number;
+}
+
+export interface CommentResponse {
+  id: string;
+  courseId: string;
+  userId: string;
+  user: {
+    id: string;
+    name: string;
+    avatarUrl: string | null;
+  };
+  content: string;
+  parentId: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  replies?: CommentResponse[];
+  likesCount: number;
+  isLiked: boolean;
+}
+
+export interface CommentsListResponse {
+  comments: CommentResponse[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
 }
