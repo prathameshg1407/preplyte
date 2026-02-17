@@ -5,6 +5,7 @@ import { createServer } from 'http';
 import { logger } from './utils/logger';
 import { prisma } from './lib/db';
 import { interviewGateway } from './module/practice/interview';
+import { startTokenCleanup, stopTokenCleanup } from './lib/token-cleanup';
 
 const PORT = parseInt(process.env.PORT || '4000', 10);
 const HOST = process.env.HOST || '0.0.0.0';
@@ -39,11 +40,17 @@ async function startServer() {
         api: `http://localhost:${PORT}/api`,
         websocket: `ws://localhost:${PORT}/ws/interview/:sessionId`,
       });
+
+      // Start token cleanup scheduler
+      startTokenCleanup();
     });
 
     // Graceful shutdown
     const shutdown = async (signal: string) => {
       logger.info(`${signal} received. Starting graceful shutdown...`);
+
+      // Stop token cleanup scheduler
+      stopTokenCleanup();
 
       // Shutdown WebSocket gateway first
       interviewGateway.shutdown();

@@ -61,74 +61,61 @@ export default function AuthCallbackPage() {
     if (accessToken && refreshToken) {
       const completeAuth = async () => {
         try {
-          logger.debug('[OAuth Callback] Tokens received, fetching user data');
+          logger.debug('[OAuth Callback] Tokens received, decoding and setting up session');
           
-          // Store tokens first
-          localStorage.setItem('accessToken', accessToken);
-          localStorage.setItem('refreshToken', refreshToken);
-
-          // Small delay to ensure storage is synced
-          await new Promise(resolve => setTimeout(resolve, 100));
-
-          // Fetch user data with explicit Authorization header
-          const response = await authService.getCurrentUser();
+          // Decode the access token to get user info
+          const tokenPayload = JSON.parse(atob(accessToken.split('.')[1]));
+          const role = tokenPayload.role || 'USER';
+          const userId = tokenPayload.sub;
           
-          if (response.success && response.data) {
-            const user = response.data;
-            const context = getContextFromRole(user.role);
+          // Set auth in store FIRST with decoded token data
+          // This ensures all subsequent API calls use the correct tokens
+          const minimalUser = {
+            id: userId,
+            email: '', // Will be fetched later
+            name: '', // Will be fetched later
+            role: role,
+            instituteId: tokenPayload.instituteId,
+            isActive: true,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          };
+          
+          const context = getContextFromRole(role);
+          store.setAuth(minimalUser, accessToken, refreshToken, context);
+          
+          logger.debug('[OAuth Callback] Auth set in store, fetching full user data');
+          
+          // Now fetch full user data in the background
+          // This will use the tokens we just set in the store
+          try {
+            const response = await authService.getCurrentUser();
             
-            // Set auth in store (this will properly set up the session)
-            store.setAuth(user, accessToken, refreshToken, context);
-            
-            setStatus('success');
-            setMessage('Sign in successful! Redirecting...');
-
-            // Redirect to appropriate dashboard
-            const redirectTo = getDefaultRedirect(user.role);
-            setTimeout(() => {
-              router.push(redirectTo);
-            }, 1500);
-          } else {
-            throw new Error('Failed to fetch user data');
+            if (response.success && response.data) {
+              // Update store with full user data
+              store.updateUser(response.data);
+              logger.debug('[OAuth Callback] Full user data fetched and updated');
+            }
+          } catch (fetchError) {
+            // Non-critical error - we already have basic user info from token
+            logger.warn('[OAuth Callback] Could not fetch full user data, using token data', fetchError);
           }
+          
+          setStatus('success');
+          setMessage('Sign in successful! Redirecting...');
+
+          // Redirect to appropriate dashboard
+          const redirectTo = getDefaultRedirect(role);
+          setTimeout(() => {
+            router.push(redirectTo);
+          }, 1500);
         } catch (err) {
           logger.error('[OAuth Callback] Error completing auth:', err);
-          
-          // If fetching user fails, try to decode the token to get basic user info
-          try {
-            const tokenPayload = JSON.parse(atob(accessToken.split('.')[1]));
-            const role = tokenPayload.role || 'USER';
-            
-            // Create a minimal user object
-            const minimalUser = {
-              id: tokenPayload.sub,
-              email: '',
-              name: '',
-              role: role,
-              instituteId: tokenPayload.instituteId,
-              isActive: true,
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString(),
-            };
-            
-            const context = getContextFromRole(role);
-            store.setAuth(minimalUser, accessToken, refreshToken, context);
-            
-            setStatus('success');
-            setMessage('Sign in successful! Redirecting...');
-            
-            const redirectTo = getDefaultRedirect(role);
-            setTimeout(() => {
-              router.push(redirectTo);
-            }, 1500);
-          } catch (decodeErr) {
-            logger.error('[OAuth Callback] Failed to decode token:', decodeErr);
-            setStatus('error');
-            setMessage('Failed to complete sign in. Please try again.');
-            setTimeout(() => {
-              router.push('/login?error=auth_completion_failed');
-            }, 2000);
-          }
+          setStatus('error');
+          setMessage('Failed to complete sign in. Please try again.');
+          setTimeout(() => {
+            router.push('/login?error=auth_completion_failed');
+          }, 2000);
         }
       };
 
