@@ -193,6 +193,64 @@ class LmsController {
       next(error);
     }
   }
+  async addCourseFeedback(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { courseSlug } = req.params;
+      const userId = req.user!.id;
+      const data = req.body;
+      const result = await lmsService.addCourseFeedback(courseSlug, userId, data);
+      sendSuccess(res, result, 'Feedback added successfully');
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Comments
+  async getComments(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { courseSlug } = req.params;
+      const query = req.query as unknown as any;
+      const userId = req.user?.id;
+      const result = await lmsService.getComments(courseSlug, query, userId);
+      sendSuccess(res, result, 'Comments fetched successfully');
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async addComment(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { courseSlug } = req.params;
+      const userId = req.user!.id;
+      const data = req.body;
+      const result = await lmsService.addComment(courseSlug, userId, data);
+      sendSuccess(res, result, 'Comment added successfully', 201);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async toggleCommentLike(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { courseSlug, commentId } = req.params;
+      const userId = req.user!.id;
+      const result = await lmsService.toggleCommentLike(courseSlug, commentId, userId);
+      sendSuccess(res, result, result.liked ? 'Comment liked' : 'Comment unliked');
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async deleteComment(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { courseSlug, commentId } = req.params;
+      const userId = req.user!.id;
+      const result = await lmsService.deleteComment(courseSlug, commentId, userId);
+      sendSuccess(res, result, 'Comment deleted successfully');
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 export const lmsController = new LmsController();

@@ -10,6 +10,16 @@ import {
   DifficultyLevel,
 } from '@prisma/client';
 
+export interface FeedbackResponse {
+  id: string;
+  userId: string;
+  userName: string;
+  userAvatar?: string | null;
+  rating: number;
+  comment: string | null;
+  createdAt: Date;
+}
+
 // =====================================================
 // REQUEST TYPES
 // =====================================================
@@ -38,6 +48,11 @@ export interface SubmitTestAnswerBody {
 
 export interface SubmitTestBody {
   answers: SubmitTestAnswerBody[];
+}
+
+export interface CreateCommentBody {
+  comment: string;
+  parentId?: string;
 }
 
 // =====================================================
@@ -76,6 +91,9 @@ export interface CourseCardResponse {
   };
   isEnrolled: boolean;
   enrollmentProgress?: number;
+  averageRating: number;
+  ratingsCount: number;
+  enrollmentCount: number; // NEW: Total number of enrollments
 }
 
 export interface CoursesListResponse {
@@ -168,6 +186,7 @@ export interface EnrollmentResponse {
   finalTestPassed: boolean;
   finalTestScore: number | null;
   finalTestMarks: number | null;
+  hasGivenFeedback: boolean;
   enrolledAt: Date;
   startedAt: Date | null;
   completedAt: Date | null;
@@ -236,6 +255,10 @@ export interface CourseDetailsResponse {
     createdAt: Date;
     updatedAt: Date;
     category: CategoryResponse;
+    averageRating: number;
+    ratingsCount: number;
+    feedbacks: FeedbackResponse[];
+    enrollmentCount: number; // NEW: Total number of enrollments
   };
   modules: ModuleResponse[];
   enrollment: EnrollmentResponse | null;
@@ -308,6 +331,7 @@ export interface SubmitTestResponse {
   pointsEarned: number;
   passed: boolean;
   message: string;
+  hasGivenFeedback?: boolean;
 }
 
 export interface LmsStatsResponse {
@@ -324,4 +348,32 @@ export interface UserDashboardResponse {
   inProgressCourses: number;
   totalPointsEarned: number;
   certificatesEarned: number;
+}
+
+export interface CommentResponse {
+  id: string;
+  courseId: string;
+  userId: string;
+  user: {
+    id: string;
+    name: string;
+    avatarUrl: string | null;
+  };
+  content: string;
+  parentId: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  replies?: CommentResponse[];
+  likesCount: number;
+  isLiked: boolean;
+}
+
+export interface CommentsListResponse {
+  comments: CommentResponse[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
 }

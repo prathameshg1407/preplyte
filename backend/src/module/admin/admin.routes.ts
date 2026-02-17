@@ -14,10 +14,17 @@ import {
   dateRangeSchema,
   reportFiltersSchema,
 } from './admin.validation';
+import lmsAdminRoutes from './lms/lms-admin.routes';
 
 const router = Router();
 
+// =====================================================
+// LMS ADMIN
+// =====================================================
+router.use('/lms', lmsAdminRoutes);
+
 // All routes require PLATFORM_ADMIN
+
 router.use(authenticate, authorize('PLATFORM_ADMIN'));
 
 // =====================================================

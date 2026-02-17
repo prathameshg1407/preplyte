@@ -22,9 +22,11 @@ import {
   AlertCircle,
   Download,
   ExternalLink,
+  Lock,
 } from 'lucide-react';
 import { useTopicDetails, useUpdateTopicProgress } from '@/lib/hooks/lms/use-lms';
 import { useLmsStore } from '@/lib/store/lms-store';
+import { getVideoEmbedUrl } from '@/lib/utils';
 
 export default function TopicPage() {
   const params = useParams();
@@ -116,12 +118,12 @@ export default function TopicPage() {
   // Get current video progress as percentage
   const getVideoProgressPercent = (): number => {
     if (!topic) return 0;
-    
+
     const localProgress = videoProgress[topic.id];
     if (localProgress && localProgress.duration > 0) {
       return (localProgress.currentTime / localProgress.duration) * 100;
     }
-    
+
     return progress?.videoProgress ?? 0;
   };
 
@@ -132,16 +134,29 @@ export default function TopicPage() {
   }
 
   if (error || !topic) {
+    const isLocked = (error as any)?.response?.status === 403;
     return (
       <div className="container mx-auto px-4 py-12 text-center">
-        <AlertCircle className="h-12 w-12 mx-auto text-destructive mb-4" />
-        <h1 className="text-2xl font-bold mb-2">Topic Not Found</h1>
-        <p className="text-muted-foreground mb-4">
-          This topic doesn&apos;t exist or you don&apos;t have access to it.
-        </p>
-        <Button asChild>
-          <Link href={`/lms/${courseSlug}/module/${moduleOrder}`}>Back to Module</Link>
-        </Button>
+        <div className="max-w-md mx-auto">
+          {isLocked ? (
+            <Lock className="h-12 w-12 mx-auto text-orange-500 mb-4" />
+          ) : (
+            <AlertCircle className="h-12 w-12 mx-auto text-destructive mb-4" />
+          )}
+          <h1 className="text-2xl font-bold mb-2">
+            {isLocked ? 'Module Locked' : 'Topic Not Found'}
+          </h1>
+          <p className="text-muted-foreground mb-4">
+            {isLocked
+              ? 'This module is locked. Please complete the previous modules and tests to unlock it.'
+              : "This topic doesn't exist or you don't have access to it."}
+          </p>
+          <Button asChild>
+            <Link href={`/lms/${courseSlug}/module/${moduleOrder}`}>
+              {isLocked ? 'Back to Module' : 'Back to Module'}
+            </Link>
+          </Button>
+        </div>
       </div>
     );
   }
@@ -199,10 +214,12 @@ export default function TopicPage() {
 
           {/* Topic Meta */}
           <div className="flex items-center gap-4 mt-4 text-sm text-muted-foreground">
-            <div className="flex items-center gap-1">
-              <Clock className="h-4 w-4" />
-              <span>{topic.estimatedMinutes} min read</span>
-            </div>
+            {topic.estimatedMinutes > 0 && (
+              <div className="flex items-center gap-1">
+                <Clock className="h-4 w-4" />
+                <span>{topic.estimatedMinutes} min read</span>
+              </div>
+            )}
             {topic.videoUrl && topic.videoDuration && (
               <div className="flex items-center gap-1">
                 <Video className="h-4 w-4" />
@@ -248,61 +265,71 @@ export default function TopicPage() {
           </Card>
         </motion.div>
 
-        {/* Content Tabs */}
+        {/* Content Tabs or Single Content */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
         >
-          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'theory' | 'video')}>
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="theory" className="gap-2">
-                <FileText className="h-4 w-4" />
-                Theory
-                {theoryCompleted && <CheckCircle className="h-4 w-4 text-green-600" />}
-              </TabsTrigger>
-              <TabsTrigger value="video" disabled={!topic.videoUrl} className="gap-2">
-                <Video className="h-4 w-4" />
-                Video
-                {videoWatched && <CheckCircle className="h-4 w-4 text-green-600" />}
-              </TabsTrigger>
-            </TabsList>
+          {topic.videoUrl ? (
+            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'theory' | 'video')}>
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="theory" className="gap-2">
+                  <FileText className="h-4 w-4" />
+                  Theory
+                  {theoryCompleted && <CheckCircle className="h-4 w-4 text-green-600" />}
+                </TabsTrigger>
+                <TabsTrigger value="video" className="gap-2">
+                  <Video className="h-4 w-4" />
+                  Video
+                  {videoWatched && <CheckCircle className="h-4 w-4 text-green-600" />}
+                </TabsTrigger>
+              </TabsList>
 
-            {/* Theory Content */}
-            <TabsContent value="theory" className="mt-6">
-              <Card>
-                <CardContent className="p-6">
-                  <div
-                    className="prose dark:prose-invert max-w-none"
-                    dangerouslySetInnerHTML={{ __html: topic.theoryContent }}
-                  />
+              {/* Theory Content */}
+              <TabsContent value="theory" className="mt-6">
+                <Card>
+                  <CardContent className="p-6">
+                    <div
+                      className="prose dark:prose-invert max-w-none"
+                      dangerouslySetInnerHTML={{ __html: topic.theoryContent }}
+                    />
 
-                  {!theoryCompleted && (
-                    <div className="mt-8 pt-6 border-t">
-                      <Button onClick={handleMarkTheoryComplete}>
-                        <CheckCircle className="h-4 w-4 mr-2" />
-                        Mark as Read
-                      </Button>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
+                    {!theoryCompleted && (
+                      <div className="mt-8 pt-6 border-t">
+                        <Button onClick={handleMarkTheoryComplete}>
+                          <CheckCircle className="h-4 w-4 mr-2" />
+                          Mark as Read
+                        </Button>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
 
-            {/* Video Content */}
-            <TabsContent value="video" className="mt-6">
-              {topic.videoUrl && (
+              {/* Video Content */}
+              <TabsContent value="video" className="mt-6">
                 <Card>
                   <CardContent className="p-6">
                     <div className="aspect-video bg-black rounded-lg overflow-hidden mb-4">
-                      <video
-                        ref={videoRef}
-                        src={topic.videoUrl}
-                        controls
-                        className="w-full h-full"
-                        onTimeUpdate={handleVideoProgress}
-                        poster={topic.resources?.[0]?.url}
-                      />
+                      {getVideoEmbedUrl(topic.videoUrl || '') ? (
+                        <iframe
+                          src={getVideoEmbedUrl(topic.videoUrl || '')!}
+                          className="w-full h-full border-0"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                          title={topic.title}
+                        />
+                      ) : (
+                        <video
+                          ref={videoRef}
+                          src={topic.videoUrl}
+                          controls
+                          className="w-full h-full"
+                          onTimeUpdate={handleVideoProgress}
+                          poster={topic.resources?.[0]?.url}
+                        />
+                      )}
                     </div>
 
                     {/* Video Progress */}
@@ -324,9 +351,30 @@ export default function TopicPage() {
                     )}
                   </CardContent>
                 </Card>
-              )}
-            </TabsContent>
-          </Tabs>
+              </TabsContent>
+            </Tabs>
+          ) : (
+            /* Only Theory if no video */
+            <div className="mt-6">
+              <Card>
+                <CardContent className="p-6">
+                  <div
+                    className="prose dark:prose-invert max-w-none"
+                    dangerouslySetInnerHTML={{ __html: topic.theoryContent }}
+                  />
+
+                  {!theoryCompleted && (
+                    <div className="mt-8 pt-6 border-t">
+                      <Button onClick={handleMarkTheoryComplete}>
+                        <CheckCircle className="h-4 w-4 mr-2" />
+                        Mark as Read
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          )}
         </motion.div>
 
         {/* Resources */}

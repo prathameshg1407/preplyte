@@ -16,6 +16,45 @@ class DashboardController {
     this.getStudentDashboard = this.getStudentDashboard.bind(this);
     this.getInstituteAdminDashboard = this.getInstituteAdminDashboard.bind(this);
     this.getPlatformAdminDashboard = this.getPlatformAdminDashboard.bind(this);
+    this.getStudentDashboardForAdmin = this.getStudentDashboardForAdmin.bind(this);
+  }
+
+  /**
+   * GET /dashboard/student/:id
+   * Get student dashboard data for institute admin
+   */
+  async getStudentDashboardForAdmin(
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const adminUserId = this.getUserId(req);
+      const studentUserId = req.params.id;
+
+      // Verify user role
+      if (req.user?.role !== 'INSTITUTE_ADMIN') {
+        throw new ForbiddenError('Access denied. Institute admins only.');
+      }
+
+      const instituteId = req.user?.instituteId;
+      if (!instituteId) {
+        throw new BadRequestError('User is not associated with an institute');
+      }
+
+      const data = await dashboardService.getStudentDashboardForAdmin(
+        adminUserId,
+        studentUserId,
+        instituteId
+      );
+
+      res.status(HTTP_STATUS.OK).json({
+        success: true,
+        data,
+      });
+    } catch (error) {
+      next(error);
+    }
   }
 
   // =================================================
@@ -33,7 +72,7 @@ class DashboardController {
   ): Promise<void> {
     try {
       const userId = this.getUserId(req);
-      
+
       // Verify user role
       if (req.user?.role !== 'USER') {
         throw new ForbiddenError('Access denied. Students only.');
@@ -65,7 +104,7 @@ class DashboardController {
   ): Promise<void> {
     try {
       const userId = this.getUserId(req);
-      
+
       // Verify user role
       if (req.user?.role !== 'INSTITUTE_ADMIN') {
         throw new ForbiddenError('Access denied. Institute admins only.');

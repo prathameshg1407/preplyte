@@ -7,6 +7,7 @@ import { instituteAdminService, type InstituteStudentFiltersExtended, type Insti
 export type Filters = {
   search?: string;
   departmentId?: string;
+  year?: string;
   minCgpa?: number;
   status?: 'all' | 'active' | 'inactive';
 };
@@ -46,7 +47,7 @@ function transformStudent(student: InstituteStudent): ComponentStudent {
 
 export function useInstituteAdminStudents(instituteId: string) {
   const queryClient = useQueryClient();
-  
+
   const [filters, setFilters] = useState<Filters>({});
   const [pagination, setPagination] = useState<PaginationState>({
     page: 1,
@@ -58,12 +59,13 @@ export function useInstituteAdminStudents(instituteId: string) {
     if (!instituteId) {
       throw new Error('No institute ID');
     }
-    
+
     const serviceFilters: InstituteStudentFiltersExtended = {
       page: pagination.page,
       limit: pagination.pageSize,
       search: filters.search,
       departmentId: filters.departmentId,
+      courseYear: filters.year,
       cgpa: filters.minCgpa,
       status: filters.status !== 'all' ? filters.status : undefined,
     };
@@ -105,20 +107,20 @@ export function useInstituteAdminStudents(instituteId: string) {
     // Data
     students: transformedStudents,
     loading: query.isPending || query.isFetching,
-    error: !instituteId 
-      ? 'No institute ID provided' 
-      : query.error instanceof Error 
-        ? query.error.message 
-        : query.error 
+    error: !instituteId
+      ? 'No institute ID provided'
+      : query.error instanceof Error
+        ? query.error.message
+        : query.error
           ? String(query.error)
           : undefined,
-    
+
     // State
     filters,
     setFilters,
     pagination: transformedPagination,
     setPagination,
-    
+
     // Actions
     refetch,
   };

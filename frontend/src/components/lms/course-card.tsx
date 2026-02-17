@@ -8,7 +8,7 @@ import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Clock, BookOpen, Award, Star } from 'lucide-react';
+import { Clock, BookOpen, Award, Star, Users } from 'lucide-react';
 import type { LmsCourseCard } from '@/types/lms.types';
 
 interface CourseCardProps {
@@ -27,9 +27,21 @@ const difficultyLabels = {
   HARD: 'Advanced',
 };
 
+// Helper function to format enrollment count
+function formatEnrollmentCount(count: number): string {
+  if (count >= 1000000) {
+    return `${(count / 1000000).toFixed(1)}M`;
+  }
+  if (count >= 1000) {
+    return `${(count / 1000).toFixed(1)}K`;
+  }
+  return count.toString();
+}
+
 export function CourseCard({ course }: CourseCardProps) {
-  const hasDiscount = course.discountPrice && course.discountPrice < course.price;
-  const isFree = course.price === 0;
+  const hasDiscount = !!(course.discountPrice && course.discountPrice > 0);
+  const finalPrice = hasDiscount ? course.price - (course.discountPrice || 0) : course.price;
+  const isFree = finalPrice <= 0;
 
   return (
     <Card className="overflow-hidden hover:shadow-lg transition-shadow h-full flex flex-col">
@@ -78,18 +90,45 @@ export function CourseCard({ course }: CourseCardProps) {
 
         {/* Stats */}
         <div className="flex items-center gap-4 text-xs text-muted-foreground">
-          <div className="flex items-center gap-1">
-            <BookOpen className="h-3 w-3" />
-            <span>{course.totalModules} modules</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <Clock className="h-3 w-3" />
-            <span>{course.totalHours}h</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <Award className="h-3 w-3" />
-            <span>{course.totalPoints} pts</span>
-          </div>
+          {course.totalModules > 0 && (
+            <div className="flex items-center gap-1">
+              <BookOpen className="h-3 w-3" />
+              <span>{course.totalModules} modules</span>
+            </div>
+          )}
+          {course.totalHours > 0 && (
+            <div className="flex items-center gap-1">
+              <Clock className="h-3 w-3" />
+              <span>{course.totalHours}h</span>
+            </div>
+          )}
+          {course.totalPoints > 0 && (
+            <div className="flex items-center gap-1">
+              <Award className="h-3 w-3" />
+              <span>{course.totalPoints} pts</span>
+            </div>
+          )}
+        </div>
+
+        {/* NEW: Enrollment Count & Rating Row */}
+        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+          {/* Enrollment Count */}
+          {course.enrollmentCount > 0 && (
+            <div className="flex items-center gap-1">
+              <Users className="h-3 w-3" />
+              <span>{formatEnrollmentCount(course.enrollmentCount)} enrolled</span>
+            </div>
+          )}
+          {/* Rating */}
+          {course.averageRating !== undefined && course.averageRating > 0 && (
+            <div className="flex items-center gap-1">
+              <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+              <span>{course.averageRating.toFixed(1)}</span>
+              {course.ratingsCount !== undefined && course.ratingsCount > 0 && (
+                <span className="text-muted-foreground">({course.ratingsCount})</span>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Enrollment Progress */}
@@ -112,7 +151,7 @@ export function CourseCard({ course }: CourseCardProps) {
           ) : (
             <>
               <span className="text-lg font-bold">
-                {course.currency} {hasDiscount ? course.discountPrice : course.price}
+                {course.currency} {finalPrice}
               </span>
               {hasDiscount && (
                 <span className="text-sm text-muted-foreground line-through">

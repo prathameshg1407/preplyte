@@ -3,7 +3,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useProfile } from '@/lib/hooks/use-profile';
+import { useProfile, useProfileData } from '@/lib/hooks/use-profile';
 import { ResumeUploadCard, ResumeListCard } from '@/components/profile';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -11,11 +11,7 @@ import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 
 export default function ResumesPage() {
-  const { fetchResumes, isLoading, resumeCount, maxResumes } = useProfile();
-
-  useEffect(() => {
-    fetchResumes();
-  }, [fetchResumes]);
+  const { isLoading, resumeCount, maxResumes } = useProfileData();
 
   return (
     <div className="container max-w-3xl py-8">

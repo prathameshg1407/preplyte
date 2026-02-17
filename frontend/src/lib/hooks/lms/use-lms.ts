@@ -16,12 +16,13 @@ export const lmsQueryKeys = {
   stats: () => [...lmsQueryKeys.all, 'stats'] as const,
   courses: (params: GetCoursesParams) => [...lmsQueryKeys.all, 'courses', params] as const,
   course: (slug: string) => [...lmsQueryKeys.all, 'course', slug] as const,
-  module: (courseSlug: string, moduleOrder: number) => 
+  module: (courseSlug: string, moduleOrder: number) =>
     [...lmsQueryKeys.all, 'module', courseSlug, moduleOrder] as const,
-  topic: (courseSlug: string, moduleOrder: number, topicOrder: number) => 
+  topic: (courseSlug: string, moduleOrder: number, topicOrder: number) =>
     [...lmsQueryKeys.all, 'topic', courseSlug, moduleOrder, topicOrder] as const,
   myCourses: () => [...lmsQueryKeys.all, 'my-courses'] as const,
   myDashboard: () => [...lmsQueryKeys.all, 'my-dashboard'] as const,
+  comments: (slug: string, params?: any) => [...lmsQueryKeys.all, 'comments', slug, params] as const,
 };
 
 // Categories Hook
@@ -237,6 +238,69 @@ export function useSubmitFinalTest(courseSlug: string) {
     onError: (error: any) => {
       toast({
         title: 'Submission Failed',
+        description: error.response?.data?.message || 'Something went wrong',
+        variant: 'destructive',
+      });
+    },
+  });
+}
+
+// Comments Hooks
+export function useCourseComments(slug: string, params?: any) {
+  return useQuery({
+    queryKey: lmsQueryKeys.comments(slug, params),
+    queryFn: () => lmsService.getComments(slug, params),
+    enabled: !!slug,
+  });
+}
+
+export function useAddComment(courseSlug: string) {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: (data: { comment: string; parentId?: string }) =>
+      lmsService.addComment(courseSlug, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['lms', 'comments', courseSlug] });
+      toast({
+        title: 'Comment added',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Failed to add comment',
+        description: error.response?.data?.message || 'Something went wrong',
+        variant: 'destructive',
+      });
+    },
+  });
+}
+
+export function useToggleCommentLike(courseSlug: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (commentId: string) => lmsService.toggleCommentLike(courseSlug, commentId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['lms', 'comments', courseSlug] });
+    },
+  });
+}
+
+export function useDeleteComment(courseSlug: string) {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: (commentId: string) => lmsService.deleteComment(courseSlug, commentId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['lms', 'comments', courseSlug] });
+      toast({ title: 'Comment deleted' });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Failed to delete comment',
         description: error.response?.data?.message || 'Something went wrong',
         variant: 'destructive',
       });

@@ -38,6 +38,7 @@ import {
   useSubmitFinalTest,
 } from '@/lib/hooks/lms/use-lms';
 import { useLmsStore } from '@/lib/store/lms-store';
+import { LmsModuleStatus } from '@/types/lms.types';
 import type { LmsTestQuestion } from '@/types/lms.types';
 
 export default function FinalTestPage() {
@@ -60,13 +61,36 @@ export default function FinalTestPage() {
     clearTestState,
   } = useLmsStore();
 
-  const { data: courseData } = useCourseDetails(courseSlug);
+  const { data: courseData, isLoading } = useCourseDetails(courseSlug);
   const startTest = useStartFinalTest(courseSlug);
   const submitTest = useSubmitFinalTest(courseSlug);
 
   const finalTest = courseData?.finalTest;
   const enrollment = courseData?.enrollment;
-  const allModulesCompleted = enrollment?.completedModules === courseData?.course.totalModules;
+  const modules = courseData?.modules || [];
+  const totalModules = modules.length;
+  const completedModules = modules.filter(m => m.progress?.status === LmsModuleStatus.COMPLETED).length;
+  const allModulesCompleted = enrollment && totalModules > 0 && completedModules === totalModules;
+
+  // Timer effect (same as module test)
+  useEffect(() => {
+    if (!testStarted || !testState) return;
+
+    const interval = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - (testState.startTime || 0)) / 1000);
+      const remaining = (finalTest?.timeLimitMinutes || 120) * 60 - elapsed;
+
+      if (remaining <= 0) {
+        clearInterval(interval);
+        setShowTimeUpDialog(true);
+        handleAutoSubmit();
+      } else {
+        updateTimeRemaining(remaining);
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [testStarted, testState?.startTime]);
 
   // Check if already attempted
   if (enrollment?.finalTestAttempted) {
@@ -92,7 +116,7 @@ export default function FinalTestPage() {
   }
 
   // Check if all modules completed
-  if (!allModulesCompleted) {
+  if (!allModulesCompleted && !isLoading) {
     return (
       <div className="container mx-auto px-4 py-12 text-center">
         <Card className="max-w-lg mx-auto">
@@ -112,26 +136,6 @@ export default function FinalTestPage() {
       </div>
     );
   }
-
-  // Timer effect (same as module test)
-  useEffect(() => {
-    if (!testStarted || !testState) return;
-
-    const interval = setInterval(() => {
-      const elapsed = Math.floor((Date.now() - (testState.startTime || 0)) / 1000);
-      const remaining = (finalTest?.timeLimitMinutes || 120) * 60 - elapsed;
-
-      if (remaining <= 0) {
-        clearInterval(interval);
-        setShowTimeUpDialog(true);
-        handleAutoSubmit();
-      } else {
-        updateTimeRemaining(remaining);
-      }
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [testStarted, testState?.startTime]);
 
   const handleStartTest = async () => {
     try {
@@ -164,7 +168,7 @@ export default function FinalTestPage() {
       const result = await submitTest.mutateAsync({ answers });
       clearTestState();
       router.push(
-        `/lms/${courseSlug}/final-test/result?passed=${result.passed}&score=${result.attempt.score}&points=${result.pointsEarned}&marks=${result.attempt.marksObtained}&total=${result.attempt.totalMarks}`
+        `/lms/${courseSlug}/final-test/result?passed=${result.passed}&score=${result.attempt.score}&points=${result.pointsEarned}&marks=${result.attempt.marksObtained}&total=${result.attempt.totalMarks}&hasFeedback=${result.hasGivenFeedback}`
       );
     } catch (error) {
       console.error('Failed to submit test:', error);
@@ -195,19 +199,21 @@ export default function FinalTestPage() {
                   <AlertTriangle className="h-5 w-5 text-yellow-500" />
                   Important: One Attempt Only!
                 </AlertDialogTitle>
-                <AlertDialogDescription className="text-left space-y-2">
-                  <p>
-                    This is your <strong>FINAL TEST</strong> for this course. Please note:
-                  </p>
-                  <ul className="list-disc list-inside space-y-1">
-                    <li>You only have <strong>ONE ATTEMPT</strong> at this test</li>
-                    <li>Once started, you cannot pause or restart the test</li>
-                    <li>Your score will be final and cannot be changed</li>
-                    <li>Passing this test is required for certification</li>
-                  </ul>
-                  <p className="font-medium pt-2">
-                    Make sure you are ready before proceeding!
-                  </p>
+                <AlertDialogDescription className="text-left space-y-2" asChild>
+                  <div>
+                    <div>
+                      This is your <strong>FINAL TEST</strong> for this course. Please note:
+                    </div>
+                    <ul className="list-disc list-inside space-y-1">
+                      <li>You only have <strong>ONE ATTEMPT</strong> at this test</li>
+                      <li>Once started, you cannot pause or restart the test</li>
+                      <li>Your score will be final and cannot be changed</li>
+                      <li>Passing this test is required for certification</li>
+                    </ul>
+                    <div className="font-medium pt-2">
+                      Make sure you are ready before proceeding!
+                    </div>
+                  </div>
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
@@ -334,11 +340,10 @@ export default function FinalTestPage() {
 
             {/* Timer */}
             <div
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg ${
-                (testState?.timeRemaining || 0) < 600
-                  ? 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300 animate-pulse'
-                  : 'bg-muted'
-              }`}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg ${(testState?.timeRemaining || 0) < 600
+                ? 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300 animate-pulse'
+                : 'bg-muted'
+                }`}
             >
               <Clock className="h-4 w-4" />
               <span className="font-mono font-bold text-lg">
@@ -401,11 +406,10 @@ export default function FinalTestPage() {
                       {currentQuestion?.options.map((option, index) => (
                         <div
                           key={option.id}
-                          className={`flex items-center space-x-3 p-4 rounded-lg border-2 transition-all cursor-pointer ${
-                            testState?.answers[currentQuestion.id] === option.id
-                              ? 'border-primary bg-primary/5 shadow-sm'
-                              : 'border-border hover:border-primary/50 hover:bg-muted/50'
-                          }`}
+                          className={`flex items-center space-x-3 p-4 rounded-lg border-2 transition-all cursor-pointer ${testState?.answers[currentQuestion.id] === option.id
+                            ? 'border-primary bg-primary/5 shadow-sm'
+                            : 'border-border hover:border-primary/50 hover:bg-muted/50'
+                            }`}
                           onClick={() => setAnswer(currentQuestion.id, option.id)}
                         >
                           <RadioGroupItem value={option.id} id={option.id} />
@@ -482,13 +486,12 @@ export default function FinalTestPage() {
                       <button
                         key={q.id}
                         onClick={() => setCurrentQuestion(index)}
-                        className={`h-10 w-10 rounded-lg text-sm font-medium transition-all ${
-                          isCurrent
-                            ? 'bg-primary text-primary-foreground ring-2 ring-primary ring-offset-2'
-                            : isAnswered
+                        className={`h-10 w-10 rounded-lg text-sm font-medium transition-all ${isCurrent
+                          ? 'bg-primary text-primary-foreground ring-2 ring-primary ring-offset-2'
+                          : isAnswered
                             ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-100'
                             : 'bg-muted hover:bg-muted/80'
-                        }`}
+                          }`}
                       >
                         {index + 1}
                       </button>
@@ -539,18 +542,20 @@ export default function FinalTestPage() {
               <AlertTriangle className="h-5 w-5 text-yellow-500" />
               Submit Final Test?
             </AlertDialogTitle>
-            <AlertDialogDescription className="space-y-2">
-              {answeredCount < questions.length ? (
-                <p className="text-red-600 font-medium">
-                  Warning: You have {questions.length - answeredCount} unanswered question(s).
-                  Unanswered questions will be marked as incorrect.
-                </p>
-              ) : (
-                <p>You have answered all {questions.length} questions.</p>
-              )}
-              <p className="font-medium">
-                Remember: This is a ONE-TIME test. You cannot retake it after submission.
-              </p>
+            <AlertDialogDescription className="space-y-2" asChild>
+              <div>
+                {answeredCount < questions.length ? (
+                  <div className="text-red-600 font-medium">
+                    Warning: You have {questions.length - answeredCount} unanswered question(s).
+                    Unanswered questions will be marked as incorrect.
+                  </div>
+                ) : (
+                  <div>You have answered all {questions.length} questions.</div>
+                )}
+                <div className="font-medium">
+                  Remember: This is a ONE-TIME test. You cannot retake it after submission.
+                </div>
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -599,4 +604,3 @@ export default function FinalTestPage() {
     </div>
   );
 }
-            

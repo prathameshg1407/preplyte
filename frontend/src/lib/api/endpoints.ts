@@ -505,6 +505,12 @@ export const LMS_ENDPOINTS = {
   COURSES: '/api/lms/courses',
   COURSE_BY_SLUG: (slug: string) => `/api/lms/courses/${slug}`,
   COURSE_ENROLL: (slug: string) => `/api/lms/courses/${slug}/enroll`,
+  COURSE_FEEDBACK: (slug: string) => `/api/lms/courses/${slug}/feedback`,
+
+  // Comments
+  COURSE_COMMENTS: (slug: string) => `/api/lms/courses/${slug}/comments`,
+  COURSE_COMMENT_LIKE: (slug: string, commentId: string) => `/api/lms/courses/${slug}/comments/${commentId}/like`,
+  COURSE_COMMENT_DELETE: (slug: string, commentId: string) => `/api/lms/courses/${slug}/comments/${commentId}`,
 
   // Modules
   MODULE_DETAILS: (courseSlug: string, moduleOrder: number) =>
@@ -529,6 +535,13 @@ export const LMS_ENDPOINTS = {
   // User Dashboard
   MY_COURSES: '/api/lms/my-courses',
   MY_DASHBOARD: '/api/lms/dashboard',
+
+  DASHBOARD: {
+    STUDENT: '/api/dashboard/student',
+    INSTITUTE_ADMIN: '/api/dashboard/institute-admin',
+    PLATFORM_ADMIN: '/api/dashboard/platform-admin',
+    STUDENT_FOR_ADMIN: (id: string) => `/api/dashboard/student/${id}`,
+  },
 
   // Stats
   STATS: '/api/lms/stats',
