@@ -1,0 +1,63 @@
+{"baseURL":"https://judge0-ce.p.rapidapi.com","level":"info","message":"Judge0 client initialized","service":"preplyte-api","timestamp":"2026-02-17 12:45:59","useRapidAPI":true}
+{"level":"info","message":"[TTS] Using Deepgram for text-to-speech","service":"preplyte-api","timestamp":"2026-02-17 12:45:59"}
+{"keyLength":39,"keyPrefix":"AIzaSyC7yj...","level":"info","message":"Gemini API Key loaded:","service":"preplyte-api","timestamp":"2026-02-17 12:45:59"}
+{"environment":"development","host":"0.0.0.0","level":"info","message":"Starting server...","port":4000,"service":"preplyte-api","timestamp":"2026-02-17 12:45:59"}
+{"level":"info","message":"Checking database connection...","service":"preplyte-api","timestamp":"2026-02-17 12:45:59"}
+{"level":"info","message":"✅ Database connected successfully","service":"preplyte-api","timestamp":"2026-02-17 12:45:59"}
+{"level":"info","message":"[WS Gateway] WebSocket server initialized","path":"/ws/interview/:sessionId","service":"preplyte-api","timestamp":"2026-02-17 12:45:59"}
+{"api":"http://localhost:4000/api","environment":"development","health":"http://localhost:4000/health","host":"0.0.0.0","level":"info","message":"🚀 Server running","port":4000,"service":"preplyte-api","timestamp":"2026-02-17 12:45:59","websocket":"ws://localhost:4000/ws/interview/:sessionId"}
+{"intervalHours":24,"level":"info","message":"Starting token cleanup scheduler","service":"preplyte-api","timestamp":"2026-02-17 12:45:59"}
+{"level":"info","message":"Starting token cleanup job","service":"preplyte-api","timestamp":"2026-02-17 12:45:59"}
+{"count":0,"level":"info","message":"Cleaned up expired tokens","service":"preplyte-api","timestamp":"2026-02-17 12:45:59"}
+{"level":"info","message":"Token cleanup completed","service":"preplyte-api","timestamp":"2026-02-17 12:45:59","tokensRemoved":0}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/courses?page=1&limit=10&search= \u001b[33m401\u001b[0m 12.098 ms - 108\u001b[0m","service":"preplyte-api","timestamp":"2026-02-17 12:46:24"}
+{"level":"info","message":"Token refreshed successfully","service":"preplyte-api","timestamp":"2026-02-17 12:46:25","userId":"cmlq4geyi00019qeh3xpio9yr"}
+{"level":"info","message":"\u001b[0mPOST /api/auth/refresh \u001b[32m200\u001b[0m 100.428 ms - 1020\u001b[0m","service":"preplyte-api","timestamp":"2026-02-17 12:46:25"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/courses?page=1&limit=10&search= \u001b[32m200\u001b[0m 42.673 ms - 957\u001b[0m","service":"preplyte-api","timestamp":"2026-02-17 12:46:25"}
+{"level":"info","message":"\u001b[0mGET /api/dashboard/student \u001b[33m401\u001b[0m 1.581 ms - 108\u001b[0m","service":"preplyte-api","timestamp":"2026-02-17 12:47:46"}
+{"level":"info","message":"Token refreshed successfully","service":"preplyte-api","timestamp":"2026-02-17 12:47:46","userId":"cmlq4h9or004p9qehngr7b15o"}
+{"level":"info","message":"\u001b[0mPOST /api/auth/refresh \u001b[32m200\u001b[0m 31.258 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-17 12:47:46"}
+{"level":"info","message":"\u001b[0mGET /api/dashboard/student \u001b[32m200\u001b[0m 172.664 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-17 12:47:46"}
+{"level":"info","message":"\u001b[0mGET /api/institute/mock-drive/students?page=1&limit=10&sortOrder=desc \u001b[33m401\u001b[0m 1.732 ms - 108\u001b[0m","service":"preplyte-api","timestamp":"2026-02-17 12:48:03"}
+{"level":"warn","message":"Refresh token reuse detected","revokedAt":"2026-02-17T06:47:20.839Z","service":"preplyte-api","timestamp":"2026-02-17 12:48:03","tokenId":"cmlq84uez000h8dv8v9r9if25","userId":"cmlq4gfbb00039qehssiw4ew4"}
+{"level":"info","message":"User logged out from all devices","service":"preplyte-api","timestamp":"2026-02-17 12:48:03","userId":"cmlq4gfbb00039qehssiw4ew4"}
+{"code":"UNAUTHORIZED","ip":"127.0.0.1","level":"warn","message":"Operational error Token reuse detected. All sessions have been revoked for security.","method":"POST","path":"/api/auth/refresh","requestId":"mlq9u620-88db1b66d77cf9b2","service":"preplyte-api","timestamp":"2026-02-17 12:48:03","userAgent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"}
+{"level":"info","message":"\u001b[0mPOST /api/auth/refresh \u001b[33m401\u001b[0m 40.273 ms - 168\u001b[0m","service":"preplyte-api","timestamp":"2026-02-17 12:48:03"}
+{"level":"info","message":"\u001b[0mGET /api/institute/mock-drive/students?page=1&limit=10&sortOrder=desc \u001b[33m401\u001b[0m 0.994 ms - 85\u001b[0m","service":"preplyte-api","timestamp":"2026-02-17 12:48:04"}
+{"level":"info","message":"\u001b[0mGET /api/institute/mock-drive/students?page=1&limit=10&sortOrder=desc \u001b[33m401\u001b[0m 1.875 ms - 85\u001b[0m","service":"preplyte-api","timestamp":"2026-02-17 12:48:05"}
+{"level":"info","message":"User logged in","service":"preplyte-api","timestamp":"2026-02-17 12:48:24","userId":"cmlq4geyi00019qeh3xpio9yr"}
+{"level":"info","message":"\u001b[0mPOST /api/auth/login \u001b[32m200\u001b[0m 494.009 ms - 1008\u001b[0m","service":"preplyte-api","timestamp":"2026-02-17 12:48:24"}
+{"level":"info","message":"\u001b[0mGET /api/admin/institutes?page=1&limit=10&sortBy=createdAt&sortOrder=desc \u001b[32m200\u001b[0m 27.802 ms - 366\u001b[0m","service":"preplyte-api","timestamp":"2026-02-17 12:48:27"}
+{"level":"info","message":"\u001b[0mGET /api/admin/analytics \u001b[32m200\u001b[0m 88.237 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-17 12:48:27"}
+{"level":"info","message":"\u001b[0mGET /api/admin/institutes?page=1&limit=5&sortBy=createdAt&sortOrder=desc \u001b[32m200\u001b[0m 17.860 ms - 365\u001b[0m","service":"preplyte-api","timestamp":"2026-02-17 12:48:27"}
+{"level":"info","message":"\u001b[0mGET /api/admin/institutes?page=1&limit=10&sortBy=createdAt&sortOrder=desc \u001b[36m304\u001b[0m 13.215 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-17 12:48:27"}
+{"level":"info","message":"\u001b[0mGET /api/admin/analytics \u001b[36m304\u001b[0m 28.625 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-17 12:48:27"}
+{"level":"info","message":"\u001b[0mGET /api/admin/institutes?page=1&limit=5&sortBy=createdAt&sortOrder=desc \u001b[36m304\u001b[0m 16.008 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-17 12:48:27"}
+{"level":"info","message":"\u001b[0mGET /api/admin/lms/analytics/overview \u001b[32m200\u001b[0m 120.235 ms - 629\u001b[0m","service":"preplyte-api","timestamp":"2026-02-17 12:48:32"}
+{"level":"info","message":"\u001b[0mGET /api/admin/institutes?limit=100 \u001b[32m200\u001b[0m 24.918 ms - 367\u001b[0m","service":"preplyte-api","timestamp":"2026-02-17 12:48:40"}
+{"level":"info","message":"\u001b[0mGET /api/admin/institutes?limit=100 \u001b[36m304\u001b[0m 23.410 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-17 12:48:40"}
+{"level":"info","message":"\u001b[0mGET /api/admin/users?page=1&limit=10&sortBy=createdAt&sortOrder=desc \u001b[32m200\u001b[0m 47.912 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-17 12:48:40"}
+{"level":"info","message":"\u001b[0mGET /api/admin/users?page=1&limit=10&sortBy=createdAt&sortOrder=desc \u001b[36m304\u001b[0m 16.423 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-17 12:48:40"}
+{"level":"info","message":"\u001b[0mGET /api/admin/institutes?limit=100 \u001b[36m304\u001b[0m 20.638 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-17 12:48:55"}
+{"level":"info","message":"\u001b[0mGET /api/admin/users?page=1&limit=10&sortBy=createdAt&sortOrder=desc \u001b[36m304\u001b[0m 38.169 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-17 12:48:55"}
+{"level":"info","message":"\u001b[0mGET /api/admin/institutes?limit=100 \u001b[36m304\u001b[0m 18.657 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-17 12:48:55"}
+{"level":"info","message":"\u001b[0mGET /api/admin/users?page=1&limit=10&sortBy=createdAt&sortOrder=desc \u001b[36m304\u001b[0m 12.381 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-17 12:48:55"}
+{"level":"info","message":"\u001b[0mGET /api/lms/courses/python \u001b[32m200\u001b[0m 49.553 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-17 12:49:07"}
+{"level":"info","message":"\u001b[0mGET /api/lms/courses/python/comments \u001b[32m200\u001b[0m 27.261 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-17 12:49:07"}
+{"level":"info","message":"User logged out","service":"preplyte-api","timestamp":"2026-02-17 12:49:43","userId":"cmlq4geyi00019qeh3xpio9yr"}
+{"level":"info","message":"\u001b[0mPOST /api/auth/logout \u001b[32m200\u001b[0m 23.280 ms - 58\u001b[0m","service":"preplyte-api","timestamp":"2026-02-17 12:49:43"}
+{"level":"info","message":"User logged in","service":"preplyte-api","timestamp":"2026-02-17 12:49:54","userId":"cmlq4gfbb00039qehssiw4ew4"}
+{"level":"info","message":"\u001b[0mPOST /api/auth/login \u001b[32m200\u001b[0m 490.569 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-17 12:49:54"}
+{"level":"info","message":"\u001b[0mGET /api/dashboard/institute-admin \u001b[36m304\u001b[0m 46.071 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-17 12:50:20"}
+{"level":"info","message":"\u001b[0mGET /api/institute/mock-drive/students?page=1&limit=10&sortOrder=desc \u001b[32m200\u001b[0m 15.585 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-17 12:50:30"}
+{"level":"info","message":"\u001b[0mGET /api/dashboard/student/cmlq4h9or004p9qehngr7b15o \u001b[32m200\u001b[0m 122.342 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-17 12:50:37"}
+{"level":"info","message":"User logged out","service":"preplyte-api","timestamp":"2026-02-17 12:57:02","userId":"cmlq4h9or004p9qehngr7b15o"}
+{"level":"info","message":"\u001b[0mPOST /api/auth/logout \u001b[32m200\u001b[0m 67.681 ms - 58\u001b[0m","service":"preplyte-api","timestamp":"2026-02-17 12:57:02"}
+{"email":"vicharekartik2004@gmail.com","level":"info","message":"User registered","service":"preplyte-api","timestamp":"2026-02-17 12:57:28","userId":"cmlqa69ye0009mz559gk9ledi"}
+{"level":"info","message":"\u001b[0mPOST /api/auth/register \u001b[32m201\u001b[0m 519.718 ms - 285\u001b[0m","service":"preplyte-api","timestamp":"2026-02-17 12:57:28"}
+{"level":"info","message":"User logged in","service":"preplyte-api","timestamp":"2026-02-17 12:57:36","userId":"cmlqa69ye0009mz559gk9ledi"}
+{"level":"info","message":"\u001b[0mPOST /api/auth/login \u001b[32m200\u001b[0m 513.449 ms - 972\u001b[0m","service":"preplyte-api","timestamp":"2026-02-17 12:57:36"}
+{"level":"info","message":"\u001b[0mGET /api/dashboard/student \u001b[32m200\u001b[0m 213.444 ms - 752\u001b[0m","service":"preplyte-api","timestamp":"2026-02-17 12:57:38"}
+{"level":"info","message":"\u001b[0mGET /api/lms/categories \u001b[36m304\u001b[0m 15.876 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-17 12:58:02"}
+{"level":"info","message":"\u001b[0mGET /api/lms/stats \u001b[32m200\u001b[0m 15.812 ms - 148\u001b[0m","service":"preplyte-api","timestamp":"2026-02-17 12:58:02"}
+{"level":"info","message":"\u001b[0mGET /api/lms/courses?page=1&limit=12&priceRange=all&sortBy=popular&search= \u001b[32m200\u001b[0m 30.212 ms - 570\u001b[0m","service":"preplyte-api","timestamp":"2026-02-17 12:58:02"}
