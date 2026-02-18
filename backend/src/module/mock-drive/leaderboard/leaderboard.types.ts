@@ -8,6 +8,7 @@ export interface LeaderboardEntry {
   studentName: string;
   studentId: string | null;
   departmentId: string | null;
+  departmentName: string | null;
   totalScore: number;
   percentageScore: number;
   moduleScores: Array<{

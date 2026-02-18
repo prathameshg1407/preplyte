@@ -37,7 +37,11 @@ export async function getInstituteStudents(
     prisma.user.findMany({
       where,
       include: {
-        profile: true,
+        profile: {
+          include: {
+            department: true,
+          },
+        },
         _count: {
           select: {
             aptitudeSessions: true,

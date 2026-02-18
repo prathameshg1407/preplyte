@@ -210,7 +210,7 @@ export default function ResultDetailPage() {
               <DetailRow label="Name" value={result.student.name} />
               <DetailRow label="Email" value={result.student.email} />
               <DetailRow label="Student ID" value={result.student.studentId || '-'} />
-              <DetailRow label="Department" value={result.student.department || '-'} />
+              <DetailRow label="Department" value={result.student.departmentName || result.student.department || result.student.departmentId || '-'} />
             </CardContent>
           </Card>
 

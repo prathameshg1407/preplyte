@@ -99,6 +99,7 @@ export interface EligibleStudent {
   fullName: string;
   studentId: string;
   departmentId: string;
+  departmentName?: string | null;
   courseYear: string;
   averageCgpa: number | null;
   marks10: number | null;

@@ -345,7 +345,7 @@ const { data: unassignedData } = useRegistrations(driveId, {
                       </TableCell>
                       <TableCell>
                         <div className="text-sm">
-                          {student.department}
+                          {student.departmentName || student.departmentId}
                           <span className="text-muted-foreground">
                             {' '}
                             • {student.courseYear}

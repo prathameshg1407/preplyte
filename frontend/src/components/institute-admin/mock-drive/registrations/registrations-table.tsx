@@ -133,7 +133,7 @@ export function RegistrationsTable({
                 </TableCell>
                 <TableCell>
                   <div className="text-sm">
-                    {registration.departmentId || '-'}
+                    {registration.departmentName || registration.departmentId || '-'}
                     {registration.courseYear && (
                       <span className="text-muted-foreground">
                         {' '}

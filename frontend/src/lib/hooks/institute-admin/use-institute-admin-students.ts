@@ -25,6 +25,7 @@ type ComponentStudent = {
   name?: string;
   studentId: string;
   departmentId?: string;
+  departmentName?: string;
   courseYear?: string;
   averageCgpa?: number;
   isActive: boolean;
@@ -38,6 +39,7 @@ function transformStudent(student: InstituteStudent): ComponentStudent {
     name: student.name || undefined,
     studentId: student.profile?.studentId || '',
     departmentId: student.profile?.departmentId,
+    departmentName: student.profile?.department?.name,
     courseYear: student.profile?.courseYear,
     averageCgpa: student.profile?.averageCgpa,
     isActive: student.isActive,

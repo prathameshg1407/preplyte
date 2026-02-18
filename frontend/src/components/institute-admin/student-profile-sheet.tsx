@@ -34,6 +34,7 @@ export type StudentProfile = {
   name: string;
   studentId: string;
   departmentId: string;
+  departmentName?: string;
   courseYear: string;
   averageCgpa: number;
   marks10?: number;
@@ -114,7 +115,7 @@ export function StudentProfileSheet({
                     Department
                   </span>
                   <Badge variant="secondary" className="text-xs px-2 py-0.5">
-                    {student.departmentId}
+                    {student.departmentName || student.departmentId || '—'}
                   </Badge>
                 </div>
                 <div>

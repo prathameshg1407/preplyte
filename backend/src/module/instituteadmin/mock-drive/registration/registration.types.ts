@@ -57,6 +57,7 @@ export interface StudentInfo {
   email: string;
   studentId: string | null;
   departmentId: string | null;
+  departmentName?: string | null;
   courseYear: string | null;
   averageCgpa: number | null;
   marks10: number | null;
@@ -81,6 +82,7 @@ export interface RegistrationListItem {
   studentName: string;
   studentId: string | null;
   departmentId: string | null;
+  departmentName?: string | null;
   courseYear: string | null;
   averageCgpa: number | null;
   batchId: string | null;
