@@ -251,6 +251,14 @@ export const API_ENDPOINTS = {
     LEADERBOARD: (id: string) => `/api/mock-drives/${id}/leaderboard` as const,
     MY_RANK: (id: string) => `/api/mock-drives/${id}/leaderboard/my-rank` as const,
   },
+  
+  //Leaderboard
+  LEADERBOARD: {
+    CONFIG: '/api/leaderboard/config',
+    LIST: '/api/leaderboard',
+    MY_SCORES: '/api/leaderboard/my-scores',
+    MY_STATS: '/api/leaderboard/my-stats',
+  },
 
   // ============================================
   // Common / Config
@@ -265,6 +273,7 @@ export const API_ENDPOINTS = {
     MOCK_DRIVE_STATUSES: '/api/practice/enums/mock-drive-statuses',
   },
 } as const;
+
 
 // ============================================
 // Type Helpers
@@ -348,6 +357,7 @@ export const EndpointBuilders = {
     results: (id: string) => buildUrl(API_ENDPOINTS.INSTITUTE.MOCK_DRIVE_RESULTS(id)),
     leaderboard: (id: string) => buildUrl(API_ENDPOINTS.INSTITUTE.MOCK_DRIVE_LEADERBOARD(id)),
   },
+  
 
   /**
    * Student Mock Drive Endpoints
