@@ -17,9 +17,15 @@ import { Button } from '@/components/ui/button';
 
 interface FullscreenPromptProps {
   required?: boolean;
+  message?: string;
+  onEnterFullscreen?: () => void;
 }
 
-export const FullscreenPrompt: FC<FullscreenPromptProps> = ({ required = false }) => {
+export const FullscreenPrompt: FC<FullscreenPromptProps> = ({
+  required = false,
+  message = "For the best experience and to minimize distractions, we recommend taking this test in fullscreen mode.",
+  onEnterFullscreen
+}) => {
   const [showPrompt, setShowPrompt] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
@@ -77,8 +83,7 @@ export const FullscreenPrompt: FC<FullscreenPromptProps> = ({ required = false }
               Fullscreen Recommended
             </AlertDialogTitle>
             <AlertDialogDescription>
-              For the best experience and to minimize distractions, we recommend taking
-              this test in fullscreen mode.
+              {message}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -87,7 +92,7 @@ export const FullscreenPrompt: FC<FullscreenPromptProps> = ({ required = false }
                 Continue Without
               </Button>
             )}
-            <AlertDialogAction onClick={requestFullscreen}>
+            <AlertDialogAction onClick={onEnterFullscreen || requestFullscreen}>
               Enter Fullscreen
             </AlertDialogAction>
           </AlertDialogFooter>

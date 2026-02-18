@@ -178,12 +178,17 @@ enum LmsTestAttemptStatus {
 model User {
   id          String   @id @default(cuid())
   email       String   @unique
-  password    String
+  password    String?
   name        String?
   role        UserRole @default(USER)
   isActive    Boolean  @default(true)
   instituteId String?
   profilePictureUrl String?
+
+  // OAuth fields
+  googleId    String?  @unique
+  provider    String?  @default("local")
+  avatar      String?
 
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
@@ -215,6 +220,9 @@ model User {
   lmsModuleProgress  LmsModuleProgress[]
   lmsTopicProgress   LmsTopicProgress[]
   lmsTestAttempts    LmsTestAttempt[]
+  lmsFeedbacks       LmsCourseFeedback[]
+  lmsComments        LmsCourseComment[]
+  lmsCommentLikes    LmsCourseCommentLike[]
 
   @@index([email])
   @@index([instituteId])
@@ -362,6 +370,10 @@ model Resume {
   mimeType  String?
   isDefault Boolean @default(false)
 
+  // Link to resume builder
+  linkedResumeId String?     @unique
+  linkedResume   UserResume? @relation(fields: [linkedResumeId], references: [id], onDelete: SetNull)
+
   parsedTextHash String?
   lastParsedAt   DateTime?
 
@@ -373,6 +385,7 @@ model Resume {
 
   @@index([userId])
   @@index([userId, isDefault])
+  @@index([linkedResumeId])
   @@map("resumes")
 }
 
@@ -447,6 +460,7 @@ model UserResume {
   user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   template       ResumeTemplate  @relation(fields: [templateId], references: [id])
   versions       ResumeVersion[]
+  profileResume  Resume?         // Link to profile resume
 
   @@unique([userId, slug])
   @@index([userId])
@@ -1248,6 +1262,8 @@ model LmsCourse {
   difficulty DifficultyLevel @default(MEDIUM)
   instructor String?
   language   String          @default("English")
+  averageRating Float @default(0)
+  ratingsCount  Int   @default(0)
 
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
@@ -1258,6 +1274,8 @@ model LmsCourse {
   modules     LmsModule[]
   enrollments LmsEnrollment[]
   finalTest   LmsFinalTest?
+  feedbacks   LmsCourseFeedback[]
+  comments    LmsCourseComment[]
 
   @@index([categoryId])
   @@index([status, isActive])
@@ -1676,7 +1694,71 @@ model LmsTestResponse {
   question LmsTestQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
 
   @@unique([attemptId, questionId])
-  @@index([attemptId])
   @@index([questionId])
   @@map("lms_test_responses")
+}
+
+// =====================================================
+// LMS - COURSE FEEDBACK
+// =====================================================
+
+model LmsCourseFeedback {
+  id        String   @id @default(cuid())
+  userId    String
+  courseId  String
+  
+  rating    Int      // 1-5
+  comment   String?  @db.Text
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course    LmsCourse @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, courseId])
+  @@index([courseId])
+  @@index([userId])
+  @@map("lms_course_feedbacks")
+}
+
+// =====================================================
+// LMS - COURSE COMMENTS
+// =====================================================
+
+model LmsCourseComment {
+  id        String   @id @default(cuid())
+  userId    String
+  courseId  String
+  
+  comment   String   @db.Text
+  parentId  String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course    LmsCourse @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  parent    LmsCourseComment? @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies   LmsCourseComment[] @relation("CommentReplies")
+  likes     LmsCourseCommentLike[]
+
+  @@index([courseId])
+  @@index([parentId])
+  @@map("lms_course_comments")
+}
+
+model LmsCourseCommentLike {
+  id        String   @id @default(cuid())
+  userId    String
+  commentId String
+
+  createdAt DateTime @default(now())
+
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  comment   LmsCourseComment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, commentId])
+  @@index([commentId])
+  @@map("lms_course_comment_likes")
 }

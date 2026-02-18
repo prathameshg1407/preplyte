@@ -7,6 +7,7 @@ import morgan from 'morgan';
 import compression from 'compression';
 import cookieParser from 'cookie-parser';
 import { rateLimit, RateLimitRequestHandler } from 'express-rate-limit';
+import { passport } from './module/auth/google-oauth.service';
 
 // Route Imports
 import { authRoutes } from './module/auth/auth.routes';
@@ -26,6 +27,7 @@ import { logger } from './utils/logger';
 import { AppError } from './utils/errors';
 import { prisma } from './lib/db';
 import lmsRoutes from './module/lms/lms.routes';
+import lmsAdminRoutes from './module/admin/lms/lms-admin.routes';
 
 // =====================================================
 // APP INITIALIZATION
@@ -156,6 +158,9 @@ app.use(
 app.use(express.json({ limit: config.bodyLimit }));
 app.use(express.urlencoded({ extended: true, limit: config.bodyLimit }));
 app.use(cookieParser(process.env.COOKIE_SECRET));
+
+// Initialize Passport
+app.use(passport.initialize());
 
 // =====================================================
 // 5. RATE LIMITERS
@@ -350,6 +355,8 @@ app.use(
 app.use('/api/admin', adminLimiter, adminRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/lms', lmsRoutes);
+app.use('/api/admin/lms', lmsAdminRoutes); // Add this
+
 
 // Resume Builder
 app.use('/api/resume-builder', resumeBuilderLimiter, resumeRoutes);

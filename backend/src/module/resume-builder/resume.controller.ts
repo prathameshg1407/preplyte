@@ -245,6 +245,35 @@ export class ResumeController {
     }
   };
 
+  // ============ Save to Profile Endpoints ============
+
+  saveToProfile = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const userId = req.user!.id;
+      const { resumeId } = req.params;
+      const { fileName } = req.body;
+      
+      const result = await this.resumeService.saveToProfile(userId, resumeId, fileName);
+      
+      sendSuccess(res, result, result.message, 201);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  unlinkFromProfile = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const userId = req.user!.id;
+      const { resumeId } = req.params;
+      
+      await this.resumeService.unlinkFromProfile(userId, resumeId);
+      
+      sendSuccess(res, null, 'Resume unlinked from profile successfully');
+    } catch (error) {
+      next(error);
+    }
+  };
+
   // ============ ATS Score Checker Endpoints ============
 
   checkATSScore = async (req: Request, res: Response, next: NextFunction) => {

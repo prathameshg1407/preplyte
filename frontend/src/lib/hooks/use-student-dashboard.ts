@@ -1,58 +1,21 @@
+// src/lib/hooks/use-student-dashboard.ts
+
 import { useQuery } from '@tanstack/react-query';
-import { apiClient } from '@/lib/api/axios-instance';
+import { dashboardService } from '@/lib/api/services/dashboard.service';
+import type { StudentDashboardData } from '@/types/dashboard.types';
 
-interface DashboardStats {
-  testsCompleted: number;
-  totalTests: number;
-  interviewsCompleted: number;
-  totalInterviews: number;
-  problemsSolved: number;
-  totalProblems: number;
-  overallScore: number;
-}
-
-interface RecentTest {
-  id: string;
-  title: string;
-  type: 'APTITUDE' | 'MACHINE' | 'INTERVIEW';
-  score: number;
-  total: number;
-  date: string;
-  status: string;
-}
-
-interface UpcomingTest {
-  id: string;
-  title: string;
-  date: string;
-  duration: string;
-  difficulty: string;
-  status: string;
-  moduleCount: number;
-}
-
-interface DashboardData {
-  stats: DashboardStats;
-  recentTests: RecentTest[];
-  upcomingTests: UpcomingTest[];
-}
-
-interface ApiResponse<T> {
-  success: boolean;
-  data: T;
-}
+export const dashboardQueryKeys = {
+  all: ['dashboard'] as const,
+  student: () => [...dashboardQueryKeys.all, 'student'] as const,
+};
 
 export function useStudentDashboard() {
-  return useQuery<DashboardData>({
-    queryKey: ['student-dashboard'],
-    queryFn: async () => {
-      const response = await apiClient.get<ApiResponse<DashboardData>>(
-        '/api/dashboard/student'
-      );
-      return response.data.data;
-    },
+  return useQuery<StudentDashboardData>({
+    queryKey: dashboardQueryKeys.student(),
+    queryFn: dashboardService.getStudentDashboard,
     // Only fetch when user is authenticated
     enabled: typeof window !== 'undefined',
     retry: false,
+    staleTime: 1000 * 60 * 5, // 5 minutes
   });
 }

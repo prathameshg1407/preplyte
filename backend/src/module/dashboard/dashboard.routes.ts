@@ -26,6 +26,9 @@ router.get('/student', dashboardController.getStudentDashboard);
 // GET /dashboard/institute-admin - Get institute admin dashboard
 router.get('/institute-admin', dashboardController.getInstituteAdminDashboard);
 
+// GET /dashboard/student/:id - Get specific student dashboard for admin
+router.get('/student/:id', dashboardController.getStudentDashboardForAdmin);
+
 // =====================================================
 // PLATFORM ADMIN DASHBOARD
 // =====================================================

@@ -25,6 +25,7 @@ import { CategoryFilter } from '@/components/lms/category-filters';
 import { useCategories, useCourses, useLmsStats } from '@/lib/hooks/lms/use-lms';
 import { useLmsStore } from '@/lib/store/lms-store';
 import { useDebounce } from '@/lib/hooks/use-debounce';
+import { DifficultyLevel } from '@/types/lms.types';
 
 export default function LMSPage() {
   const { filters, setFilters } = useLmsStore();
@@ -154,7 +155,7 @@ export default function LMSPage() {
           <div className="flex gap-2">
             <select
               value={filters.difficulty || ''}
-              onChange={(e) => setFilters({ difficulty: e.target.value as 'EASY' | 'MEDIUM' | 'HARD' || undefined })}
+              onChange={(e) => setFilters({ difficulty: (e.target.value as DifficultyLevel) || undefined })}
               className="px-3 py-2 border border-input rounded-md bg-background text-sm"
             >
               <option value="">All Levels</option>

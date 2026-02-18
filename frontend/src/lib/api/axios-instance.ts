@@ -32,6 +32,7 @@ export const apiClient = axios.create({
 
 let isRefreshing = false;
 let refreshSubscribers: RefreshSubscriber[] = [];
+let refreshPromise: Promise<string> | null = null;
 
 const subscribeTokenRefresh = (
   resolve: (token: string) => void,
@@ -43,11 +44,13 @@ const subscribeTokenRefresh = (
 const onTokenRefreshed = (token: string): void => {
   refreshSubscribers.forEach(({ resolve }) => resolve(token));
   refreshSubscribers = [];
+  refreshPromise = null;
 };
 
 const onRefreshFailed = (error: Error): void => {
   refreshSubscribers.forEach(({ reject }) => reject(error));
   refreshSubscribers = [];
+  refreshPromise = null;
 };
 
 const getAccessToken = (): string | null => {
@@ -73,18 +76,22 @@ const isAuthEndpoint = (url?: string): boolean => {
   return authPaths.some(path => url.includes(path));
 };
 
-const redirectToLogin = (): void => {
+const redirectToLogin = (reason?: string): void => {
   if (typeof window === 'undefined') return;
 
+  logger.debug('[API] Redirecting to login', { reason });
+  
   clearAuthStorage();
   
   // Reset refresh state
   isRefreshing = false;
   refreshSubscribers = [];
+  refreshPromise = null;
 
   const currentPath = window.location.pathname + window.location.search;
   if (!isPublicPath(currentPath) && !window.location.pathname.includes('/login')) {
-    window.location.href = `/login?redirect=${encodeURIComponent(currentPath)}`;
+    const redirectUrl = `/login?redirect=${encodeURIComponent(currentPath)}`;
+    window.location.href = reason ? `${redirectUrl}&reason=${encodeURIComponent(reason)}` : redirectUrl;
   }
 };
 
@@ -93,6 +100,12 @@ const redirectToLogin = (): void => {
 // ============================================
 
 const performTokenRefresh = async (): Promise<string> => {
+  // If there's already a refresh in progress, return that promise
+  if (refreshPromise) {
+    logger.debug('[API] Reusing existing refresh promise');
+    return refreshPromise;
+  }
+
   const refreshToken = getRefreshToken();
   
   if (!refreshToken) {
@@ -101,35 +114,50 @@ const performTokenRefresh = async (): Promise<string> => {
 
   logger.debug('[API] Attempting token refresh');
 
-  // Use a separate axios instance to avoid interceptor loops
-  const response = await axios.post(
-    `${API_CONFIG.BASE_URL}${API_ENDPOINTS.AUTH.REFRESH}`,
-    { refreshToken },
-    { 
-      headers: { 'Content-Type': 'application/json' },
-      timeout: API_CONFIG.TIMEOUT,
+  // Create and store the refresh promise to prevent concurrent refreshes
+  refreshPromise = (async () => {
+    try {
+      // Use a separate axios instance to avoid interceptor loops
+      const response = await axios.post(
+        `${API_CONFIG.BASE_URL}${API_ENDPOINTS.AUTH.REFRESH}`,
+        { refreshToken },
+        { 
+          headers: { 'Content-Type': 'application/json' },
+          timeout: API_CONFIG.TIMEOUT,
+        }
+      );
+
+      const data = response.data;
+      
+      // Handle both wrapped and unwrapped responses
+      const authData = data?.data || data;
+      const newAccessToken = authData?.accessToken;
+      const newRefreshToken = authData?.refreshToken;
+
+      if (!newAccessToken || !newRefreshToken) {
+        logger.error('[API] Invalid refresh response structure', { data });
+        throw new Error('Invalid refresh response');
+      }
+
+      // Save new tokens atomically
+      storage.set(AUTH_STORAGE_KEYS.ACCESS_TOKEN, newAccessToken);
+      storage.set(AUTH_STORAGE_KEYS.REFRESH_TOKEN, newRefreshToken);
+      
+      // Broadcast token update to other tabs
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem('token-updated', Date.now().toString());
+      }
+      
+      logger.debug('[API] Token refresh successful');
+      
+      return newAccessToken;
+    } catch (error) {
+      refreshPromise = null;
+      throw error;
     }
-  );
+  })();
 
-  const data = response.data;
-  
-  // Handle both wrapped and unwrapped responses
-  const authData = data?.data || data;
-  const newAccessToken = authData?.accessToken;
-  const newRefreshToken = authData?.refreshToken;
-
-  if (!newAccessToken || !newRefreshToken) {
-    logger.error('[API] Invalid refresh response structure', { data });
-    throw new Error('Invalid refresh response');
-  }
-
-  // Save new tokens
-  storage.set(AUTH_STORAGE_KEYS.ACCESS_TOKEN, newAccessToken);
-  storage.set(AUTH_STORAGE_KEYS.REFRESH_TOKEN, newRefreshToken);
-  
-  logger.debug('[API] Token refresh successful');
-  
-  return newAccessToken;
+  return refreshPromise;
 };
 
 // ============================================
@@ -190,12 +218,23 @@ apiClient.interceptors.response.use(
       !isAuthEndpoint(config.url) &&
       !config._isRetryRequest
     ) {
+      const errorData = error.response?.data as any;
+      const errorCode = errorData?.error?.code;
+      const errorMessage = errorData?.error?.message || errorData?.message;
+
+      // Check for token reuse detection
+      if (errorMessage?.toLowerCase().includes('token reuse')) {
+        logger.warn('[API] Token reuse detected by server, clearing all sessions');
+        redirectToLogin('session_revoked');
+        return Promise.reject(error);
+      }
+
       // Check if we have a refresh token
       const refreshToken = getRefreshToken();
       
       if (!refreshToken) {
         logger.debug('[API] No refresh token available, redirecting to login');
-        redirectToLogin();
+        redirectToLogin('no_refresh_token');
         return Promise.reject(error);
       }
 
@@ -231,8 +270,15 @@ apiClient.interceptors.response.use(
         config._isRetryRequest = true;
         
         return apiClient(config);
-      } catch (refreshError) {
+      } catch (refreshError: any) {
         logger.error('[API] Token refresh failed', refreshError);
+        
+        // Check if it's a token reuse error
+        const refreshErrorMessage = refreshError?.response?.data?.error?.message || 
+                                   refreshError?.response?.data?.message || 
+                                   refreshError?.message;
+        
+        const isTokenReuse = refreshErrorMessage?.toLowerCase().includes('token reuse');
         
         const error = refreshError instanceof Error 
           ? refreshError 
@@ -241,8 +287,8 @@ apiClient.interceptors.response.use(
         // Notify all queued requests of failure
         onRefreshFailed(error);
         
-        // Redirect to login
-        redirectToLogin();
+        // Redirect to login with appropriate reason
+        redirectToLogin(isTokenReuse ? 'token_reuse' : 'refresh_failed');
         
         return Promise.reject(error);
       } finally {
@@ -307,4 +353,40 @@ export const refreshTokenManually = async (): Promise<boolean> => {
 export const resetApiClient = (): void => {
   isRefreshing = false;
   refreshSubscribers = [];
+  refreshPromise = null;
 };
+
+// ============================================
+// Cross-Tab Token Synchronization
+// ============================================
+
+if (typeof window !== 'undefined') {
+  // Listen for storage changes from other tabs
+  window.addEventListener('storage', (event) => {
+    // Token was updated in another tab
+    if (event.key === 'token-updated' && event.newValue) {
+      logger.debug('[API] Token updated in another tab, reloading tokens');
+      
+      // If we're currently refreshing, cancel it
+      if (isRefreshing) {
+        logger.debug('[API] Cancelling current refresh due to external update');
+        isRefreshing = false;
+        refreshPromise = null;
+        
+        // Resolve all pending requests with the new token
+        const newToken = getAccessToken();
+        if (newToken) {
+          onTokenRefreshed(newToken);
+        } else {
+          onRefreshFailed(new Error('Token cleared in another tab'));
+        }
+      }
+    }
+    
+    // Auth was cleared in another tab
+    if (event.key === AUTH_STORAGE_KEYS.ACCESS_TOKEN && !event.newValue) {
+      logger.debug('[API] Auth cleared in another tab');
+      redirectToLogin('logged_out_elsewhere');
+    }
+  });
+}

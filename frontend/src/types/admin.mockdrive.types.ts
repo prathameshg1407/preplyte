@@ -298,6 +298,7 @@ export interface RegistrationListItem {
   batchId: string | null;
   batchName: string | null;
   registeredAt: string;
+  department: string;
   isEligible: boolean | null;
 }
 
@@ -367,6 +368,7 @@ export interface BatchStudent {
   studentId: string;
   departmentId: string;
   departmentName?: string;
+  department: string;
   courseYear: string;
   numberOfBacklogs: number;
   registrationStatus: MockDriveRegistrationStatus;
@@ -481,6 +483,7 @@ export interface CompletionTrend {
 
 export interface DepartmentBreakdown {
   departmentId: string;
+  department: string;
   totalStudents: number;
   completedStudents: number;
   averageScore: number | null;
@@ -517,6 +520,7 @@ export interface ResultListItem {
   studentId: string | null;
   departmentId: string | null;
   batchName: string | null;
+  department: string;
   status: MockDriveAttemptStatus;
   totalScore: number | null;
   percentageScore: number | null;
@@ -545,6 +549,7 @@ export interface DetailedResult {
     email: string;
     studentId: string | null;
     departmentId: string | null;
+    department: string | null;
   };
   batch: {
     id: string;
@@ -770,6 +775,7 @@ export interface ListRegistrationsParams {
   status?: MockDriveRegistrationStatus;
   batchId?: string;
   hasBatch?: boolean;
+  department?: string;
   search?: string;
   sortBy?: 'registeredAt' | 'studentName' | 'status';
   sortOrder?: 'asc' | 'desc';
@@ -787,6 +793,7 @@ export interface ListEligibleStudentsParams {
   page?: number;
   limit?: number;
   departmentId?: string;
+  department?: string;
   courseYear?: string;
   search?: string;
 }

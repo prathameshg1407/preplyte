@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
+import { TemplatePreview } from '@/components/resume-builder/TemplatePreview';
 import {
   Check,
   Crown,
@@ -75,8 +76,8 @@ export function TemplateSelector({ onSelect, selectedTemplateId }: TemplateSelec
       
       console.log('Resume created successfully:', resume);
       
-      // Redirect to My Resumes tab to show the newly created resume
-      router.push('/resume-builder?tab=my-resumes');
+      // Redirect to the resume editor
+      router.push(`/resume-builder/${resume.id}`);
       
     } catch (err: any) {
       console.error('Failed to create resume:', err);
@@ -198,18 +199,8 @@ export function TemplateSelector({ onSelect, selectedTemplateId }: TemplateSelec
               >
                 <CardContent className="p-0">
                   {/* Template Preview */}
-                  <div className="relative h-64 bg-muted overflow-hidden">
-                    {template.thumbnail ? (
-                      <img
-                        src={template.thumbnail}
-                        alt={template.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <FileText className="h-16 w-16 text-muted-foreground" />
-                      </div>
-                    )}
+                  <div className="relative h-64 bg-white overflow-hidden">
+                    <TemplatePreview template={template} />
 
                     {/* Selected Indicator */}
                     {selectedTemplate?.id === template.id && (

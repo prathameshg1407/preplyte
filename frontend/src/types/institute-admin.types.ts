@@ -15,6 +15,18 @@ export interface Institute {
   updatedAt: string;
 }
 
+export interface Student {
+  id: string;
+  email: string;
+  name?: string;
+  studentId: string;
+  departmentId?: string;
+  courseYear?: string;
+  averageCgpa?: number;
+  isActive: boolean;
+  createdAt: string;
+}
+
 export interface InstituteProfile {
   id: string;
   instituteId: string;

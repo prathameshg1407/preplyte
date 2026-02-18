@@ -1,0 +1,32 @@
+src/app/institute-admin/mock-drives/[driveId]/batches/[batchId]/page.tsx(348,36): error TS2551: Property 'department' does not exist on type 'BatchStudent'. Did you mean 'departmentId'?
+src/app/institute-admin/mock-drives/[driveId]/batches/[batchId]/page.tsx(436,48): error TS2551: Property 'department' does not exist on type 'RegistrationListItem'. Did you mean 'departmentId'?
+src/app/institute-admin/mock-drives/[driveId]/eligibility/page.tsx(131,20): error TS2551: Property 'department' does not exist on type 'ListEligibleStudentsParams'. Did you mean 'departmentId'?
+src/app/institute-admin/mock-drives/[driveId]/eligibility/page.tsx(316,41): error TS2551: Property 'department' does not exist on type 'ListEligibleStudentsParams'. Did you mean 'departmentId'?
+src/app/institute-admin/mock-drives/[driveId]/leaderboard/page.tsx(376,39): error TS2551: Property 'department' does not exist on type 'ResultListItem'. Did you mean 'departmentId'?
+src/app/institute-admin/mock-drives/[driveId]/results/[attemptId]/page.tsx(213,67): error TS2551: Property 'department' does not exist on type '{ userId: string; name: string; email: string; studentId: string | null; departmentId: string | null; }'. Did you mean 'departmentId'?
+src/app/institute-admin/students/page.tsx(66,11): error TS2322: Type 'import("C:/Users/Kartik Vichare/Desktop/NodePreplyte/preplyte/frontend/src/lib/hooks/institute-admin/use-institute-admin-students").Filters' is not assignable to type 'import("C:/Users/Kartik Vichare/Desktop/NodePreplyte/preplyte/frontend/src/components/institute-admin/institute-students-list").Filters'.
+  Types of property 'minCgpa' are incompatible.
+    Type 'number | undefined' is not assignable to type 'string | undefined'.
+      Type 'number' is not assignable to type 'string'.
+src/app/institute-admin/students/page.tsx(67,11): error TS2322: Type '(newFilters: Filters) => void' is not assignable to type '(filters: Filters) => void'.
+  Types of parameters 'newFilters' and 'filters' are incompatible.
+    Type 'import("C:/Users/Kartik Vichare/Desktop/NodePreplyte/preplyte/frontend/src/components/institute-admin/institute-students-list").Filters' is not assignable to type 'import("C:/Users/Kartik Vichare/Desktop/NodePreplyte/preplyte/frontend/src/lib/hooks/institute-admin/use-institute-admin-students").Filters'.
+      Types of property 'minCgpa' are incompatible.
+        Type 'string | undefined' is not assignable to type 'number | undefined'.
+          Type 'string' is not assignable to type 'number'.
+src/app/lms/[courseSlug]/final-test/result/page.tsx(26,22): error TS2307: Cannot find module 'canvas-confetti' or its corresponding type declarations.
+src/components/institute-admin/institute-students-list.tsx(30,15): error TS2305: Module '"@/types/institute-admin.types"' has no exported member 'Student'.
+src/components/institute-admin/mock-drive/analytics/department-breakdown-table.tsx(53,35): error TS2551: Property 'department' does not exist on type 'DepartmentBreakdown'. Did you mean 'departmentId'?
+src/components/institute-admin/mock-drive/analytics/department-breakdown-table.tsx(54,58): error TS2551: Property 'department' does not exist on type 'DepartmentBreakdown'. Did you mean 'departmentId'?
+src/components/profile/resume-list-card.tsx(84,22): error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.
+src/components/profile/resume-list-card.tsx(94,26): error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.
+src/components/profile/resume-list-card.tsx(103,20): error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.
+src/components/profile/resume-list-card.tsx(293,15): error TS2322: Type '(resumeId: string) => Promise<void>' is not assignable to type '(id: number) => Promise<void>'.
+  Types of parameters 'resumeId' and 'id' are incompatible.
+    Type 'number' is not assignable to type 'string'.
+src/components/profile/resume-list-card.tsx(294,15): error TS2322: Type '(resumeId: string) => Promise<void>' is not assignable to type '(id: number) => Promise<void>'.
+  Types of parameters 'resumeId' and 'id' are incompatible.
+    Type 'number' is not assignable to type 'string'.
+src/components/profile/resume-list-card.tsx(295,15): error TS2322: Type '(resumeId: string) => Promise<void>' is not assignable to type '(id: number) => Promise<void>'.
+  Types of parameters 'resumeId' and 'id' are incompatible.
+    Type 'number' is not assignable to type 'string'.

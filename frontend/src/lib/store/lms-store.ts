@@ -2,13 +2,13 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { GetCoursesParams } from '@/types/lms.types';
+import type { GetCoursesParams, DifficultyLevel } from '@/types/lms.types';
 
 // Filter types
 interface LmsFilters extends GetCoursesParams {
   search?: string;
   categorySlug?: string;
-  difficulty?: 'EASY' | 'MEDIUM' | 'HARD';
+  difficulty?: DifficultyLevel;
   priceRange?: 'free' | 'paid' | 'all';
   sortBy?: 'popular' | 'newest' | 'price-low' | 'price-high';
   page?: number;
@@ -270,9 +270,9 @@ export const useLmsStore = create<LmsStore>()(
         // Convert Set to Array for testState persistence
         testState: state.testState
           ? {
-              ...state.testState,
-              flaggedQuestions: Array.from(state.testState.flaggedQuestions),
-            }
+            ...state.testState,
+            flaggedQuestions: Array.from(state.testState.flaggedQuestions),
+          }
           : null,
       }),
       // Handle rehydration to convert flaggedQuestions back to Set

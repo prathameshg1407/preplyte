@@ -38,6 +38,23 @@ export enum LmsTestAttemptStatus {
   TIMED_OUT = 'TIMED_OUT',
 }
 
+export enum DifficultyLevel {
+  EASY = 'EASY',
+  MEDIUM = 'MEDIUM',
+  HARD = 'HARD',
+}
+
+// Feedback
+export interface FeedbackResponse {
+  id: string;
+  userId: string;
+  userName: string;
+  userAvatar?: string | null;
+  rating: number;
+  comment: string | null;
+  createdAt: string;
+}
+
 // Category
 export interface LmsCategory {
   id: string;
@@ -72,7 +89,7 @@ export interface LmsCourse {
   certificateEnabled: boolean;
   passingPercentage: number;
   tags: string[];
-  difficulty: 'EASY' | 'MEDIUM' | 'HARD';
+  difficulty: DifficultyLevel;
   instructor?: string;
   language: string;
   publishedAt?: string;
@@ -81,6 +98,10 @@ export interface LmsCourse {
   category?: LmsCategory;
   modules?: LmsModule[];
   enrollment?: LmsEnrollment;
+  averageRating: number;
+  ratingsCount: number;
+  feedbacks?: FeedbackResponse[];
+  enrollmentCount: number; // NEW: Total number of enrollments
 }
 
 // Course Card (for listing)
@@ -96,7 +117,7 @@ export interface LmsCourseCard {
   price: number;
   discountPrice?: number;
   currency: string;
-  difficulty: 'EASY' | 'MEDIUM' | 'HARD';
+  difficulty: DifficultyLevel;
   instructor?: string;
   category: {
     id: string;
@@ -105,6 +126,9 @@ export interface LmsCourseCard {
   };
   isEnrolled: boolean;
   enrollmentProgress?: number;
+  averageRating?: number;
+  ratingsCount?: number;
+  enrollmentCount: number; // NEW: Total number of enrollments
 }
 
 // Module
@@ -213,6 +237,7 @@ export interface LmsEnrollment {
   finalTestPassed: boolean;
   finalTestScore?: number;
   finalTestMarks?: number;
+  hasGivenFeedback?: boolean;
   enrolledAt: string;
   startedAt?: string;
   completedAt?: string;
@@ -351,6 +376,7 @@ export interface SubmitTestResponse {
   pointsEarned: number;
   passed: boolean;
   message: string;
+  hasGivenFeedback?: boolean;
 }
 
 export interface UpdateTopicProgressRequest {
@@ -385,4 +411,38 @@ export interface LmsUserDashboard {
   inProgressCourses: number;
   totalPointsEarned: number;
   certificatesEarned: number;
+}
+
+export interface CommentResponse {
+  id: string;
+  courseId: string;
+  userId: string;
+  user: {
+    id: string;
+    name: string;
+    avatarUrl: string | null;
+  };
+  comment: string;
+  parentId: string | null;
+  createdAt: string;
+  updatedAt: string;
+  replies?: CommentResponse[];
+  likesCount: number;
+  isLiked: boolean;
+  repliesCount?: number;
+}
+
+export interface CreateCommentBody {
+  comment: string;
+  parentId?: string;
+}
+
+export interface CommentsListResponse {
+  comments: CommentResponse[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
 }

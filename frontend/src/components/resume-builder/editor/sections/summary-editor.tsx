@@ -49,9 +49,11 @@ export function SummaryEditor({ resume, onSave }: SummaryEditorProps) {
   };
 
   const sampleSummaries = [
-    "Results-driven software engineer with 5+ years of experience building scalable web applications. Proficient in React, Node.js, and cloud technologies. Passionate about creating user-centric solutions that drive business growth.",
-    "Detail-oriented marketing professional with expertise in digital campaigns and brand strategy. Proven track record of increasing engagement by 40% through data-driven approaches.",
-    "Creative product designer with 7 years of experience in UX/UI design. Skilled in user research, prototyping, and design systems. Committed to crafting intuitive experiences that delight users.",
+    "Recent Computer Science graduate with strong foundation in software development and problem-solving. Proficient in Java, Python, and web technologies. Eager to apply academic knowledge and contribute to innovative projects in a dynamic team environment.",
+    "Motivated engineering graduate with hands-on experience in project development and internships. Strong analytical skills and passion for learning new technologies. Seeking to leverage technical skills and fresh perspective to drive meaningful solutions.",
+    "Enthusiastic fresher with a degree in Information Technology and practical experience through academic projects. Skilled in programming, database management, and teamwork. Ready to contribute energy and dedication to a growth-oriented organization.",
+    "Goal-oriented graduate with excellent communication and technical skills. Completed multiple projects in web development and data analysis during coursework. Looking to begin career in a challenging role that fosters professional growth and innovation.",
+    "Ambitious Computer Science graduate with strong programming fundamentals and problem-solving abilities. Completed internship at tech startup, gaining real-world development experience. Passionate about creating efficient solutions and continuous learning.",
   ];
 
   return (
@@ -103,17 +105,18 @@ export function SummaryEditor({ resume, onSave }: SummaryEditorProps) {
             <CardContent className="pt-6">
               <h3 className="font-semibold mb-4 flex items-center gap-2">
                 <Sparkles className="h-4 w-4 text-yellow-500" />
-                Tips for a Great Summary
+                Tips for a Great Summary (For Freshers)
               </h3>
               <ul className="text-sm text-muted-foreground space-y-2 mb-6">
-                <li>• Start with your professional title and years of experience</li>
-                <li>• Highlight 2-3 key skills or areas of expertise</li>
-                <li>• Mention a notable achievement or contribution</li>
-                <li>• Keep it concise - 2-4 sentences is ideal</li>
-                <li>• Tailor it to the job you&apos;re applying for</li>
+                <li>• Start with your degree and field of study</li>
+                <li>• Highlight 2-3 key technical skills or areas of interest</li>
+                <li>• Mention relevant projects, internships, or certifications</li>
+                <li>• Show enthusiasm and willingness to learn</li>
+                <li>• Keep it concise - 2-3 sentences is ideal for freshers</li>
+                <li>• Focus on potential and eagerness rather than years of experience</li>
               </ul>
 
-              <h4 className="font-medium mb-3">Example Summaries</h4>
+              <h4 className="font-medium mb-3">Example Summaries for Freshers</h4>
               <div className="space-y-3">
                 {sampleSummaries.map((sample, index) => (
                   <div

@@ -34,7 +34,7 @@ export type Filters = {
   search?: string;
   departmentId?: string;
   year?: string;
-  minCgpa?: string; // Backend expects string
+  minCgpa?: number; // Backend expects number
   status?: 'all' | 'active' | 'inactive';
 };
 
@@ -115,10 +115,10 @@ export function InstituteStudentsList({
       <div className="p-6 border-b bg-background/50 sticky top-0 z-10">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center gap-3">
-            <Button 
-              size="icon" 
-              variant="ghost" 
-              onClick={onRefresh} 
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={onRefresh}
               disabled={loading}
               className="h-10 w-10 p-0"
             >
@@ -126,12 +126,12 @@ export function InstituteStudentsList({
             </Button>
             <Checkbox
               checked={
-                displayStudents.length > 0 && 
-                displayStudents.every(s => selectedStudents.has(s.id)) 
-                  ? true 
-                  : selectedStudents.size > 0 
-                  ? 'indeterminate' 
-                  : false
+                displayStudents.length > 0 &&
+                  displayStudents.every(s => selectedStudents.has(s.id))
+                  ? true
+                  : selectedStudents.size > 0
+                    ? 'indeterminate'
+                    : false
               }
               onCheckedChange={handleSelectAll}
             />
@@ -145,18 +145,18 @@ export function InstituteStudentsList({
             <Input
               placeholder="Search by name/email/ID..."
               value={filters.search || ''}
-              onChange={e => onFiltersChange({ 
-                ...filters, 
-                search: e.target.value || undefined 
+              onChange={e => onFiltersChange({
+                ...filters,
+                search: e.target.value || undefined
               })}
               className="w-48 h-10 flex-shrink-0"
               disabled={loading}
             />
             <Select
               value={filters.departmentId || 'all_depts'}
-              onValueChange={value => onFiltersChange({ 
-                ...filters, 
-                departmentId: value === 'all_depts' ? undefined : value 
+              onValueChange={value => onFiltersChange({
+                ...filters,
+                departmentId: value === 'all_depts' ? undefined : value
               })}
               disabled={loading}
             >
@@ -174,9 +174,9 @@ export function InstituteStudentsList({
             </Select>
             <Select
               value={filters.year || 'all_years'}
-              onValueChange={value => onFiltersChange({ 
-                ...filters, 
-                year: value === 'all_years' ? undefined : value 
+              onValueChange={value => onFiltersChange({
+                ...filters,
+                year: value === 'all_years' ? undefined : value
               })}
               disabled={loading}
             >
@@ -193,9 +193,9 @@ export function InstituteStudentsList({
             </Select>
             <Select
               value={filters.status || 'all'}
-              onValueChange={value => onFiltersChange({ 
-                ...filters, 
-                status: value as Filters['status'] 
+              onValueChange={value => onFiltersChange({
+                ...filters,
+                status: value as Filters['status']
               })}
               disabled={loading}
             >
@@ -298,8 +298,8 @@ export function InstituteStudentsList({
                       )}
                     </TableCell>
                     <TableCell>
-                      <Badge 
-                        variant={student.isActive ? 'default' : 'destructive'} 
+                      <Badge
+                        variant={student.isActive ? 'default' : 'destructive'}
                         className="text-xs font-medium"
                       >
                         {student.isActive ? 'Active' : 'Inactive'}
@@ -308,12 +308,12 @@ export function InstituteStudentsList({
                     {showActions && (
                       <TableCell className="text-right">
                         <div className="flex items-center gap-1">
-                         
+
                           {/* ✅ Full Profile Page Link */}
                           <Link href={`/institute-admin/students/${student.id}`}>
-                            <Button 
-                              size="icon" 
-                              variant="ghost" 
+                            <Button
+                              size="icon"
+                              variant="ghost"
                               className="h-8 w-8 p-0 hover:bg-primary/5"
                               title="View Full Profile"
                             >
@@ -327,7 +327,7 @@ export function InstituteStudentsList({
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-48">
-                              <DropdownMenuItem 
+                              <DropdownMenuItem
                                 onClick={() => router.push(`/institute-admin/students/${student.id}`)}
                                 className="flex items-center gap-2 cursor-pointer"
                               >
@@ -340,7 +340,7 @@ export function InstituteStudentsList({
                               <DropdownMenuItem className="flex items-center gap-2">
                                 Send Message
                               </DropdownMenuItem>
-                              <DropdownMenuItem 
+                              <DropdownMenuItem
                                 className="text-destructive flex items-center gap-2"
                                 disabled
                               >
@@ -375,21 +375,21 @@ export function InstituteStudentsList({
                 <PaginationItem>
                   <PaginationPrevious
                     className={pagination.page <= 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                    onClick={() => pagination.page > 1 && onPaginationChange({ 
-                      ...pagination, 
-                      page: pagination.page - 1 
+                    onClick={() => pagination.page > 1 && onPaginationChange({
+                      ...pagination,
+                      page: pagination.page - 1
                     })}
                   />
                 </PaginationItem>
-                
+
                 {/* Dynamic page buttons */}
                 {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
-                  const pageNum = pagination.page > 3 
-                    ? Math.max(pagination.page - 3, 1) + i 
+                  const pageNum = pagination.page > 3
+                    ? Math.max(pagination.page - 3, 1) + i
                     : i + 1;
-                  
+
                   if (pageNum > totalPages) return null;
-                  
+
                   return (
                     <PaginationItem key={pageNum}>
                       <Button
@@ -407,9 +407,9 @@ export function InstituteStudentsList({
                 <PaginationItem>
                   <PaginationNext
                     className={pagination.page >= totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                    onClick={() => pagination.page < totalPages && onPaginationChange({ 
-                      ...pagination, 
-                      page: pagination.page + 1 
+                    onClick={() => pagination.page < totalPages && onPaginationChange({
+                      ...pagination,
+                      page: pagination.page + 1
                     })}
                   />
                 </PaginationItem>

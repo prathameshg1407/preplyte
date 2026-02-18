@@ -220,6 +220,7 @@ export interface AttemptState {
   currentModuleOrder: number;
   startedAt: string | null;
   modules: ModuleAttemptState[];
+  proctoringSettings?: ProctoringSettings;
 }
 
 export interface ModuleAttemptState {
@@ -353,9 +354,16 @@ export type ModuleConfig = AptitudeModuleConfig | MachineModuleConfig | AiInterv
 
 // Aptitude Module Data
 // ✅ FIXED: Merged with isMarkedForReview field
+export interface AptitudeQuestionOption {
+  id: string;
+  content: string;
+}
+
 export interface AptitudeQuestionAttempt {
   questionId: string;
   aptitudeQuestionId: string;
+  content: string;
+  options: AptitudeQuestionOption[];
   displayOrder: number;
   selectedOptionId: string | null;
   isCorrect: boolean | null;
@@ -400,11 +408,20 @@ export interface MachineSubmissionData {
 export interface MachineQuestionAttempt {
   questionId: string;
   machineQuestionId: string;
+  title: string;
+  description: string;
+  defaultCode: string;
   displayOrder: number;
   submissions: MachineSubmissionData[];
   bestSubmissionId: string | null;
   bestScore: number;
   isSolved: boolean;
+  testCases: TestCaseAttempt[];
+}
+
+export interface TestCaseAttempt {
+  input: string;
+  expectedOutput: string;
 }
 
 export interface MachineModuleSummary {
@@ -490,6 +507,8 @@ export interface AiInterviewModuleData {
   conversation: ConversationMessage[];
   responses: InterviewResponseData[];
   summary?: InterviewModuleSummary;
+  isVoiceEnabled?: boolean;
+  pendingTranscription?: string;
 }
 
 export type ModuleData = AptitudeModuleData | MachineModuleData | AiInterviewModuleData;
@@ -531,6 +550,7 @@ export interface MachineRunPayload {
 export interface InterviewRespondPayload {
   answer: string;
   timeTaken?: number;
+  audioBuffer?: string;
 }
 
 export interface InterviewSkipPayload {
@@ -712,6 +732,20 @@ export interface MyRankResponse {
 export interface LeaderboardFilters {
   batchId?: string;
   departmentId?: string;
+}
+
+// ============================================
+// Proctoring
+// ============================================
+
+export interface ProctoringSettings {
+  enableProctoring: boolean;
+  requireFullscreen: boolean;
+  detectTabSwitch: boolean;
+  maxWarnings: number;
+  tabSwitchLimit: number;
+  autoSubmitOnViolation: boolean;
+  fullscreenEnabled?: boolean; // legacy support if needed
 }
 
 // ============================================
@@ -1096,11 +1130,11 @@ export function getDifficultyColor(difficulty: DifficultyLevel): StatusColor {
 
 export function formatTimeRemaining(seconds: number): string {
   if (seconds <= 0) return '00:00';
-  
+
   const hours = Math.floor(seconds / 3600);
   const minutes = Math.floor((seconds % 3600) / 60);
   const secs = seconds % 60;
-  
+
   if (hours > 0) {
     return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   }

@@ -33,9 +33,18 @@ import {
   Star,
   ChevronRight,
   AlertCircle,
+  X,
 } from 'lucide-react';
 import { useCourseDetails, useEnrollCourse } from '@/lib/hooks/lms/use-lms';
 import { LmsModuleStatus } from '@/types/lms.types';
+import { getVideoEmbedUrl } from '@/lib/utils';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { CourseComments } from '@/components/lms/course-comments/course-comments';
 
 const difficultyColors = {
   EASY: 'bg-green-100 text-green-800',
@@ -49,6 +58,17 @@ const difficultyLabels = {
   HARD: 'Advanced',
 };
 
+// Helper function to format enrollment count
+function formatEnrollmentCount(count: number): string {
+  if (count >= 1000000) {
+    return `${(count / 1000000).toFixed(1)}M`;
+  }
+  if (count >= 1000) {
+    return `${(count / 1000).toFixed(1)}K`;
+  }
+  return count.toString();
+}
+
 export default function CourseDetailsPage() {
   const params = useParams();
   const router = useRouter();
@@ -56,11 +76,16 @@ export default function CourseDetailsPage() {
 
   const { data, isLoading, error } = useCourseDetails(courseSlug);
   const enrollMutation = useEnrollCourse();
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
   const course = data?.course;
   const modules = data?.modules || [];
   const enrollment = data?.enrollment;
   const finalTest = data?.finalTest;
+
+  const totalModules = modules.length;
+  const completedModules = modules.filter(m => m.progress?.status === LmsModuleStatus.COMPLETED).length;
+  const allModulesCompleted = enrollment && totalModules > 0 && completedModules === totalModules;
 
   const handleEnroll = async () => {
     await enrollMutation.mutateAsync(courseSlug);
@@ -98,8 +123,9 @@ export default function CourseDetailsPage() {
     );
   }
 
-  const hasDiscount = course.discountPrice && course.discountPrice < course.price;
-  const isFree = course.price === 0;
+  const hasDiscount = !!(course.discountPrice && course.discountPrice > 0);
+  const finalPrice = hasDiscount ? course.price - (course.discountPrice || 0) : course.price;
+  const isFree = finalPrice <= 0;
 
   return (
     <div className="container mx-auto px-4 py-6">
@@ -145,18 +171,37 @@ export default function CourseDetailsPage() {
                   <span>By {course.instructor}</span>
                 </div>
               )}
+              {course.totalModules > 0 && (
+                <div className="flex items-center gap-1">
+                  <BookOpen className="h-4 w-4" />
+                  <span>{course.totalModules} Modules</span>
+                </div>
+              )}
+              {course.totalHours > 0 && (
+                <div className="flex items-center gap-1">
+                  <Clock className="h-4 w-4" />
+                  <span>{course.totalHours} Hours</span>
+                </div>
+              )}
+              {course.totalPoints > 0 && (
+                <div className="flex items-center gap-1">
+                  <Award className="h-4 w-4" />
+                  <span>{course.totalPoints} Points</span>
+                </div>
+              )}
+              {/* NEW: Enrollment Count in Header */}
               <div className="flex items-center gap-1">
-                <BookOpen className="h-4 w-4" />
-                <span>{course.totalModules} Modules</span>
+                <Users className="h-4 w-4" />
+                <span>{formatEnrollmentCount(course.enrollmentCount)} students enrolled</span>
               </div>
-              <div className="flex items-center gap-1">
-                <Clock className="h-4 w-4" />
-                <span>{course.totalHours} Hours</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <Award className="h-4 w-4" />
-                <span>{course.totalPoints} Points</span>
-              </div>
+              {course.averageRating > 0 && (
+                <div className="flex items-center gap-1">
+                  <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                  <span>
+                    {course.averageRating.toFixed(1)} ({course.ratingsCount} ratings)
+                  </span>
+                </div>
+              )}
             </div>
           </motion.div>
 
@@ -211,15 +256,14 @@ export default function CourseDetailsPage() {
                         <AccordionTrigger className="hover:no-underline">
                           <div className="flex items-center gap-3 flex-1">
                             <div
-                              className={`h-8 w-8 rounded-full flex items-center justify-center ${
-                                isCompleted
-                                  ? 'bg-green-100 text-green-600'
-                                  : isInProgress
+                              className={`h-8 w-8 rounded-full flex items-center justify-center ${isCompleted
+                                ? 'bg-green-100 text-green-600'
+                                : isInProgress
                                   ? 'bg-blue-100 text-blue-600'
                                   : isLocked
-                                  ? 'bg-muted text-muted-foreground'
-                                  : 'bg-primary/10 text-primary'
-                              }`}
+                                    ? 'bg-muted text-muted-foreground'
+                                    : 'bg-primary/10 text-primary'
+                                }`}
                             >
                               {isCompleted ? (
                                 <CheckCircle className="h-4 w-4" />
@@ -303,8 +347,8 @@ export default function CourseDetailsPage() {
                                   {isCompleted
                                     ? 'Review Module'
                                     : isInProgress
-                                    ? 'Continue Learning'
-                                    : 'Start Module'}
+                                      ? 'Continue Learning'
+                                      : 'Start Module'}
                                 </Link>
                               </Button>
                             )}
@@ -337,15 +381,82 @@ export default function CourseDetailsPage() {
                         </Badge>
                       )}
                     </div>
+                    {allModulesCompleted && !enrollment?.finalTestAttempted && (
+                      <div className="mt-4 flex justify-end">
+                        <Button asChild>
+                          <Link href={`/lms/${courseSlug}/final-test`}>
+                            <Play className="h-4 w-4 mr-2" />
+                            Take Final Test
+                          </Link>
+                        </Button>
+                      </div>
+                    )}
                     <p className="text-sm text-muted-foreground mt-2">
-                      Complete all modules to unlock the final assessment. You only have one
-                      attempt!
+                      {allModulesCompleted
+                        ? "You have completed all modules and are eligible for the final assessment."
+                        : "Complete all modules to unlock the final assessment. You only have one attempt!"}
                     </p>
                   </div>
                 )}
               </CardContent>
             </Card>
           </motion.div>
+
+          {/* Feedbacks */}
+          {course.feedbacks && course.feedbacks.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+            >
+              <Card>
+                <CardHeader>
+                  <CardTitle>Student Feedback</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {course.feedbacks.map((feedback) => (
+                    <div key={feedback.id} className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center font-semibold text-primary">
+                            {feedback.userName.charAt(0)}
+                          </div>
+                          <div>
+                            <div className="font-medium text-sm">{feedback.userName}</div>
+                            <div className="text-xs text-muted-foreground">{new Date(feedback.createdAt).toLocaleDateString()}</div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                          <span className="text-sm font-medium">{feedback.rating}</span>
+                        </div>
+                      </div>
+                      {feedback.comment && (
+                        <p className="text-sm text-muted-foreground pl-10">
+                          {feedback.comment}
+                        </p>
+                      )}
+                      <Separator />
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
+
+          {/* Comments */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+          >
+            <Card>
+              <CardContent className="pt-6">
+                <CourseComments courseSlug={courseSlug} />
+              </CardContent>
+            </Card>
+          </motion.div>
+
         </div>
 
         {/* Sidebar */}
@@ -376,6 +487,7 @@ export default function CourseDetailsPage() {
                     variant="secondary"
                     size="sm"
                     className="absolute bottom-2 right-2"
+                    onClick={() => setIsPreviewOpen(true)}
                   >
                     <Play className="h-4 w-4 mr-1" />
                     Preview
@@ -391,7 +503,7 @@ export default function CourseDetailsPage() {
                   ) : (
                     <div className="flex items-center justify-center gap-2">
                       <span className="text-3xl font-bold">
-                        {course.currency} {hasDiscount ? course.discountPrice : course.price}
+                        {course.currency} {finalPrice}
                       </span>
                       {hasDiscount && (
                         <span className="text-lg text-muted-foreground line-through">
@@ -401,6 +513,14 @@ export default function CourseDetailsPage() {
                     </div>
                   )}
                 </div>
+
+                {/* NEW: Enrollment Count in Sidebar */}
+                {course.enrollmentCount > 0 && (
+                  <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                    <Users className="h-4 w-4" />
+                    <span>{formatEnrollmentCount(course.enrollmentCount)} students enrolled</span>
+                  </div>
+                )}
 
                 {/* Enrollment Progress */}
                 {enrollment && (
@@ -464,22 +584,30 @@ export default function CourseDetailsPage() {
                 <div className="space-y-3 pt-4">
                   <h4 className="font-medium">This course includes:</h4>
                   <ul className="space-y-2 text-sm text-muted-foreground">
-                    <li className="flex items-center gap-2">
-                      <Video className="h-4 w-4" />
-                      {course.totalHours} hours of video content
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <FileText className="h-4 w-4" />
-                      {course.totalTopics} detailed topics
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <Trophy className="h-4 w-4" />
-                      {course.totalModules} module tests + final exam
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <Award className="h-4 w-4" />
-                      {course.totalPoints} total points to earn
-                    </li>
+                    {course.totalHours > 0 && (
+                      <li className="flex items-center gap-2">
+                        <Video className="h-4 w-4" />
+                        {course.totalHours} hours of video content
+                      </li>
+                    )}
+                    {course.totalTopics > 0 && (
+                      <li className="flex items-center gap-2">
+                        <FileText className="h-4 w-4" />
+                        {course.totalTopics} detailed topics
+                      </li>
+                    )}
+                    {course.totalModules > 0 && (
+                      <li className="flex items-center gap-2">
+                        <Trophy className="h-4 w-4" />
+                        {course.totalModules} module tests {finalTest ? '+ final exam' : ''}
+                      </li>
+                    )}
+                    {course.totalPoints > 0 && (
+                      <li className="flex items-center gap-2">
+                        <Award className="h-4 w-4" />
+                        {course.totalPoints} total points to earn
+                      </li>
+                    )}
                     {course.certificateEnabled && (
                       <li className="flex items-center gap-2">
                         <CheckCircle className="h-4 w-4" />
@@ -507,6 +635,40 @@ export default function CourseDetailsPage() {
           </motion.div>
         </div>
       </div>
+
+      {/* Preview Dialog */}
+      <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
+        <DialogContent className="max-w-4xl p-0 overflow-hidden bg-black border-none">
+          <DialogHeader className="sr-only">
+            <DialogTitle>Course Preview</DialogTitle>
+          </DialogHeader>
+          <div className="aspect-video w-full relative">
+            {course.previewVideoUrl && (
+              getVideoEmbedUrl(course.previewVideoUrl) ? (
+                <iframe
+                  src={getVideoEmbedUrl(course.previewVideoUrl)! + "&autoplay=1"}
+                  className="w-full h-full border-0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
+              ) : (
+                <video
+                  src={course.previewVideoUrl}
+                  controls
+                  autoPlay
+                  className="w-full h-full"
+                />
+              )
+            )}
+            <button
+              onClick={() => setIsPreviewOpen(false)}
+              className="absolute top-4 right-4 text-white hover:bg-white/20 p-2 rounded-full transition-colors z-10"
+            >
+              <X className="h-6 w-6" />
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

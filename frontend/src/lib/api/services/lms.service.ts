@@ -136,4 +136,42 @@ export const lmsService = {
     const response = await apiClient.get(LMS_ENDPOINTS.STATS);
     return response.data.data;
   },
+
+  // Feedback
+  addCourseFeedback: async (
+    courseSlug: string,
+    data: { rating: number; comment?: string }
+  ): Promise<any> => {
+    const response = await apiClient.post(
+      LMS_ENDPOINTS.COURSE_FEEDBACK(courseSlug),
+      data
+    );
+    return response.data.data;
+  },
+
+  // Comments
+  getComments: async (courseSlug: string, params?: any): Promise<any> => {
+    const response = await apiClient.get(LMS_ENDPOINTS.COURSE_COMMENTS(courseSlug), { params });
+    return response.data.data;
+  },
+
+  addComment: async (
+    courseSlug: string,
+    data: { comment: string; parentId?: string }
+  ): Promise<any> => {
+    const response = await apiClient.post(LMS_ENDPOINTS.COURSE_COMMENTS(courseSlug), data);
+    return response.data.data;
+  },
+
+  toggleCommentLike: async (
+    courseSlug: string,
+    commentId: string
+  ): Promise<{ liked: boolean }> => {
+    const response = await apiClient.post(LMS_ENDPOINTS.COURSE_COMMENT_LIKE(courseSlug, commentId));
+    return response.data.data;
+  },
+
+  deleteComment: async (courseSlug: string, commentId: string): Promise<void> => {
+    await apiClient.delete(LMS_ENDPOINTS.COURSE_COMMENT_DELETE(courseSlug, commentId));
+  },
 };

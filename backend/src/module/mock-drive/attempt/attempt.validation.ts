@@ -8,14 +8,14 @@ import { z } from 'zod';
 
 export const mockDriveIdSchema = z.object({
   params: z.object({
-    driveId: z.string().uuid('Invalid drive ID format'),
+    driveId: z.string().min(1, 'Invalid drive ID format'),
   }),
 });
 
 export const moduleIdSchema = z.object({
   params: z.object({
-    driveId: z.string().uuid('Invalid drive ID format'),
-    moduleId: z.string().uuid('Invalid module ID format'),
+    driveId: z.string().min(1, 'Invalid drive ID format'),
+    moduleId: z.string().min(1, 'Invalid module ID format'),
   }),
 });
 
@@ -25,33 +25,33 @@ export const moduleIdSchema = z.object({
 
 export const aptitudeAnswerSchema = z.object({
   params: z.object({
-    driveId: z.string().uuid(),
-    moduleId: z.string().uuid(),
+    driveId: z.string().min(1),
+    moduleId: z.string().min(1),
   }),
   body: z.object({
-    questionId: z.string().uuid('Invalid question ID format'),
-    selectedOptionId: z.string().uuid('Invalid option ID format'),
+    questionId: z.string().min(1, 'Invalid question ID format'),
+    selectedOptionId: z.string().min(1, 'Invalid option ID format'),
     timeSpent: z.number().int().min(0).optional(),
   }),
 });
 
 export const aptitudeClearSchema = z.object({
   params: z.object({
-    driveId: z.string().uuid(),
-    moduleId: z.string().uuid(),
+    driveId: z.string().min(1),
+    moduleId: z.string().min(1),
   }),
   body: z.object({
-    questionId: z.string().uuid('Invalid question ID format'),
+    questionId: z.string().min(1, 'Invalid question ID format'),
   }),
 });
 
 export const aptitudeMarkReviewSchema = z.object({
   params: z.object({
-    driveId: z.string().uuid(),
-    moduleId: z.string().uuid(),
+    driveId: z.string().min(1),
+    moduleId: z.string().min(1),
   }),
   body: z.object({
-    questionId: z.string().uuid('Invalid question ID format'),
+    questionId: z.string().min(1, 'Invalid question ID format'),
     isMarked: z.boolean().default(true),
   }),
 });
@@ -62,11 +62,11 @@ export const aptitudeMarkReviewSchema = z.object({
 
 export const machineSubmitSchema = z.object({
   params: z.object({
-    driveId: z.string().uuid(),
-    moduleId: z.string().uuid(),
+    driveId: z.string().min(1),
+    moduleId: z.string().min(1),
   }),
   body: z.object({
-    questionId: z.string().uuid('Invalid question ID format'),
+    questionId: z.string().min(1, 'Invalid question ID format'),
     code: z.string().min(1, 'Code cannot be empty'),
     languageId: z.number().int().positive('Invalid language ID'),
   }),
@@ -74,11 +74,11 @@ export const machineSubmitSchema = z.object({
 
 export const machineRunSchema = z.object({
   params: z.object({
-    driveId: z.string().uuid(),
-    moduleId: z.string().uuid(),
+    driveId: z.string().min(1),
+    moduleId: z.string().min(1),
   }),
   body: z.object({
-    questionId: z.string().uuid('Invalid question ID format'),
+    questionId: z.string().min(1, 'Invalid question ID format'),
     code: z.string().min(1, 'Code cannot be empty'),
     languageId: z.number().int().positive('Invalid language ID'),
     customInput: z.string().optional(),
@@ -91,8 +91,8 @@ export const machineRunSchema = z.object({
 
 export const interviewRespondSchema = z.object({
   params: z.object({
-    driveId: z.string().uuid(),
-    moduleId: z.string().uuid(),
+    driveId: z.string().min(1),
+    moduleId: z.string().min(1),
   }),
   body: z.object({
     answer: z.string().min(1, 'Answer cannot be empty'),
@@ -103,8 +103,8 @@ export const interviewRespondSchema = z.object({
 
 export const interviewSkipSchema = z.object({
   params: z.object({
-    driveId: z.string().uuid(),
-    moduleId: z.string().uuid(),
+    driveId: z.string().min(1),
+    moduleId: z.string().min(1),
   }),
   body: z.object({
     reason: z.string().max(500).optional(),
@@ -113,8 +113,8 @@ export const interviewSkipSchema = z.object({
 
 export const interviewAudioChunkSchema = z.object({
   params: z.object({
-    driveId: z.string().uuid(),
-    moduleId: z.string().uuid(),
+    driveId: z.string().min(1),
+    moduleId: z.string().min(1),
   }),
   body: z.object({
     chunk: z.string().min(1, 'Audio chunk cannot be empty'),

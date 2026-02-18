@@ -1,7 +1,7 @@
 // src/module/dashboard/dashboard.service.ts
 
 import { prisma } from '../../lib/db';
-import { NotFoundError, ForbiddenError } from '../../utils/errors';
+import { NotFoundError, ForbiddenError, BadRequestError } from '../../utils/errors';
 import { logger } from '../../utils/logger';
 import {
   StudentDashboardResponse,
@@ -19,9 +19,22 @@ import {
   PlatformTrends,
   TrendDataPoint,
   RecentInstitute,
+  LmsDashboardData,
+  LmsDashboardStats,
+  LmsEnrollmentSummary,
+  LmsRecentActivity,
+  RecommendedCourse,
 } from './dashboard.types';
 import { DASHBOARD_LIMITS, getDateRanges } from './dashboard.constants';
-import { MockDriveStatus, MockDriveRegistrationStatus } from '@prisma/client';
+import {
+  MockDriveStatus,
+  MockDriveRegistrationStatus,
+  LmsEnrollmentStatus,
+  LmsModuleStatus,
+  LmsTopicStatus,
+  LmsTestAttemptStatus,
+  LmsCourseStatus,
+} from '@prisma/client';
 
 // =====================================================
 // SERVICE CLASS
@@ -35,16 +48,18 @@ class DashboardService {
   async getStudentDashboard(userId: string): Promise<StudentDashboardResponse> {
     logger.debug('[DashboardService] Fetching student dashboard', { userId });
 
-    const [stats, recentTests, upcomingTests] = await Promise.all([
+    const [stats, recentTests, upcomingTests, lmsData] = await Promise.all([
       this.getStudentStats(userId),
       this.getStudentRecentTests(userId),
       this.getStudentUpcomingDrives(userId),
+      this.getStudentLmsData(userId),
     ]);
 
     return {
       stats,
       recentTests,
       upcomingTests,
+      lms: lmsData,
     };
   }
 
@@ -255,6 +270,373 @@ class DashboardService {
   }
 
   // =================================================
+  // LMS DASHBOARD DATA
+  // =================================================
+
+  private async getStudentLmsData(userId: string): Promise<LmsDashboardData> {
+    const [stats, enrollments, recentActivity, recommendedCourses] = await Promise.all([
+      this.getLmsStats(userId),
+      this.getLmsEnrollments(userId),
+      this.getLmsRecentActivity(userId),
+      this.getRecommendedCourses(userId),
+    ]);
+
+    return {
+      stats,
+      enrollments,
+      recentActivity,
+      recommendedCourses,
+    };
+  }
+
+  private async getLmsStats(userId: string): Promise<LmsDashboardStats> {
+    // Get all enrollments
+    const enrollments = await prisma.lmsEnrollment.findMany({
+      where: { userId },
+      include: {
+        course: {
+          select: {
+            totalHours: true,
+            totalPoints: true,
+          },
+        },
+      },
+    });
+
+    const totalEnrollments = enrollments.length;
+    const completedCourses = enrollments.filter(
+      (e) => e.status === LmsEnrollmentStatus.COMPLETED
+    ).length;
+    const inProgressCourses = enrollments.filter(
+      (e) => e.status === LmsEnrollmentStatus.ACTIVE
+    ).length;
+
+    const totalPointsEarned = enrollments.reduce(
+      (sum, e) => sum + e.totalPointsEarned,
+      0
+    );
+
+    // Calculate total learning hours based on progress
+    const totalLearningHours = enrollments.reduce((sum, e) => {
+      const courseHours = e.course.totalHours || 0;
+      const progress = e.progressPercent / 100;
+      return sum + (courseHours * progress);
+    }, 0);
+
+    const certificatesEarned = enrollments.filter(
+      (e) => e.certificateUrl !== null
+    ).length;
+
+    // Calculate average progress for active enrollments
+    const activeEnrollments = enrollments.filter(
+      (e) => e.status === LmsEnrollmentStatus.ACTIVE
+    );
+    const averageProgress = activeEnrollments.length > 0
+      ? Math.round(
+        activeEnrollments.reduce((sum, e) => sum + e.progressPercent, 0) /
+        activeEnrollments.length
+      )
+      : 0;
+
+    // Get module tests passed
+    const moduleProgress = await prisma.lmsModuleProgress.count({
+      where: {
+        userId,
+        testPassed: true,
+      },
+    });
+
+    // Get final tests passed
+    const finalTestsPassed = enrollments.filter(
+      (e) => e.finalTestPassed
+    ).length;
+
+    return {
+      totalEnrollments,
+      completedCourses,
+      inProgressCourses,
+      totalPointsEarned,
+      totalLearningHours: Math.round(totalLearningHours * 10) / 10,
+      certificatesEarned,
+      averageProgress,
+      moduleTestsPassed: moduleProgress,
+      finalTestsPassed,
+    };
+  }
+
+  private async getLmsEnrollments(userId: string): Promise<{
+    inProgress: LmsEnrollmentSummary[];
+    completed: LmsEnrollmentSummary[];
+    all: LmsEnrollmentSummary[];
+  }> {
+    const enrollments = await prisma.lmsEnrollment.findMany({
+      where: { userId },
+      orderBy: { lastAccessedAt: 'desc' },
+      include: {
+        course: {
+          include: {
+            category: {
+              select: { name: true },
+            },
+          },
+        },
+      },
+    });
+
+    const mapEnrollment = (enrollment: any): LmsEnrollmentSummary => ({
+      id: enrollment.id,
+      courseId: enrollment.courseId,
+      courseTitle: enrollment.course.title,
+      courseSlug: enrollment.course.slug,
+      courseThumbnail: enrollment.course.thumbnailUrl,
+      courseCategory: enrollment.course.category?.name || 'Uncategorized',
+      courseDifficulty: enrollment.course.difficulty,
+      courseInstructor: enrollment.course.instructor,
+      status: enrollment.status,
+      progressPercent: enrollment.progressPercent,
+      completedModules: enrollment.completedModules,
+      totalModules: enrollment.course.totalModules,
+      completedTopics: enrollment.completedTopics,
+      totalTopics: enrollment.course.totalTopics,
+      totalPointsEarned: enrollment.totalPointsEarned,
+      courseTotalPoints: enrollment.course.totalPoints,
+      enrolledAt: enrollment.enrolledAt.toISOString(),
+      lastAccessedAt: enrollment.lastAccessedAt?.toISOString() || null,
+      completedAt: enrollment.completedAt?.toISOString() || null,
+      certificateUrl: enrollment.certificateUrl,
+      finalTestPassed: enrollment.finalTestPassed,
+      finalTestScore: enrollment.finalTestScore,
+    });
+
+    const allEnrollments = enrollments.map(mapEnrollment);
+
+    const inProgress = allEnrollments.filter(
+      (e) => e.status === LmsEnrollmentStatus.ACTIVE
+    );
+
+    const completed = allEnrollments.filter(
+      (e) => e.status === LmsEnrollmentStatus.COMPLETED
+    );
+
+    return {
+      inProgress,
+      completed,
+      all: allEnrollments,
+    };
+  }
+
+  private async getLmsRecentActivity(userId: string): Promise<LmsRecentActivity[]> {
+    const activities: LmsRecentActivity[] = [];
+    const { last30Days } = getDateRanges();
+
+    // Get recent enrollments
+    const recentEnrollments = await prisma.lmsEnrollment.findMany({
+      where: {
+        userId,
+        enrolledAt: { gte: last30Days },
+      },
+      orderBy: { enrolledAt: 'desc' },
+      take: 5,
+      include: {
+        course: {
+          select: { title: true, slug: true },
+        },
+      },
+    });
+
+    recentEnrollments.forEach((enrollment) => {
+      activities.push({
+        id: `enroll-${enrollment.id}`,
+        type: 'ENROLLMENT',
+        title: 'Enrolled in Course',
+        description: `You enrolled in "${enrollment.course.title}"`,
+        courseSlug: enrollment.course.slug,
+        courseTitle: enrollment.course.title,
+        timestamp: enrollment.enrolledAt.toISOString(),
+      });
+    });
+
+    // Get recent module completions
+    const recentModuleCompletions = await prisma.lmsModuleProgress.findMany({
+      where: {
+        userId,
+        status: LmsModuleStatus.COMPLETED,
+        completedAt: { gte: last30Days },
+      },
+      orderBy: { completedAt: 'desc' },
+      take: 5,
+      include: {
+        module: {
+          include: {
+            course: {
+              select: { title: true, slug: true },
+            },
+          },
+        },
+      },
+    });
+
+    recentModuleCompletions.forEach((progress) => {
+      activities.push({
+        id: `module-${progress.id}`,
+        type: 'MODULE_COMPLETED',
+        title: 'Module Completed',
+        description: `Completed "${progress.module.title}"`,
+        courseSlug: progress.module.course.slug,
+        courseTitle: progress.module.course.title,
+        timestamp: progress.completedAt!.toISOString(),
+        metadata: {
+          moduleName: progress.module.title,
+          points: progress.pointsEarned,
+        },
+      });
+    });
+
+    // Get recent test completions
+    const recentTestAttempts = await prisma.lmsTestAttempt.findMany({
+      where: {
+        userId,
+        status: LmsTestAttemptStatus.COMPLETED,
+        isPassed: true,
+        completedAt: { gte: last30Days },
+      },
+      orderBy: { completedAt: 'desc' },
+      take: 5,
+      include: {
+        moduleTest: {
+          include: {
+            module: {
+              include: {
+                course: {
+                  select: { title: true, slug: true },
+                },
+              },
+            },
+          },
+        },
+        finalTest: {
+          include: {
+            course: {
+              select: { title: true, slug: true },
+            },
+          },
+        },
+      },
+    });
+
+    recentTestAttempts.forEach((attempt) => {
+      const course = attempt.moduleTest?.module.course || attempt.finalTest?.course;
+      if (course) {
+        activities.push({
+          id: `test-${attempt.id}`,
+          type: 'TEST_PASSED',
+          title: attempt.finalTest ? 'Final Test Passed' : 'Module Test Passed',
+          description: `Scored ${Math.round(attempt.score)}% on ${attempt.finalTest ? 'final assessment' : 'module test'
+            }`,
+          courseSlug: course.slug,
+          courseTitle: course.title,
+          timestamp: attempt.completedAt!.toISOString(),
+          metadata: {
+            score: Math.round(attempt.score),
+            points: attempt.pointsEarned,
+          },
+        });
+      }
+    });
+
+    // Get recent course completions
+    const recentCompletions = await prisma.lmsEnrollment.findMany({
+      where: {
+        userId,
+        status: LmsEnrollmentStatus.COMPLETED,
+        completedAt: { gte: last30Days },
+      },
+      orderBy: { completedAt: 'desc' },
+      take: 5,
+      include: {
+        course: {
+          select: { title: true, slug: true },
+        },
+      },
+    });
+
+    recentCompletions.forEach((enrollment) => {
+      activities.push({
+        id: `complete-${enrollment.id}`,
+        type: 'COURSE_COMPLETED',
+        title: 'Course Completed',
+        description: `Completed "${enrollment.course.title}"`,
+        courseSlug: enrollment.course.slug,
+        courseTitle: enrollment.course.title,
+        timestamp: enrollment.completedAt!.toISOString(),
+      });
+
+      if (enrollment.certificateUrl) {
+        activities.push({
+          id: `cert-${enrollment.id}`,
+          type: 'CERTIFICATE_EARNED',
+          title: 'Certificate Earned',
+          description: `Earned certificate for "${enrollment.course.title}"`,
+          courseSlug: enrollment.course.slug,
+          courseTitle: enrollment.course.title,
+          timestamp: enrollment.completedAt!.toISOString(),
+        });
+      }
+    });
+
+    // Sort by timestamp and return top activities
+    return activities
+      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+      .slice(0, 10);
+  }
+
+  private async getRecommendedCourses(userId: string): Promise<RecommendedCourse[]> {
+    // Get user's enrolled course IDs
+    const enrolledCourseIds = await prisma.lmsEnrollment.findMany({
+      where: { userId },
+      select: { courseId: true },
+    });
+
+    const enrolledIds = enrolledCourseIds.map((e) => e.courseId);
+
+    // Get popular courses that user hasn't enrolled in
+    const recommendedCourses = await prisma.lmsCourse.findMany({
+      where: {
+        id: { notIn: enrolledIds },
+        status: LmsCourseStatus.PUBLISHED,
+        isActive: true,
+      },
+      orderBy: [
+        { enrollments: { _count: 'desc' } },
+        { averageRating: 'desc' },
+      ],
+      take: 5,
+      include: {
+        category: {
+          select: { name: true },
+        },
+        _count: {
+          select: { enrollments: true },
+        },
+      },
+    });
+
+    return recommendedCourses.map((course) => ({
+      id: course.id,
+      title: course.title,
+      slug: course.slug,
+      shortDescription: course.shortDescription,
+      thumbnailUrl: course.thumbnailUrl,
+      difficulty: course.difficulty,
+      totalHours: course.totalHours,
+      totalModules: course.totalModules,
+      enrollmentCount: course._count.enrollments,
+      averageRating: course.averageRating,
+      category: course.category?.name || 'Uncategorized',
+    }));
+  }
+
+  // =================================================
   // INSTITUTE ADMIN DASHBOARD
   // =================================================
 
@@ -287,6 +669,55 @@ class DashboardService {
       stats,
       recentDrives,
       topPerformers,
+    };
+  }
+
+  async getStudentDashboardForAdmin(
+    adminUserId: string,
+    studentUserId: string,
+    instituteId: string
+  ): Promise<any> {
+    logger.debug('[DashboardService] Fetching student dashboard for admin', {
+      adminUserId,
+      studentUserId,
+      instituteId,
+    });
+
+    // Verify student belongs to this institute
+    const studentUser = await prisma.user.findUnique({
+      where: { id: studentUserId },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        instituteId: true,
+        role: true,
+        profile: {
+          include: {
+            department: true
+          }
+        }
+      },
+    });
+
+    if (!studentUser || studentUser.instituteId !== instituteId) {
+      throw new ForbiddenError('Student does not belong to your institute');
+    }
+
+    if (studentUser.role !== 'USER') {
+      throw new BadRequestError('Target user is not a student');
+    }
+
+    const dashboard = await this.getStudentDashboard(studentUserId);
+
+    return {
+      profile: {
+        id: studentUser.id,
+        email: studentUser.email,
+        name: studentUser.name,
+        ...studentUser.profile,
+      },
+      dashboard,
     };
   }
 
@@ -326,7 +757,7 @@ class DashboardService {
 
     // Get registration stats
     const driveIds = drives.map((d) => d.id);
-    
+
     const [totalRegistrations, registrationsThisMonth] = await Promise.all([
       prisma.mockDriveRegistration.count({
         where: { mockDriveId: { in: driveIds } },
@@ -364,12 +795,12 @@ class DashboardService {
 
     const avgScoreThisMonth = currentMonthAttempts.length > 0
       ? currentMonthAttempts.reduce((sum, a) => sum + (a.percentageScore || 0), 0) /
-        currentMonthAttempts.length
+      currentMonthAttempts.length
       : 0;
 
     const avgScoreLastMonth = lastMonthAttempts.length > 0
       ? lastMonthAttempts.reduce((sum, a) => sum + (a.percentageScore || 0), 0) /
-        lastMonthAttempts.length
+      lastMonthAttempts.length
       : 0;
 
     const scoreChange = avgScoreThisMonth - avgScoreLastMonth;

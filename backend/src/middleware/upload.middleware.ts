@@ -148,6 +148,17 @@ export const handleUpload = (uploadMiddleware: RequestHandler): RequestHandler =
 
 // ============= Middleware Exports =============
 
+export const resourceUpload: RequestHandler = handleUpload(
+  multer({
+    storage,
+    limits: {
+      fileSize: MAX_FILE_SIZE,
+      files: 1,
+    },
+    fileFilter: resumeFilter, // Reuse PDF/DOC filter
+  }).single('file')
+);
+
 export const resumeUpload: RequestHandler = handleUpload(uploadResume);
 export const imageUpload: RequestHandler = handleUpload(uploadImage);
 export const audioUpload: RequestHandler = handleUpload(uploadAudio);

@@ -132,4 +132,19 @@ export const resumeBuilderService = {
     );
     return data.data;
   },
+
+  // Save to Profile
+  async saveToProfile(
+    resumeId: string,
+    fileName?: string
+  ): Promise<{ resumeId: string; fileName: string; message: string }> {
+    const { data } = await apiClient.post(`${BASE_URL}/${resumeId}/save-to-profile`, {
+      fileName,
+    });
+    return data.data;
+  },
+
+  async unlinkFromProfile(resumeId: string): Promise<void> {
+    await apiClient.delete(`${BASE_URL}/${resumeId}/unlink-from-profile`);
+  },
 };

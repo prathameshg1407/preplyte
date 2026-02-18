@@ -48,7 +48,7 @@ export function createMockDriveRoutes(prisma: PrismaClient): Router {
   const leaderboardController = new LeaderboardController(leaderboardService);
 
   // All routes require authentication and USER role
-router.use(authenticate, authorize('USER', 'INSTITUTE_ADMIN', 'PLATFORM_ADMIN'));
+  router.use(authenticate, authorize('USER', 'INSTITUTE_ADMIN', 'PLATFORM_ADMIN'));
   // =====================================================
   // DISCOVERY & REGISTRATION ROUTES
   // =====================================================
@@ -92,6 +92,9 @@ router.use(authenticate, authorize('USER', 'INSTITUTE_ADMIN', 'PLATFORM_ADMIN'))
 
   // Start mock drive attempt
   router.post('/:driveId/start', validate(attemptDriveIdSchema), attemptController.startAttempt);
+
+  // Submit/End mock drive attempt
+  router.post('/:driveId/submit', validate(attemptDriveIdSchema), attemptController.submitAttempt);
 
   // Start a specific module
   router.post(

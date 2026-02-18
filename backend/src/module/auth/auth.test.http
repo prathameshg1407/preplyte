@@ -1,0 +1,44 @@
+### Test Google OAuth Flow
+### Step 1: Initiate Google OAuth (open in browser)
+GET http://localhost:4000/api/auth/google
+
+### Step 2: After callback, test with received tokens
+### Get current user info
+GET http://localhost:4000/api/auth/me
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+### Step 3: Refresh token
+POST http://localhost:4000/api/auth/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "YOUR_REFRESH_TOKEN_HERE"
+}
+
+### Step 4: Logout
+POST http://localhost:4000/api/auth/logout
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+Content-Type: application/json
+
+{
+  "refreshToken": "YOUR_REFRESH_TOKEN_HERE"
+}
+
+### Traditional Login (still works)
+POST http://localhost:4000/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "user@example.com",
+  "password": "YourPassword123"
+}
+
+### Register (still works)
+POST http://localhost:4000/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "newuser@example.com",
+  "password": "SecurePass123",
+  "name": "New User"
+}
