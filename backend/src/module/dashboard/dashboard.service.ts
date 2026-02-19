@@ -721,6 +721,53 @@ class DashboardService {
     };
   }
 
+  async getStudentDashboardForPlatformAdmin(
+    adminUserId: string,
+    studentUserId: string
+  ): Promise<any> {
+    logger.debug('[DashboardService] Fetching student dashboard for platform admin', {
+      adminUserId,
+      studentUserId,
+    });
+
+    // Get student details
+    const studentUser = await prisma.user.findUnique({
+      where: { id: studentUserId },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        instituteId: true,
+        role: true,
+        profile: {
+          include: {
+            department: true
+          }
+        }
+      },
+    });
+
+    if (!studentUser) {
+      throw new NotFoundError('Student not found');
+    }
+
+    if (studentUser.role !== 'USER') {
+      throw new BadRequestError('Target user is not a student');
+    }
+
+    const dashboard = await this.getStudentDashboard(studentUserId);
+
+    return {
+      profile: {
+        id: studentUser.id,
+        email: studentUser.email,
+        name: studentUser.name,
+        ...studentUser.profile,
+      },
+      dashboard,
+    };
+  }
+
   private async getInstituteStats(instituteId: string): Promise<InstituteAdminDashboardStats> {
     const { startOfThisMonth, startOfLastMonth, endOfLastMonth } = getDateRanges();
 

@@ -1,26 +1,18 @@
-// src/types/express.d.ts
-
 import { UserRole } from '@prisma/client';
 
 declare global {
   namespace Express {
-    interface Request {
-      user?: {
-        id: string;
-        email: string;
-        role: UserRole;
-        instituteId: string | null;
-        tokenVersion: number;
-      };
+    // Extend the User interface used by Passport/Express
+    interface User {
+      id: string;
+      email: string;
+      role: UserRole;
+      instituteId: string | null;
+      tokenVersion: number;
     }
-  }
-}
 
-export {};import { Request } from 'express';
-
-declare global {
-  namespace Express {
     interface Request {
+      // Add custom properties to Request
       instituteAdmin?: {
         userId: string;
         instituteId: string;
@@ -30,4 +22,4 @@ declare global {
   }
 }
 
-export {};
+export { };

@@ -22,7 +22,7 @@ function readJsonFile<T>(filename: string): T {
 // Seed Institutes
 async function seedInstitutes() {
   console.log('Seeding institutes...');
-  
+
   const institutes = readJsonFile<Array<{
     id: string;
     name: string;
@@ -49,7 +49,7 @@ async function seedInstitutes() {
 // Seed Users
 async function seedUsers() {
   console.log('Seeding users...');
-  
+
   const users = readJsonFile<Array<{
     email: string;
     password: string;
@@ -92,7 +92,7 @@ async function seedUsers() {
 // Seed Programming Languages
 async function seedProgrammingLanguages() {
   console.log('Seeding programming languages...');
-  
+
   const languages = readJsonFile<Array<{
     name: string;
     monacoId: string;
@@ -121,7 +121,7 @@ async function seedProgrammingLanguages() {
 // Seed Aptitude Questions
 async function seedAptitudeQuestions() {
   console.log('Seeding aptitude questions...');
-  
+
   const questions = readJsonFile<Array<{
     questionText: string;
     questionType: string;
@@ -151,7 +151,7 @@ async function seedAptitudeQuestions() {
     });
 
     // Find the correct option and update the question
-    const correctOption = created.options.find((opt, idx) => 
+    const correctOption = created.options.find((opt, idx) =>
       question.options[idx].isCorrect
     );
 
@@ -168,53 +168,65 @@ async function seedAptitudeQuestions() {
   console.log(`✓ Seeded ${count} aptitude questions`);
 }
 
-// Seed Machine Coding Tests
+// Seed Machine Coding Questions
 async function seedMachineCodingTests() {
-  console.log('Seeding machine coding tests...');
-  
-  const tests = readJsonFile<Array<{
+  console.log('Seeding machine coding questions...');
+
+  const questions = readJsonFile<Array<{
     title: string;
     description: string;
     difficulty: string;
     inputFormat: string;
     outputFormat: string;
     constraints: string[];
-    tags?: string[];
+    tags: string[];
     testCases: Array<{
       input: string;
       expectedOutput: string;
       type: string;
+      order?: number;
     }>;
   }>>('machine-tests.json');
 
+  // Clear existing machine data
+  await prisma.testCase.deleteMany({});
+  await prisma.machineQuestion.deleteMany({});
+
   let count = 0;
-  for (const test of tests) {
-    await prisma.machineCodingTest.create({
+  let testCasesCount = 0;
+
+  for (const question of questions) {
+    const machineQuestion = await prisma.machineQuestion.create({
       data: {
-        title: test.title,
-        description: test.description,
-        difficulty: test.difficulty as any,
-        timeLimit: 3600, // Default 1 hour
-        memoryLimit: 256, // Default 256MB
-        constraints: test.constraints,
-        inputFormat: test.inputFormat,
-        outputFormat: test.outputFormat,
-        sampleInput: test.testCases.find(tc => tc.type === 'SAMPLE')?.input || '',
-        sampleOutput: test.testCases.find(tc => tc.type === 'SAMPLE')?.expectedOutput || '',
-        explanation: '',
-        testCases: {
-          create: test.testCases.map(tc => ({
-            input: tc.input,
-            expectedOutput: tc.expectedOutput,
-            type: tc.type as any,
-          })),
-        },
+        title: question.title,
+        description: question.description,
+        difficulty: question.difficulty as any,
+        inputFormat: question.inputFormat,
+        outputFormat: question.outputFormat,
+        constraints: question.constraints,
+        tags: question.tags,
+        isActive: true,
       },
     });
+
+    // Create test cases
+    for (let i = 0; i < question.testCases.length; i++) {
+      const tc = question.testCases[i];
+      await prisma.testCase.create({
+        data: {
+          questionId: machineQuestion.id,
+          input: tc.input,
+          expectedOutput: tc.expectedOutput,
+          type: tc.type as any,
+          order: tc.order ?? i,
+        },
+      });
+      testCasesCount++;
+    }
     count++;
   }
 
-  console.log(`✓ Seeded ${count} machine coding tests`);
+  console.log(`✓ Seeded ${count} machine questions with ${testCasesCount} test cases`);
 }
 
 export async function seedAllData() {
@@ -225,8 +237,7 @@ export async function seedAllData() {
     await seedUsers();
     await seedProgrammingLanguages();
     await seedAptitudeQuestions();
-    // Skip machine coding tests as the model doesn't exist yet
-    // await seedMachineCodingTests();
+    await seedMachineCodingTests();
 
     console.log('\n✅ Comprehensive seeding completed successfully!');
   } catch (error) {

@@ -28,6 +28,7 @@ import { AppError } from './utils/errors';
 import { prisma } from './lib/db';
 import lmsRoutes from './module/lms/lms.routes';
 import lmsAdminRoutes from './module/admin/lms/lms-admin.routes';
+import { leaderboardRoutes } from './module/leaderbord';
 
 // =====================================================
 // APP INITIALIZATION
@@ -357,6 +358,8 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/lms', lmsRoutes);
 app.use('/api/admin/lms', lmsAdminRoutes); // Add this
 
+//Leaderboard routes
+app.use('/api/leaderboard', leaderboardRoutes);
 
 // Resume Builder
 app.use('/api/resume-builder', resumeBuilderLimiter, resumeRoutes);
@@ -375,6 +378,7 @@ app.use((req, res, next) => {
 });
 
 app.use(errorHandler);
+
 
 // =====================================================
 // EXPORT

@@ -982,8 +982,29 @@ class LmsService {
       },
     });
 
-    // If module just became COMPLETED, unlock the next module
-    if (newStatus === LmsModuleStatus.COMPLETED) {
+    // If module just became COMPLETED
+    if (newStatus === LmsModuleStatus.COMPLETED && (currentProgress?.status !== LmsModuleStatus.COMPLETED)) {
+      // Award module completion points
+      if (module.points > 0) {
+        // Update module progress points
+        await prisma.lmsModuleProgress.update({
+          where: { id: updatedProgress.id },
+          data: {
+            pointsEarned: { increment: module.points }
+          }
+        });
+
+        // Update enrollment points
+        await prisma.lmsEnrollment.update({
+          where: {
+            userId_courseId: { userId, courseId: module.course.id },
+          },
+          data: {
+            totalPointsEarned: { increment: module.points },
+          },
+        });
+      }
+
       const nextModule = await prisma.lmsModule.findFirst({
         where: {
           courseId: module.course.id,
@@ -1026,12 +1047,14 @@ class LmsService {
             topics: { where: { isActive: true } },
           },
         },
+        finalTest: { select: { id: true, isActive: true } },
       },
     });
 
     if (!course) return;
 
     const totalTopics = course.modules.reduce((sum, m) => sum + m.topics.length, 0);
+    const totalModules = course.modules.length;
 
     const completedTopics = await prisma.lmsTopicProgress.count({
       where: {
@@ -1059,6 +1082,31 @@ class LmsService {
 
     if (!enrollment) return;
 
+    // Determine completion status
+    let status = enrollment.status;
+    let completedAt = enrollment.completedAt;
+
+    // Course is completed if all modules are completed and (if final test exists) it is passed
+    const allModulesCompleted = completedModules === totalModules;
+    const hasFinalTest = !!course.finalTest && course.finalTest.isActive;
+
+    // If no final test, completion is based on modules. 
+    // If final test exists, completion is handled in submitFinalTest, mainly.
+    // But we should check here too in case final test was passed before modules (?) unlikely.
+    // However, usually final test is locked until modules are done.
+
+    let pointsToAdd = 0;
+
+    if (allModulesCompleted && !hasFinalTest && status !== LmsEnrollmentStatus.COMPLETED) {
+      status = LmsEnrollmentStatus.COMPLETED;
+      completedAt = new Date();
+
+      // If course is completed and no points were earned via tests/modules, award course total points
+      if (course.totalPoints > 0 && enrollment.totalPointsEarned === 0) {
+        pointsToAdd = course.totalPoints;
+      }
+    }
+
     await prisma.lmsEnrollment.update({
       where: {
         userId_courseId: { userId, courseId },
@@ -1067,6 +1115,9 @@ class LmsService {
         completedTopics,
         completedModules,
         progressPercent,
+        status,
+        completedAt,
+        totalPointsEarned: pointsToAdd > 0 ? { increment: pointsToAdd } : undefined,
         startedAt: enrollment.startedAt ? undefined : new Date(),
       },
     });
@@ -1420,10 +1471,21 @@ class LmsService {
             },
             data: {
               moduleTestPointsEarned: { increment: pointsEarned },
-              totalPointsEarned: { increment: pointsEarned },
+              // Award both test points AND module completion points
+              totalPointsEarned: { increment: pointsEarned + (module.points || 0) },
               completedModules: { increment: 1 },
             },
           });
+
+          // Also update module progress points to include module completion points
+          if (module.points > 0) {
+            await tx.lmsModuleProgress.update({
+              where: { id: moduleProgress.id },
+              data: {
+                pointsEarned: { increment: module.points }
+              }
+            });
+          }
         }
       }
     });
