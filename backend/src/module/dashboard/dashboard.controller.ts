@@ -17,6 +17,7 @@ class DashboardController {
     this.getInstituteAdminDashboard = this.getInstituteAdminDashboard.bind(this);
     this.getPlatformAdminDashboard = this.getPlatformAdminDashboard.bind(this);
     this.getStudentDashboardForAdmin = this.getStudentDashboardForAdmin.bind(this);
+    this.getStudentDashboardForPlatformAdmin = this.getStudentDashboardForPlatformAdmin.bind(this);
   }
 
   /**
@@ -153,6 +154,40 @@ class DashboardController {
       res.status(HTTP_STATUS.OK).json({
         success: true,
         data: dashboard,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+
+
+  /**
+   * GET /dashboard/platform-admin/student/:id
+   * Get student dashboard data for platform admin
+   */
+  async getStudentDashboardForPlatformAdmin(
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const adminUserId = this.getUserId(req);
+      const studentUserId = req.params.id;
+
+      // Verify user role
+      if (req.user?.role !== 'PLATFORM_ADMIN') {
+        throw new ForbiddenError('Access denied. Platform admins only.');
+      }
+
+      const data = await dashboardService.getStudentDashboardForPlatformAdmin(
+        adminUserId,
+        studentUserId
+      );
+
+      res.status(HTTP_STATUS.OK).json({
+        success: true,
+        data,
       });
     } catch (error) {
       next(error);

@@ -36,6 +36,9 @@ router.get('/student/:id', dashboardController.getStudentDashboardForAdmin);
 // GET /dashboard/platform-admin - Get platform admin dashboard
 router.get('/platform-admin', dashboardController.getPlatformAdminDashboard);
 
+// GET /dashboard/platform-admin/student/:id - Get specific student dashboard for platform admin
+router.get('/platform-admin/student/:id', dashboardController.getStudentDashboardForPlatformAdmin);
+
 // =====================================================
 // EXPORT
 // =====================================================
