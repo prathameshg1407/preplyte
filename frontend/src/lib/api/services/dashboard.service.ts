@@ -28,4 +28,14 @@ export const dashboardService = {
     );
     return response.data.data;
   },
+
+  /**
+   * Get specific student dashboard data for platform admin
+   */
+  getStudentDashboardForPlatformAdmin: async (id: string): Promise<AdminViewStudentDashboardData> => {
+    const response = await apiClient.get<ApiResponse<AdminViewStudentDashboardData>>(
+      `/api/dashboard/platform-admin/student/${id}`
+    );
+    return response.data.data;
+  },
 };

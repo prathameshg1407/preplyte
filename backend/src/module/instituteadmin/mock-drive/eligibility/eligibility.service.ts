@@ -437,7 +437,7 @@ export class EligibilityService {
       }
     }
 
-    // Get students
+    // Get students with department names
     const [students, total] = await Promise.all([
       prisma.studentProfile.findMany({
         where,
@@ -447,6 +447,9 @@ export class EligibilityService {
         include: {
           user: {
             select: { id: true },
+          },
+          department: {
+            select: { name: true, code: true },
           },
         },
       }),
@@ -477,6 +480,7 @@ export class EligibilityService {
         fullName: s.fullName,
         studentId: s.studentId,
         departmentId: s.departmentId,
+        departmentName: s.department?.name || null,
         courseYear: s.courseYear,
         averageCgpa: s.averageCgpa,
         marks10: s.marks10,

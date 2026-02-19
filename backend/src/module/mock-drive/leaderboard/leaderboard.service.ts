@@ -63,12 +63,27 @@ export class LeaderboardService {
     // Get total count
     const total = await this.prisma.mockDriveLeaderboard.count({ where });
 
-    // Get entries
+    // Get entries with department names
     const entries = await this.prisma.mockDriveLeaderboard.findMany({
       where,
       orderBy: [{ rank: 'asc' }],
       skip,
       take: limit,
+      include: {
+        user: {
+          select: {
+            profile: {
+              select: {
+                department: {
+                  select: {
+                    name: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
     });
 
     // Get current user's entry
@@ -95,6 +110,7 @@ export class LeaderboardService {
       studentName: entry.studentName,
       studentId: entry.studentId,
       departmentId: entry.departmentId,
+      departmentName: (entry as any).user?.profile?.department?.name || null,
       totalScore: entry.totalScore,
       percentageScore: entry.percentageScore,
       moduleScores: (entry.moduleScores as any[]) || [],
@@ -161,13 +177,28 @@ export class LeaderboardService {
       throw new NotFoundError('Leaderboard entry. You have not completed this mock drive yet');
     }
 
-    // Get total participants and scores
+    // Get total participants and scores with department names
     const allEntries = await this.prisma.mockDriveLeaderboard.findMany({
       where: {
         mockDriveId: driveId,
         batchId: targetBatchId,
       },
       orderBy: { rank: 'asc' },
+      include: {
+        user: {
+          select: {
+            profile: {
+              select: {
+                department: {
+                  select: {
+                    name: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
     });
 
     const scores = allEntries.map((e) => e.percentageScore);
@@ -188,6 +219,7 @@ export class LeaderboardService {
         studentName: entry.studentName,
         studentId: entry.studentId,
         departmentId: entry.departmentId,
+        departmentName: (entry as any).user?.profile?.department?.name || null,
         totalScore: entry.totalScore,
         percentageScore: entry.percentageScore,
         moduleScores: (entry.moduleScores as any[]) || [],

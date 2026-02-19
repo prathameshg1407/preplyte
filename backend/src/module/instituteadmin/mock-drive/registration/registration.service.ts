@@ -84,7 +84,13 @@ export class RegistrationService {
       include: {
         user: {
           include: {
-            profile: true,
+            profile: {
+              include: {
+                department: {
+                  select: { name: true, code: true },
+                },
+              },
+            },
           },
         },
         batch: {
@@ -171,7 +177,13 @@ export class RegistrationService {
         include: {
           user: {
             include: {
-              profile: true,
+              profile: {
+                include: {
+                  department: {
+                    select: { name: true, code: true },
+                  },
+                },
+              },
             },
           },
           batch: {
@@ -566,6 +578,7 @@ export class RegistrationService {
       email: registration.user.email,
       studentId: registration.user.profile?.studentId ?? null,
       departmentId: registration.user.profile?.departmentId ?? null,
+      departmentName: (registration.user.profile as any)?.department?.name ?? null,
       courseYear: registration.user.profile?.courseYear ?? null,
       averageCgpa: registration.user.profile?.averageCgpa ?? null,
       marks10: registration.user.profile?.marks10 ?? null,
@@ -602,6 +615,7 @@ export class RegistrationService {
         registration.user.profile?.fullName ?? registration.user.name ?? 'Unknown',
       studentId: registration.user.profile?.studentId ?? null,
       departmentId: registration.user.profile?.departmentId ?? null,
+      departmentName: (registration.user.profile as any)?.department?.name ?? null,
       courseYear: registration.user.profile?.courseYear ?? null,
       averageCgpa: registration.user.profile?.averageCgpa ?? null,
       batchId: registration.batchId,
