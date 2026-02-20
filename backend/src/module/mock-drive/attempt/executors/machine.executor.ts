@@ -385,7 +385,7 @@ export class MachineModuleExecutor extends BaseModuleExecutor {
       // Use Judge0 batch execution
       const batchResult = await judge0Service.executeBatch(
         code,
-        language.name.toLowerCase(),
+        language.monacoId.toLowerCase(),
         'mock-drive-submission',
         testCases.map((tc) => ({
           id: tc.id,
@@ -463,7 +463,7 @@ export class MachineModuleExecutor extends BaseModuleExecutor {
       // Execute single run
       const result = await judge0Service.runCode(
         code,
-        language.name.toLowerCase(),
+        language.monacoId.toLowerCase(),
         input
       );
 

@@ -127,7 +127,8 @@ async function seedAptitudeQuestions() {
     questionType: string;
     difficulty: string;
     explanation: string;
-    options: Array<{ text: string; isCorrect: boolean }>;
+    correctAnswerId: string;
+    options: Array<{ optionId: string; text: string }>;
   }>>('aptitude-questions.json');
 
   let count = 0;
@@ -151,9 +152,8 @@ async function seedAptitudeQuestions() {
     });
 
     // Find the correct option and update the question
-    const correctOption = created.options.find((opt, idx) =>
-      question.options[idx].isCorrect
-    );
+    const correctOptionIndex = question.options.findIndex(opt => opt.optionId === question.correctAnswerId);
+    const correctOption = correctOptionIndex !== -1 ? created.options[correctOptionIndex] : null;
 
     if (correctOption) {
       await prisma.aptitudeQuestion.update({

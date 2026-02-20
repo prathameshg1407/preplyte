@@ -150,6 +150,24 @@ export function createMockDriveRoutes(prisma: PrismaClient): Router {
     attemptController.skipInterviewQuestion
   );
 
+  router.post(
+    '/:driveId/modules/:moduleId/interview/next',
+    validate(moduleIdSchema),
+    attemptController.getNextInterviewQuestion
+  );
+
+  router.post(
+    '/:driveId/modules/:moduleId/interview/voice/start',
+    validate(moduleIdSchema),
+    attemptController.startVoiceMode
+  );
+
+  router.post(
+    '/:driveId/modules/:moduleId/interview/audio-question',
+    validate(moduleIdSchema),
+    attemptController.getAudioQuestion
+  );
+
   // =====================================================
   // RESULTS ROUTES
   // =====================================================
