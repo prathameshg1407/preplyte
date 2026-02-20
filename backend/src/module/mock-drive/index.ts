@@ -17,6 +17,7 @@ import {
   aptitudeAnswerSchema,
   aptitudeClearSchema,
   machineSubmitSchema,
+  machineRunSchema,
   interviewRespondSchema,
   interviewSkipSchema,
 } from './attempt/attempt.validation';
@@ -124,6 +125,12 @@ export function createMockDriveRoutes(prisma: PrismaClient): Router {
   );
 
   // Machine coding module actions
+  router.post(
+    '/:driveId/modules/:moduleId/machine/run',
+    validate(machineRunSchema),
+    attemptController.runMachineCode
+  );
+
   router.post(
     '/:driveId/modules/:moduleId/machine/submit',
     validate(machineSubmitSchema),

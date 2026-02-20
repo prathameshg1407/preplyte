@@ -221,7 +221,7 @@ export class MachineModuleExecutor extends BaseModuleExecutor {
 
     const { score, percentage } = calculateMachineScore(finalData, config);
 
-    const isPassed = config.passingScore !== undefined
+    const isPassed = typeof config.passingScore === 'number'
       ? percentage >= config.passingScore
       : true;
 

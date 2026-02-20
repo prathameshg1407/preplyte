@@ -1,0 +1,78 @@
+﻿.next/types/validator.ts(114,39): error TS2306: File 'C:/Users/Raj Bhoite/Desktop/WD/preplytef/frontend/src/app/admin/lms/categories/[categoryId]/page.tsx' is not a module.
+.next/types/validator.ts(195,39): error TS2306: File 'C:/Users/Raj Bhoite/Desktop/WD/preplytef/frontend/src/app/admin/lms/courses/[courseId]/modules/[moduleId]/topics/[topicId]/edit/page.tsx' is not a module.
+.next/types/validator.ts(222,39): error TS2306: File 'C:/Users/Raj Bhoite/Desktop/WD/preplytef/frontend/src/app/admin/lms/courses/[courseId]/modules/[moduleId]/topics/page.tsx' is not a module.
+.next/types/validator.ts(240,39): error TS2306: File 'C:/Users/Raj Bhoite/Desktop/WD/preplytef/frontend/src/app/admin/lms/courses/[courseId]/modules/page.tsx' is not a module.
+src/app/(auth)/callback/page.tsx(85,25): error TS2345: Argument of type '{ id: any; email: string; name: string; role: any; instituteId: any; isActive: boolean; createdAt: string; updatedAt: string; }' is not assignable to parameter of type 'User'.
+  Type '{ id: any; email: string; name: string; role: any; instituteId: any; isActive: boolean; createdAt: string; updatedAt: string; }' is missing the following properties from type 'User': profilePictureUrl, institute, lastLoginAt
+src/app/institute-admin/mock-drives/[driveId]/results/[attemptId]/page.tsx(213,67): error TS2551: Property 'departmentName' does not exist on type '{ userId: string; name: string; email: string; studentId: string | null; departmentId: string | null; department: string | null; }'. Did you mean 'department'?
+src/app/institute-admin/students/page.tsx(63,11): error TS2322: Type 'ComponentStudent[]' is not assignable to type 'Student[]'.
+  Type 'ComponentStudent' is missing the following properties from type 'Student': numberOfBacklogs, marks10, marks12, skills
+src/components/lms/personalized-roadmap.tsx(27,60): error TS2307: Cannot find module '@/app/lms/roadmap/page' or its corresponding type declarations.
+src/components/lms/personalized-roadmap.tsx(178,46): error TS7006: Parameter 'milestone' implicitly has an 'any' type.
+src/components/lms/personalized-roadmap.tsx(178,57): error TS7006: Parameter 'index' implicitly has an 'any' type.
+src/components/lms/personalized-roadmap.tsx(216,31): error TS7006: Parameter 'step' implicitly has an 'any' type.
+src/components/lms/personalized-roadmap.tsx(216,37): error TS7006: Parameter 'index' implicitly has an 'any' type.
+src/components/lms/personalized-roadmap.tsx(284,45): error TS7006: Parameter 'skill' implicitly has an 'any' type.
+src/components/lms/personalized-roadmap.tsx(296,46): error TS7006: Parameter 'course' implicitly has an 'any' type.
+src/components/lms/roadmap-assessment.tsx(25,29): error TS2307: Cannot find module '@/app/lms/roadmap/page' or its corresponding type declarations.
+src/components/mock-drive/attempt/machine/mock-machine-store.ts(18,8): error TS2307: Cannot find module '../../types/machine.types' or its corresponding type declarations.
+src/components/mock-drive/attempt/modules/attempt-container.tsx(259,17): error TS2322: Type 'Partial<ModuleData> | null' is not assignable to type 'MachineModuleData'.
+  Type 'null' is not assignable to type 'MachineModuleData'.
+src/components/profile/student-profile-form.tsx(141,36): error TS2345: Argument of type '{ fullName: string; skills: string[]; cgpaSemesters: number[]; studentId?: string | null | undefined; departmentId?: string | null | undefined; courseYear?: string | null | undefined; numberOfBacklogs?: number | undefined; marks10?: number | ... 1 more ... | undefined; marks12?: number | ... 1 more ... | undefined; ...' is not assignable to parameter of type 'CreateStudentProfileInput'.
+  Types of property 'studentId' are incompatible.
+    Type 'string | null | undefined' is not assignable to type 'string'.
+      Type 'undefined' is not assignable to type 'string'.
+src/components/profile/student-profile-form.tsx(422,29): error TS2322: Type 'string | null | undefined' is not assignable to type 'string | undefined'.
+  Type 'null' is not assignable to type 'string | undefined'.
+src/components/profile/student-profile-form.tsx(481,27): error TS2322: Type 'string | null | undefined' is not assignable to type 'string | undefined'.
+  Type 'null' is not assignable to type 'string | undefined'.
+src/components/resume-builder/editor/editor-header.tsx(656,46): error TS2339: Property 'isLoading' does not exist on type 'UseMutationResult<Resume, any, { resumeId: string; versionId: string; }, unknown>'.
+  Property 'isLoading' does not exist on type 'Override<MutationObserverIdleResult<Resume, any, { resumeId: string; versionId: string; }, unknown>, { mutate: UseMutateFunction<Resume, any, { resumeId: string; versionId: string; }, unknown>; }> & { ...; }'.
+src/components/resume-builder/export/export-pdf.tsx(47,38): error TS2307: Cannot find module 'html2pdf.js' or its corresponding type declarations.
+src/lib/api/services/resume.service.ts(1,10): error TS2305: Module '"../axios-instance"' has no exported member 'axiosInstance'.
+src/lib/hooks/use-resume.ts(46,20): error TS2345: Argument of type 'import("C:/Users/Raj Bhoite/Desktop/WD/preplytef/frontend/src/types/resume.types").ResumeTemplate[]' is not assignable to parameter of type 'import("C:/Users/Raj Bhoite/Desktop/WD/preplytef/frontend/src/types/resume-builder.types").ResumeTemplate[]'.
+  Type 'import("C:/Users/Raj Bhoite/Desktop/WD/preplytef/frontend/src/types/resume.types").ResumeTemplate' is not assignable to type 'import("C:/Users/Raj Bhoite/Desktop/WD/preplytef/frontend/src/types/resume-builder.types").ResumeTemplate'.
+    Types of property 'category' are incompatible.
+      Type 'import("C:/Users/Raj Bhoite/Desktop/WD/preplytef/frontend/src/types/resume.types").ResumeTemplateCategory' is not assignable to type 'import("C:/Users/Raj Bhoite/Desktop/WD/preplytef/frontend/src/types/resume-builder.types").ResumeTemplateCategory'.
+        Type '"TECHNICAL"' is not assignable to type 'ResumeTemplateCategory'.
+src/lib/hooks/use-resume.ts(75,29): error TS2345: Argument of type 'import("C:/Users/Raj Bhoite/Desktop/WD/preplytef/frontend/src/types/resume.types").TemplateCategoryCount[]' is not assignable to parameter of type 'TemplateCategoryCount[]'.
+  Type 'import("C:/Users/Raj Bhoite/Desktop/WD/preplytef/frontend/src/types/resume.types").TemplateCategoryCount' is not assignable to type 'TemplateCategoryCount'.
+    Types of property 'category' are incompatible.
+      Type 'import("C:/Users/Raj Bhoite/Desktop/WD/preplytef/frontend/src/types/resume.types").ResumeTemplateCategory' is not assignable to type 'import("C:/Users/Raj Bhoite/Desktop/WD/preplytef/frontend/src/types/resume-builder.types").ResumeTemplateCategory'.
+        Type '"TECHNICAL"' is not assignable to type 'ResumeTemplateCategory'.
+src/lib/hooks/use-resume.ts(116,24): error TS2345: Argument of type 'import("C:/Users/Raj Bhoite/Desktop/WD/preplytef/frontend/src/types/resume.types").Resume' is not assignable to parameter of type 'import("C:/Users/Raj Bhoite/Desktop/WD/preplytef/frontend/src/types/resume-builder.types").Resume'.
+  The types of 'template.category' are incompatible between these types.
+    Type 'import("C:/Users/Raj Bhoite/Desktop/WD/preplytef/frontend/src/types/resume.types").ResumeTemplateCategory' is not assignable to type 'import("C:/Users/Raj Bhoite/Desktop/WD/preplytef/frontend/src/types/resume-builder.types").ResumeTemplateCategory'.
+      Type '"TECHNICAL"' is not assignable to type 'ResumeTemplateCategory'.
+src/lib/hooks/use-resume.ts(172,24): error TS2345: Argument of type 'import("C:/Users/Raj Bhoite/Desktop/WD/preplytef/frontend/src/types/resume.types").Resume' is not assignable to parameter of type 'import("C:/Users/Raj Bhoite/Desktop/WD/preplytef/frontend/src/types/resume-builder.types").Resume'.
+  The types of 'template.category' are incompatible between these types.
+    Type 'import("C:/Users/Raj Bhoite/Desktop/WD/preplytef/frontend/src/types/resume.types").ResumeTemplateCategory' is not assignable to type 'import("C:/Users/Raj Bhoite/Desktop/WD/preplytef/frontend/src/types/resume-builder.types").ResumeTemplateCategory'.
+      Type '"TECHNICAL"' is not assignable to type 'ResumeTemplateCategory'.
+src/lib/hooks/use-resume.ts(209,24): error TS2345: Argument of type 'import("C:/Users/Raj Bhoite/Desktop/WD/preplytef/frontend/src/types/resume.types").Resume' is not assignable to parameter of type 'import("C:/Users/Raj Bhoite/Desktop/WD/preplytef/frontend/src/types/resume-builder.types").Resume'.
+  The types of 'template.category' are incompatible between these types.
+    Type 'import("C:/Users/Raj Bhoite/Desktop/WD/preplytef/frontend/src/types/resume.types").ResumeTemplateCategory' is not assignable to type 'import("C:/Users/Raj Bhoite/Desktop/WD/preplytef/frontend/src/types/resume-builder.types").ResumeTemplateCategory'.
+      Type '"TECHNICAL"' is not assignable to type 'ResumeTemplateCategory'.
+src/lib/hooks/use-resume.ts(284,24): error TS2345: Argument of type 'import("C:/Users/Raj Bhoite/Desktop/WD/preplytef/frontend/src/types/resume.types").Resume' is not assignable to parameter of type 'import("C:/Users/Raj Bhoite/Desktop/WD/preplytef/frontend/src/types/resume-builder.types").Resume'.
+  The types of 'template.category' are incompatible between these types.
+    Type 'import("C:/Users/Raj Bhoite/Desktop/WD/preplytef/frontend/src/types/resume.types").ResumeTemplateCategory' is not assignable to type 'import("C:/Users/Raj Bhoite/Desktop/WD/preplytef/frontend/src/types/resume-builder.types").ResumeTemplateCategory'.
+      Type '"TECHNICAL"' is not assignable to type 'ResumeTemplateCategory'.
+src/lib/hooks/use-resume.ts(310,24): error TS2345: Argument of type 'import("C:/Users/Raj Bhoite/Desktop/WD/preplytef/frontend/src/types/resume.types").Resume' is not assignable to parameter of type 'import("C:/Users/Raj Bhoite/Desktop/WD/preplytef/frontend/src/types/resume-builder.types").Resume'.
+  The types of 'template.category' are incompatible between these types.
+    Type 'import("C:/Users/Raj Bhoite/Desktop/WD/preplytef/frontend/src/types/resume.types").ResumeTemplateCategory' is not assignable to type 'import("C:/Users/Raj Bhoite/Desktop/WD/preplytef/frontend/src/types/resume-builder.types").ResumeTemplateCategory'.
+      Type '"TECHNICAL"' is not assignable to type 'ResumeTemplateCategory'.
+src/lib/hooks/use-resume.ts(336,24): error TS2345: Argument of type 'import("C:/Users/Raj Bhoite/Desktop/WD/preplytef/frontend/src/types/resume.types").Resume' is not assignable to parameter of type 'import("C:/Users/Raj Bhoite/Desktop/WD/preplytef/frontend/src/types/resume-builder.types").Resume'.
+  The types of 'template.category' are incompatible between these types.
+    Type 'import("C:/Users/Raj Bhoite/Desktop/WD/preplytef/frontend/src/types/resume.types").ResumeTemplateCategory' is not assignable to type 'import("C:/Users/Raj Bhoite/Desktop/WD/preplytef/frontend/src/types/resume-builder.types").ResumeTemplateCategory'.
+      Type '"TECHNICAL"' is not assignable to type 'ResumeTemplateCategory'.
+src/types/institute-admin.types.ts(21,3): error TS2687: All declarations of 'name' must have identical modifiers.
+src/types/institute-admin.types.ts(23,3): error TS2687: All declarations of 'departmentId' must have identical modifiers.
+src/types/institute-admin.types.ts(24,3): error TS2687: All declarations of 'courseYear' must have identical modifiers.
+src/types/institute-admin.types.ts(25,3): error TS2687: All declarations of 'averageCgpa' must have identical modifiers.
+src/types/institute-admin.types.ts(57,3): error TS2687: All declarations of 'name' must have identical modifiers.
+src/types/institute-admin.types.ts(57,3): error TS2717: Subsequent property declarations must have the same type.  Property 'name' must be of type 'string | undefined', but here has type 'string'.
+src/types/institute-admin.types.ts(60,3): error TS2687: All declarations of 'departmentId' must have identical modifiers.
+src/types/institute-admin.types.ts(60,3): error TS2717: Subsequent property declarations must have the same type.  Property 'departmentId' must be of type 'string | undefined', but here has type 'string | null'.
+src/types/institute-admin.types.ts(62,3): error TS2687: All declarations of 'courseYear' must have identical modifiers.
+src/types/institute-admin.types.ts(62,3): error TS2717: Subsequent property declarations must have the same type.  Property 'courseYear' must be of type 'string | undefined', but here has type 'string | null'.
+src/types/institute-admin.types.ts(64,3): error TS2687: All declarations of 'averageCgpa' must have identical modifiers.
+src/types/institute-admin.types.ts(64,3): error TS2717: Subsequent property declarations must have the same type.  Property 'averageCgpa' must be of type 'number | undefined', but here has type 'number | null'.

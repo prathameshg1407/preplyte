@@ -73,7 +73,7 @@ const config = {
     },
     mockDrive: {
       windowMs: 15 * 60 * 1000,
-      max: parseInt(process.env.RATE_LIMIT_MOCK_DRIVE || '100', 10),
+      max: parseInt(process.env.RATE_LIMIT_MOCK_DRIVE || '1000', 10),
     },
   },
 };

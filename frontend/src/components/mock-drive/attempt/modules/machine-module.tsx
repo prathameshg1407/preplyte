@@ -1,411 +1,453 @@
-// src/components/mock-drive/attempt/modules/machine-module.tsx (fixed payload types)
+// src/components/mock-drive/attempt/modules/machine-module.tsx
 
-'use client';
+"use client";
 
-import { FC, useState, useEffect } from 'react';
-import { Play, Send, Check, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
+import { useEffect, useState, useCallback } from "react";
+import { useParams } from "next/navigation";
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from "@/components/ui/resizable";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { cn } from '@/lib/utils';
-import ReactMarkdown from 'react-markdown';
-import Editor from '@monaco-editor/react';
+} from "@/components/ui/select";
+import { Loader2, Flag, RotateCcw, Code2 } from "lucide-react";
+import { toast } from "sonner";
+
+// Import duplicated store and components from mock-drive/attempt
+import { useMockMachineStore, DEFAULT_CODE_TEMPLATES } from "../machine/mock-machine-store";
+import { MonacoEditor } from "../machine/monaco-editor";
+import { ProblemDescription } from "../machine/problem-description";
+import { ExecutionPanel } from "../machine/execution-panel";
+import { QuestionTabs } from "../machine/question-tabs";
+import { SubmitDialog } from "../machine/submit-dialog";
+
+// Import Mock Drive types and hooks
 import {
-  MachineModuleConfig,
   MachineModuleData,
-  ModuleConfig,
-  ModuleData,
-  MachineSubmitPayload,
-  MachineRunPayload,
-} from '@/types/mockdrive.types';
-import { useMachineSubmit, useMachineRun } from '@/lib/hooks/mock-drive/use-attempt';
-import { useAttemptStore } from '@/lib/store/mock-drive/attempt-store';
+  ModuleAttemptState,
+  CurrentModuleState
+} from "@/types/mockdrive.types";
+import {
+  useMachineRun,
+  useMachineSubmit
+} from "@/lib/hooks/mock-drive/use-attempt";
+import type { ActiveTab } from "@/types/machine.types";
 
 interface MachineModuleProps {
-  driveId: string;
-  moduleId: string;
-  config: ModuleConfig;
-  data: Partial<ModuleData> | null;
-  onSubmit: () => void;
+  module: CurrentModuleState; // Was ModuleAttemptState
+  data: MachineModuleData;
   isSubmitting: boolean;
+  onSubmit: () => void;
 }
 
-const LANGUAGES = [
-  { id: 71, name: 'Python', monacoId: 'python' },
-  { id: 62, name: 'Java', monacoId: 'java' },
-  { id: 54, name: 'C++', monacoId: 'cpp' },
-  { id: 63, name: 'JavaScript', monacoId: 'javascript' },
-];
-
-export const MachineModule: FC<MachineModuleProps> = ({
-  driveId,
-  moduleId,
-  config,
+export function MachineModule({
+  module,
   data,
-  onSubmit,
-  isSubmitting,
-}) => {
-  const machineConfig = config as MachineModuleConfig;
-  const machineData = data as MachineModuleData | null;
+  isSubmitting: isGlobalSubmitting,
+  onSubmit
+}: MachineModuleProps) {
+  const params = useParams();
+  const driveId = params.driveId as string;
+  const moduleId = module.moduleId;
 
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [code, setCode] = useState('');
-  const [languageId, setLanguageId] = useState(71);
-  const [activeTab, setActiveTab] = useState('description');
-  const [runResult, setRunResult] = useState<any>(null); // Type this properly later if needed
+  // Mock Machine Store state
+  const {
+    questions,
+    currentQuestionIndex,
+    currentQuestion,
+    selectedLanguageId,
+    languages,
+    isRunning,
+    isSubmitting,
+    runResult,
+    submitResult,
+    submitResults,
+    solvedQuestionIds,
+    activeTab,
+  } = useMockMachineStore();
 
-  const { localModuleData, updateLocalModuleData } = useAttemptStore();
-  const localData = localModuleData as MachineModuleData | null;
+  const store = useMockMachineStore();
 
-  const submitCodeMutation = useMachineSubmit();
-  const runCodeMutation = useMachineRun();
+  const [showSubmitDialog, setShowSubmitDialog] = useState(false);
+  const [initialized, setInitialized] = useState(false);
 
+  // Mutations
+  const { mutateAsync: runCodeMutation } = useMachineRun();
+  const { mutateAsync: submitCodeMutation } = useMachineSubmit();
+
+  // Initialization map
   useEffect(() => {
-    if (machineData && !localData) {
-      updateLocalModuleData(machineData);
-    }
-  }, [machineData, localData, updateLocalModuleData]);
+    if (initialized) return;
 
-  const questions = localData?.questions || machineData?.questions || [];
-  const currentQuestion = questions[currentIndex];
+    // Hardcode a list of languages since useLanguages isn't exported from the original practice hooks in this file.
+    const allLanguages = [
+      { id: "1", judge0Id: 54, monacoId: 'cpp', name: 'C++ (GCC 11)', version: '11.4.0', isActive: true },
+      { id: "2", judge0Id: 91, monacoId: 'java', name: 'Java (OpenJDK 17)', version: '17.0.0', isActive: true },
+      { id: "3", judge0Id: 92, monacoId: 'python', name: 'Python (3.11)', version: '3.11.0', isActive: true },
+      { id: "4", judge0Id: 93, monacoId: 'javascript', name: 'JavaScript (Node.js 18)', version: '18.15.0', isActive: true },
+    ];
 
-  useEffect(() => {
-    if (currentQuestion) {
-      const lastSubmission = currentQuestion.submissions[currentQuestion.submissions.length - 1];
-      if (lastSubmission) {
-        setCode(lastSubmission.code);
-        setLanguageId(lastSubmission.languageId);
-      } else {
-        setCode(currentQuestion.defaultCode || '// Write your code here\n');
+    store.setLanguages(allLanguages);
+
+    // Filter allowed languages if specified in module config
+    const allowed = (module.config as any)?.allowedLanguages || [];
+    if (allowed.length > 0) {
+      const filtered = allLanguages.filter((l: any) =>
+        allowed.includes(l.judge0Id.toString()) || allowed.includes(l.monacoId)
+      );
+      if (filtered.length > 0) {
+        store.setLanguages(filtered);
+        // Default to first allowed language if current is not in allowed
+        if (!filtered.some((l: any) => l.judge0Id === store.selectedLanguageId)) {
+          store.setSelectedLanguageId(filtered[0].judge0Id);
+        }
       }
     }
-  }, [currentQuestion]);
 
-  const handleRunCode = () => {
-    if (!currentQuestion) return;
+    // Map MachineModuleData to store's questions format
+    // Store expects QuestionListItem
+    const storeQuestions = data.questions.map(q => ({
+      id: q.questionId,
+      sessionQuestionId: q.questionId,
+      order: q.displayOrder,
+      title: q.title,
+      difficulty: 'MEDIUM' as any, // Mock data
+      tags: [],
+      isSolved: q.isSolved,
+      submissionCount: q.submissions?.length || 0,
+      bestSubmission: q.bestSubmissionId ? {
+        status: 'ACCEPTED' as any,
+        testCasesPassed: 1,
+        testCasesTotal: 1,
+        submittedAt: new Date().toISOString()
+      } : null
+    }));
 
-    setActiveTab('output');
-    setRunResult(null);
+    store.initSession({
+      sessionId: module.moduleAttemptId,
+      difficulty: 'MEDIUM',
+      status: 'in_progress',
+      numberOfQuestions: data.questions.length,
+      timeLimit: module.timeLimit,
+      startedAt: module.startedAt || new Date().toISOString(),
+      expiresAt: module.expiresAt || new Date().toISOString()
+    });
 
-    const payload: MachineRunPayload = {
-      questionId: currentQuestion.questionId,
-      code,
-      languageId,
-    };
+    store.setQuestions(storeQuestions);
 
-    runCodeMutation.mutate(
-      {
+    // set first question as current detail
+    if (data.questions.length > 0) {
+      const firstQ = data.questions[0];
+      store.setCurrentQuestion({
+        id: firstQ.questionId,
+        title: firstQ.title,
+        description: firstQ.description,
+        difficulty: 'MEDIUM',
+        inputFormat: null,
+        outputFormat: null,
+        constraints: null,
+        tags: [],
+        sampleTestCases: firstQ.testCases.map((tc, idx) => ({
+          id: String(idx),
+          input: tc.input,
+          expectedOutput: tc.expectedOutput
+        })),
+        totalTestCases: firstQ.testCases.length
+      });
+      // Set existing code if any (from default or previous save)
+      if (firstQ.defaultCode) {
+        store.setCode(firstQ.questionId, firstQ.defaultCode);
+      }
+    }
+
+    setInitialized(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data, module, initialized]);
+
+  // Fetch question detail when tab changes
+  useEffect(() => {
+    if (!initialized) return;
+    const qData = data.questions[currentQuestionIndex];
+    if (qData && (!currentQuestion || currentQuestion.id !== qData.questionId)) {
+      store.setCurrentQuestion({
+        id: qData.questionId,
+        title: qData.title,
+        description: qData.description,
+        difficulty: 'MEDIUM',
+        inputFormat: null,
+        outputFormat: null,
+        constraints: null,
+        tags: [],
+        sampleTestCases: qData.testCases.map((tc, idx) => ({
+          id: String(idx),
+          input: tc.input,
+          expectedOutput: tc.expectedOutput
+        })),
+        totalTestCases: qData.testCases.length
+      });
+    }
+  }, [currentQuestionIndex, initialized, data.questions, currentQuestion, store]);
+
+  const currentQuestionData = questions[currentQuestionIndex];
+  const currentCode = currentQuestionData
+    ? store.getCodeForQuestion(currentQuestionData.id)
+    : "";
+  const monacoLanguage = store.getSelectedLanguageMonacoId();
+
+  const handleCodeChange = useCallback((value: string) => {
+    if (currentQuestionData) {
+      store.setCode(currentQuestionData.id, value);
+    }
+  }, [currentQuestionData, store]);
+
+  const handleRun = useCallback(async (customInput?: string) => {
+    if (!currentQuestionData) return;
+    store.setRunning(true);
+    try {
+      const res = await runCodeMutation({
         driveId,
         moduleId,
-        payload,
-      },
-      {
-        onSuccess: (response) => {
-          const data = response.updatedData as Partial<MachineModuleData>;
-          if (data?._runResult) {
-            setRunResult(data._runResult);
-          }
-        },
+        payload: {
+          questionId: currentQuestionData.id,
+          code: currentCode,
+          languageId: selectedLanguageId,
+          customInput
+        }
+      });
+      if (res.updatedData) {
+        const d = res.updatedData as MachineModuleData;
+        if (d._runResult) {
+          store.setRunResult(d._runResult as any);
+        }
       }
-    );
-  };
+    } catch (e) {
+      console.error(e);
+    } finally {
+      store.setRunning(false);
+    }
+  }, [currentQuestionData, currentCode, selectedLanguageId, driveId, moduleId, runCodeMutation, store]);
 
-  const handleSubmitCode = () => {
-    if (!currentQuestion) return;
-
-    const payload: MachineSubmitPayload = {
-      questionId: currentQuestion.questionId,
-      code,
-      languageId,
-    };
-
-    submitCodeMutation.mutate(
-      {
+  const handleSubmitCode = useCallback(async () => {
+    if (!currentQuestionData) return;
+    store.setSubmitting(true);
+    try {
+      const res = await submitCodeMutation({
         driveId,
         moduleId,
-        payload,
-      },
-      {
-        onSuccess: (response) => {
-          if (response.updatedData) {
-            updateLocalModuleData(response.updatedData);
-            setActiveTab('submissions');
-          }
-        },
+        payload: {
+          questionId: currentQuestionData.id,
+          code: currentCode,
+          languageId: selectedLanguageId
+        }
+      });
+      if (res.updatedData) {
+        const _qData = (res.updatedData as MachineModuleData).questions.find(q => q.questionId === currentQuestionData.id);
+        if (_qData && _qData.submissions.length > 0) {
+          // grab the latest submission and shape it to the expected mock format
+          const latestSub = _qData.submissions[0];
+          const resultShape = {
+            status: latestSub.status,
+            testCasesPassed: latestSub.testCasesPassed,
+            testCasesTotal: latestSub.testCasesTotal,
+            executionTime: latestSub.executionTime,
+            memoryUsed: latestSub.memoryUsed,
+            compileError: latestSub.compileError,
+          };
+          store.addSubmitResult(currentQuestionData.id, resultShape as any);
+        }
       }
-    );
-  };
+    } catch (e) {
+      console.error(e);
+    } finally {
+      store.setSubmitting(false);
+    }
+  }, [currentQuestionData, currentCode, selectedLanguageId, driveId, moduleId, submitCodeMutation, store]);
 
-  if (!currentQuestion) {
+  const handleResetCode = useCallback(() => {
+    if (currentQuestionData) {
+      const defaultCode = DEFAULT_CODE_TEMPLATES[monacoLanguage] || "";
+      store.setCode(currentQuestionData.id, defaultCode);
+      toast.info("Code reset to default");
+    }
+  }, [currentQuestionData, monacoLanguage, store]);
+
+  const handleQuestionSelect = useCallback((index: number) => {
+    store.goToQuestion(index);
+  }, [store]);
+
+  const handleTabChange = useCallback((tab: ActiveTab) => {
+    store.setActiveTab(tab);
+  }, [store]);
+
+  if (!initialized) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      <div className="flex h-[600px] w-full items-center justify-center bg-background border rounded-lg">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
 
+  const sampleInput = currentQuestion?.sampleTestCases?.[0]?.input || "";
+
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 h-[calc(100vh-200px)]">
-      {/* Left Panel - Problem Description */}
-      <div className="flex flex-col">
-        <Card className="flex-1 overflow-hidden">
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setCurrentIndex(Math.max(0, currentIndex - 1))}
-                  disabled={currentIndex === 0}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <CardTitle className="text-lg">
-                  Problem {currentIndex + 1} of {questions.length}
-                </CardTitle>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setCurrentIndex(Math.min(questions.length - 1, currentIndex + 1))}
-                  disabled={currentIndex === questions.length - 1}
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
-              <Badge variant={currentQuestion.isSolved ? 'default' : 'outline'}>
-                {currentQuestion.isSolved
-                  ? 'Solved'
-                  : currentQuestion.bestScore > 0
-                    ? `Partial: ${currentQuestion.bestScore}%`
-                    : 'Not Attempted'}
-              </Badge>
-            </div>
-          </CardHeader>
-          <CardContent className="overflow-auto h-full pb-20">
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList>
-                <TabsTrigger value="description">Description</TabsTrigger>
-                <TabsTrigger value="testcases">Test Cases</TabsTrigger>
-                <TabsTrigger value="output">Output</TabsTrigger>
-                <TabsTrigger value="submissions">
-                  Submissions ({currentQuestion.submissions.length})
-                </TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="description" className="space-y-4 mt-4">
-                <div className="prose dark:prose-invert max-w-none">
-                  <h3 className="font-medium mb-2">{currentQuestion.title}</h3>
-                  <ReactMarkdown>{currentQuestion.description}</ReactMarkdown>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="testcases" className="mt-4">
-                <div className="space-y-4">
-                  {currentQuestion.testCases?.map((tc, idx) => (
-                    <div key={idx} className="bg-muted p-4 rounded-lg">
-                      <h4 className="font-medium mb-2">Sample Case {idx + 1}</h4>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <div className="text-xs text-muted-foreground mb-1">Input</div>
-                          <pre className="bg-background p-2 rounded text-sm">{tc.input}</pre>
-                        </div>
-                        <div>
-                          <div className="text-xs text-muted-foreground mb-1">Expected Output</div>
-                          <pre className="bg-background p-2 rounded text-sm">{tc.expectedOutput}</pre>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                  {!currentQuestion.testCases?.length && (
-                    <p className="text-muted-foreground text-center py-8">No sample test cases available.</p>
-                  )}
-                </div>
-              </TabsContent>
-
-              <TabsContent value="output" className="space-y-4 mt-4">
-                {runCodeMutation.isPending ? (
-                  <div className="flex items-center justify-center py-8">
-                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground mr-2" />
-                    <span className="text-muted-foreground">Running code...</span>
-                  </div>
-                ) : runResult ? (
-                  <div className="space-y-4">
-                    <div>
-                      <h4 className="font-medium mb-1">Standard Output</h4>
-                      <pre className="bg-muted p-3 rounded-md overflow-x-auto text-sm disabled:cursor-not-allowed">
-                        {runResult.stdout || <span className="text-muted-foreground italic">No output</span>}
-                      </pre>
-                    </div>
-                    {runResult.stderr && (
-                      <div>
-                        <h4 className="font-medium mb-1 text-red-500">Error Output</h4>
-                        <pre className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 p-3 rounded-md overflow-x-auto text-sm">
-                          {runResult.stderr}
-                        </pre>
-                      </div>
-                    )}
-                    <div className="text-xs text-muted-foreground">
-                      Execution Time: {runResult.executionTime}s
-                    </div>
-                  </div>
-                ) : (
-                  <div className="text-center text-muted-foreground py-8">
-                    Run your code to see output here
-                  </div>
-                )}
-              </TabsContent>
-
-              <TabsContent value="submissions" className="mt-4">
-                {currentQuestion.submissions.length === 0 ? (
-                  <p className="text-muted-foreground text-center py-8">No submissions yet</p>
-                ) : (
-                  <div className="space-y-2">
-                    {currentQuestion.submissions.map((submission, idx) => (
-                      <div
-                        key={submission.id}
-                        className={cn(
-                          'p-3 rounded-lg border',
-                          submission.status === 'ACCEPTED'
-                            ? 'bg-green-50 border-green-200'
-                            : 'bg-red-50 border-red-200'
-                        )}
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium">
-                            #{idx + 1} - {submission.languageName}
-                          </span>
-                          <Badge
-                            variant={submission.status === 'ACCEPTED' ? 'default' : 'destructive'}
-                          >
-                            {submission.status}
-                          </Badge>
-                        </div>
-                        <div className="text-xs text-muted-foreground mt-1">
-                          Test Cases: {submission.testCasesPassed}/{submission.testCasesTotal}
-                          {submission.executionTime && ` • ${submission.executionTime}ms`}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </TabsContent>
-            </Tabs>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Right Panel - Code Editor */}
-      <div className="flex flex-col gap-4">
-        <Card className="flex-1 overflow-hidden flex flex-col">
-          <CardHeader className="pb-2 flex-none">
-            <div className="flex items-center justify-between">
-              <Select value={languageId.toString()} onValueChange={(v) => setLanguageId(parseInt(v))}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Select language" />
-                </SelectTrigger>
-                <SelectContent>
-                  {LANGUAGES.filter((l) => {
-                    // Filter logic: Check if language name or monacoId is in allowedLanguages (case-insensitive)
-                    if (!machineConfig.allowedLanguages?.length) return true;
-                    return machineConfig.allowedLanguages.some(allowed =>
-                      allowed.toLowerCase() === l.name.toLowerCase() ||
-                      allowed.toLowerCase() === l.monacoId.toLowerCase()
-                    );
-                  }).map((lang) => (
-                    <SelectItem key={lang.id} value={lang.id.toString()}>
-                      {lang.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleRunCode}
-                  disabled={runCodeMutation.isPending || isSubmitting}
-                >
-                  {runCodeMutation.isPending ? (
-                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                  ) : (
-                    <Play className="h-4 w-4 mr-1" />
-                  )}
-                  Run
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={handleSubmitCode}
-                  disabled={submitCodeMutation.isPending || isSubmitting}
-                >
-                  {submitCodeMutation.isPending ? (
-                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                  ) : (
-                    <Send className="h-4 w-4 mr-1" />
-                  )}
-                  Submit
-                </Button>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="h-full p-0 flex-1 relative min-h-[400px]">
-            <Editor
-              height="100%"
-              language={LANGUAGES.find(l => l.id === languageId)?.monacoId || 'javascript'}
-              value={code}
-              onChange={(value) => setCode(value || '')}
-              theme="vs-dark"
-              options={{
-                minimap: { enabled: false },
-                fontSize: 14,
-                scrollBeyondLastLine: false,
-                padding: { top: 16, bottom: 16 },
-              }}
-            />
-          </CardContent>
-        </Card>
-
-        {/* Question Navigator */}
-        <div className="flex items-center justify-between">
-          <div className="flex gap-2">
-            {questions.map((q, idx) => (
-              <button
-                key={q.questionId}
-                onClick={() => setCurrentIndex(idx)}
-                className={cn(
-                  'w-8 h-8 rounded text-sm font-medium transition-all',
-                  idx === currentIndex && 'ring-2 ring-primary ring-offset-2',
-                  q.isSolved && 'bg-green-500 text-white',
-                  q.bestScore > 0 && !q.isSolved && 'bg-yellow-500 text-white',
-                  q.submissions.length === 0 && 'bg-gray-200'
-                )}
-              >
-                {idx + 1}
-              </button>
-            ))}
+    <div className="flex h-[800px] w-full flex-col overflow-hidden bg-background border rounded-lg shadow-sm">
+      {/* Header */}
+      <header className="flex h-14 shrink-0 items-center justify-between border-b bg-card px-4">
+        {/* Left */}
+        <div className="flex items-center gap-3">
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
+            <Code2 className="h-5 w-5 text-primary" />
           </div>
-          <Button onClick={onSubmit} disabled={isSubmitting}>
-            {isSubmitting ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Submitting...
-              </>
+          <div>
+            <h1 className="font-semibold leading-none">Machine Coding</h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {store.getSolvedCount()} / {questions.length} solved
+            </p>
+          </div>
+        </div>
+
+        {/* Right */}
+        <div className="flex items-center gap-3">
+          <Select
+            value={selectedLanguageId.toString()}
+            onValueChange={(v) => store.setSelectedLanguageId(parseInt(v))}
+          >
+            <SelectTrigger className="h-9 w-[130px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {store.languages
+                .filter((l: any) => l.isActive)
+                .map((lang: any) => (
+                  <SelectItem key={lang.id} value={lang.judge0Id.toString()}>
+                    {lang.name}
+                  </SelectItem>
+                ))}
+            </SelectContent>
+          </Select>
+
+          <Button
+            onClick={() => setShowSubmitDialog(true)}
+            disabled={isGlobalSubmitting}
+            size="sm"
+            className="gap-2"
+          >
+            {isGlobalSubmitting ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
-              <>
-                <Check className="mr-2 h-4 w-4" />
-                Submit Module
-              </>
+              <Flag className="h-4 w-4" />
             )}
+            Finish Module
           </Button>
         </div>
+      </header>
+
+      {/* Question Tabs */}
+      <div className="shrink-0 border-b bg-muted/30">
+        <QuestionTabs
+          questions={questions}
+          currentIndex={currentQuestionIndex}
+          submitResults={submitResults}
+          solvedQuestionIds={solvedQuestionIds}
+          onSelect={handleQuestionSelect}
+        />
       </div>
+
+      {/* Main Content */}
+      <div className="min-h-0 flex-1">
+        <ResizablePanelGroup direction="horizontal" className="h-full">
+          {/* Problem Description */}
+          <ResizablePanel defaultSize={40} minSize={25} maxSize={60}>
+            <div className="h-full overflow-hidden">
+              {currentQuestion ? (
+                <ProblemDescription question={currentQuestion} />
+              ) : (
+                <div className="flex h-full items-center justify-center">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
+              )}
+            </div>
+          </ResizablePanel>
+
+          <ResizableHandle withHandle />
+
+          {/* Code Editor & Execution */}
+          <ResizablePanel defaultSize={60} minSize={35}>
+            <ResizablePanelGroup direction="vertical" className="h-full">
+              {/* Editor */}
+              <ResizablePanel defaultSize={60} minSize={30}>
+                <div className="flex h-full flex-col">
+                  {/* Editor Toolbar */}
+                  <div className="flex h-10 shrink-0 items-center justify-between border-b bg-muted/50 px-3">
+                    <span className="text-sm text-muted-foreground">
+                      {languages.find((l: any) => l.judge0Id === selectedLanguageId)?.name}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleResetCode}
+                      className="h-7 gap-2 text-xs"
+                    >
+                      <RotateCcw className="h-3.5 w-3.5" />
+                      Reset
+                    </Button>
+                  </div>
+
+                  {/* Monaco Editor */}
+                  <div className="min-h-0 flex-1">
+                    <MonacoEditor
+                      value={currentCode}
+                      onChange={handleCodeChange}
+                      language={monacoLanguage}
+                      height="100%"
+                    />
+                  </div>
+                </div>
+              </ResizablePanel>
+
+              <ResizableHandle withHandle />
+
+              {/* Execution Panel */}
+              <ResizablePanel defaultSize={40} minSize={20}>
+                {currentQuestionData && (
+                  <ExecutionPanel
+                    sampleInput={sampleInput}
+                    onRun={handleRun}
+                    onSubmit={handleSubmitCode}
+                    isRunning={isRunning}
+                    isSubmitting={isSubmitting}
+                    runResult={runResult}
+                    submitResult={submitResults[currentQuestionData.id] || submitResult}
+                    activeTab={activeTab}
+                    onTabChange={handleTabChange}
+                  />
+                )}
+              </ResizablePanel>
+            </ResizablePanelGroup>
+          </ResizablePanel>
+        </ResizablePanelGroup>
+      </div>
+
+      {/* Submit Dialog */}
+      <SubmitDialog
+        open={showSubmitDialog}
+        onOpenChange={setShowSubmitDialog}
+        totalQuestions={questions.length}
+        solvedCount={store.getSolvedCount()}
+        attemptedCount={store.getAttemptedCount()}
+        onConfirm={() => {
+          setShowSubmitDialog(false);
+          onSubmit();
+        }}
+        isSubmitting={isGlobalSubmitting}
+      />
     </div>
   );
-};
+}

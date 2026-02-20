@@ -27,7 +27,8 @@ import { useProctoring } from '@/lib/hooks/mock-drive/use-proctoring';
 import {
   MockDriveModuleAttemptStatus,
   SubmitModuleResponse,
-  ProctoringSettings
+  ProctoringSettings,
+  MachineModuleData
 } from '@/types/mockdrive.types';
 
 interface AttemptContainerProps {
@@ -253,10 +254,8 @@ export const AttemptContainer: FC<AttemptContainerProps> = ({ driveId, driveTitl
 
             {currentModule.moduleType === 'MACHINE_CODING' && (
               <MachineModule
-                driveId={driveId}
-                moduleId={currentModule.moduleId}
-                config={currentModule.config}
-                data={currentModule.data}
+                module={currentModule}
+                data={currentModule.data as MachineModuleData}
                 onSubmit={handleSubmitModule}
                 isSubmitting={submitModuleMutation.isPending}
               />

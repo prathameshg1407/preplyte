@@ -206,8 +206,8 @@ export class AptitudeModuleExecutor extends BaseModuleExecutor {
 
     const { score, percentage } = calculateAptitudeScore(finalData, config);
 
-    const passingPercentage = (config as { passingPercentage?: number }).passingPercentage;
-    const isPassed = passingPercentage !== undefined ? percentage >= passingPercentage : true;
+    const threshold = (config as { passingPercentage?: number; passingScore?: number }).passingPercentage ?? (config as { passingScore?: number }).passingScore;
+    const isPassed = typeof threshold === 'number' ? percentage >= threshold : true;
 
     return {
       data: finalData,
