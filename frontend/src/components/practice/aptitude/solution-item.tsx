@@ -74,14 +74,14 @@ export function SolutionItem({ solution, index }: SolutionItemProps) {
           </div>
 
           {/* Question Number & Preview */}
-          <div className="flex-1 min-w-0">
+          <div className="flex-1 min-w-0 pr-2">
             <div className="flex items-center gap-2">
               <span className="font-semibold">Question {solution.order}</span>
               <Badge variant="outline" className="text-xs font-normal">
                 {typeConfig?.label}
               </Badge>
             </div>
-            <p className="mt-0.5 truncate text-sm text-muted-foreground">
+            <p className="mt-0.5 line-clamp-2 text-sm text-muted-foreground break-words">
               {solution.questionText}
             </p>
           </div>
