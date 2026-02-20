@@ -96,6 +96,10 @@ export function useAuth(options: UseAuthOptions = {}) {
           
           showSuccessToast('Login successful!');
 
+          // Set flags for profile completion check
+          localStorage.setItem('justLoggedIn', 'true');
+          sessionStorage.setItem('checkProfileCompletion', 'true');
+
           // Handle redirect
           const defaultRedirect = getDefaultRedirect(user.role);
           

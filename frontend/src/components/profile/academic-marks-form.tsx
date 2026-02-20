@@ -64,9 +64,12 @@ export function AcademicMarksForm() {
   };
 
   const handleCgpaChange = (index: number, value: string) => {
-    const updated = [...cgpaSemesters];
-    updated[index] = value;
-    setCgpaSemesters(updated);
+    // Allow empty string or valid CGPA (0-10)
+    if (value === '' || (parseFloat(value) >= 0 && parseFloat(value) <= 10)) {
+      const updated = [...cgpaSemesters];
+      updated[index] = value;
+      setCgpaSemesters(updated);
+    }
   };
 
   const handleSave = async () => {
@@ -159,14 +162,25 @@ export function AcademicMarksForm() {
                     max="100"
                     placeholder="Enter percentage"
                     value={marks10}
-                    onChange={(e) => setMarks10(e.target.value)}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      if (value === '' || (parseFloat(value) >= 0 && parseFloat(value) <= 100)) {
+                        setMarks10(value);
+                      }
+                    }}
                     disabled={isUpdating}
-                    className="h-12 text-lg font-semibold pr-12 bg-background"
+                    className={cn(
+                      "h-12 text-lg font-semibold pr-12 bg-background",
+                      marks10 && parseFloat(marks10) > 100 && "border-destructive focus-visible:ring-destructive"
+                    )}
                   />
                   <span className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">
                     %
                   </span>
                 </div>
+                {marks10 && parseFloat(marks10) > 100 && (
+                  <p className="text-xs text-destructive mt-1">Percentage cannot exceed 100%</p>
+                )}
                 {marks10 && !isNaN(parseFloat(marks10)) && (
                   <motion.div
                     initial={{ opacity: 0, y: 5 }}
@@ -212,14 +226,25 @@ export function AcademicMarksForm() {
                     max="100"
                     placeholder="Enter percentage"
                     value={marks12}
-                    onChange={(e) => setMarks12(e.target.value)}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      if (value === '' || (parseFloat(value) >= 0 && parseFloat(value) <= 100)) {
+                        setMarks12(value);
+                      }
+                    }}
                     disabled={isUpdating}
-                    className="h-12 text-lg font-semibold pr-12 bg-background"
+                    className={cn(
+                      "h-12 text-lg font-semibold pr-12 bg-background",
+                      marks12 && parseFloat(marks12) > 100 && "border-destructive focus-visible:ring-destructive"
+                    )}
                   />
                   <span className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">
                     %
                   </span>
                 </div>
+                {marks12 && parseFloat(marks12) > 100 && (
+                  <p className="text-xs text-destructive mt-1">Percentage cannot exceed 100%</p>
+                )}
                 {marks12 && !isNaN(parseFloat(marks12)) && (
                   <motion.div
                     initial={{ opacity: 0, y: 5 }}
@@ -289,7 +314,10 @@ export function AcademicMarksForm() {
                         value={cgpa}
                         onChange={(e) => handleCgpaChange(index, e.target.value)}
                         disabled={isUpdating}
-                        className="h-10 text-center font-semibold text-lg bg-transparent border-0 focus-visible:ring-0 p-0"
+                        className={cn(
+                          "h-10 text-center font-semibold text-lg bg-transparent border-0 focus-visible:ring-0 p-0",
+                          cgpa && parseFloat(cgpa) > 10 && "text-destructive"
+                        )}
                       />
                       <Button
                         variant="ghost"

@@ -2,7 +2,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -37,6 +37,8 @@ import {
   Laptop,
 } from 'lucide-react';
 import { useStudentDashboard } from '@/lib/hooks/use-student-dashboard';
+import { useProfile } from '@/lib/hooks/use-profile';
+import { ProfileCompletionDialog } from '@/components/profile';
 import { LmsEnrollmentStatus, DifficultyLevel } from '@/types/lms.types';
 import type { LmsEnrollmentSummary, LmsRecentActivity, RecommendedCourse, RecentTest } from '@/types/dashboard.types';
 import { formatDistanceToNow } from 'date-fns';
@@ -96,7 +98,35 @@ const practiceTypeConfig = {
 
 export function StudentDashboard() {
   const { data, isLoading, error, refetch } = useStudentDashboard();
+  const { profileCompletion, fetchCompleteProfile } = useProfile();
   const [activeTab, setActiveTab] = useState('overview');
+  const [showProfileDialog, setShowProfileDialog] = useState(false);
+
+  // Check profile completion on mount
+  useEffect(() => {
+    const checkProfile = async () => {
+      // Check if user just logged in (flag set by login)
+      const justLoggedIn = localStorage.getItem('justLoggedIn');
+      
+      if (justLoggedIn === 'true') {
+        await fetchCompleteProfile();
+        // Clear the flag
+        localStorage.removeItem('justLoggedIn');
+      }
+    };
+
+    checkProfile();
+  }, [fetchCompleteProfile]);
+
+  // Show dialog when profile completion is loaded and incomplete
+  useEffect(() => {
+    const justLoggedIn = sessionStorage.getItem('checkProfileCompletion');
+    
+    if (justLoggedIn === 'true' && profileCompletion && !profileCompletion.isComplete) {
+      setShowProfileDialog(true);
+      sessionStorage.removeItem('checkProfileCompletion');
+    }
+  }, [profileCompletion]);
 
   if (isLoading) {
     return <DashboardSkeleton />;
@@ -129,17 +159,25 @@ export function StudentDashboard() {
   const interviewTests = recentTests.filter((t) => t.type === 'INTERVIEW');
 
   return (
-    <div className="container mx-auto px-4 py-6 space-y-6">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Welcome Back! 👋</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Track your progress and continue learning
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" asChild>
+    <>
+      {/* Profile Completion Dialog */}
+      <ProfileCompletionDialog
+        completion={profileCompletion}
+        isOpen={showProfileDialog}
+        onClose={() => setShowProfileDialog(false)}
+      />
+
+      <div className="container mx-auto px-4 py-6 space-y-6">
+        {/* Header */}
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight">Welcome Back! 👋</h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              Track your progress and continue learning
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" asChild>
             <Link href="/lms">
               <BookOpen className="h-4 w-4 mr-2" />
               Browse Courses
@@ -718,7 +756,8 @@ export function StudentDashboard() {
           </Card>
         </TabsContent>
       </Tabs>
-    </div>
+      </div>
+    </>
   );
 }
 
@@ -922,15 +961,18 @@ function CourseProgressCard({
   enrollment: LmsEnrollmentSummary;
   showDetails?: boolean;
 }) {
+  const [imageError, setImageError] = useState(false);
+
   return (
     <Card className="overflow-hidden hover:shadow-md transition-shadow">
       <div className="relative aspect-video bg-muted">
-        {enrollment.courseThumbnail ? (
+        {enrollment.courseThumbnail && !imageError ? (
           <Image
             src={enrollment.courseThumbnail}
             alt={enrollment.courseTitle}
             fill
             className="object-cover"
+            onError={() => setImageError(true)}
           />
         ) : (
           <div className="absolute inset-0 flex items-center justify-center">
@@ -982,15 +1024,18 @@ function CourseProgressCard({
 }
 
 function CompletedCourseCard({ enrollment }: { enrollment: LmsEnrollmentSummary }) {
+  const [imageError, setImageError] = useState(false);
+
   return (
     <Card className="overflow-hidden">
       <div className="relative aspect-video bg-muted">
-        {enrollment.courseThumbnail ? (
+        {enrollment.courseThumbnail && !imageError ? (
           <Image
             src={enrollment.courseThumbnail}
             alt={enrollment.courseTitle}
             fill
             className="object-cover"
+            onError={() => setImageError(true)}
           />
         ) : (
           <div className="absolute inset-0 flex items-center justify-center">
@@ -1047,16 +1092,19 @@ function CompletedCourseCard({ enrollment }: { enrollment: LmsEnrollmentSummary 
 }
 
 function RecommendedCourseCard({ course }: { course: RecommendedCourse }) {
+  const [imageError, setImageError] = useState(false);
+
   return (
     <Link href={`/lms/${course.slug}`}>
       <Card className="overflow-hidden hover:shadow-md transition-shadow h-full">
         <div className="relative aspect-video bg-muted">
-          {course.thumbnailUrl ? (
+          {course.thumbnailUrl && !imageError ? (
             <Image
               src={course.thumbnailUrl}
               alt={course.title}
               fill
               className="object-cover"
+              onError={() => setImageError(true)}
             />
           ) : (
             <div className="absolute inset-0 flex items-center justify-center">
