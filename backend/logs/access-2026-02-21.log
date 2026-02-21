@@ -251,3 +251,85 @@
 {"level":"info","message":"Starting token cleanup job","service":"preplyte-api","timestamp":"2026-02-21 15:25:10"}
 {"count":0,"level":"info","message":"Cleaned up expired tokens","service":"preplyte-api","timestamp":"2026-02-21 15:25:10"}
 {"level":"info","message":"Token cleanup completed","service":"preplyte-api","timestamp":"2026-02-21 15:25:10","tokensRemoved":0}
+{"baseURL":"https://judge0-ce.p.rapidapi.com","level":"info","message":"Judge0 client initialized","service":"preplyte-api","timestamp":"2026-02-21 15:25:16","useRapidAPI":true}
+{"level":"info","message":"[TTS] Using Deepgram for text-to-speech","service":"preplyte-api","timestamp":"2026-02-21 15:25:16"}
+{"keyLength":39,"keyPrefix":"AIzaSyC7yj...","level":"info","message":"Gemini API Key loaded:","service":"preplyte-api","timestamp":"2026-02-21 15:25:16"}
+{"environment":"development","host":"0.0.0.0","level":"info","message":"Starting server...","port":4000,"service":"preplyte-api","timestamp":"2026-02-21 15:25:16"}
+{"level":"info","message":"Checking database connection...","service":"preplyte-api","timestamp":"2026-02-21 15:25:16"}
+{"level":"info","message":"✅ Database connected successfully","service":"preplyte-api","timestamp":"2026-02-21 15:25:16"}
+{"level":"info","message":"[WS Gateway] WebSocket server initialized","path":"/ws/interview/:sessionId","service":"preplyte-api","timestamp":"2026-02-21 15:25:16"}
+{"api":"http://localhost:4000/api","environment":"development","health":"http://localhost:4000/health","host":"0.0.0.0","level":"info","message":"🚀 Server running","port":4000,"service":"preplyte-api","timestamp":"2026-02-21 15:25:16","websocket":"ws://localhost:4000/ws/interview/:sessionId"}
+{"intervalHours":24,"level":"info","message":"Starting token cleanup scheduler","service":"preplyte-api","timestamp":"2026-02-21 15:25:16"}
+{"level":"info","message":"Starting token cleanup job","service":"preplyte-api","timestamp":"2026-02-21 15:25:16"}
+{"count":0,"level":"info","message":"Cleaned up expired tokens","service":"preplyte-api","timestamp":"2026-02-21 15:25:16"}
+{"level":"info","message":"Token cleanup completed","service":"preplyte-api","timestamp":"2026-02-21 15:25:16","tokensRemoved":0}
+{"level":"info","message":"\u001b[0mGET /api/lms/categories \u001b[36m304\u001b[0m 85.539 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-21 15:28:07"}
+{"level":"info","message":"\u001b[0mGET /api/lms/stats \u001b[36m304\u001b[0m 126.504 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-21 15:28:07"}
+{"level":"info","message":"\u001b[0mGET /api/lms/courses?page=1&limit=12&priceRange=all&sortBy=popular&search= \u001b[36m304\u001b[0m 123.045 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-21 15:28:07"}
+{"level":"info","message":"\u001b[0mGET /api/lms/categories \u001b[36m304\u001b[0m 28.065 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-21 15:28:11"}
+{"level":"info","message":"\u001b[0mGET /api/lms/stats \u001b[36m304\u001b[0m 31.548 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-21 15:28:11"}
+{"level":"info","message":"\u001b[0mGET /api/lms/courses?page=1&limit=12&priceRange=all&sortBy=popular&search= \u001b[36m304\u001b[0m 29.646 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-21 15:28:11"}
+{"level":"info","message":"\u001b[0mGET /api/lms/courses?page=1&limit=12&priceRange=all&sortBy=popular \u001b[36m304\u001b[0m 15.098 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-21 15:28:11"}
+{"level":"info","message":"\u001b[0mPOST /api/practice/roadmap/question \u001b[33m401\u001b[0m 39.773 ms - 108\u001b[0m","service":"preplyte-api","timestamp":"2026-02-21 15:28:19"}
+{"level":"info","message":"Token refreshed successfully","service":"preplyte-api","timestamp":"2026-02-21 15:28:19","userId":"cmlq4h9or004p9qehngr7b15o"}
+{"level":"info","message":"\u001b[0mPOST /api/auth/refresh \u001b[32m200\u001b[0m 63.000 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-21 15:28:19"}
+{"level":"info","message":"\u001b[0mPOST /api/practice/roadmap/question \u001b[32m200\u001b[0m 5.724 ms - 126\u001b[0m","service":"preplyte-api","timestamp":"2026-02-21 15:28:19"}
+{"level":"info","message":"\u001b[0mPOST /api/practice/roadmap/question \u001b[32m200\u001b[0m 883.819 ms - 463\u001b[0m","service":"preplyte-api","timestamp":"2026-02-21 15:28:29"}
+{"level":"info","message":"\u001b[0mPOST /api/practice/roadmap/question \u001b[32m200\u001b[0m 491.095 ms - 387\u001b[0m","service":"preplyte-api","timestamp":"2026-02-21 15:28:34"}
+{"level":"info","message":"\u001b[0mPOST /api/practice/roadmap/question \u001b[32m200\u001b[0m 390.615 ms - 430\u001b[0m","service":"preplyte-api","timestamp":"2026-02-21 15:28:37"}
+{"level":"info","message":"\u001b[0mPOST /api/practice/roadmap/question \u001b[32m200\u001b[0m 246.133 ms - 64\u001b[0m","service":"preplyte-api","timestamp":"2026-02-21 15:28:39"}
+{"level":"info","message":"\u001b[0mPOST /api/practice/roadmap/generate \u001b[32m200\u001b[0m 2107.952 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-21 15:28:41"}
+{"level":"info","message":"\u001b[0mPOST /api/practice/roadmap/question \u001b[32m200\u001b[0m 8.123 ms - 126\u001b[0m","service":"preplyte-api","timestamp":"2026-02-21 15:29:23"}
+{"level":"info","message":"\u001b[0mPOST /api/practice/roadmap/question \u001b[32m200\u001b[0m 524.333 ms - 508\u001b[0m","service":"preplyte-api","timestamp":"2026-02-21 15:29:28"}
+{"level":"info","message":"\u001b[0mPOST /api/practice/roadmap/question \u001b[32m200\u001b[0m 400.588 ms - 409\u001b[0m","service":"preplyte-api","timestamp":"2026-02-21 15:29:31"}
+{"level":"info","message":"\u001b[0mPOST /api/practice/roadmap/question \u001b[32m200\u001b[0m 489.447 ms - 403\u001b[0m","service":"preplyte-api","timestamp":"2026-02-21 15:29:33"}
+{"level":"info","message":"\u001b[0mPOST /api/practice/roadmap/question \u001b[32m200\u001b[0m 199.785 ms - 64\u001b[0m","service":"preplyte-api","timestamp":"2026-02-21 15:29:35"}
+{"level":"info","message":"\u001b[0mPOST /api/practice/roadmap/generate \u001b[32m200\u001b[0m 2320.541 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-02-21 15:29:38"}
+{"baseURL":"https://judge0-ce.p.rapidapi.com","level":"info","message":"Judge0 client initialized","service":"preplyte-api","timestamp":"2026-02-21 15:38:40","useRapidAPI":true}
+{"level":"info","message":"[TTS] Using Deepgram for text-to-speech","service":"preplyte-api","timestamp":"2026-02-21 15:38:40"}
+{"keyLength":39,"keyPrefix":"AIzaSyC7yj...","level":"info","message":"Gemini API Key loaded:","service":"preplyte-api","timestamp":"2026-02-21 15:38:41"}
+{"environment":"development","host":"0.0.0.0","level":"info","message":"Starting server...","port":4000,"service":"preplyte-api","timestamp":"2026-02-21 15:38:41"}
+{"level":"info","message":"Checking database connection...","service":"preplyte-api","timestamp":"2026-02-21 15:38:41"}
+{"level":"info","message":"✅ Database connected successfully","service":"preplyte-api","timestamp":"2026-02-21 15:38:41"}
+{"level":"info","message":"[WS Gateway] WebSocket server initialized","path":"/ws/interview/:sessionId","service":"preplyte-api","timestamp":"2026-02-21 15:38:41"}
+{"api":"http://localhost:4000/api","environment":"development","health":"http://localhost:4000/health","host":"0.0.0.0","level":"info","message":"🚀 Server running","port":4000,"service":"preplyte-api","timestamp":"2026-02-21 15:38:41","websocket":"ws://localhost:4000/ws/interview/:sessionId"}
+{"intervalHours":24,"level":"info","message":"Starting token cleanup scheduler","service":"preplyte-api","timestamp":"2026-02-21 15:38:41"}
+{"level":"info","message":"Starting token cleanup job","service":"preplyte-api","timestamp":"2026-02-21 15:38:41"}
+{"count":0,"level":"info","message":"Cleaned up expired tokens","service":"preplyte-api","timestamp":"2026-02-21 15:38:41"}
+{"level":"info","message":"Token cleanup completed","service":"preplyte-api","timestamp":"2026-02-21 15:38:41","tokensRemoved":0}
+{"baseURL":"https://judge0-ce.p.rapidapi.com","level":"info","message":"Judge0 client initialized","service":"preplyte-api","timestamp":"2026-02-21 15:39:17","useRapidAPI":true}
+{"level":"info","message":"[TTS] Using Deepgram for text-to-speech","service":"preplyte-api","timestamp":"2026-02-21 15:39:17"}
+{"keyLength":39,"keyPrefix":"AIzaSyC7yj...","level":"info","message":"Gemini API Key loaded:","service":"preplyte-api","timestamp":"2026-02-21 15:39:17"}
+{"environment":"development","host":"0.0.0.0","level":"info","message":"Starting server...","port":4000,"service":"preplyte-api","timestamp":"2026-02-21 15:39:17"}
+{"level":"info","message":"Checking database connection...","service":"preplyte-api","timestamp":"2026-02-21 15:39:17"}
+{"level":"info","message":"✅ Database connected successfully","service":"preplyte-api","timestamp":"2026-02-21 15:39:17"}
+{"level":"info","message":"[WS Gateway] WebSocket server initialized","path":"/ws/interview/:sessionId","service":"preplyte-api","timestamp":"2026-02-21 15:39:17"}
+{"api":"http://localhost:4000/api","environment":"development","health":"http://localhost:4000/health","host":"0.0.0.0","level":"info","message":"🚀 Server running","port":4000,"service":"preplyte-api","timestamp":"2026-02-21 15:39:17","websocket":"ws://localhost:4000/ws/interview/:sessionId"}
+{"intervalHours":24,"level":"info","message":"Starting token cleanup scheduler","service":"preplyte-api","timestamp":"2026-02-21 15:39:17"}
+{"level":"info","message":"Starting token cleanup job","service":"preplyte-api","timestamp":"2026-02-21 15:39:17"}
+{"count":0,"level":"info","message":"Cleaned up expired tokens","service":"preplyte-api","timestamp":"2026-02-21 15:39:17"}
+{"level":"info","message":"Token cleanup completed","service":"preplyte-api","timestamp":"2026-02-21 15:39:17","tokensRemoved":0}
+{"baseURL":"https://judge0-ce.p.rapidapi.com","level":"info","message":"Judge0 client initialized","service":"preplyte-api","timestamp":"2026-02-21 15:39:58","useRapidAPI":true}
+{"level":"info","message":"[TTS] Using Deepgram for text-to-speech","service":"preplyte-api","timestamp":"2026-02-21 15:39:58"}
+{"keyLength":39,"keyPrefix":"AIzaSyC7yj...","level":"info","message":"Gemini API Key loaded:","service":"preplyte-api","timestamp":"2026-02-21 15:39:58"}
+{"environment":"development","host":"0.0.0.0","level":"info","message":"Starting server...","port":4000,"service":"preplyte-api","timestamp":"2026-02-21 15:39:58"}
+{"level":"info","message":"Checking database connection...","service":"preplyte-api","timestamp":"2026-02-21 15:39:58"}
+{"level":"info","message":"✅ Database connected successfully","service":"preplyte-api","timestamp":"2026-02-21 15:39:58"}
+{"level":"info","message":"[WS Gateway] WebSocket server initialized","path":"/ws/interview/:sessionId","service":"preplyte-api","timestamp":"2026-02-21 15:39:58"}
+{"api":"http://localhost:4000/api","environment":"development","health":"http://localhost:4000/health","host":"0.0.0.0","level":"info","message":"🚀 Server running","port":4000,"service":"preplyte-api","timestamp":"2026-02-21 15:39:58","websocket":"ws://localhost:4000/ws/interview/:sessionId"}
+{"intervalHours":24,"level":"info","message":"Starting token cleanup scheduler","service":"preplyte-api","timestamp":"2026-02-21 15:39:58"}
+{"level":"info","message":"Starting token cleanup job","service":"preplyte-api","timestamp":"2026-02-21 15:39:58"}
+{"count":0,"level":"info","message":"Cleaned up expired tokens","service":"preplyte-api","timestamp":"2026-02-21 15:39:58"}
+{"level":"info","message":"Token cleanup completed","service":"preplyte-api","timestamp":"2026-02-21 15:39:58","tokensRemoved":0}
+{"baseURL":"https://judge0-ce.p.rapidapi.com","level":"info","message":"Judge0 client initialized","service":"preplyte-api","timestamp":"2026-02-21 15:40:22","useRapidAPI":true}
+{"level":"info","message":"[TTS] Using Deepgram for text-to-speech","service":"preplyte-api","timestamp":"2026-02-21 15:40:22"}
+{"keyLength":39,"keyPrefix":"AIzaSyC7yj...","level":"info","message":"Gemini API Key loaded:","service":"preplyte-api","timestamp":"2026-02-21 15:40:22"}
+{"environment":"development","host":"0.0.0.0","level":"info","message":"Starting server...","port":4000,"service":"preplyte-api","timestamp":"2026-02-21 15:40:22"}
+{"level":"info","message":"Checking database connection...","service":"preplyte-api","timestamp":"2026-02-21 15:40:22"}
+{"level":"info","message":"✅ Database connected successfully","service":"preplyte-api","timestamp":"2026-02-21 15:40:23"}
+{"level":"info","message":"[WS Gateway] WebSocket server initialized","path":"/ws/interview/:sessionId","service":"preplyte-api","timestamp":"2026-02-21 15:40:23"}
+{"api":"http://localhost:4000/api","environment":"development","health":"http://localhost:4000/health","host":"0.0.0.0","level":"info","message":"🚀 Server running","port":4000,"service":"preplyte-api","timestamp":"2026-02-21 15:40:23","websocket":"ws://localhost:4000/ws/interview/:sessionId"}
+{"intervalHours":24,"level":"info","message":"Starting token cleanup scheduler","service":"preplyte-api","timestamp":"2026-02-21 15:40:23"}
+{"level":"info","message":"Starting token cleanup job","service":"preplyte-api","timestamp":"2026-02-21 15:40:23"}
+{"count":0,"level":"info","message":"Cleaned up expired tokens","service":"preplyte-api","timestamp":"2026-02-21 15:40:23"}
+{"level":"info","message":"Token cleanup completed","service":"preplyte-api","timestamp":"2026-02-21 15:40:23","tokensRemoved":0}

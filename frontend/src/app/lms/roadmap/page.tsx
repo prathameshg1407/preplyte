@@ -4,59 +4,60 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-    Sparkles,
-    ArrowRight,
-    CheckCircle2,
-    Search,
-    ExternalLink,
-    RefreshCcw,
-    BookOpen,
-    GraduationCap,
-    MapPin,
-    Zap,
-    Send,
-    Loader2,
-    Bot,
-    User
+    Sparkles, ArrowRight, CheckCircle2, Search, ExternalLink,
+    RefreshCcw, BookOpen, GraduationCap, MapPin, Zap, Send,
+    Loader2, Bot, User, Save, LayoutDashboard, Clock
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { roadmapService, RoadmapQuestion, Roadmap, CourseRecommendation, RoadmapMessage } from '@/lib/api/services/roadmap.service';
+import {
+    roadmapService, RoadmapQuestion, Roadmap, CourseRecommendation,
+    RoadmapMessage, StepWithCourses, SavedRoadmapSummary
+} from '@/lib/api/services/roadmap.service';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 export default function RoadmapPage() {
+    const router = useRouter();
     const [step, setStep] = useState<'intro' | 'chat' | 'generating' | 'roadmap'>('intro');
     const [history, setHistory] = useState<RoadmapMessage[]>([]);
     const [currentQuestion, setCurrentQuestion] = useState<RoadmapQuestion | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [roadmap, setRoadmap] = useState<Roadmap | null>(null);
     const [courses, setCourses] = useState<CourseRecommendation[]>([]);
+    const [stepCourses, setStepCourses] = useState<StepWithCourses[]>([]);
     const [inputValue, setInputValue] = useState('');
     const [error, setError] = useState<string | null>(null);
+    const [isSaving, setIsSaving] = useState(false);
+    const [savedRoadmaps, setSavedRoadmaps] = useState<SavedRoadmapSummary[]>([]);
+    const [loadingSaved, setLoadingSaved] = useState(true);
 
     const scrollRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
 
-    // Auto-scroll chat to bottom
+    // Load saved roadmaps count on mount
+    useEffect(() => {
+        roadmapService.listRoadmaps()
+            .then(setSavedRoadmaps)
+            .catch(() => { })
+            .finally(() => setLoadingSaved(false));
+    }, []);
+
     useEffect(() => {
         if (scrollRef.current) {
             scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
         }
     }, [history, isLoading]);
 
-    // Auto-focus input when question changes
     useEffect(() => {
         if (currentQuestion?.inputType === 'text' && inputRef.current) {
             inputRef.current.focus();
         }
     }, [currentQuestion]);
 
-    /**
-     * Start the wizard — fetch the first question from the backend.
-     */
     const startChat = async () => {
         setStep('chat');
         setHistory([]);
@@ -74,16 +75,10 @@ export default function RoadmapPage() {
         }
     };
 
-    /**
-     * Handle when the user clicks one of the option buttons.
-     */
     const handleOptionSelect = async (option: { label: string; value: string }) => {
         await sendUserMessage(option.label);
     };
 
-    /**
-     * Handle when the user submits text input.
-     */
     const handleTextSubmit = async () => {
         if (!inputValue.trim()) return;
         const message = inputValue.trim();
@@ -91,9 +86,6 @@ export default function RoadmapPage() {
         await sendUserMessage(message);
     };
 
-    /**
-     * Core logic: send the user's message, add it to history, then ask AI for next step.
-     */
     const sendUserMessage = async (message: string) => {
         const updatedHistory: RoadmapMessage[] = [
             ...history,
@@ -105,12 +97,9 @@ export default function RoadmapPage() {
 
         try {
             const nextQ = await roadmapService.getNextQuestion(updatedHistory);
-
             if (nextQ.isFinal) {
-                // AI has enough info — generate the roadmap
                 await generateRoadmap(updatedHistory);
             } else {
-                // Show the next question
                 setCurrentQuestion(nextQ);
                 setHistory([...updatedHistory, { role: 'assistant', content: nextQ.question }]);
             }
@@ -122,15 +111,13 @@ export default function RoadmapPage() {
         }
     };
 
-    /**
-     * Generate the final roadmap from the full conversation history.
-     */
     const generateRoadmap = async (conversationHistory: RoadmapMessage[]) => {
         setStep('generating');
         try {
             const result = await roadmapService.generateRoadmap(conversationHistory);
             setRoadmap(result.roadmap);
             setCourses(result.courses);
+            setStepCourses(result.stepCourses || []);
             setStep('roadmap');
         } catch (err) {
             console.error('Failed to generate roadmap', err);
@@ -139,23 +126,38 @@ export default function RoadmapPage() {
         }
     };
 
-    /**
-     * Reset everything and start over.
-     */
+    const handleSaveRoadmap = async () => {
+        if (!roadmap) return;
+        setIsSaving(true);
+        try {
+            const result = await roadmapService.saveRoadmap(roadmap, history);
+            router.push(`/lms/roadmap/${result.id}`);
+        } catch (err) {
+            console.error('Failed to save roadmap', err);
+            setError('Failed to save roadmap.');
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
     const restart = () => {
         setStep('intro');
         setHistory([]);
         setCurrentQuestion(null);
         setRoadmap(null);
         setCourses([]);
+        setStepCourses([]);
         setInputValue('');
         setError(null);
     };
 
-    // ─── RENDER ──────────────────────────────────────────────
+    const getCoursesForStep = (stepId: string): CourseRecommendation[] => {
+        const found = stepCourses.find(sc => sc.stepId === stepId);
+        return found?.courses || [];
+    };
+
     return (
         <div className="relative min-h-[calc(100vh-4rem)] bg-background text-foreground overflow-x-hidden">
-            {/* Background */}
             <div className="absolute inset-0 -z-10 overflow-hidden">
                 <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-primary/5 blur-[120px]" />
                 <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-violet-500/5 blur-[120px]" />
@@ -164,15 +166,9 @@ export default function RoadmapPage() {
             <main className="container mx-auto max-w-5xl px-4 py-12">
                 <AnimatePresence mode="wait">
 
-                    {/* ── INTRO SCREEN ─────────── */}
+                    {/* INTRO */}
                     {step === 'intro' && (
-                        <motion.div
-                            key="intro"
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.95 }}
-                            className="flex flex-col items-center text-center py-20"
-                        >
+                        <motion.div key="intro" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }} className="flex flex-col items-center text-center py-20">
                             <div className="mb-6 inline-flex h-20 w-20 items-center justify-center rounded-2xl bg-primary/10 text-primary">
                                 <MapPin className="h-10 w-10" />
                             </div>
@@ -180,30 +176,28 @@ export default function RoadmapPage() {
                                 Your AI <span className="text-primary">Learning Roadmap</span>
                             </h1>
                             <p className="mb-10 max-w-2xl text-lg text-muted-foreground leading-relaxed">
-                                Tell us your career goal and our AI will ask a few quick questions to understand
-                                exactly what you need. Then we'll generate a personalized, step-by-step learning
-                                path with matching courses from our platform.
+                                Tell us your career goal and our AI will generate a personalized learning path with matching courses, time estimates, and progress tracking.
                             </p>
                             <div className="flex flex-col sm:flex-row gap-4">
                                 <Button size="lg" onClick={startChat} className="gap-2 h-14 px-8 text-lg rounded-full shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-all">
                                     <Sparkles className="h-5 w-5" />
-                                    Get Started
+                                    Create New Roadmap
                                 </Button>
-                                <Button size="lg" variant="outline" asChild className="h-14 px-8 text-lg rounded-full">
-                                    <Link href="/lms">Browse Courses</Link>
-                                </Button>
+                                {!loadingSaved && savedRoadmaps.length > 0 && (
+                                    <Button size="lg" variant="outline" asChild className="h-14 px-8 text-lg rounded-full gap-2">
+                                        <Link href="/lms/roadmap/dashboard">
+                                            <LayoutDashboard className="h-5 w-5" />
+                                            My Roadmaps ({savedRoadmaps.length})
+                                        </Link>
+                                    </Button>
+                                )}
                             </div>
                         </motion.div>
                     )}
 
-                    {/* ── CHAT / WIZARD SCREEN ─────────── */}
+                    {/* CHAT */}
                     {step === 'chat' && (
-                        <motion.div
-                            key="chat"
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="max-w-3xl mx-auto w-full"
-                        >
+                        <motion.div key="chat" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="max-w-3xl mx-auto w-full">
                             <div className="mb-6 flex items-center justify-between">
                                 <div>
                                     <h2 className="text-2xl font-bold flex items-center gap-2">
@@ -213,39 +207,20 @@ export default function RoadmapPage() {
                                     <p className="text-sm text-muted-foreground">Answer a few questions so we can build your path</p>
                                 </div>
                                 <Button variant="ghost" size="sm" onClick={restart} className="text-muted-foreground hover:text-foreground">
-                                    <RefreshCcw className="h-4 w-4 mr-1" />
-                                    Start Over
+                                    <RefreshCcw className="h-4 w-4 mr-1" /> Start Over
                                 </Button>
                             </div>
 
                             <Card className="border-2 border-primary/10 overflow-hidden bg-card/50 backdrop-blur-sm">
-                                {/* Chat Messages */}
-                                <div
-                                    ref={scrollRef}
-                                    className="h-[420px] overflow-y-auto p-6 space-y-4 scroll-smooth"
-                                >
+                                <div ref={scrollRef} className="h-[420px] overflow-y-auto p-6 space-y-4 scroll-smooth">
                                     {history.map((msg, i) => (
-                                        <motion.div
-                                            key={i}
-                                            initial={{ opacity: 0, y: 8 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            transition={{ duration: 0.2 }}
-                                            className={cn(
-                                                "flex gap-3",
-                                                msg.role === 'user' ? "justify-end" : "justify-start"
-                                            )}
-                                        >
+                                        <motion.div key={i} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }} className={cn("flex gap-3", msg.role === 'user' ? "justify-end" : "justify-start")}>
                                             {msg.role === 'assistant' && (
                                                 <div className="flex-shrink-0 h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center mt-1">
                                                     <Bot className="h-4 w-4 text-primary" />
                                                 </div>
                                             )}
-                                            <div className={cn(
-                                                "max-w-[75%] rounded-2xl px-4 py-3 text-sm sm:text-base leading-relaxed",
-                                                msg.role === 'assistant'
-                                                    ? "bg-muted text-foreground rounded-tl-sm border border-border"
-                                                    : "bg-primary text-primary-foreground rounded-tr-sm"
-                                            )}>
+                                            <div className={cn("max-w-[75%] rounded-2xl px-4 py-3 text-sm sm:text-base leading-relaxed", msg.role === 'assistant' ? "bg-muted text-foreground rounded-tl-sm border border-border" : "bg-primary text-primary-foreground rounded-tr-sm")}>
                                                 {msg.content}
                                             </div>
                                             {msg.role === 'user' && (
@@ -255,8 +230,6 @@ export default function RoadmapPage() {
                                             )}
                                         </motion.div>
                                     ))}
-
-                                    {/* Typing indicator */}
                                     {isLoading && (
                                         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex gap-3 justify-start">
                                             <div className="flex-shrink-0 h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center mt-1">
@@ -273,86 +246,34 @@ export default function RoadmapPage() {
                                     )}
                                 </div>
 
-                                {/* Input Area */}
                                 <div className="p-4 border-t border-border bg-muted/30">
-                                    {error && (
-                                        <div className="mb-3 text-sm text-red-500 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
-                                            {error}
-                                        </div>
-                                    )}
-
+                                    {error && <div className="mb-3 text-sm text-red-500 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">{error}</div>}
                                     <AnimatePresence mode="wait">
-                                        {/* Option buttons */}
                                         {!isLoading && currentQuestion?.options && currentQuestion.options.length > 0 && currentQuestion.inputType !== 'text' && (
-                                            <motion.div
-                                                key="options"
-                                                initial={{ opacity: 0, y: 10 }}
-                                                animate={{ opacity: 1, y: 0 }}
-                                                exit={{ opacity: 0, y: -10 }}
-                                                className="space-y-3"
-                                            >
+                                            <motion.div key="options" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-3">
                                                 <div className="grid gap-2 sm:grid-cols-2">
                                                     {currentQuestion.options.map((opt, i) => (
-                                                        <Button
-                                                            key={i}
-                                                            variant="outline"
-                                                            onClick={() => handleOptionSelect(opt)}
-                                                            className="justify-start text-left h-auto py-3 px-4 rounded-xl border-primary/20 hover:border-primary hover:bg-primary/5 group transition-all"
-                                                        >
+                                                        <Button key={i} variant="outline" onClick={() => handleOptionSelect(opt)} className="justify-start text-left h-auto py-3 px-4 rounded-xl border-primary/20 hover:border-primary hover:bg-primary/5 group transition-all">
                                                             <div className="flex flex-col items-start gap-0.5">
                                                                 <span className="font-semibold text-sm">{opt.label}</span>
-                                                                {opt.description && (
-                                                                    <span className="text-xs text-muted-foreground group-hover:text-primary/70">{opt.description}</span>
-                                                                )}
+                                                                {opt.description && <span className="text-xs text-muted-foreground group-hover:text-primary/70">{opt.description}</span>}
                                                             </div>
                                                         </Button>
                                                     ))}
                                                 </div>
-                                                {/* Always show text input below options so user can type custom answer */}
                                                 <div className="flex gap-2 pt-1">
-                                                    <Input
-                                                        ref={inputRef}
-                                                        placeholder="Or type your own answer..."
-                                                        value={inputValue}
-                                                        onChange={(e) => setInputValue(e.target.value)}
-                                                        onKeyDown={(e) => e.key === 'Enter' && handleTextSubmit()}
-                                                        className="rounded-xl border-border focus-visible:ring-primary h-10 text-sm"
-                                                    />
-                                                    <Button
-                                                        onClick={handleTextSubmit}
-                                                        size="icon"
-                                                        className="rounded-xl h-10 w-10 shrink-0"
-                                                        disabled={!inputValue.trim()}
-                                                    >
+                                                    <Input ref={inputRef} placeholder="Or type your own answer..." value={inputValue} onChange={(e) => setInputValue(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleTextSubmit()} className="rounded-xl border-border focus-visible:ring-primary h-10 text-sm" />
+                                                    <Button onClick={handleTextSubmit} size="icon" className="rounded-xl h-10 w-10 shrink-0" disabled={!inputValue.trim()}>
                                                         <Send className="h-4 w-4" />
                                                     </Button>
                                                 </div>
                                             </motion.div>
                                         )}
-
-                                        {/* Text input only */}
                                         {!isLoading && currentQuestion?.inputType === 'text' && (
-                                            <motion.div
-                                                key="text-input"
-                                                initial={{ opacity: 0, y: 10 }}
-                                                animate={{ opacity: 1, y: 0 }}
-                                                className="flex gap-2"
-                                            >
-                                                <Input
-                                                    ref={inputRef}
-                                                    placeholder="Type your answer here..."
-                                                    value={inputValue}
-                                                    onChange={(e) => setInputValue(e.target.value)}
-                                                    onKeyDown={(e) => e.key === 'Enter' && handleTextSubmit()}
-                                                    className="rounded-xl border-primary/20 focus-visible:ring-primary h-12"
-                                                />
-                                                <Button
-                                                    onClick={handleTextSubmit}
-                                                    className="rounded-xl h-12 px-5 gap-2"
-                                                    disabled={!inputValue.trim()}
-                                                >
-                                                    <Send className="h-4 w-4" />
-                                                    Send
+                                            <motion.div key="text-input" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex gap-2">
+                                                <Input ref={inputRef} placeholder="Type your answer here..." value={inputValue} onChange={(e) => setInputValue(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleTextSubmit()} className="rounded-xl border-primary/20 focus-visible:ring-primary h-12" />
+                                                <Button onClick={handleTextSubmit} className="rounded-xl h-12 px-5 gap-2" disabled={!inputValue.trim()}>
+                                                    <Send className="h-4 w-4" /> Send
                                                 </Button>
                                             </motion.div>
                                         )}
@@ -362,14 +283,9 @@ export default function RoadmapPage() {
                         </motion.div>
                     )}
 
-                    {/* ── GENERATING SCREEN ─────────── */}
+                    {/* GENERATING */}
                     {step === 'generating' && (
-                        <motion.div
-                            key="generating"
-                            initial={{ opacity: 0, scale: 0.95 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            className="flex flex-col items-center text-center py-32"
-                        >
+                        <motion.div key="generating" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-col items-center text-center py-32">
                             <div className="relative mb-8">
                                 <div className="h-20 w-20 rounded-2xl bg-primary/10 flex items-center justify-center">
                                     <Loader2 className="h-10 w-10 text-primary animate-spin" />
@@ -377,73 +293,64 @@ export default function RoadmapPage() {
                                 <div className="absolute -inset-4 bg-primary/10 blur-2xl rounded-full -z-10" />
                             </div>
                             <h2 className="text-2xl font-bold mb-2">Building Your Roadmap...</h2>
-                            <p className="text-muted-foreground max-w-md">
-                                Our AI is analyzing your goals and creating a personalized learning path with matching courses.
-                            </p>
+                            <p className="text-muted-foreground max-w-md">Our AI is analyzing your goals and creating a personalized learning path.</p>
                         </motion.div>
                     )}
 
-                    {/* ── ROADMAP RESULT SCREEN ─────────── */}
+                    {/* ROADMAP RESULT */}
                     {step === 'roadmap' && roadmap && (
-                        <motion.div
-                            key="roadmap"
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            className="space-y-12"
-                        >
+                        <motion.div key="roadmap" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-10">
                             {/* Header */}
                             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                                 <div>
                                     <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-green-500/10 text-green-600 dark:text-green-400 text-sm font-medium mb-4">
-                                        <CheckCircle2 className="h-4 w-4" />
-                                        Roadmap Generated
+                                        <CheckCircle2 className="h-4 w-4" /> Roadmap Generated
                                     </div>
                                     <h1 className="text-3xl md:text-5xl font-bold">{roadmap.title}</h1>
                                     <p className="text-lg text-muted-foreground mt-2 max-w-2xl">{roadmap.description}</p>
+                                    {roadmap.totalDuration && (
+                                        <div className="mt-3 inline-flex items-center gap-2 text-sm text-muted-foreground bg-muted px-3 py-1.5 rounded-lg">
+                                            <Clock className="h-4 w-4" />
+                                            Estimated: {roadmap.totalDuration}
+                                        </div>
+                                    )}
                                 </div>
                                 <div className="flex gap-2 flex-shrink-0">
                                     <Button variant="outline" onClick={restart} className="gap-2 rounded-xl">
-                                        <RefreshCcw className="h-4 w-4" />
-                                        New Roadmap
+                                        <RefreshCcw className="h-4 w-4" /> New Roadmap
                                     </Button>
-                                    <Button asChild className="gap-2 rounded-xl">
-                                        <Link href="/lms">
-                                            <BookOpen className="h-4 w-4" />
-                                            Explore Courses
-                                        </Link>
+                                    <Button onClick={handleSaveRoadmap} disabled={isSaving} className="gap-2 rounded-xl shadow-lg shadow-primary/20">
+                                        {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                                        {isSaving ? 'Saving...' : 'Save Roadmap'}
                                     </Button>
                                 </div>
                             </div>
 
-                            {/* Main Grid */}
-                            <div className="grid lg:grid-cols-3 gap-8">
-                                {/* Timeline */}
-                                <div className="lg:col-span-2">
-                                    <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
-                                        <MapPin className="h-5 w-5 text-primary" />
-                                        Learning Path
-                                    </h2>
-                                    <div className="relative pl-8 space-y-10">
-                                        {/* Vertical Line */}
-                                        <div className="absolute left-[11px] top-2 bottom-2 w-0.5 bg-gradient-to-b from-primary via-primary/50 to-muted-foreground/20" />
+                            {error && <div className="text-sm text-red-500 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">{error}</div>}
 
-                                        {roadmap.steps.map((s, idx) => (
-                                            <motion.div
-                                                key={s.id}
-                                                initial={{ opacity: 0, x: -20 }}
-                                                animate={{ opacity: 1, x: 0 }}
-                                                transition={{ delay: idx * 0.08 }}
-                                                className="relative"
-                                            >
-                                                {/* Dot */}
+                            {/* Steps with inline courses */}
+                            <div className="space-y-8">
+                                <h2 className="text-xl font-bold flex items-center gap-2">
+                                    <MapPin className="h-5 w-5 text-primary" /> Learning Path
+                                </h2>
+                                <div className="relative pl-8 space-y-10">
+                                    <div className="absolute left-[11px] top-2 bottom-2 w-0.5 bg-gradient-to-b from-primary via-primary/50 to-muted-foreground/20" />
+                                    {roadmap.steps.map((s, idx) => {
+                                        const matchedCourses = getCoursesForStep(s.id);
+                                        return (
+                                            <motion.div key={s.id} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: idx * 0.08 }} className="relative">
                                                 <div className="absolute -left-[30px] top-1 flex h-6 w-6 items-center justify-center rounded-full bg-background border-2 border-primary z-10 shadow-sm">
                                                     <span className="text-[10px] font-bold text-primary">{idx + 1}</span>
                                                 </div>
-
                                                 <Card className="border-border/50 hover:border-primary/20 transition-colors bg-card/30 backdrop-blur-sm">
                                                     <CardHeader className="pb-2">
-                                                        <div className="flex items-center gap-2 mb-1">
+                                                        <div className="flex items-center gap-2 mb-1 flex-wrap">
                                                             <Badge variant="secondary" className="bg-primary/5 text-primary text-xs">Stage {idx + 1}</Badge>
+                                                            {s.duration && (
+                                                                <Badge variant="outline" className="text-xs gap-1">
+                                                                    <Clock className="h-3 w-3" /> {s.duration}
+                                                                </Badge>
+                                                            )}
                                                         </div>
                                                         <CardTitle className="text-lg">{s.title}</CardTitle>
                                                     </CardHeader>
@@ -451,120 +358,62 @@ export default function RoadmapPage() {
                                                         <CardDescription className="text-sm leading-relaxed">{s.description}</CardDescription>
                                                         <div className="flex flex-wrap gap-1.5">
                                                             {s.skills.map(skill => (
-                                                                <Badge key={skill} variant="outline" className="bg-muted/50 border-border text-xs">
-                                                                    {skill}
-                                                                </Badge>
+                                                                <Badge key={skill} variant="outline" className="bg-muted/50 border-border text-xs">{skill}</Badge>
                                                             ))}
                                                         </div>
+                                                        {/* Inline courses */}
+                                                        {matchedCourses.length > 0 && (
+                                                            <div className="pt-3 border-t border-border/50">
+                                                                <p className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1">
+                                                                    <Zap className="h-3 w-3" /> Recommended Courses
+                                                                </p>
+                                                                <div className="grid gap-2 sm:grid-cols-2">
+                                                                    {matchedCourses.slice(0, 4).map(course => (
+                                                                        <a
+                                                                            key={course.id}
+                                                                            href={course.source === 'platform' ? `/lms/${course.slug}` : course.slug}
+                                                                            target={course.source === 'external' ? '_blank' : undefined}
+                                                                            rel={course.source === 'external' ? 'noopener noreferrer' : undefined}
+                                                                            className="flex items-center gap-2 p-2 rounded-lg border border-border/50 hover:border-primary/30 hover:bg-primary/5 transition-all group text-sm"
+                                                                        >
+                                                                            <div className="h-8 w-8 rounded-md bg-muted flex items-center justify-center flex-shrink-0">
+                                                                                {course.source === 'platform' ? <BookOpen className="h-4 w-4 text-primary" /> : <ExternalLink className="h-4 w-4 text-red-500" />}
+                                                                            </div>
+                                                                            <div className="min-w-0 flex-1">
+                                                                                <p className="font-medium text-xs truncate group-hover:text-primary">{course.title}</p>
+                                                                                <p className="text-[10px] text-muted-foreground">
+                                                                                    {course.source === 'platform' ? 'Our Platform' : 'YouTube'}
+                                                                                </p>
+                                                                            </div>
+                                                                        </a>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        )}
                                                     </CardContent>
                                                 </Card>
                                             </motion.div>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                {/* Sidebar — Matched Courses */}
-                                <div className="space-y-6">
-                                    <div className="sticky top-24">
-                                        <div className="flex items-center gap-2 mb-6">
-                                            <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                                                <Zap className="h-5 w-5 text-primary" />
-                                            </div>
-                                            <h3 className="text-xl font-bold">Suggested Courses</h3>
-                                        </div>
-
-                                        <div className="space-y-4">
-                                            {courses.length > 0 ? (
-                                                courses.map((course, idx) => (
-                                                    <motion.div
-                                                        key={course.id}
-                                                        initial={{ opacity: 0, y: 20 }}
-                                                        animate={{ opacity: 1, y: 0 }}
-                                                        transition={{ delay: 0.3 + idx * 0.08 }}
-                                                    >
-                                                        <Card className="overflow-hidden border-border/50 hover:border-primary/30 transition-all group">
-                                                            <div className="aspect-video relative overflow-hidden bg-muted">
-                                                                {course.thumbnailUrl ? (
-                                                                    <img
-                                                                        src={course.thumbnailUrl}
-                                                                        alt={course.title}
-                                                                        className="object-cover w-full h-full transition-transform group-hover:scale-105"
-                                                                    />
-                                                                ) : (
-                                                                    <div className="flex items-center justify-center h-full text-muted-foreground/20">
-                                                                        <GraduationCap size={48} />
-                                                                    </div>
-                                                                )}
-                                                                <div className="absolute top-2 right-2">
-                                                                    <Badge className={cn(
-                                                                        "text-xs",
-                                                                        course.source === 'platform' ? "bg-primary" : "bg-red-500"
-                                                                    )}>
-                                                                        {course.source === 'platform' ? 'Our Platform' : 'YouTube'}
-                                                                    </Badge>
-                                                                </div>
-                                                            </div>
-                                                            <CardHeader className="p-4 pb-2">
-                                                                <CardTitle className="text-sm line-clamp-2">{course.title}</CardTitle>
-                                                            </CardHeader>
-                                                            <CardContent className="p-4 pt-0">
-                                                                <p className="text-xs text-muted-foreground line-clamp-2">{course.shortDescription}</p>
-                                                            </CardContent>
-                                                            <CardFooter className="p-4 pt-0">
-                                                                <Button
-                                                                    asChild
-                                                                    size="sm"
-                                                                    className="w-full gap-2 rounded-lg"
-                                                                    variant={course.source === 'platform' ? 'default' : 'outline'}
-                                                                >
-                                                                    <a
-                                                                        href={course.source === 'platform' ? `/lms/${course.slug}` : course.slug}
-                                                                        target={course.source === 'external' ? '_blank' : undefined}
-                                                                        rel={course.source === 'external' ? 'noopener noreferrer' : undefined}
-                                                                    >
-                                                                        {course.source === 'platform' ? 'Go to Course' : 'View on YouTube'}
-                                                                        <ExternalLink className="h-3 w-3" />
-                                                                    </a>
-                                                                </Button>
-                                                            </CardFooter>
-                                                        </Card>
-                                                    </motion.div>
-                                                ))
-                                            ) : (
-                                                <div className="text-center py-10 px-4 rounded-2xl border-2 border-dashed border-border bg-muted/20">
-                                                    <Search className="h-8 w-8 mx-auto text-muted-foreground mb-3" />
-                                                    <p className="text-muted-foreground text-sm mb-3">No matching courses found on our platform yet.</p>
-                                                    <Button
-                                                        variant="outline"
-                                                        size="sm"
-                                                        className="w-full"
-                                                        asChild
-                                                    >
-                                                        <a href={`https://www.google.com/search?q=${encodeURIComponent(roadmap.title + ' tutorials')}`} target="_blank" rel="noopener noreferrer">
-                                                            Search resources online
-                                                            <ExternalLink className="h-3 w-3 ml-1" />
-                                                        </a>
-                                                    </Button>
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        {/* Tip card */}
-                                        <Card className="mt-6 bg-primary/5 border-primary/20">
-                                            <CardContent className="p-4 space-y-2">
-                                                <div className="flex items-center gap-2 text-primary font-semibold text-sm">
-                                                    <Sparkles className="h-4 w-4" />
-                                                    Pro Tip
-                                                </div>
-                                                <p className="text-xs leading-relaxed text-muted-foreground">
-                                                    Follow the stages in order — each one builds on the previous.
-                                                    Start with the fundamentals before moving to advanced topics.
-                                                </p>
-                                            </CardContent>
-                                        </Card>
-                                    </div>
+                                        );
+                                    })}
                                 </div>
                             </div>
+
+                            {/* Save CTA at bottom */}
+                            <Card className="bg-primary/5 border-primary/20">
+                                <CardContent className="p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+                                    <div className="flex items-center gap-3">
+                                        <Sparkles className="h-6 w-6 text-primary" />
+                                        <div>
+                                            <p className="font-semibold">Save this roadmap to track your progress</p>
+                                            <p className="text-sm text-muted-foreground">Mark steps complete, share with others, and stay on track.</p>
+                                        </div>
+                                    </div>
+                                    <Button onClick={handleSaveRoadmap} disabled={isSaving} className="gap-2 rounded-xl shrink-0">
+                                        {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                                        {isSaving ? 'Saving...' : 'Save & Track Progress'}
+                                    </Button>
+                                </CardContent>
+                            </Card>
                         </motion.div>
                     )}
                 </AnimatePresence>

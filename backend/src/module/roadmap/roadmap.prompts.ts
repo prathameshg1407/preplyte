@@ -47,6 +47,7 @@ If the student has answered enough questions and you have a clear picture, respo
 export const ROADMAP_GENERATE_SYSTEM_PROMPT = `You are an expert career counselor and education architect.
 Your job is to generate a detailed, step-by-step learning roadmap based on a student's conversation.
 The roadmap should be practical, well-ordered, and include specific skills/technologies to learn at each stage.
+Include a realistic time estimate for each step and for the total roadmap.
 ALWAYS respond in valid JSON format.`;
 
 export const buildGeneratePrompt = (history: { role: string; content: string }[]) => {
@@ -59,22 +60,27 @@ Create a roadmap that covers all the technologies and skills needed for their go
 
 The "skills" array for each step should contain specific technology/skill keywords (e.g., "JavaScript", "React", "Node.js", "Python", "SQL", "MongoDB", "CSS", "HTML", "Docker", "Git") — these will be used to search for matching courses in our database, so use common, recognizable names.
 
+Each step must include a "duration" field with a realistic time estimate (e.g., "1-2 weeks", "3-4 weeks").
+
 Respond in this exact JSON format:
 {
   "title": "Roadmap Title (e.g., Full Stack Web Developer Roadmap)",
   "description": "A 1-2 sentence overview of what this roadmap covers",
+  "totalDuration": "12-16 weeks",
   "steps": [
     {
       "id": "step-1",
       "title": "Step Title (e.g., Web Fundamentals)",
       "description": "What to learn and why it matters (2-3 sentences)",
-      "skills": ["HTML", "CSS", "JavaScript"]
+      "skills": ["HTML", "CSS", "JavaScript"],
+      "duration": "2-3 weeks"
     },
     {
       "id": "step-2",
       "title": "Next Step Title",
       "description": "Description of this step",
-      "skills": ["React", "TypeScript"]
+      "skills": ["React", "TypeScript"],
+      "duration": "3-4 weeks"
     }
   ]
 }

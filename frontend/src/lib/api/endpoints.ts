@@ -104,6 +104,21 @@ export const API_ENDPOINTS = {
   },
 
   // ============================================
+  // Roadmap
+  // ============================================
+  ROADMAP: {
+    NEXT_QUESTION: '/api/practice/roadmap/question',
+    GENERATE: '/api/practice/roadmap/generate',
+    SAVE: '/api/practice/roadmap/save',
+    LIST: '/api/practice/roadmap/list',
+    GET: (id: string) => `/api/practice/roadmap/${id}` as const,
+    DELETE: (id: string) => `/api/practice/roadmap/${id}` as const,
+    UPDATE_STEP: (roadmapId: string, stepId: string) => `/api/practice/roadmap/${roadmapId}/steps/${stepId}` as const,
+    SHARE: (id: string) => `/api/practice/roadmap/${id}/share` as const,
+    SHARED: (token: string) => `/api/practice/roadmap/shared/${token}` as const,
+  },
+
+  // ============================================
   // Platform Admin
   // ============================================
   ADMIN: {
@@ -131,13 +146,6 @@ export const API_ENDPOINTS = {
     },
   },
 
-  // ============================================
-  // Roadmap
-  // ============================================
-  ROADMAP: {
-    NEXT_QUESTION: '/api/practice/roadmap/question',
-    GENERATE: '/api/practice/roadmap/generate',
-  },
 
   // ============================================
   // Institute Admin - Mock Drive Management

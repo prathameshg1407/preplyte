@@ -2,6 +2,7 @@
 
 import { prisma } from '../../lib/db';
 import { GroqApiManager } from '../../utils/groq-manager';
+import { randomBytes } from 'crypto';
 import {
     ROADMAP_QUESTION_SYSTEM_PROMPT,
     ROADMAP_GENERATE_SYSTEM_PROMPT,
@@ -11,9 +12,13 @@ import {
 import {
     RoadmapQuestion,
     Roadmap,
-    CourseRecommendation
+    CourseRecommendation,
+    StepWithCourses,
+    SavedRoadmapSummary,
+    SavedRoadmapDetail,
+    RoadmapMessage
 } from './roadmap.types';
-import { LmsCourseStatus } from '@prisma/client';
+import { LmsCourseStatus, RoadmapStepStatus } from '@prisma/client';
 
 class RoadmapService {
     private groq: GroqApiManager;
@@ -25,13 +30,11 @@ class RoadmapService {
         this.groq = new GroqApiManager(apiKeys);
     }
 
-    /**
-     * Get the next question for the roadmap wizard.
-     * If history is empty, return the first question (text input for career goal).
-     * Otherwise, send the history to the AI to get the next clarifying question.
-     */
+    // ──────────────────────────────────────────────
+    // AI — Questions & Generation
+    // ──────────────────────────────────────────────
+
     async getNextQuestion(history: { role: string; content: string }[]): Promise<RoadmapQuestion> {
-        // First question: always ask for the user's goal via text input
         if (!history || history.length === 0) {
             return {
                 question: "What's your career goal? Tell us what role or field you want to prepare for.",
@@ -40,7 +43,6 @@ class RoadmapService {
             };
         }
 
-        // Ask the AI for the next clarifying question
         const prompt = buildQuestionPrompt(history);
         return this.groq.generateJson<RoadmapQuestion>(prompt, {
             systemPrompt: ROADMAP_QUESTION_SYSTEM_PROMPT,
@@ -48,10 +50,6 @@ class RoadmapService {
         });
     }
 
-    /**
-     * Generate the final roadmap from the full conversation history.
-     * The AI will analyze the entire conversation and produce a structured roadmap.
-     */
     async generateRoadmap(history: { role: string; content: string }[]): Promise<Roadmap> {
         const prompt = buildGeneratePrompt(history);
         return this.groq.generateJson<Roadmap>(prompt, {
@@ -60,11 +58,10 @@ class RoadmapService {
         });
     }
 
-    /**
-     * Search platform courses by skill keywords.
-     * For each skill, search the LMS database for matching published courses.
-     * If no match is found in the DB, provide a YouTube search link as fallback.
-     */
+    // ──────────────────────────────────────────────
+    // Course Search
+    // ──────────────────────────────────────────────
+
     async searchCourses(skills: string[]): Promise<CourseRecommendation[]> {
         const recommendations: CourseRecommendation[] = [];
 
@@ -109,8 +106,204 @@ class RoadmapService {
             }
         }
 
-        // Deduplicate by slug
         return Array.from(new Map(recommendations.map(item => [item.slug, item])).values());
+    }
+
+    /**
+     * Search courses grouped by step — returns per-step matches.
+     */
+    async searchCoursesPerStep(steps: { id: string; skills: string[] }[]): Promise<StepWithCourses[]> {
+        const result: StepWithCourses[] = [];
+
+        for (const step of steps) {
+            const courses = await this.searchCourses(step.skills);
+            result.push({ stepId: step.id, courses });
+        }
+
+        return result;
+    }
+
+    // ──────────────────────────────────────────────
+    // CRUD — Save / List / Get / Delete
+    // ──────────────────────────────────────────────
+
+    async saveRoadmap(
+        userId: string,
+        roadmap: Roadmap,
+        conversationHistory: RoadmapMessage[]
+    ): Promise<{ id: string }> {
+        const saved = await prisma.userRoadmap.create({
+            data: {
+                userId,
+                title: roadmap.title,
+                description: roadmap.description,
+                totalDuration: roadmap.totalDuration || null,
+                conversationHistory: conversationHistory as any,
+                steps: {
+                    create: roadmap.steps.map((step, idx) => ({
+                        stepOrder: idx + 1,
+                        title: step.title,
+                        description: step.description,
+                        skills: step.skills,
+                        duration: step.duration || null,
+                    }))
+                }
+            }
+        });
+        return { id: saved.id };
+    }
+
+    async getUserRoadmaps(userId: string): Promise<SavedRoadmapSummary[]> {
+        const roadmaps = await prisma.userRoadmap.findMany({
+            where: { userId },
+            include: {
+                steps: {
+                    select: { status: true }
+                }
+            },
+            orderBy: { createdAt: 'desc' }
+        });
+
+        return roadmaps.map(r => {
+            const totalSteps = r.steps.length;
+            const completedSteps = r.steps.filter(s => s.status === RoadmapStepStatus.COMPLETED).length;
+            const progress = totalSteps > 0 ? Math.round((completedSteps / totalSteps) * 100) : 0;
+
+            return {
+                id: r.id,
+                title: r.title,
+                description: r.description,
+                totalDuration: r.totalDuration,
+                progress,
+                totalSteps,
+                completedSteps,
+                createdAt: r.createdAt.toISOString(),
+            };
+        });
+    }
+
+    async getRoadmapById(userId: string, roadmapId: string): Promise<SavedRoadmapDetail | null> {
+        const r = await prisma.userRoadmap.findFirst({
+            where: { id: roadmapId, userId },
+            include: {
+                steps: { orderBy: { stepOrder: 'asc' } }
+            }
+        });
+
+        if (!r) return null;
+
+        return {
+            id: r.id,
+            title: r.title,
+            description: r.description,
+            totalDuration: r.totalDuration,
+            shareToken: r.shareToken,
+            conversationHistory: r.conversationHistory as RoadmapMessage[],
+            steps: r.steps.map(s => ({
+                id: s.id,
+                stepOrder: s.stepOrder,
+                title: s.title,
+                description: s.description,
+                skills: s.skills,
+                duration: s.duration,
+                status: s.status,
+                completedAt: s.completedAt?.toISOString() || null,
+            })),
+            createdAt: r.createdAt.toISOString(),
+            updatedAt: r.updatedAt.toISOString(),
+        };
+    }
+
+    async updateStepStatus(
+        userId: string,
+        roadmapId: string,
+        stepId: string,
+        status: 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED'
+    ): Promise<boolean> {
+        // Verify ownership
+        const roadmap = await prisma.userRoadmap.findFirst({
+            where: { id: roadmapId, userId },
+            select: { id: true }
+        });
+        if (!roadmap) return false;
+
+        await prisma.userRoadmapStep.update({
+            where: { id: stepId },
+            data: {
+                status: status as RoadmapStepStatus,
+                completedAt: status === 'COMPLETED' ? new Date() : null,
+            }
+        });
+
+        return true;
+    }
+
+    async deleteRoadmap(userId: string, roadmapId: string): Promise<boolean> {
+        const roadmap = await prisma.userRoadmap.findFirst({
+            where: { id: roadmapId, userId },
+            select: { id: true }
+        });
+        if (!roadmap) return false;
+
+        await prisma.userRoadmap.delete({ where: { id: roadmapId } });
+        return true;
+    }
+
+    // ──────────────────────────────────────────────
+    // Sharing
+    // ──────────────────────────────────────────────
+
+    async generateShareToken(userId: string, roadmapId: string): Promise<string | null> {
+        const roadmap = await prisma.userRoadmap.findFirst({
+            where: { id: roadmapId, userId },
+            select: { id: true, shareToken: true }
+        });
+        if (!roadmap) return null;
+
+        // Reuse existing token if already shared
+        if (roadmap.shareToken) return roadmap.shareToken;
+
+        const token = randomBytes(16).toString('hex');
+        await prisma.userRoadmap.update({
+            where: { id: roadmapId },
+            data: { shareToken: token }
+        });
+
+        return token;
+    }
+
+    async getSharedRoadmap(token: string): Promise<(SavedRoadmapDetail & { userName?: string }) | null> {
+        const r = await prisma.userRoadmap.findFirst({
+            where: { shareToken: token },
+            include: {
+                steps: { orderBy: { stepOrder: 'asc' } },
+                user: { select: { name: true } }
+            }
+        });
+
+        if (!r) return null;
+
+        return {
+            id: r.id,
+            title: r.title,
+            description: r.description,
+            totalDuration: r.totalDuration,
+            shareToken: r.shareToken,
+            conversationHistory: [],  // Don't expose conversation publicly
+            steps: r.steps.map(s => ({
+                id: s.id,
+                stepOrder: s.stepOrder,
+                title: s.title,
+                description: s.description,
+                skills: s.skills,
+                duration: s.duration,
+                status: s.status,
+                completedAt: s.completedAt?.toISOString() || null,
+            })),
+            createdAt: r.createdAt.toISOString(),
+            updatedAt: r.updatedAt.toISOString(),
+            userName: r.user?.name || undefined,
+        };
     }
 }
 
