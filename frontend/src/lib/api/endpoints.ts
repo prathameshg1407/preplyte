@@ -132,6 +132,14 @@ export const API_ENDPOINTS = {
   },
 
   // ============================================
+  // Roadmap
+  // ============================================
+  ROADMAP: {
+    NEXT_QUESTION: '/api/practice/roadmap/question',
+    GENERATE: '/api/practice/roadmap/generate',
+  },
+
+  // ============================================
   // Institute Admin - Mock Drive Management
   // ============================================
   INSTITUTE: {
@@ -251,7 +259,7 @@ export const API_ENDPOINTS = {
     LEADERBOARD: (id: string) => `/api/mock-drives/${id}/leaderboard` as const,
     MY_RANK: (id: string) => `/api/mock-drives/${id}/leaderboard/my-rank` as const,
   },
-  
+
   //Leaderboard
   LEADERBOARD: {
     CONFIG: '/api/leaderboard/config',
@@ -357,7 +365,7 @@ export const EndpointBuilders = {
     results: (id: string) => buildUrl(API_ENDPOINTS.INSTITUTE.MOCK_DRIVE_RESULTS(id)),
     leaderboard: (id: string) => buildUrl(API_ENDPOINTS.INSTITUTE.MOCK_DRIVE_LEADERBOARD(id)),
   },
-  
+
 
   /**
    * Student Mock Drive Endpoints

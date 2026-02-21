@@ -19,6 +19,8 @@ import {
   TrendingUp,
   Zap,
   Target,
+  ArrowRight,
+  MapPin,
 } from 'lucide-react';
 import { CourseGrid } from '@/components/lms/course-grid';
 import { CategoryFilter } from '@/components/lms/category-filters';
@@ -78,69 +80,113 @@ export default function LMSPage() {
   ];
 
   return (
-    <div className="container mx-auto px-4 py-6 space-y-8">
-      {/* Header */}
-      <div className="text-center space-y-4">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="space-y-2"
-        >
-          <Badge variant="secondary" className="gap-2">
-            <Zap className="h-3 w-3" />
-            Learning Management System
-          </Badge>
-          <h1 className="text-3xl font-bold tracking-tight">
-            Advance Your Career with Expert-Led Courses
-          </h1>
-          <p className="text-muted-foreground max-w-2xl mx-auto">
-            Learn from industry experts, build real projects, and get job-ready with our
-            comprehensive courses designed for placement success.
-          </p>
-        </motion.div>
+    <div className="container mx-auto px-4 py-6 space-y-8 pb-20">
+      {/* Hero Section */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary/10 via-primary/5 to-background border border-primary/10 p-8 md:p-12 mb-8">
+        <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
+          <div className="flex-1 space-y-4 text-center md:text-left">
+            <Badge variant="secondary" className="gap-2 px-3 py-1">
+              <Zap className="h-3 w-3 text-primary fill-primary" />
+              AI-Powered Learning
+            </Badge>
+            <h1 className="text-3xl md:text-5xl font-bold tracking-tight">
+              Advance Your Career with <span className="text-primary">Expert-Led</span> Courses
+            </h1>
+            <p className="text-muted-foreground text-lg max-w-2xl">
+              Learn from industry experts, build real projects, and get job-ready with our
+              comprehensive curriculum designed for placement success.
+            </p>
+            <div className="flex flex-wrap justify-center md:justify-start gap-4 pt-2">
+              <Button size="lg" asChild className="rounded-full px-8 h-12">
+                <Link href="/lms" className="gap-2">
+                  Browse Courses
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </Button>
+              <Button size="lg" variant="outline" asChild className="rounded-full px-8 h-12 border-primary/20 hover:bg-primary/5">
+                <Link href="/lms/roadmap" className="gap-2">
+                  <MapPin className="h-4 w-4 text-primary" />
+                  Your AI Roadmap
+                </Link>
+              </Button>
+            </div>
+          </div>
 
-        {/* Stats */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8"
-        >
-          {statsItems.map((stat) => (
-            <Card key={stat.title} className="text-center">
-              <CardContent className="pt-4">
-                {statsLoading ? (
-                  <>
-                    <Skeleton className="h-8 w-8 rounded-lg mx-auto mb-2" />
-                    <Skeleton className="h-8 w-16 mx-auto mb-1" />
-                    <Skeleton className="h-3 w-24 mx-auto" />
-                  </>
-                ) : (
-                  <>
-                    <div className="flex justify-center mb-2">
-                      <div className="h-8 w-8 rounded-lg bg-muted flex items-center justify-center">
-                        <stat.icon className={`h-4 w-4 ${stat.color}`} />
-                      </div>
-                    </div>
-                    <div className="text-2xl font-bold">
+          <div className="hidden lg:flex flex-1 justify-end">
+            <div className="relative">
+              <div className="absolute -inset-4 bg-primary/20 blur-3xl rounded-full" />
+              <div className="relative bg-card border border-primary/10 rounded-2xl p-6 shadow-2xl space-y-4 w-72">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <Target className="h-6 w-6 text-primary" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-bold">Goal Focused</div>
+                    <div className="text-[10px] text-muted-foreground">Tailored for your success</div>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+                    <motion.div
+                      className="h-full bg-primary"
+                      initial={{ width: 0 }}
+                      animate={{ width: "65%" }}
+                      transition={{ duration: 1, delay: 0.5 }}
+                    />
+                  </div>
+                  <div className="flex justify-between text-[10px]">
+                    <span>Current Skills</span>
+                    <span className="font-bold">65%</span>
+                  </div>
+                </div>
+                <div className="pt-2">
+                  <Button variant="ghost" size="sm" className="w-full text-xs h-8 text-primary hover:text-primary hover:bg-primary/5" asChild>
+                    <Link href="/lms/roadmap">Update Roadmap</Link>
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Stats - Reduced prominence since we have a big hero now */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+        className="grid grid-cols-2 md:grid-cols-4 gap-4"
+      >
+        {statsItems.map((stat) => (
+          <Card key={stat.title} className="text-center border-none bg-muted/30">
+            <CardContent className="pt-4 flex items-center justify-center gap-4">
+              {statsLoading ? (
+                <Skeleton className="h-10 w-24" />
+              ) : (
+                <>
+                  <div className="h-10 w-10 rounded-full bg-background flex items-center justify-center border border-border">
+                    <stat.icon className={`h-5 w-5 ${stat.color}`} />
+                  </div>
+                  <div className="text-left">
+                    <div className="text-xl font-bold">
                       {stat.value}
                       {stat.suffix}
                     </div>
-                    <div className="text-xs text-muted-foreground">{stat.description}</div>
-                  </>
-                )}
-              </CardContent>
-            </Card>
-          ))}
-        </motion.div>
-      </div>
+                    <div className="text-[10px] text-muted-foreground uppercase tracking-wider">{stat.title}</div>
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        ))}
+      </motion.div>
 
       {/* Search and Filters */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
-        className="space-y-4"
+        className="space-y-4 pt-4"
       >
         <div className="flex flex-col md:flex-row gap-4">
           <div className="relative flex-1">
@@ -149,14 +195,14 @@ export default function LMSPage() {
               placeholder="Search courses, instructors, or topics..."
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              className="pl-10"
+              className="pl-10 h-10"
             />
           </div>
           <div className="flex gap-2">
             <select
               value={filters.difficulty || ''}
               onChange={(e) => setFilters({ difficulty: (e.target.value as DifficultyLevel) || undefined })}
-              className="px-3 py-2 border border-input rounded-md bg-background text-sm"
+              className="px-3 py-2 border border-input rounded-md bg-background text-sm h-10"
             >
               <option value="">All Levels</option>
               <option value="EASY">Beginner</option>
@@ -166,7 +212,7 @@ export default function LMSPage() {
             <select
               value={filters.priceRange || 'all'}
               onChange={(e) => setFilters({ priceRange: e.target.value as 'free' | 'paid' | 'all' })}
-              className="px-3 py-2 border border-input rounded-md bg-background text-sm"
+              className="px-3 py-2 border border-input rounded-md bg-background text-sm h-10"
             >
               <option value="all">All Prices</option>
               <option value="free">Free</option>
@@ -175,7 +221,7 @@ export default function LMSPage() {
             <select
               value={filters.sortBy || 'popular'}
               onChange={(e) => setFilters({ sortBy: e.target.value as 'popular' | 'newest' | 'price-low' | 'price-high' })}
-              className="px-3 py-2 border border-input rounded-md bg-background text-sm"
+              className="px-3 py-2 border border-input rounded-md bg-background text-sm h-10"
             >
               <option value="popular">Most Popular</option>
               <option value="newest">Newest</option>
@@ -192,7 +238,7 @@ export default function LMSPage() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
       >
-        <h2 className="text-xl font-semibold mb-4">Browse by Category</h2>
+        <h2 className="text-xl font-semibold mb-4">Browse Categories</h2>
         <CategoryFilter
           categories={categories || []}
           selectedCategory={filters.categorySlug}
@@ -225,46 +271,6 @@ export default function LMSPage() {
           pagination={coursesData?.pagination}
           onPageChange={(page) => setFilters({ page })}
         />
-      </motion.div>
-
-      {/* Learning Path CTA */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.5 }}
-      >
-        <Card className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent">
-          <CardContent className="p-8">
-            <div className="flex flex-col md:flex-row items-center gap-4">
-              <div className="h-12 w-12 rounded-full bg-primary/20 flex items-center justify-center">
-                <BookOpen className="h-6 w-6 text-primary" />
-              </div>
-              <div className="flex-1 text-center md:text-left">
-                <h3 className="text-lg font-semibold mb-1">
-                  Get Your Personalized Learning Roadmap
-                </h3>
-                <p className="text-muted-foreground text-sm">
-                  Take our skill assessment to get a customized learning path based on your
-                  interests, current skills, and career goals.
-                </p>
-              </div>
-              <div className="flex gap-2">
-                <Button variant="outline" asChild>
-                  <Link href="/lms/roadmap">
-                    <Play className="h-4 w-4 mr-2" />
-                    Create Roadmap
-                  </Link>
-                </Button>
-                <Button asChild>
-                  <Link href="/lms/assessment">
-                    <Target className="h-4 w-4 mr-2" />
-                    Take Assessment
-                  </Link>
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
       </motion.div>
     </div>
   );
