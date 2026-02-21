@@ -198,7 +198,7 @@ class RoadmapService {
             description: r.description,
             totalDuration: r.totalDuration,
             shareToken: r.shareToken,
-            conversationHistory: r.conversationHistory as RoadmapMessage[],
+            conversationHistory: r.conversationHistory as unknown as RoadmapMessage[],
             steps: r.steps.map(s => ({
                 id: s.id,
                 stepOrder: s.stepOrder,
