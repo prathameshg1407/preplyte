@@ -147,6 +147,24 @@ export class RoadmapController {
         }
     }
 
+    // POST /courses-for-steps
+    static async searchCoursesForSteps(req: Request, res: Response) {
+        try {
+            const { steps } = req.body;
+            if (!steps || !Array.isArray(steps)) {
+                res.status(400).json({ message: 'Steps array is required' });
+                return;
+            }
+            const stepCourses = await roadmapService.searchCoursesPerStep(
+                steps.map((s: any) => ({ id: s.id, skills: s.skills || [] }))
+            );
+            res.json(stepCourses);
+        } catch (error) {
+            logger.error('[RoadmapController] Error searching courses for steps', error);
+            res.status(500).json({ message: 'Failed to search courses' });
+        }
+    }
+
     // GET /shared/:token (no auth)
     static async getSharedRoadmap(req: Request, res: Response) {
         try {

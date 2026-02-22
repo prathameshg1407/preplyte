@@ -14,6 +14,7 @@ router.post('/generate', authenticate, RoadmapController.generateRoadmap);
 router.post('/save', authenticate, RoadmapController.saveRoadmap);
 router.get('/list', authenticate, RoadmapController.listRoadmaps);
 router.get('/shared/:token', RoadmapController.getSharedRoadmap);   // public — BEFORE :id route
+router.post('/courses-for-steps', authenticate, RoadmapController.searchCoursesForSteps);
 router.get('/:id', authenticate, RoadmapController.getRoadmap);
 router.patch('/:id/steps/:stepId', authenticate, RoadmapController.updateStepStatus);
 router.delete('/:id', authenticate, RoadmapController.deleteRoadmap);

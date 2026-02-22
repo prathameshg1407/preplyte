@@ -116,6 +116,7 @@ export const API_ENDPOINTS = {
     UPDATE_STEP: (roadmapId: string, stepId: string) => `/api/practice/roadmap/${roadmapId}/steps/${stepId}` as const,
     SHARE: (id: string) => `/api/practice/roadmap/${id}/share` as const,
     SHARED: (token: string) => `/api/practice/roadmap/shared/${token}` as const,
+    COURSES_FOR_STEPS: '/api/practice/roadmap/courses-for-steps',
   },
 
   // ============================================

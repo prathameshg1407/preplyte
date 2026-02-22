@@ -147,6 +147,11 @@ class RoadmapService {
         const response = await apiClient.get(API_ENDPOINTS.ROADMAP.SHARED(token));
         return response.data;
     }
+
+    async searchCoursesForSteps(steps: { id: string; skills: string[] }[]): Promise<StepWithCourses[]> {
+        const response = await apiClient.post(API_ENDPOINTS.ROADMAP.COURSES_FOR_STEPS, { steps });
+        return response.data;
+    }
 }
 
 export const roadmapService = new RoadmapService();

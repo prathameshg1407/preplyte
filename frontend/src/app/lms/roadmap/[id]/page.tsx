@@ -41,13 +41,19 @@ export default function SavedRoadmapPage() {
             const data = await roadmapService.getRoadmap(roadmapId);
             setRoadmap(data);
 
-            // Load courses for each step
-            const allSkills = Array.from(new Set(data.steps.flatMap(s => s.skills)));
-            if (allSkills.length > 0) {
-                // Small hack: use the generate endpoint's course search by sending history
-                // Actually, we just need to search courses per skill.
-                // We'll load courses inline from the step skills.
-                // For now, we can skip because the courses were shown at generation time.
+            // Load courses for each step based on saved skills
+            if (data.steps.length > 0) {
+                try {
+                    const stepsPayload = data.steps.map(s => ({ id: s.id, skills: s.skills }));
+                    const results = await roadmapService.searchCoursesForSteps(stepsPayload);
+                    const coursesMap: Record<string, CourseRecommendation[]> = {};
+                    results.forEach(sc => {
+                        coursesMap[sc.stepId] = sc.courses;
+                    });
+                    setStepCourses(coursesMap);
+                } catch (err) {
+                    console.error('Failed to load step courses', err);
+                }
             }
         } catch (err) {
             console.error('Failed to load roadmap', err);
@@ -290,6 +296,35 @@ export default function SavedRoadmapPage() {
                                             <Badge key={skill} variant="outline" className="bg-muted/50 border-border text-xs">{skill}</Badge>
                                         ))}
                                     </div>
+                                    {/* Inline courses */}
+                                    {(stepCourses[s.id] || []).length > 0 && (
+                                        <div className="pt-3 border-t border-border/50">
+                                            <p className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1">
+                                                <Zap className="h-3 w-3" /> Recommended Resources
+                                            </p>
+                                            <div className="grid gap-2 sm:grid-cols-2">
+                                                {(stepCourses[s.id] || []).slice(0, 4).map(course => (
+                                                    <a
+                                                        key={course.id}
+                                                        href={course.source === 'platform' ? `/lms/${course.slug}` : course.slug}
+                                                        target={course.source === 'external' ? '_blank' : undefined}
+                                                        rel={course.source === 'external' ? 'noopener noreferrer' : undefined}
+                                                        className="flex items-center gap-2 p-2 rounded-lg border border-border/50 hover:border-primary/30 hover:bg-primary/5 transition-all group text-sm"
+                                                    >
+                                                        <div className="h-8 w-8 rounded-md bg-muted flex items-center justify-center flex-shrink-0">
+                                                            {course.source === 'platform' ? <BookOpen className="h-4 w-4 text-primary" /> : <ExternalLink className="h-4 w-4 text-red-500" />}
+                                                        </div>
+                                                        <div className="min-w-0 flex-1">
+                                                            <p className="font-medium text-xs truncate group-hover:text-primary">{course.title}</p>
+                                                            <p className="text-[10px] text-muted-foreground">
+                                                                {course.source === 'platform' ? 'Our Platform' : 'YouTube'}
+                                                            </p>
+                                                        </div>
+                                                    </a>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
                                 </CardContent>
                             </Card>
                         </motion.div>
