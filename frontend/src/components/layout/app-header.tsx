@@ -18,7 +18,13 @@ import {
   Code2,
   Brain,
   Trophy,
-  GraduationCap
+  GraduationCap,
+  Search,
+  Briefcase,
+  Clock,
+  Award,
+  BarChart3,
+  HelpCircle
 } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
@@ -60,8 +66,36 @@ const practiceLinks = [
   },
 ];
 
+const eventLinks = [
+  {
+    title: 'Jobs',
+    href: '/opportunities/jobs',
+    description: 'Full-time career opportunities',
+    icon: Briefcase,
+    color: 'text-blue-600 dark:text-blue-400',
+    bg: 'bg-blue-500/10',
+  },
+  {
+    title: 'Internships',
+    href: '/opportunities/internships',
+    description: 'Real-world work experience',
+    icon: Clock,
+    color: 'text-orange-600 dark:text-orange-400',
+    bg: 'bg-orange-500/10',
+  },
+  {
+    title: 'Hackathons',
+    href: '/hackathons',
+    description: 'Compete and build projects',
+    icon: Trophy,
+    color: 'text-amber-600 dark:text-amber-400',
+    bg: 'bg-amber-500/10',
+  },
+];
+
 const NAV_LINKS = [
   { label: 'Practice', href: '/practice', hasDropdown: true },
+  { label: 'Events', href: '#', hasDropdown: true },
   { label: 'Mock Drive', href: '/mock-drive' },
   { label: 'Leaderboard', href: '/leaderboard' },
 ] as const;
@@ -126,6 +160,45 @@ export function AppHeader() {
                       </div>
                       <div className="grid gap-2">
                         {practiceLinks.map((link) => (
+                          <NavigationMenuLink key={link.href} asChild>
+                            <Link
+                              href={link.href}
+                              className="group flex items-center gap-4 rounded-xl p-3 transition-colors hover:bg-muted"
+                            >
+                              <div className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-lg', link.bg)}>
+                                <link.icon className={cn('h-5 w-5', link.color)} />
+                              </div>
+                              <div>
+                                <div className="font-medium">{link.title}</div>
+                                <div className="text-xs text-muted-foreground">
+                                  {link.description}
+                                </div>
+                              </div>
+                            </Link>
+                          </NavigationMenuLink>
+                        ))}
+                      </div>
+                    </div>
+                  </NavigationMenuContent>
+                </NavigationMenuItem>
+
+                {/* Events with dropdown */}
+                <NavigationMenuItem>
+                  <NavigationMenuTrigger 
+                    className={cn(
+                      "h-9 px-3 text-sm font-medium",
+                      (pathname.startsWith('/opportunities') || pathname.startsWith('/hackathons')) && "bg-secondary"
+                    )}
+                  >
+                    Events
+                  </NavigationMenuTrigger>
+                  <NavigationMenuContent>
+                    <div className="w-[400px] p-4">
+                      <div className="mb-3 flex items-center justify-between">
+                        <span className="text-sm font-medium">Opportunities & Events</span>
+                      </div>
+                      <div className="grid gap-2">
+                        {eventLinks.map((link) => (
                           <NavigationMenuLink key={link.href} asChild>
                             <Link
                               href={link.href}
@@ -330,6 +403,36 @@ export function AppHeader() {
 
                 <div className="my-2 border-t border-border" />
 
+                <div className="my-2 border-t border-border" />
+
+                {/* Events section */}
+                <div className="px-3 py-2">
+                  <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    Events
+                  </span>
+                </div>
+                {eventLinks.map((link) => (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    onClick={closeMobileMenu}
+                    className={cn(
+                      'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
+                      pathname === link.href
+                        ? 'bg-secondary text-foreground'
+                        : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+                    )}
+                  >
+                    <div className={cn('flex h-8 w-8 items-center justify-center rounded-lg', link.bg)}>
+                      <link.icon className={cn('h-4 w-4', link.color)} />
+                    </div>
+                    <div>
+                      <div>{link.title}</div>
+                      <div className="text-xs text-muted-foreground">{link.description}</div>
+                    </div>
+                  </Link>
+                ))}
+
                 <Link
                   href="/mock-drive"
                   onClick={closeMobileMenu}
@@ -340,7 +443,7 @@ export function AppHeader() {
                       : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
                   )}
                 >
-                  <Trophy className="h-4 w-4" />
+                  <Award className="h-4 w-4" />
                   Mock Drive
                 </Link>
 
@@ -354,7 +457,7 @@ export function AppHeader() {
                       : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
                   )}
                 >
-                  <BookOpen className="h-4 w-4" />
+                  <BarChart3 className="h-4 w-4" />
                   Leaderboard
                 </Link>
 

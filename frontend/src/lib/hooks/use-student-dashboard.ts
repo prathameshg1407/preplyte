@@ -31,10 +31,29 @@ interface UpcomingTest {
   moduleCount: number;
 }
 
+interface DashboardAppliedOpportunity {
+  id: string;
+  title: string;
+  companyName: string;
+  type: 'JOB' | 'INTERNSHIP';
+  status: string;
+  appliedAt: string;
+}
+
+interface DashboardHackathonRegistration {
+  id: string;
+  title: string;
+  status: string;
+  registrationDate: string;
+  role: 'LEADER' | 'MEMBER' | 'INDIVIDUAL';
+}
+
 interface DashboardData {
   stats: DashboardStats;
   recentTests: RecentTest[];
   upcomingTests: UpcomingTest[];
+  appliedOpportunities: DashboardAppliedOpportunity[];
+  hackathonRegistrations: DashboardHackathonRegistration[];
 }
 
 interface ApiResponse<T> {

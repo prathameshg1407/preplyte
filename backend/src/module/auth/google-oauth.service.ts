@@ -9,6 +9,15 @@ const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
 const GOOGLE_CALLBACK_URL = process.env.GOOGLE_CALLBACK_URL || 'http://localhost:4000/api/auth/google/callback';
 
+// Log OAuth configuration status on startup
+if (GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET) {
+  logger.info('Google OAuth is configured and enabled');
+} else {
+  logger.warn('Google OAuth is NOT configured - Google sign-in will not work');
+  logger.warn('To enable Google OAuth, set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in .env file');
+  logger.warn('See backend/GOOGLE_OAUTH_SETUP.md for setup instructions');
+}
+
 const jwtSecret = process.env.JWT_SECRET;
 if (!jwtSecret) {
   throw new Error('JWT_SECRET must be defined in environment variables');

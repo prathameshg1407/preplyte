@@ -10,6 +10,7 @@ import { rateLimit, RateLimitRequestHandler } from 'express-rate-limit';
 import { passport } from './module/auth/google-oauth.service';
 
 // Route Imports
+
 import { authRoutes } from './module/auth/auth.routes';
 import practiceRoutes from './module/practice/practice.routes';
 import adminRoutes from './module/admin/admin.routes';
@@ -18,6 +19,7 @@ import { mockDriveRoutes } from './module/instituteadmin/mock-drive';
 import { departmentRoutes } from './module/instituteadmin/department';
 import { createMockDriveRoutes } from './module/mock-drive';
 import { dashboardRoutes } from './module/dashboard';
+import { eventRoutes } from './module/event';
 
 // Middleware & Utils
 import { errorHandler, notFoundHandler } from './middleware/error.middleware';
@@ -345,6 +347,7 @@ app.use(
 // Admin routes with specific rate limiter
 app.use('/api/admin', adminLimiter, adminRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/events', eventRoutes);
 
 // =====================================================
 // 8. ERROR HANDLING

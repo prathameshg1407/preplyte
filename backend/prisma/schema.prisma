@@ -52,6 +52,109 @@ enum SubmissionStatus {
 }
 
 // =====================================================
+// ENUMS - JOBS & INTERNSHIPS
+// =====================================================
+
+enum JobType {
+  FULL_TIME
+  PART_TIME
+  CONTRACT
+}
+
+enum InternshipType {
+  SUMMER
+  WINTER
+  SEMESTER
+  PART_TIME
+  FLEXIBLE
+}
+
+enum DurationType {
+  WEEKS
+  MONTHS
+}
+
+enum WorkMode {
+  ON_SITE
+  REMOTE
+  HYBRID
+}
+
+enum OpportunityStatus {
+  DRAFT
+  PUBLISHED
+  CLOSED
+  FILLED
+  CANCELLED
+}
+
+enum ApplicationStatus {
+  APPLIED
+  UNDER_REVIEW
+  SHORTLISTED
+  REJECTED
+  WITHDRAWN
+  HIRED
+}
+
+// =====================================================
+// ENUMS - HACKATHON
+// =====================================================
+
+enum HackathonStatus {
+  DRAFT
+  PUBLISHED
+  REGISTRATION_OPEN
+  REGISTRATION_CLOSED
+  ONGOING
+  SUBMISSION_OPEN
+  SUBMISSION_CLOSED
+  JUDGING
+  COMPLETED
+  CANCELLED
+}
+
+enum HackathonMode {
+  ONLINE
+  OFFLINE
+  HYBRID
+}
+
+enum ParticipationType {
+  INDIVIDUAL
+  TEAM
+  BOTH
+}
+
+enum HackathonRegistrationStatus {
+  REGISTERED
+  CONFIRMED
+  WITHDRAWN
+  DISQUALIFIED
+}
+
+enum TeamStatus {
+  FORMING
+  COMPLETE
+  LOCKED
+  DISQUALIFIED
+}
+
+enum TeamMemberRole {
+  LEADER
+  MEMBER
+}
+
+enum HackathonSubmissionStatus {
+  DRAFT
+  SUBMITTED
+  UNDER_REVIEW
+  DISQUALIFIED
+  SHORTLISTED
+  WINNER
+}
+
+// =====================================================
 // ENUMS - AI INTERVIEW
 // =====================================================
 
@@ -145,9 +248,9 @@ model User {
   instituteId String?
 
   // OAuth fields
-  googleId    String?  @unique
-  provider    String?  @default("local")
-  avatar      String?
+  googleId String? @unique
+  provider String? @default("local")
+  avatar   String?
 
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
@@ -155,10 +258,10 @@ model User {
   tokenVersion Int       @default(0)
 
   // Relations
-  institute        Institute?                @relation(fields: [instituteId], references: [id], onDelete: SetNull)
-  refreshTokens    RefreshToken[]
-  profile          StudentProfile?
-  resumes          Resume[]
+  institute     Institute?      @relation(fields: [instituteId], references: [id], onDelete: SetNull)
+  refreshTokens RefreshToken[]
+  profile       StudentProfile?
+  resumes       Resume[]
 
   // Practice Sessions
   aptitudeSessions AptitudePracticeSession[]
@@ -172,6 +275,18 @@ model User {
   mockDriveRegistrations MockDriveRegistration[]
   mockDriveAttempts      MockDriveAttempt[]
   mockDriveLeaderboard   MockDriveLeaderboard[]
+
+  // Jobs & Internships
+  jobApplications        JobApplication[]
+  internshipApplications InternshipApplication[]
+  createdJobs            JobPosting[]            @relation("JobCreatedBy")
+  createdInternships     Internship[]            @relation("InternshipCreatedBy")
+
+  // Hackathons
+  hackathonRegistrations   HackathonRegistration[]
+  hackathonTeamMemberships HackathonTeamMember[]
+  ledTeams                 HackathonTeam[]         @relation("TeamLeader")
+  createdHackathons        Hackathon[]             @relation("HackathonCreatedBy")
 
   @@index([email])
   @@index([instituteId])
@@ -215,6 +330,10 @@ model Institute {
   profile     InstituteProfile?
   departments Department[]
   mockDrives  MockDrive[]
+  // Jobs, Internships & Hackathons
+  jobPostings JobPosting[]
+  internships Internship[]
+  hackathons  Hackathon[]
 
   @@index([domain])
   @@index([isActive])
@@ -326,6 +445,11 @@ model Resume {
 
   user                User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
   aiInterviewSessions AiInterviewSession[]
+
+  // Jobs, Internships & Hackathons
+  jobApplications        JobApplication[]
+  internshipApplications InternshipApplication[]
+  hackathonRegistrations HackathonRegistration[]
 
   @@index([userId])
   @@index([userId, isDefault])
@@ -707,11 +831,11 @@ model MockDrive {
   driveEndDate   DateTime?
 
   // Settings
-  allowLateSubmission    Boolean @default(false)
-  showLeaderboard        Boolean @default(true)
-  showResultsImmediately Boolean @default(false)
+  allowLateSubmission    Boolean   @default(false)
+  showLeaderboard        Boolean   @default(true)
+  showResultsImmediately Boolean   @default(false)
   resultsReleaseDate     DateTime?
-  shuffleQuestions       Boolean @default(true)
+  shuffleQuestions       Boolean   @default(true)
 
   // Proctoring
   enableProctoring   Boolean @default(false)
@@ -725,7 +849,7 @@ model MockDrive {
   updatedAt DateTime @updatedAt
 
   // Relations
-  institute           Institute                @relation(fields: [instituteId], references: [id], onDelete: Cascade)
+  institute           Institute               @relation(fields: [instituteId], references: [id], onDelete: Cascade)
   eligibilityCriteria MockDriveEligibility?
   modules             MockDriveModule[]
   registrations       MockDriveRegistration[]
@@ -800,7 +924,7 @@ model MockDriveModule {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  mockDrive       MockDrive                  @relation(fields: [mockDriveId], references: [id], onDelete: Cascade)
+  mockDrive       MockDrive                 @relation(fields: [mockDriveId], references: [id], onDelete: Cascade)
   moduleQuestions MockDriveModuleQuestion[]
   moduleAttempts  MockDriveModuleAttempt[]
 
@@ -1024,7 +1148,7 @@ model MockDriveReport {
   comparedToAverage Float?
 
   recommendations String[]
-  aiInsights      String? @db.Text
+  aiInsights      String?  @db.Text
 
   generatedAt DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -1075,4 +1199,422 @@ model MockDriveLeaderboard {
   @@index([mockDriveId, departmentId])
   @@index([userId])
   @@map("mock_drive_leaderboard")
+}
+
+// =====================================================
+// JOB POSTING
+// =====================================================
+
+model JobPosting {
+  id          String  @id @default(cuid())
+  instituteId String? // NULL = platform level
+  createdById String
+
+  // Basic Info
+  companyName  String
+  roleTitle    String
+  description  String   @db.Text
+  requirements String[]
+
+  // Job Details
+  jobType  JobType
+  workMode WorkMode
+  location String
+
+  // Compensation
+  salaryMin      Int?
+  salaryMax      Int?
+  salaryCurrency String @default("INR")
+
+  // Availability
+  vacancies           Int
+  applicationDeadline DateTime
+
+  // Settings
+  isResumeRequired Boolean           @default(true)
+  status           OpportunityStatus @default(DRAFT)
+
+  // Eligibility (JSON)
+  eligibilityCriteria Json?
+
+  // Analytics
+  viewsCount          Int @default(0)
+  applicationsStarted Int @default(0)
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  publishedAt DateTime? // When status changed to PUBLISHED
+  closedAt    DateTime? // When status changed to CLOSED/FILLED
+
+  // Soft Delete
+  isDeleted Boolean   @default(false)
+  deletedAt DateTime?
+  deletedBy String?
+
+  // Relations
+  institute    Institute?       @relation(fields: [instituteId], references: [id], onDelete: Cascade)
+  createdBy    User             @relation("JobCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
+  applications JobApplication[]
+
+  @@index([instituteId])
+  @@index([instituteId, status])
+  @@index([status])
+  @@index([createdById])
+  @@index([applicationDeadline])
+  @@index([status, applicationDeadline])
+  @@index([isDeleted])
+  @@index([status, createdAt])
+  @@index([instituteId, createdAt])
+  @@map("job_postings")
+}
+
+model JobApplication {
+  id       String  @id @default(cuid())
+  jobId    String
+  userId   String
+  resumeId String?
+
+  coverLetter String?           @db.Text
+  status      ApplicationStatus @default(APPLIED)
+
+  appliedAt  DateTime  @default(now())
+  reviewedAt DateTime?
+  reviewedBy String?
+  adminNotes String?   @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  job    JobPosting @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  user   User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  resume Resume?    @relation(fields: [resumeId], references: [id], onDelete: SetNull)
+
+  @@unique([jobId, userId])
+  @@index([jobId])
+  @@index([userId])
+  @@index([jobId, status])
+  @@index([userId, status])
+  @@index([status])
+  @@map("job_applications")
+}
+
+// =====================================================
+// INTERNSHIP
+// =====================================================
+
+model Internship {
+  id          String  @id @default(cuid())
+  instituteId String? // NULL = platform level
+  createdById String
+
+  // Basic Info
+  companyName  String
+  roleTitle    String
+  description  String   @db.Text
+  requirements String[]
+
+  // Internship Specific
+  internshipType  InternshipType
+  durationValue   Int
+  durationType    DurationType
+  startDate       DateTime?
+  isFlexibleDates Boolean        @default(false)
+
+  // Work Details
+  workMode WorkMode
+  location String
+
+  // Compensation
+  stipendMin      Int?
+  stipendMax      Int?
+  stipendCurrency String  @default("INR")
+  isPaid          Boolean @default(true)
+
+  // PPO Details
+  hasPPO     Boolean @default(false)
+  ppoDetails String? @db.Text
+
+  // Availability
+  vacancies           Int
+  applicationDeadline DateTime
+
+  // Settings
+  isResumeRequired Boolean           @default(true)
+  status           OpportunityStatus @default(DRAFT)
+
+  // Eligibility (JSON)
+  eligibilityCriteria Json?
+
+  // Analytics
+  viewsCount          Int @default(0)
+  applicationsStarted Int @default(0)
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  publishedAt DateTime?
+  closedAt    DateTime?
+
+  // Soft Delete
+  isDeleted Boolean   @default(false)
+  deletedAt DateTime?
+  deletedBy String?
+
+  // Relations
+  institute    Institute?              @relation(fields: [instituteId], references: [id], onDelete: Cascade)
+  createdBy    User                    @relation("InternshipCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
+  applications InternshipApplication[]
+
+  @@index([instituteId])
+  @@index([instituteId, status])
+  @@index([status])
+  @@index([createdById])
+  @@index([applicationDeadline])
+  @@index([status, applicationDeadline])
+  @@index([internshipType])
+  @@index([isDeleted])
+  @@index([status, createdAt])
+  @@index([instituteId, createdAt])
+  @@map("internships")
+}
+
+model InternshipApplication {
+  id           String  @id @default(cuid())
+  internshipId String
+  userId       String
+  resumeId     String?
+
+  coverLetter   String?           @db.Text
+  availableFrom DateTime? // When student can start
+  status        ApplicationStatus @default(APPLIED)
+
+  appliedAt  DateTime  @default(now())
+  reviewedAt DateTime?
+  reviewedBy String?
+  adminNotes String?   @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  internship Internship @relation(fields: [internshipId], references: [id], onDelete: Cascade)
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  resume     Resume?    @relation(fields: [resumeId], references: [id], onDelete: SetNull)
+
+  @@unique([internshipId, userId])
+  @@index([internshipId])
+  @@index([userId])
+  @@index([internshipId, status])
+  @@index([userId, status])
+  @@index([status])
+  @@map("internship_applications")
+}
+
+// =====================================================
+// HACKATHON
+// =====================================================
+
+model Hackathon {
+  id          String  @id @default(cuid())
+  instituteId String? // NULL = platform level
+  createdById String
+
+  // Basic Info
+  title       String
+  tagline     String?
+  description String   @db.Text
+  rules       String?  @db.Text
+  themes      String[]
+
+  // Event Details
+  mode       HackathonMode
+  venue      String?
+  websiteUrl String?
+  bannerUrl  String? // Event banner/poster
+
+  // Contact info for queries
+  contactEmail String?
+  contactPhone String?
+
+  // Participation Config
+  participationType ParticipationType
+  minTeamSize       Int               @default(1)
+  maxTeamSize       Int               @default(4)
+
+  // Timeline
+  registrationStartDate DateTime
+  registrationEndDate   DateTime
+  eventStartDate        DateTime
+  eventEndDate          DateTime
+  submissionDeadline    DateTime
+  resultsDate           DateTime?
+
+  // Capacity
+  maxParticipants Int?
+
+  // Prizes (JSON array)
+  // [{ position: "1st", title: "Winner", prize: "₹50,000" }, ...]
+  prizes Json?
+
+  // Settings
+  isResumeRequired Boolean         @default(false)
+  status           HackathonStatus @default(DRAFT)
+
+  // Eligibility (JSON)
+  eligibilityCriteria Json?
+
+  // Analytics
+  viewsCount           Int @default(0)
+  registrationsStarted Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Analytics & Counts
+  participantCount Int @default(0) // Updated via triggers or app logic
+  teamCount        Int @default(0) // Number of teams formed
+
+  // Soft Delete
+  isDeleted Boolean   @default(false)
+  deletedAt DateTime?
+  deletedBy String?
+
+  // Relations
+  institute     Institute?              @relation(fields: [instituteId], references: [id], onDelete: Cascade)
+  createdBy     User                    @relation("HackathonCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
+  registrations HackathonRegistration[]
+  teams         HackathonTeam[]
+  submissions   HackathonSubmission[]
+
+  @@index([instituteId])
+  @@index([instituteId, status])
+  @@index([status])
+  @@index([createdById])
+  @@index([registrationStartDate, registrationEndDate])
+  @@index([eventStartDate, eventEndDate])
+  @@index([status, eventStartDate])
+  @@index([isDeleted])
+  @@index([status, createdAt])
+  @@index([instituteId, createdAt])
+  @@map("hackathons")
+}
+
+model HackathonRegistration {
+  id          String  @id @default(cuid())
+  hackathonId String
+  userId      String
+  teamId      String? // NULL if individual or not yet in team
+
+  status   HackathonRegistrationStatus @default(REGISTERED)
+  resumeId String?
+
+  registeredAt DateTime  @default(now())
+  confirmedAt  DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  hackathon  Hackathon            @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
+  user       User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  team       HackathonTeam?       @relation(fields: [teamId], references: [id], onDelete: SetNull)
+  resume     Resume?              @relation(fields: [resumeId], references: [id], onDelete: SetNull)
+  submission HackathonSubmission? // Individual's submission
+
+  @@unique([hackathonId, userId])
+  @@index([hackathonId])
+  @@index([userId])
+  @@index([hackathonId, status])
+  @@index([teamId])
+  @@map("hackathon_registrations")
+}
+
+model HackathonTeam {
+  id          String @id @default(cuid())
+  hackathonId String
+  name        String
+  inviteCode  String @unique // 6-8 char alphanumeric, auto-generated
+  leaderId    String
+
+  status TeamStatus @default(FORMING)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  currentSize Int      @default(1) // Track current team size for quick validation
+
+  hackathon     Hackathon               @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
+  leader        User                    @relation("TeamLeader", fields: [leaderId], references: [id], onDelete: Cascade)
+  members       HackathonTeamMember[]
+  registrations HackathonRegistration[]
+  submission    HackathonSubmission?
+
+  @@index([hackathonId])
+  @@index([hackathonId, status])
+  @@index([inviteCode])
+  @@index([leaderId])
+  @@map("hackathon_teams")
+}
+
+model HackathonTeamMember {
+  id     String         @id @default(cuid())
+  teamId String
+  userId String
+  role   TeamMemberRole
+
+  joinedAt DateTime @default(now())
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  team HackathonTeam @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, userId])
+  @@index([teamId])
+  @@index([userId])
+  @@map("hackathon_team_members")
+}
+
+model HackathonSubmission {
+  id             String  @id @default(cuid())
+  hackathonId    String
+  teamId         String? // For team submission
+  registrationId String? // For individual submission
+
+  // Project Details
+  projectName        String
+  projectDescription String   @db.Text
+  techStack          String[]
+
+  // Links
+  repositoryUrl   String
+  demoUrl         String?
+  videoUrl        String?
+  presentationUrl String?
+
+  // Files
+  screenshotsUrls String[]
+
+  // Submission Meta
+  status      HackathonSubmissionStatus @default(DRAFT)
+  submittedAt DateTime?
+
+  // Judging (Simple approach - Option A)
+  score    Float?
+  rank     Int?
+  feedback String? @db.Text
+  prizeWon String?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  lastSavedAt DateTime @default(now()) // Track when draft was last saved
+
+  hackathon    Hackathon              @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
+  team         HackathonTeam?         @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  registration HackathonRegistration? @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId]) // One submission per team
+  @@unique([registrationId]) // One submission per individual registration
+  @@index([hackathonId])
+  @@index([hackathonId, status])
+  @@index([status])
+  @@index([hackathonId, rank])
+  @@map("hackathon_submissions")
 }

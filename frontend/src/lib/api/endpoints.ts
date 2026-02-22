@@ -262,6 +262,56 @@ export const API_ENDPOINTS = {
     MODULE_TYPES: '/api/practice/enums/module-types',
     MOCK_DRIVE_STATUSES: '/api/practice/enums/mock-drive-statuses',
   },
+
+  // ============================================
+  // Jobs
+  // ============================================
+  JOB: {
+    SESSIONS: '/api/events/jobs',
+    DETAIL: (id: string) => `/api/events/jobs/${id}` as const,
+    ELIGIBILITY: (id: string) => `/api/events/jobs/${id}/eligibility` as const,
+    APPLY: (id: string) => `/api/events/jobs/${id}/apply` as const,
+    APPLICATION: (id: string) => `/api/events/jobs/applications/${id}` as const,
+    APPLICATIONS: '/api/events/jobs/applications',
+    APPLICATION_REVIEW: (id: string) => `/api/events/jobs/applications/${id}/review` as const,
+  },
+
+  // ============================================
+  // Internships
+  // ============================================
+  INTERNSHIP: {
+    SESSIONS: '/api/events/internships',
+    DETAIL: (id: string) => `/api/events/internships/${id}` as const,
+    ELIGIBILITY: (id: string) => `/api/events/internships/${id}/eligibility` as const,
+    APPLY: (id: string) => `/api/events/internships/${id}/apply` as const,
+    APPLICATION: (id: string) => `/api/events/internships/applications/${id}` as const,
+    APPLICATIONS: '/api/events/internships/applications',
+    APPLICATION_REVIEW: (id: string) => `/api/events/internships/applications/${id}/review` as const,
+  },
+
+  // ============================================
+  // Hackathons
+  // ============================================
+  HACKATHON: {
+    SESSIONS: '/api/events/hackathons',
+    DETAIL: (id: string) => `/api/events/hackathons/${id}` as const,
+    ELIGIBILITY: (id: string) => `/api/events/hackathons/${id}/eligibility` as const,
+    REGISTER: (id: string) => `/api/events/hackathons/${id}/register` as const,
+    REGISTRATION_STATUS: (id: string) => `/api/events/hackathons/${id}/registration-status` as const,
+    
+    TEAM: {
+      CREATE: '/api/events/hackathons/teams',
+      JOIN: '/api/events/hackathons/teams/join',
+      DETAIL: (id: string) => `/api/events/hackathons/teams/${id}` as const,
+    },
+
+    SUBMISSION: {
+      SUBMIT: '/api/events/hackathons/submissions',
+      DRAFT: '/api/events/hackathons/submissions/draft',
+      DETAIL: (id: string) => `/api/events/hackathons/submissions/${id}` as const,
+      REVIEW: (id: string) => `/api/events/hackathons/submissions/${id}/review` as const,
+    }
+  },
 } as const;
 
 // ============================================

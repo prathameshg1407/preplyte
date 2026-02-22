@@ -24,14 +24,15 @@ import {
   LogOut,
   User,
   ChevronDown,
+  Calendar,
 } from 'lucide-react';
 
 const NAVIGATION = [
   { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
+  { name: 'Events', href: '/admin/events', icon: Calendar },
   { name: 'Institutes', href: '/admin/institutes', icon: Building2 },
   { name: 'Users', href: '/admin/users', icon: Users },
   { name: 'Reports', href: '/admin/reports', icon: FileBarChart },
-  { name: 'Settings', href: '/profile/settings', icon: Settings },
 ] as const;
 
 export function AdminSidebar() {

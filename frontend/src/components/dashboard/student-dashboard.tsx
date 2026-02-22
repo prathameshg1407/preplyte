@@ -14,6 +14,9 @@ import {
   BookOpen,
   ArrowRight,
   AlertCircle,
+  Building2,
+  Briefcase,
+  Users2,
 } from 'lucide-react';
 import { useStudentDashboard } from '@/lib/hooks/use-student-dashboard';
 
@@ -43,7 +46,7 @@ export function StudentDashboard() {
     );
   }
 
-  const { stats, recentTests, upcomingTests } = data;
+  const { stats, recentTests, upcomingTests, appliedOpportunities, hackathonRegistrations } = data;
 
   return (
     <div className="container mx-auto px-4 py-6 space-y-6">
@@ -167,6 +170,97 @@ export function StudentDashboard() {
         </Card>
       </div>
 
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* Applied Opportunities */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="text-base font-medium">Applied Opportunities</CardTitle>
+            <Button variant="ghost" size="sm" asChild>
+              <Link href="/opportunities">
+                Browse More
+                <ArrowRight className="h-4 w-4 ml-1" />
+              </Link>
+            </Button>
+          </CardHeader>
+          <CardContent>
+            {appliedOpportunities.length === 0 ? (
+              <EmptyState message="No applications yet" />
+            ) : (
+              <div className="space-y-3">
+                {appliedOpportunities.map((opportunity) => (
+                  <div
+                    key={opportunity.id}
+                    className="flex items-center justify-between p-3 border rounded-lg"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm truncate">{opportunity.title}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-xs text-muted-foreground flex items-center gap-1">
+                          <Building2 className="h-3 w-3" />
+                          {opportunity.companyName}
+                        </span>
+                        <span className="text-xs px-1.5 py-0.5 rounded bg-secondary flex items-center gap-1">
+                          <Briefcase className="h-3 w-3" />
+                          {opportunity.type}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="text-right ml-4">
+                      <OpportunityStatusBadge status={opportunity.status} />
+                      <p className="text-[10px] text-muted-foreground mt-1">
+                        {new Date(opportunity.appliedAt).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* My Hackathons */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="text-base font-medium">My Hackathons</CardTitle>
+            <Button variant="ghost" size="sm" asChild>
+              <Link href="/hackathons">
+                Find More
+                <ArrowRight className="h-4 w-4 ml-1" />
+              </Link>
+            </Button>
+          </CardHeader>
+          <CardContent>
+            {hackathonRegistrations.length === 0 ? (
+              <EmptyState message="No hackathons registered" />
+            ) : (
+              <div className="space-y-3">
+                {hackathonRegistrations.map((reg) => (
+                  <div
+                    key={reg.id}
+                    className="flex items-center justify-between p-3 border rounded-lg"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm truncate">{reg.title}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <HackathonRoleBadge role={reg.role} />
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(reg.registrationDate).toLocaleDateString()}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="text-right ml-4">
+                      <span className="text-xs font-medium px-2 py-1 rounded-full bg-primary/10 text-primary">
+                        {reg.status}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
       {/* Quick Actions */}
       <Card>
         <CardHeader>
@@ -245,6 +339,40 @@ function DifficultyBadge({ difficulty }: { difficulty: string }) {
   return (
     <span className={`text-xs px-1.5 py-0.5 rounded ${colorMap[difficulty] || 'bg-secondary'}`}>
       {difficulty}
+    </span>
+  );
+}
+
+function OpportunityStatusBadge({ status }: { status: string }) {
+  const colorMap: Record<string, string> = {
+    APPLIED: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+    UNDER_REVIEW: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
+    SHORTLISTED: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
+    REJECTED: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+    HIRED: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+  };
+
+  return (
+    <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${colorMap[status.toUpperCase()] || 'bg-secondary'}`}>
+      {status}
+    </span>
+  );
+}
+
+function HackathonRoleBadge({ role }: { role: string }) {
+  const config: Record<string, { label: string; class: string; icon: any }> = {
+    LEADER: { label: 'Leader', class: 'bg-amber-100 text-amber-700', icon: Trophy },
+    MEMBER: { label: 'Member', class: 'bg-indigo-100 text-indigo-700', icon: Users2 },
+    INDIVIDUAL: { label: 'Solo', class: 'bg-slate-100 text-slate-700', icon: Code },
+  };
+
+  const item = config[role.toUpperCase()] || config.INDIVIDUAL;
+  const Icon = item.icon;
+
+  return (
+    <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full flex items-center gap-1 ${item.class}`}>
+      <Icon className="h-3 w-3" />
+      {item.label}
     </span>
   );
 }

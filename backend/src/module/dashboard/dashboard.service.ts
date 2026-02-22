@@ -35,16 +35,20 @@ class DashboardService {
   async getStudentDashboard(userId: string): Promise<StudentDashboardResponse> {
     logger.debug('[DashboardService] Fetching student dashboard', { userId });
 
-    const [stats, recentTests, upcomingTests] = await Promise.all([
+    const [stats, recentTests, upcomingTests, appliedOpportunities, hackathonRegistrations] = await Promise.all([
       this.getStudentStats(userId),
       this.getStudentRecentTests(userId),
       this.getStudentUpcomingDrives(userId),
+      this.getStudentAppliedOpportunities(userId),
+      this.getStudentHackathonRegistrations(userId),
     ]);
 
     return {
       stats,
       recentTests,
       upcomingTests,
+      appliedOpportunities,
+      hackathonRegistrations,
     };
   }
 
@@ -250,6 +254,92 @@ class DashboardService {
         difficulty: 'Mixed', // Could be derived from modules
         status: drive.status,
         moduleCount: drive.modules.length,
+      };
+    });
+  }
+
+  private async getStudentAppliedOpportunities(userId: string): Promise<any[]> {
+    const [jobApps, internshipApps] = await Promise.all([
+      prisma.jobApplication.findMany({
+        where: { userId },
+        include: {
+          job: {
+            select: { roleTitle: true, companyName: true },
+          },
+        },
+        orderBy: { appliedAt: 'desc' },
+        take: DASHBOARD_LIMITS.RECENT_TESTS,
+      }),
+      prisma.internshipApplication.findMany({
+        where: { userId },
+        include: {
+          internship: {
+            select: { roleTitle: true, companyName: true },
+          },
+        },
+        orderBy: { appliedAt: 'desc' },
+        take: DASHBOARD_LIMITS.RECENT_TESTS,
+      }),
+    ]);
+
+    const apps: any[] = [];
+
+    jobApps.forEach((app) => {
+      apps.push({
+        id: app.id,
+        title: app.job.roleTitle,
+        companyName: app.job.companyName,
+        type: 'JOB',
+        status: app.status,
+        appliedAt: app.appliedAt.toISOString(),
+      });
+    });
+
+    internshipApps.forEach((app) => {
+      apps.push({
+        id: app.id,
+        title: app.internship.roleTitle,
+        companyName: app.internship.companyName,
+        type: 'INTERNSHIP',
+        status: app.status,
+        appliedAt: app.appliedAt.toISOString(),
+      });
+    });
+
+    return apps
+      .sort((a, b) => new Date(b.appliedAt).getTime() - new Date(a.appliedAt).getTime())
+      .slice(0, DASHBOARD_LIMITS.RECENT_TESTS);
+  }
+
+  private async getStudentHackathonRegistrations(userId: string): Promise<any[]> {
+    const registrations = await prisma.hackathonRegistration.findMany({
+      where: { userId },
+      include: {
+        hackathon: {
+          select: { title: true },
+        },
+        team: {
+          select: {
+            leaderId: true,
+          },
+        },
+      },
+      orderBy: { registeredAt: 'desc' },
+      take: DASHBOARD_LIMITS.RECENT_TESTS,
+    });
+
+    return registrations.map((reg) => {
+      let role: 'LEADER' | 'MEMBER' | 'INDIVIDUAL' = 'INDIVIDUAL';
+      if (reg.teamId) {
+        role = reg.team?.leaderId === userId ? 'LEADER' : 'MEMBER';
+      }
+
+      return {
+        id: reg.id,
+        title: reg.hackathon.title,
+        status: reg.status,
+        registrationDate: reg.registeredAt.toISOString(),
+        role,
       };
     });
   }

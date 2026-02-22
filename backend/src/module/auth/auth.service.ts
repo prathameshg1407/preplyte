@@ -123,7 +123,7 @@ class AuthService {
       },
     });
 
-    if (!user || !(await bcrypt.compare(password, user.password))) {
+    if (!user || !user.password || !(await bcrypt.compare(password, user.password))) {
       throw new UnauthorizedError('Invalid email or password');
     }
 
