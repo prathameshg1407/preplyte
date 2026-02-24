@@ -190,6 +190,11 @@ model User {
   provider    String?  @default("local")
   avatar      String?
 
+  // Email verification
+  emailVerified Boolean  @default(false)
+  emailVerificationOtp String?
+  emailVerificationOtpExpiry DateTime?
+
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
   lastLoginAt  DateTime?

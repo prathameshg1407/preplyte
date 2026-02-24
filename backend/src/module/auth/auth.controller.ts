@@ -45,6 +45,21 @@ const logoutSchema = z.object({
   refreshToken: z.string().optional(),
 });
 
+const sendOTPSchema = z.object({
+  email: z
+    .string()
+    .email('Invalid email address')
+    .transform((email) => email.toLowerCase().trim()),
+});
+
+const verifyOTPSchema = z.object({
+  email: z
+    .string()
+    .email('Invalid email address')
+    .transform((email) => email.toLowerCase().trim()),
+  otp: z.string().length(6, 'OTP must be 6 digits'),
+});
+
 // ============================================
 // Type Exports
 // ============================================
@@ -201,6 +216,52 @@ export const verifyToken = async (
   }
 
   sendSuccess(res, { valid: true, user: req.user }, 'Token is valid');
+};
+
+// ============================================
+// Email Verification Controllers
+// ============================================
+
+export const sendEmailOTP = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const parseResult = sendOTPSchema.safeParse(req.body);
+    if (!parseResult.success) {
+      handleValidationError(res, parseResult.error);
+      return;
+    }
+
+    await authService.sendEmailVerificationOTP(parseResult.data.email);
+    sendSuccess(res, null, 'Verification code sent to your email');
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const verifyEmailOTP = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const parseResult = verifyOTPSchema.safeParse(req.body);
+    if (!parseResult.success) {
+      handleValidationError(res, parseResult.error);
+      return;
+    }
+
+    const verified = await authService.verifyEmailOTP(
+      parseResult.data.email,
+      parseResult.data.otp
+    );
+
+    sendSuccess(res, { verified }, 'Email verified successfully');
+  } catch (error) {
+    next(error);
+  }
 };
 
 // ============================================

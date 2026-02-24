@@ -12,6 +12,7 @@ import {
   InstituteInactiveError,
 } from '../../utils/errors';
 import { logger } from '../../utils/logger';
+import { emailService } from '../../lib/email.service';
 
 // ============================================
 // Configuration
@@ -28,6 +29,8 @@ const REFRESH_SECRET = new TextEncoder().encode(jwtSecret + '_refresh');
 const ACCESS_TOKEN_EXPIRY = process.env.ACCESS_TOKEN_EXPIRY || '15m';
 const REFRESH_TOKEN_EXPIRY = process.env.REFRESH_TOKEN_EXPIRY || '7d';
 const BCRYPT_ROUNDS = 12;
+const OTP_EXPIRY_MINUTES = 10;
+const OTP_LENGTH = 6;
 
 const JWT_ISSUER = 'preplyte-api';
 const JWT_AUDIENCE = 'preplyte-client';
@@ -74,6 +77,27 @@ class AuthService {
       throw new ValidationError('Invalid email format');
     }
 
+    // Check if user exists (from OTP verification)
+    const existingUser = await prisma.user.findUnique({
+      where: { email },
+      select: { 
+        id: true, 
+        emailVerified: true, 
+        isActive: true,
+        password: true,
+      },
+    });
+
+    // If user exists and is active with password, they're already registered
+    if (existingUser && existingUser.isActive && existingUser.password) {
+      throw new ConflictError('User with this email already exists');
+    }
+
+    // If user exists but email not verified
+    if (existingUser && !existingUser.emailVerified) {
+      throw new ValidationError('Please verify your email first');
+    }
+
     const institute = await prisma.institute.findUnique({
       where: { domain },
       select: { id: true, isActive: true, name: true },
@@ -86,17 +110,37 @@ class AuthService {
     const hashedPassword = await bcrypt.hash(password, BCRYPT_ROUNDS);
 
     try {
-      const user = await prisma.user.create({
-        data: {
-          email,
-          password: hashedPassword,
-          name: name || null,
-          role: 'USER',
-          instituteId: institute?.id || null,
-          tokenVersion: 0,
-        },
-        select: USER_SELECT,
-      });
+      let user;
+      
+      if (existingUser && existingUser.emailVerified) {
+        // Update existing user record (from OTP verification)
+        user = await prisma.user.update({
+          where: { id: existingUser.id },
+          data: {
+            password: hashedPassword,
+            name: name || null,
+            instituteId: institute?.id || null,
+            isActive: true, // Activate the user
+            emailVerificationOtp: null, // Clear OTP
+            emailVerificationOtpExpiry: null,
+          },
+          select: USER_SELECT,
+        });
+      } else {
+        // Create new user (shouldn't happen with OTP flow, but keep as fallback)
+        user = await prisma.user.create({
+          data: {
+            email,
+            password: hashedPassword,
+            name: name || null,
+            role: 'USER',
+            instituteId: institute?.id || null,
+            tokenVersion: 0,
+            emailVerified: false,
+          },
+          select: USER_SELECT,
+        });
+      }
 
       logger.info('User registered', { userId: user.id, email: user.email });
 
@@ -123,12 +167,12 @@ class AuthService {
       },
     });
 
-    if (!user || !(await bcrypt.compare(password, user.password))) {
+    if (!user || !user.password || !(await bcrypt.compare(password, user.password))) {
       throw new UnauthorizedError('Invalid email or password');
     }
 
     if (!user.isActive) {
-      throw new UnauthorizedError('Account is inactive');
+      throw new UnauthorizedError('Account is inactive. Please complete your registration.');
     }
 
     if (user.institute && !user.institute.isActive) {
@@ -346,6 +390,138 @@ async refreshToken(token: string) {
     }
 
     return user;
+  }
+
+  async sendEmailVerificationOTP(email: string): Promise<void> {
+    const normalizedEmail = email.toLowerCase().trim();
+
+    // Check if user exists
+    const user = await prisma.user.findUnique({
+      where: { email: normalizedEmail },
+      select: { 
+        id: true, 
+        emailVerified: true,
+        isActive: true,
+        password: true,
+      },
+    });
+
+    // If user is fully registered and active
+    if (user && user.emailVerified && user.isActive && user.password) {
+      throw new ConflictError('Email is already registered. Please login instead.');
+    }
+
+    // Generate 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000);
+
+    logger.info('Generated OTP', { 
+      email: normalizedEmail, 
+      otpLength: otp.length,
+      expiresAt: expiresAt.toISOString(),
+    });
+
+    // Store or update OTP
+    if (user) {
+      // Update existing user record
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          emailVerificationOtp: otp,
+          emailVerificationOtpExpiry: expiresAt,
+        },
+      });
+    } else {
+      // Create temporary user record for OTP verification
+      try {
+        await prisma.user.create({
+          data: {
+            email: normalizedEmail,
+            password: null, // Will be set during registration
+            role: 'USER',
+            emailVerified: false,
+            emailVerificationOtp: otp,
+            emailVerificationOtpExpiry: expiresAt,
+            isActive: false, // Mark as inactive until registration is complete
+          },
+        });
+      } catch (error) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
+          if (error.code === 'P2002') {
+            // Race condition: user was created between check and create
+            // Update the existing record
+            await prisma.user.update({
+              where: { email: normalizedEmail },
+              data: {
+                emailVerificationOtp: otp,
+                emailVerificationOtpExpiry: expiresAt,
+              },
+            });
+          } else {
+            throw error;
+          }
+        } else {
+          throw error;
+        }
+      }
+    }
+
+    // Send OTP via email
+    const emailSent = await emailService.sendOTP(normalizedEmail, otp);
+
+    if (!emailSent) {
+      logger.error('Email service returned false', { email: normalizedEmail });
+      throw new Error('Failed to send verification email. Please check your email configuration.');
+    }
+
+    logger.info('OTP sent successfully', { email: normalizedEmail, otpLength: otp.length });
+  }
+
+  async verifyEmailOTP(email: string, otp: string): Promise<boolean> {
+    const normalizedEmail = email.toLowerCase().trim();
+
+    const user = await prisma.user.findUnique({
+      where: { email: normalizedEmail },
+      select: {
+        id: true,
+        emailVerificationOtp: true,
+        emailVerificationOtpExpiry: true,
+        emailVerified: true,
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundError('User');
+    }
+
+    if (user.emailVerified) {
+      throw new ValidationError('Email is already verified');
+    }
+
+    if (!user.emailVerificationOtp || !user.emailVerificationOtpExpiry) {
+      throw new ValidationError('No OTP found. Please request a new one.');
+    }
+
+    if (new Date() > user.emailVerificationOtpExpiry) {
+      throw new ValidationError('OTP has expired. Please request a new one.');
+    }
+
+    if (user.emailVerificationOtp !== otp) {
+      throw new ValidationError('Invalid OTP');
+    }
+
+    // Mark email as verified and clear OTP
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        emailVerified: true,
+        emailVerificationOtp: null,
+        emailVerificationOtpExpiry: null,
+      },
+    });
+
+    logger.info('Email verified successfully', { email: normalizedEmail });
+    return true;
   }
 
   async cleanupExpiredTokens(): Promise<number> {
