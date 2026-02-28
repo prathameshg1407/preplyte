@@ -40,6 +40,7 @@ import { useResumes, useDeleteResume, useDuplicateResume } from '@/lib/hooks/use
 import { formatDistanceToNow } from 'date-fns';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { ResumeCardPreview } from './resume-card-preview';
 
 export function ResumeListNew() {
   const router = useRouter();
@@ -124,17 +125,14 @@ export function ResumeListNew() {
                   {/* Resume Preview */}
                   <Link href={`/resume-builder/${resume.id}`}>
                     <div className="relative h-48 bg-muted overflow-hidden cursor-pointer">
-                      {resume.templateThumbnail ? (
-                        <img
-                          src={resume.templateThumbnail}
-                          alt={resume.title}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      {/* Live Resume Preview */}
+                      <div className="w-full h-full bg-white">
+                        <ResumeCardPreview
+                          content={resume.content}
+                          styles={resume.templateStyles}
+                          headerStyle={resume.templateLayout.headerStyle}
                         />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <FileText className="h-12 w-12 text-muted-foreground" />
-                        </div>
-                      )}
+                      </div>
 
                       {/* Completion Badge */}
                       <div className="absolute top-2 left-2">
