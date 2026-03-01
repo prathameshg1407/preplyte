@@ -260,6 +260,8 @@ export function MachineModule({
             executionTime: latestSub.executionTime,
             memoryUsed: latestSub.memoryUsed,
             compileError: latestSub.compileError,
+            isSolved: latestSub.status === 'ACCEPTED',
+            message: latestSub.status === 'ACCEPTED' ? 'All test cases passed!' : 'Some test cases failed.',
           };
           store.addSubmitResult(currentQuestionData.id, resultShape as any);
         }

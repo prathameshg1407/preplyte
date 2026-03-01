@@ -330,28 +330,102 @@ export class MachineModuleExecutor extends BaseModuleExecutor {
       throw new NotFoundError('Question in attempt');
     }
 
-    logger.info('[MachineExecutor] Running code with custom input', {
-      questionId: payload.questionId,
-      languageId: payload.languageId,
-      hasCustomInput: !!payload.customInput,
-    });
+    if (payload.customInput !== undefined && payload.customInput !== null) {
+      logger.info('[MachineExecutor] Running code with custom input', {
+        questionId: payload.questionId,
+        languageId: payload.languageId,
+        hasCustomInput: !!payload.customInput,
+      });
 
-    // Execute with custom input (no test case validation)
-    const result = await this.runCodeWithInput(
-      payload.code,
-      payload.languageId,
-      payload.customInput || ''
-    );
+      // Execute with custom input (no test case validation)
+      const result = await this.runCodeWithInput(
+        payload.code,
+        payload.languageId,
+        payload.customInput || ''
+      );
 
-    // Return execution result without modifying submission data
-    return {
-      questions: data.questions,
-      _runResult: {
-        stdout: result.stdout,
-        stderr: result.stderr,
-        executionTime: result.executionTime,
-      },
-    };
+      return {
+        questions: data.questions,
+        _runResult: {
+          executionType: 'custom_input',
+          result: {
+            input: payload.customInput || '',
+            output: result.stdout || result.stderr || '',
+            executionTime: result.executionTime || 0,
+            memoryUsed: result.memoryUsed || 0,
+            status: result.status,
+          },
+          compilationStatus: result.compileError ? 'COMPILATION_ERROR' : 'SUCCESS',
+          compileOutput: result.compileError,
+        } as any,
+      };
+    } else {
+      logger.info('[MachineExecutor] Running code with sample test cases', {
+        questionId: payload.questionId,
+        languageId: payload.languageId,
+      });
+
+      const moduleQuestion = await this.prisma.mockDriveModuleQuestion.findUnique({
+        where: { id: payload.questionId },
+        include: {
+          machineQuestion: {
+            include: { testCases: { orderBy: { order: 'asc' } } },
+          },
+        },
+      });
+
+      if (!moduleQuestion?.machineQuestion) {
+        throw new NotFoundError('Question data');
+      }
+
+      // Execute against ALL test cases for "Run" to show both sample and hidden results
+      const testCases: TestCaseData[] = moduleQuestion.machineQuestion.testCases
+        .map((tc) => ({
+          id: tc.id,
+          input: tc.input,
+          expectedOutput: tc.expectedOutput,
+          type: tc.type,
+        }));
+
+      if (testCases.length === 0) {
+        throw new InternalError('No sample test cases configured for this question');
+      }
+
+      const executionResult = await this.executeCode(
+        payload.code,
+        payload.languageId,
+        testCases,
+        config
+      );
+
+      return {
+        questions: data.questions,
+        _runResult: {
+          executionType: 'sample_test_cases',
+          results: (executionResult.testCaseResults || []).map((tc, index) => ({
+            testCaseId: tc.testCaseId,
+            testCaseNumber: index + 1,
+            type: testCases[index].type,
+            input: tc.input,
+            expectedOutput: tc.expectedOutput,
+            actualOutput: tc.actualOutput,
+            status: tc.passed ? 'PASSED' : (tc.error ? 'RUNTIME_ERROR' : 'FAILED'),
+            executionTime: tc.executionTime,
+            memoryUsed: tc.memoryUsed,
+            error: tc.error,
+          })),
+          summary: {
+            totalTestCases: executionResult.totalTestCases,
+            passed: executionResult.testCasesPassed,
+            failed: executionResult.totalTestCases - executionResult.testCasesPassed,
+            averageExecutionTime: executionResult.executionTime || 0,
+            maxMemoryUsed: executionResult.memoryUsed || 0,
+          },
+          compilationStatus: executionResult.compileError ? 'COMPILATION_ERROR' : 'SUCCESS',
+          compileOutput: executionResult.compileError,
+        } as any,
+      };
+    }
   }
 
   // ============================================

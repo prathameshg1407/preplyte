@@ -235,31 +235,33 @@ export function ExecutionPanel({
 
         {/* Custom Input Tab */}
         <TabsContent value="input" className="m-0 flex-1 flex-col p-0 min-h-0 data-[state=active]:flex">
-          <div className="flex h-full flex-col p-4">
-            <label className="mb-2 text-xs font-medium text-muted-foreground">
-              Custom Input (stdin)
-            </label>
-            <Textarea
-              value={customInput}
-              onChange={(e) => setCustomInput(e.target.value)}
-              placeholder="Enter your test input..."
-              className="min-h-[100px] flex-1 resize-none font-mono text-sm"
-            />
-            <Button
-              variant="outline"
-              size="sm"
-              className="mt-3 gap-2 self-start"
-              onClick={handleRunWithCustomInput}
-              disabled={isRunning || isSubmitting}
-            >
-              {isRunning ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Play className="h-4 w-4" />
-              )}
-              Run with Custom Input
-            </Button>
-          </div>
+          <ScrollArea className="h-full">
+            <div className="flex h-full min-h-[300px] flex-col p-4">
+              <label className="mb-2 text-xs font-medium text-muted-foreground">
+                Custom Input (stdin)
+              </label>
+              <Textarea
+                value={customInput}
+                onChange={(e) => setCustomInput(e.target.value)}
+                placeholder="Enter your test input..."
+                className="min-h-[150px] flex-1 resize-none font-mono text-sm"
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-3 gap-2 self-start"
+                onClick={handleRunWithCustomInput}
+                disabled={isRunning || isSubmitting}
+              >
+                {isRunning ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Play className="h-4 w-4" />
+                )}
+                Run with Custom Input
+              </Button>
+            </div>
+          </ScrollArea>
         </TabsContent>
 
         {/* Output Tab */}
@@ -387,7 +389,7 @@ function RunResultDisplay({ result }: { result: RunCodeResponse }) {
             <div className="font-semibold">
               {result.summary.passed} / {result.summary.totalTestCases} Passed
             </div>
-            <div className="text-xs text-muted-foreground">Sample test cases</div>
+            <div className="text-xs text-muted-foreground">All test cases (Visible & Hidden)</div>
           </div>
         </div>
 

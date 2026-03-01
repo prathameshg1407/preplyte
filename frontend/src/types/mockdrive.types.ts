@@ -456,7 +456,7 @@ export interface MachineRunResult {
 export interface MachineModuleData {
   questions: MachineQuestionAttempt[];
   summary?: MachineModuleSummary;
-  _runResult?: MachineRunResult;
+  _runResult?: any;
 }
 
 // AI Interview Module Data
