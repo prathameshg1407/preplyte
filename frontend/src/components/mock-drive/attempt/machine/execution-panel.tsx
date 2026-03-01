@@ -66,6 +66,14 @@ export function ExecutionPanel({
   const handleSubmit = () => onSubmit();
 
   const getExecutionStats = () => {
+    // If we're viewing submissions, prefer submit stats
+    if (activeTab === "submissions" && submitResult) {
+      return {
+        time: submitResult.executionTime ?? undefined,
+        memory: submitResult.memoryUsed ?? undefined,
+      };
+    }
+
     if (!runResult) return null;
     if (isRunCodeCustomInput(runResult)) {
       return {
@@ -171,7 +179,7 @@ export function ExecutionPanel({
       <Tabs
         value={getInternalTab()}
         onValueChange={(v) => handleInternalTabChange(v as "input" | "output" | "result")}
-        className="flex flex-1 flex-col"
+        className="flex flex-1 flex-col min-h-0"
       >
         <TabsList className="h-auto w-full justify-start gap-0 rounded-none border-b border-border bg-transparent p-0">
           <TabsTrigger
@@ -226,7 +234,7 @@ export function ExecutionPanel({
         </TabsList>
 
         {/* Custom Input Tab */}
-        <TabsContent value="input" className="m-0 flex-1 p-0">
+        <TabsContent value="input" className="m-0 flex-1 flex-col p-0 min-h-0 data-[state=active]:flex">
           <div className="flex h-full flex-col p-4">
             <label className="mb-2 text-xs font-medium text-muted-foreground">
               Custom Input (stdin)
@@ -255,7 +263,7 @@ export function ExecutionPanel({
         </TabsContent>
 
         {/* Output Tab */}
-        <TabsContent value="output" className="m-0 flex-1 p-0">
+        <TabsContent value="output" className="m-0 flex-1 flex-col p-0 min-h-0 data-[state=active]:flex">
           <ScrollArea className="h-full">
             <div className="p-4">
               {!runResult ? (
@@ -268,7 +276,7 @@ export function ExecutionPanel({
         </TabsContent>
 
         {/* Submission Result Tab */}
-        <TabsContent value="result" className="m-0 flex-1 p-0">
+        <TabsContent value="result" className="m-0 flex-1 flex-col p-0 min-h-0 data-[state=active]:flex">
           <ScrollArea className="h-full">
             <div className="p-4">
               {!submitResult ? (
@@ -439,7 +447,8 @@ function TestCaseResultItem({
   result: TestCaseResult;
   index: number;
 }) {
-  const [isExpanded, setIsExpanded] = useState(!result.status.includes("PASSED"));
+  const isHidden = result.input === "[Hidden]";
+  const [isExpanded, setIsExpanded] = useState(!result.status.includes("PASSED") && !isHidden);
   const isPassed = result.status === "PASSED";
 
   return (
@@ -455,8 +464,12 @@ function TestCaseResultItem({
       )}
     >
       <button
-        onClick={() => setIsExpanded(!isExpanded)}
-        className="flex w-full items-center justify-between p-3 text-left transition-colors hover:bg-muted/30"
+        onClick={() => !isHidden && setIsExpanded(!isExpanded)}
+        disabled={isHidden}
+        className={cn(
+          "flex w-full items-center justify-between p-3 text-left transition-colors",
+          isHidden ? "cursor-default" : "hover:bg-muted/30"
+        )}
       >
         <div className="flex items-center gap-3">
           {isPassed ? (
@@ -466,6 +479,7 @@ function TestCaseResultItem({
           )}
           <span className="text-sm font-medium">
             Test Case {result.testCaseNumber ?? index + 1}
+            {isHidden && <span className="ml-2 text-xs font-normal text-muted-foreground">(Hidden)</span>}
           </span>
         </div>
         <div className="flex items-center gap-2">
@@ -480,10 +494,12 @@ function TestCaseResultItem({
           >
             {result.status.replace(/_/g, " ")}
           </Badge>
-          {isExpanded ? (
-            <ChevronDown className="h-4 w-4 text-muted-foreground" />
-          ) : (
-            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+          {!isHidden && (
+            isExpanded ? (
+              <ChevronDown className="h-4 w-4 text-muted-foreground" />
+            ) : (
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            )
           )}
         </div>
       </button>
@@ -608,7 +624,7 @@ function SubmitResultDisplay({ result }: { result: SubmitCodeResponse }) {
       </div>
 
       {/* Failed Test Case Info */}
-      {result.failedTestCase && (
+      {result.failedTestCase && !result.testCaseResults && (
         <div className="rounded-xl border-2 border-rose-500/30 bg-rose-500/5 p-4">
           <div className="mb-3 flex items-center gap-2">
             <AlertTriangle className="h-4 w-4 text-rose-500" />
@@ -632,6 +648,23 @@ function SubmitResultDisplay({ result }: { result: SubmitCodeResponse }) {
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Test Case Results Grid (From updated backend response) */}
+      {result.testCaseResults && result.testCaseResults.length > 0 && (
+        <div className="mt-4 space-y-2">
+          <h4 className="text-sm font-medium text-muted-foreground mb-2">Detailed Test Cases</h4>
+          {result.testCaseResults.map((tc, index) => (
+            <TestCaseResultItem
+              key={tc.testCaseId || index}
+              result={{
+                ...tc,
+                status: (tc as any).passed ? "PASSED" : ((tc as any).error ? "RUNTIME_ERROR" : "FAILED")
+              }}
+              index={index}
+            />
+          ))}
         </div>
       )}
     </motion.div>

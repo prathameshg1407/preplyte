@@ -92,6 +92,13 @@ export class AptitudeModuleExecutor extends BaseModuleExecutor {
         aptitudeQuestion: {
           include: { options: true },
         },
+        module: {
+          include: {
+            mockDrive: {
+              select: { shuffleQuestions: true }
+            }
+          }
+        }
       },
     });
 
@@ -99,9 +106,12 @@ export class AptitudeModuleExecutor extends BaseModuleExecutor {
       throw new NotFoundError('Questions for this module');
     }
 
-    const shuffledQuestions = this.shuffleWithSeed(moduleQuestions, context.attemptId);
+    const shouldShuffle = moduleQuestions[0].module.mockDrive.shuffleQuestions;
+    const finalQuestions = shouldShuffle
+      ? this.shuffleWithSeed(moduleQuestions, context.attemptId)
+      : moduleQuestions;
 
-    const questions: AptitudeQuestionAttempt[] = shuffledQuestions.map((mq, index) => {
+    const questions: AptitudeQuestionAttempt[] = finalQuestions.map((mq, index) => {
       if (!mq.aptitudeQuestion) {
         throw new InternalError(`Question data missing for module question ${mq.id}`);
       }

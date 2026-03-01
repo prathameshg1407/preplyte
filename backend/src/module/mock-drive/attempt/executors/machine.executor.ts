@@ -576,6 +576,7 @@ export class MachineModuleExecutor extends BaseModuleExecutor {
       status: result.status,
       testCasesPassed: result.testCasesPassed,
       testCasesTotal: result.totalTestCases,
+      testCaseResults: result.testCaseResults,
       executionTime: result.executionTime,
       memoryUsed: result.memoryUsed,
       stdout: result.stdout,

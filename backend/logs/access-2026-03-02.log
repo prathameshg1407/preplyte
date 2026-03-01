@@ -1,0 +1,297 @@
+{"baseURL":"https://judge0-ce.p.rapidapi.com","level":"info","message":"Judge0 client initialized","service":"preplyte-api","timestamp":"2026-03-02 03:15:57","useRapidAPI":true}
+{"level":"info","message":"[TTS] Using Deepgram for text-to-speech","service":"preplyte-api","timestamp":"2026-03-02 03:15:57"}
+{"keyLength":39,"keyPrefix":"AIzaSyC7yj...","level":"info","message":"Gemini API Key loaded:","service":"preplyte-api","timestamp":"2026-03-02 03:15:58"}
+{"environment":"development","host":"0.0.0.0","level":"info","message":"Starting server...","port":4000,"service":"preplyte-api","timestamp":"2026-03-02 03:15:58"}
+{"level":"info","message":"Checking database connection...","service":"preplyte-api","timestamp":"2026-03-02 03:15:58"}
+{"level":"info","message":"✅ Database connected successfully","service":"preplyte-api","timestamp":"2026-03-02 03:15:58"}
+{"level":"info","message":"[WS Gateway] WebSocket server initialized","path":"/ws/interview/:sessionId","service":"preplyte-api","timestamp":"2026-03-02 03:15:58"}
+{"api":"http://localhost:4000/api","environment":"development","health":"http://localhost:4000/health","host":"0.0.0.0","level":"info","message":"🚀 Server running","port":4000,"service":"preplyte-api","timestamp":"2026-03-02 03:15:58","websocket":"ws://localhost:4000/ws/interview/:sessionId"}
+{"intervalHours":24,"level":"info","message":"Starting token cleanup scheduler","service":"preplyte-api","timestamp":"2026-03-02 03:15:58"}
+{"level":"info","message":"Starting token cleanup job","service":"preplyte-api","timestamp":"2026-03-02 03:15:58"}
+{"count":67,"level":"info","message":"Cleaned up expired tokens","service":"preplyte-api","timestamp":"2026-03-02 03:15:58"}
+{"level":"info","message":"Token cleanup completed","service":"preplyte-api","timestamp":"2026-03-02 03:15:58","tokensRemoved":67}
+{"baseURL":"https://judge0-ce.p.rapidapi.com","level":"info","message":"Judge0 client initialized","service":"preplyte-api","timestamp":"2026-03-02 04:20:33","useRapidAPI":true}
+{"level":"info","message":"[TTS] Using Deepgram for text-to-speech","service":"preplyte-api","timestamp":"2026-03-02 04:20:33"}
+{"keyLength":39,"keyPrefix":"AIzaSyC7yj...","level":"info","message":"Gemini API Key loaded:","service":"preplyte-api","timestamp":"2026-03-02 04:20:33"}
+{"environment":"development","host":"0.0.0.0","level":"info","message":"Starting server...","port":4000,"service":"preplyte-api","timestamp":"2026-03-02 04:20:33"}
+{"level":"info","message":"Checking database connection...","service":"preplyte-api","timestamp":"2026-03-02 04:20:33"}
+{"level":"info","message":"✅ Database connected successfully","service":"preplyte-api","timestamp":"2026-03-02 04:20:33"}
+{"level":"info","message":"[WS Gateway] WebSocket server initialized","path":"/ws/interview/:sessionId","service":"preplyte-api","timestamp":"2026-03-02 04:20:33"}
+{"api":"http://localhost:4000/api","environment":"development","health":"http://localhost:4000/health","host":"0.0.0.0","level":"info","message":"🚀 Server running","port":4000,"service":"preplyte-api","timestamp":"2026-03-02 04:20:33","websocket":"ws://localhost:4000/ws/interview/:sessionId"}
+{"intervalHours":24,"level":"info","message":"Starting token cleanup scheduler","service":"preplyte-api","timestamp":"2026-03-02 04:20:33"}
+{"level":"info","message":"Starting token cleanup job","service":"preplyte-api","timestamp":"2026-03-02 04:20:33"}
+{"count":0,"level":"info","message":"Cleaned up expired tokens","service":"preplyte-api","timestamp":"2026-03-02 04:20:33"}
+{"level":"info","message":"Token cleanup completed","service":"preplyte-api","timestamp":"2026-03-02 04:20:33","tokensRemoved":0}
+{"level":"info","message":"\u001b[0mGET /api/dashboard/student \u001b[33m401\u001b[0m 19.138 ms - 108\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:24:06"}
+{"error":{"claim":"exp","code":"ERR_JWT_EXPIRED","name":"JWTExpired","payload":{"aud":"preplyte-client","exp":1772398880,"iat":1771794080,"iss":"preplyte-api","sub":"cmluqfswb0007p3qckrd6vla6","tokenVersion":7},"reason":"check_failed"},"level":"warn","message":"Invalid refresh token JWT","service":"preplyte-api","timestamp":"2026-03-02 04:24:06"}
+{"code":"UNAUTHORIZED","ip":"127.0.0.1","level":"warn","message":"Operational error Invalid refresh token","method":"POST","path":"/api/auth/refresh","requestId":"mm8ck5r5-2648db317110e499","service":"preplyte-api","timestamp":"2026-03-02 04:24:06","userAgent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36"}
+{"level":"info","message":"\u001b[0mPOST /api/auth/refresh \u001b[33m401\u001b[0m 115.792 ms - 123\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:24:06"}
+{"level":"info","message":"User logged in","service":"preplyte-api","timestamp":"2026-03-02 04:24:23","userId":"cmluqlns4000gp3qc2r9ju34o"}
+{"level":"info","message":"\u001b[0mPOST /api/auth/login \u001b[32m200\u001b[0m 528.790 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:24:23"}
+{"level":"info","message":"\u001b[0mGET /api/dashboard/student \u001b[32m200\u001b[0m 219.159 ms - 839\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:24:24"}
+{"level":"info","message":"\u001b[0mGET /api/mock-drives?page=1&limit=10&status=PUBLISHED%2CREGISTRATION_OPEN%2CREGISTRATION_CLOSED%2CIN_PROGRESS \u001b[32m200\u001b[0m 106.573 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:24:29"}
+{"level":"info","message":"\u001b[0mGET /api/dashboard/institute-admin \u001b[33m401\u001b[0m 0.776 ms - 108\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:24:48"}
+{"error":{"claim":"exp","code":"ERR_JWT_EXPIRED","name":"JWTExpired","payload":{"aud":"preplyte-client","exp":1772400525,"iat":1771795725,"iss":"preplyte-api","sub":"cmluqaidk0003zwnltac2vpan","tokenVersion":6},"reason":"check_failed"},"level":"warn","message":"Invalid refresh token JWT","service":"preplyte-api","timestamp":"2026-03-02 04:24:48"}
+{"code":"UNAUTHORIZED","ip":"127.0.0.1","level":"warn","message":"Operational error Invalid refresh token","method":"POST","path":"/api/auth/refresh","requestId":"mm8cl20z-952d9e17786f6d39","service":"preplyte-api","timestamp":"2026-03-02 04:24:48","userAgent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36 Edg/145.0.0.0"}
+{"level":"info","message":"\u001b[0mPOST /api/auth/refresh \u001b[33m401\u001b[0m 3.937 ms - 123\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:24:48"}
+{"level":"info","message":"User logged in","service":"preplyte-api","timestamp":"2026-03-02 04:25:03","userId":"cmluqaidk0003zwnltac2vpan"}
+{"level":"info","message":"\u001b[0mPOST /api/auth/login \u001b[32m200\u001b[0m 107.402 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:25:03"}
+{"level":"info","message":"\u001b[0mGET /api/dashboard/institute-admin \u001b[32m200\u001b[0m 65.547 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:25:11"}
+{"level":"info","message":"\u001b[0mGET /api/institute/mock-drive?page=1&limit=10&sortBy=createdAt&sortOrder=desc \u001b[32m200\u001b[0m 65.668 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:25:17"}
+{"level":"info","message":"\u001b[0mGET /api/institute/mock-drive/cmly7qzd3000a9zjooky82q4l \u001b[36m304\u001b[0m 149.933 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:25:28"}
+{"instituteId":"c1d2e3f4g5h6i7j8k9l0","level":"info","message":"Creating mock drive","service":"preplyte-api","timestamp":"2026-03-02 04:27:14","title":"test 5"}
+{"durationMs":42,"instituteId":"c1d2e3f4g5h6i7j8k9l0","instituteName":"PVPPCOE","level":"info","message":"Mock drive created successfully","mockDriveId":"cmm8co6n200051gvmbkhweu7p","service":"preplyte-api","timestamp":"2026-03-02 04:27:14"}
+{"level":"info","message":"\u001b[0mPOST /api/institute/mock-drive \u001b[32m201\u001b[0m 50.384 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:27:14"}
+{"level":"info","message":"Module added","mockDriveId":"cmm8co6n200051gvmbkhweu7p","moduleId":"cmm8co6oq00071gvmiw3ow6gz","service":"preplyte-api","timestamp":"2026-03-02 04:27:14"}
+{"level":"info","message":"\u001b[0mPOST /api/institute/mock-drive/cmm8co6n200051gvmbkhweu7p/modules \u001b[32m201\u001b[0m 41.371 ms - 506\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:27:14"}
+{"level":"info","message":"\u001b[0mGET /api/institute/mock-drive/cmm8co6n200051gvmbkhweu7p \u001b[32m200\u001b[0m 50.835 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:27:14"}
+{"level":"info","message":"\u001b[0mGET /api/institute/mock-drive/cmm8co6n200051gvmbkhweu7p/stats \u001b[32m200\u001b[0m 65.899 ms - 259\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:27:18"}
+{"level":"info","message":"\u001b[0mGET /api/institute/mock-drive/cmm8co6n200051gvmbkhweu7p \u001b[36m304\u001b[0m 119.387 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:27:18"}
+{"instituteId":"c1d2e3f4g5h6i7j8k9l0","level":"info","message":"Publishing mock drive","mockDriveId":"cmm8co6n200051gvmbkhweu7p","service":"preplyte-api","timestamp":"2026-03-02 04:27:19"}
+{"instituteId":"c1d2e3f4g5h6i7j8k9l0","level":"info","message":"Validating mock drive for publish","mockDriveId":"cmm8co6n200051gvmbkhweu7p","service":"preplyte-api","timestamp":"2026-03-02 04:27:19"}
+{"durationMs":32,"errorCount":0,"isValid":true,"level":"info","message":"Mock drive validation completed","mockDriveId":"cmm8co6n200051gvmbkhweu7p","service":"preplyte-api","timestamp":"2026-03-02 04:27:19","warningCount":2}
+{"level":"info","message":"Generating module questions","mockDriveId":"cmm8co6n200051gvmbkhweu7p","service":"preplyte-api","timestamp":"2026-03-02 04:27:19"}
+{"durationMs":26,"level":"info","message":"All module questions generated","mockDriveId":"cmm8co6n200051gvmbkhweu7p","moduleCount":1,"service":"preplyte-api","timestamp":"2026-03-02 04:27:19"}
+{"durationMs":96,"level":"info","message":"Mock drive published successfully","mockDriveId":"cmm8co6n200051gvmbkhweu7p","service":"preplyte-api","timestamp":"2026-03-02 04:27:19"}
+{"level":"info","message":"\u001b[0mPOST /api/institute/mock-drive/cmm8co6n200051gvmbkhweu7p/publish \u001b[32m200\u001b[0m 106.316 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:27:19"}
+{"level":"info","message":"\u001b[0mGET /api/institute/mock-drive/cmm8co6n200051gvmbkhweu7p \u001b[32m200\u001b[0m 46.484 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:27:19"}
+{"level":"info","message":"\u001b[0mGET /api/resume-builder \u001b[32m200\u001b[0m 19.899 ms - 115\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:27:40"}
+{"level":"info","message":"\u001b[0mGET /api/mock-drives?page=1&limit=10&status=PUBLISHED%2CREGISTRATION_OPEN%2CREGISTRATION_CLOSED%2CIN_PROGRESS \u001b[32m200\u001b[0m 65.178 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:27:41"}
+{"level":"info","message":"\u001b[0mGET /api/mock-drives/cmm8co6n200051gvmbkhweu7p \u001b[32m200\u001b[0m 92.587 ms - 868\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:27:45"}
+{"level":"info","message":"\u001b[0mGET /api/mock-drives/cmm8co6n200051gvmbkhweu7p/eligibility \u001b[32m200\u001b[0m 205.812 ms - 342\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:27:46"}
+{"level":"info","message":"\u001b[0mGET /api/institute/mock-drive?page=1&limit=10&sortBy=createdAt&sortOrder=desc \u001b[32m200\u001b[0m 48.941 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:27:59"}
+{"instituteId":"c1d2e3f4g5h6i7j8k9l0","level":"info","message":"Duplicating mock drive","mockDriveId":"cmm8co6n200051gvmbkhweu7p","service":"preplyte-api","timestamp":"2026-03-02 04:28:04"}
+{"level":"info","message":"Auto-updated 1 drives to REGISTRATION_OPEN","service":"preplyte-api","timestamp":"2026-03-02 04:28:04"}
+{"level":"info","message":"Mock drive duplicated","newId":"cmm8cp9co000g1gvmoqv513g8","originalId":"cmm8co6n200051gvmbkhweu7p","service":"preplyte-api","timestamp":"2026-03-02 04:28:04"}
+{"level":"info","message":"\u001b[0mPOST /api/institute/mock-drive/cmm8co6n200051gvmbkhweu7p/duplicate \u001b[32m201\u001b[0m 116.849 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:28:04"}
+{"level":"info","message":"\u001b[0mGET /api/institute/mock-drive?page=1&limit=10&sortBy=createdAt&sortOrder=desc \u001b[32m200\u001b[0m 47.640 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:28:04"}
+{"level":"info","message":"\u001b[0mGET /api/institute/mock-drive/cmm8cp9co000g1gvmoqv513g8 \u001b[32m200\u001b[0m 70.944 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:28:07"}
+{"level":"info","message":"\u001b[0mGET /api/institute/mock-drive?page=1&limit=10&sortBy=createdAt&sortOrder=desc \u001b[36m304\u001b[0m 103.999 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:29:50"}
+{"level":"info","message":"\u001b[0mGET /api/institute/mock-drive/cmm8co6n200051gvmbkhweu7p/stats \u001b[36m304\u001b[0m 127.306 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:29:52"}
+{"level":"info","message":"\u001b[0mGET /api/institute/mock-drive/cmm8co6n200051gvmbkhweu7p \u001b[32m200\u001b[0m 150.060 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:29:52"}
+{"level":"info","message":"\u001b[0mGET /api/mock-drives?page=1&limit=10&status=PUBLISHED%2CREGISTRATION_OPEN%2CREGISTRATION_CLOSED%2CIN_PROGRESS \u001b[32m200\u001b[0m 81.639 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:29:59"}
+{"level":"info","message":"Auto-updated 1 drives to REGISTRATION_CLOSED","service":"preplyte-api","timestamp":"2026-03-02 04:30:01"}
+{"level":"info","message":"\u001b[0mGET /api/mock-drives/cmm8co6n200051gvmbkhweu7p \u001b[32m200\u001b[0m 103.636 ms - 878\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:30:01"}
+{"level":"info","message":"\u001b[0mGET /api/mock-drives/cmm8co6n200051gvmbkhweu7p/eligibility \u001b[32m200\u001b[0m 104.926 ms - 341\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:30:01"}
+{"level":"info","message":"\u001b[0mGET /api/mock-drives/cmm8co6n200051gvmbkhweu7p \u001b[36m304\u001b[0m 348.422 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:30:10"}
+{"level":"info","message":"\u001b[0mGET /api/mock-drives/cmm8co6n200051gvmbkhweu7p/eligibility \u001b[36m304\u001b[0m 378.680 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:30:10"}
+{"instituteId":"c1d2e3f4g5h6i7j8k9l0","level":"info","message":"Duplicating mock drive","mockDriveId":"cmm8co6n200051gvmbkhweu7p","service":"preplyte-api","timestamp":"2026-03-02 04:30:21"}
+{"level":"info","message":"Mock drive duplicated","newId":"cmm8cs6wb000k1gvm0o4fa4zr","originalId":"cmm8co6n200051gvmbkhweu7p","service":"preplyte-api","timestamp":"2026-03-02 04:30:21"}
+{"level":"info","message":"\u001b[0mPOST /api/institute/mock-drive/cmm8co6n200051gvmbkhweu7p/duplicate \u001b[32m201\u001b[0m 262.216 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:30:21"}
+{"level":"info","message":"\u001b[0mGET /api/institute/mock-drive/cmm8cs6wb000k1gvm0o4fa4zr/stats \u001b[32m200\u001b[0m 46.974 ms - 259\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:30:22"}
+{"level":"info","message":"\u001b[0mGET /api/institute/mock-drive/cmm8cs6wb000k1gvm0o4fa4zr \u001b[32m200\u001b[0m 103.730 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:30:22"}
+{"instituteId":"c1d2e3f4g5h6i7j8k9l0","level":"info","message":"Creating mock drive","service":"preplyte-api","timestamp":"2026-03-02 04:31:23","title":"apti"}
+{"durationMs":25,"instituteId":"c1d2e3f4g5h6i7j8k9l0","instituteName":"PVPPCOE","level":"info","message":"Mock drive created successfully","mockDriveId":"cmm8ctinj000n1gvmu5vs1pd4","service":"preplyte-api","timestamp":"2026-03-02 04:31:23"}
+{"level":"info","message":"\u001b[0mPOST /api/institute/mock-drive \u001b[32m201\u001b[0m 34.754 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:31:23"}
+{"level":"info","message":"Module added","mockDriveId":"cmm8ctinj000n1gvmu5vs1pd4","moduleId":"cmm8ctiwx000p1gvmzm2vuy5t","service":"preplyte-api","timestamp":"2026-03-02 04:31:23"}
+{"level":"info","message":"\u001b[0mPOST /api/institute/mock-drive/cmm8ctinj000n1gvmu5vs1pd4/modules \u001b[32m201\u001b[0m 52.358 ms - 506\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:31:23"}
+{"level":"info","message":"Auto-updated 1 drives to IN_PROGRESS","service":"preplyte-api","timestamp":"2026-03-02 04:31:23"}
+{"level":"info","message":"\u001b[0mGET /api/institute/mock-drive/cmm8ctinj000n1gvmu5vs1pd4 \u001b[32m200\u001b[0m 55.013 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:31:23"}
+{"level":"info","message":"\u001b[0mGET /api/institute/mock-drive/cmm8ctinj000n1gvmu5vs1pd4/stats \u001b[32m200\u001b[0m 63.695 ms - 259\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:31:24"}
+{"level":"info","message":"\u001b[0mGET /api/institute/mock-drive/cmm8ctinj000n1gvmu5vs1pd4 \u001b[36m304\u001b[0m 109.311 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:31:24"}
+{"instituteId":"c1d2e3f4g5h6i7j8k9l0","level":"info","message":"Publishing mock drive","mockDriveId":"cmm8ctinj000n1gvmu5vs1pd4","service":"preplyte-api","timestamp":"2026-03-02 04:31:27"}
+{"instituteId":"c1d2e3f4g5h6i7j8k9l0","level":"info","message":"Validating mock drive for publish","mockDriveId":"cmm8ctinj000n1gvmu5vs1pd4","service":"preplyte-api","timestamp":"2026-03-02 04:31:27"}
+{"durationMs":25,"errorCount":0,"isValid":true,"level":"info","message":"Mock drive validation completed","mockDriveId":"cmm8ctinj000n1gvmu5vs1pd4","service":"preplyte-api","timestamp":"2026-03-02 04:31:27","warningCount":2}
+{"level":"info","message":"Generating module questions","mockDriveId":"cmm8ctinj000n1gvmu5vs1pd4","service":"preplyte-api","timestamp":"2026-03-02 04:31:27"}
+{"durationMs":14,"level":"info","message":"All module questions generated","mockDriveId":"cmm8ctinj000n1gvmu5vs1pd4","moduleCount":1,"service":"preplyte-api","timestamp":"2026-03-02 04:31:27"}
+{"durationMs":68,"level":"info","message":"Mock drive published successfully","mockDriveId":"cmm8ctinj000n1gvmu5vs1pd4","service":"preplyte-api","timestamp":"2026-03-02 04:31:27"}
+{"level":"info","message":"\u001b[0mPOST /api/institute/mock-drive/cmm8ctinj000n1gvmu5vs1pd4/publish \u001b[32m200\u001b[0m 78.862 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:31:27"}
+{"level":"info","message":"\u001b[0mGET /api/institute/mock-drive/cmm8ctinj000n1gvmu5vs1pd4 \u001b[32m200\u001b[0m 35.883 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:31:27"}
+{"level":"info","message":"\u001b[0mGET /api/mock-drives?page=1&limit=10&status=PUBLISHED%2CREGISTRATION_OPEN%2CREGISTRATION_CLOSED%2CIN_PROGRESS \u001b[32m200\u001b[0m 57.853 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:31:35"}
+{"level":"info","message":"\u001b[0mGET /api/mock-drives/cmm8ctinj000n1gvmu5vs1pd4 \u001b[32m200\u001b[0m 41.665 ms - 866\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:31:41"}
+{"level":"info","message":"\u001b[0mGET /api/mock-drives/cmm8ctinj000n1gvmu5vs1pd4/eligibility \u001b[32m200\u001b[0m 58.288 ms - 342\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:31:41"}
+{"level":"info","message":"\u001b[0mGET /api/mock-drives?page=1&limit=10&status=PUBLISHED%2CREGISTRATION_OPEN%2CREGISTRATION_CLOSED%2CIN_PROGRESS \u001b[36m304\u001b[0m 82.919 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:31:54"}
+{"level":"info","message":"User logged in","service":"preplyte-api","timestamp":"2026-03-02 04:32:45","userId":"cmluqfswb0007p3qckrd6vla6"}
+{"level":"info","message":"\u001b[0mPOST /api/auth/login \u001b[32m200\u001b[0m 375.434 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:32:45"}
+{"level":"info","message":"\u001b[0mGET /api/dashboard/student \u001b[32m200\u001b[0m 165.478 ms - 681\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:32:48"}
+{"level":"info","message":"\u001b[0mGET /api/mock-drives?page=1&limit=10&status=PUBLISHED%2CREGISTRATION_OPEN%2CREGISTRATION_CLOSED%2CIN_PROGRESS \u001b[32m200\u001b[0m 122.395 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:32:56"}
+{"level":"info","message":"Auto-updated 1 drives to REGISTRATION_OPEN","service":"preplyte-api","timestamp":"2026-03-02 04:33:06"}
+{"level":"info","message":"\u001b[0mGET /api/mock-drives/cmm8ctinj000n1gvmu5vs1pd4 \u001b[32m200\u001b[0m 88.389 ms - 874\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:33:06"}
+{"level":"info","message":"\u001b[0mGET /api/mock-drives/cmm8ctinj000n1gvmu5vs1pd4/eligibility \u001b[32m200\u001b[0m 93.016 ms - 299\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:33:06"}
+{"driveId":"cmm8ctinj000n1gvmu5vs1pd4","level":"info","message":"User registered for mock drive","registrationId":"cmm8cvr9c000z1gvmmbw7is34","service":"preplyte-api","timestamp":"2026-03-02 04:33:07","userId":"cmluqfswb0007p3qckrd6vla6"}
+{"level":"info","message":"\u001b[0mPOST /api/mock-drives/cmm8ctinj000n1gvmu5vs1pd4/register \u001b[32m201\u001b[0m 65.693 ms - 367\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:33:07"}
+{"level":"info","message":"\u001b[0mGET /api/mock-drives/cmm8ctinj000n1gvmu5vs1pd4 \u001b[32m200\u001b[0m 86.882 ms - 878\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:33:08"}
+{"level":"info","message":"\u001b[0mGET /api/mock-drives/cmm8ctinj000n1gvmu5vs1pd4/eligibility \u001b[32m200\u001b[0m 91.864 ms - 356\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:33:08"}
+{"level":"info","message":"\u001b[0mGET /api/mock-drives/cmm8ctinj000n1gvmu5vs1pd4 \u001b[32m200\u001b[0m 82.494 ms - 874\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:33:13"}
+{"level":"info","message":"\u001b[0mGET /api/mock-drives/cmm8ctinj000n1gvmu5vs1pd4/eligibility \u001b[32m200\u001b[0m 89.468 ms - 299\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:33:13"}
+{"driveId":"cmm8ctinj000n1gvmu5vs1pd4","level":"info","message":"User registered for mock drive","registrationId":"cmm8cvwum00111gvmwvkkgd4g","service":"preplyte-api","timestamp":"2026-03-02 04:33:15","userId":"cmluqlns4000gp3qc2r9ju34o"}
+{"level":"info","message":"\u001b[0mPOST /api/mock-drives/cmm8ctinj000n1gvmu5vs1pd4/register \u001b[32m201\u001b[0m 104.064 ms - 367\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:33:15"}
+{"level":"info","message":"\u001b[0mGET /api/mock-drives/cmm8ctinj000n1gvmu5vs1pd4 \u001b[32m200\u001b[0m 72.669 ms - 878\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:33:15"}
+{"level":"info","message":"\u001b[0mGET /api/mock-drives/cmm8ctinj000n1gvmu5vs1pd4/eligibility \u001b[32m200\u001b[0m 75.488 ms - 356\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:33:15"}
+{"level":"info","message":"\u001b[0mGET /api/institute/mock-drive/cmm8ctinj000n1gvmu5vs1pd4 \u001b[32m200\u001b[0m 50.968 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:33:23"}
+{"level":"info","message":"\u001b[0mGET /api/institute/mock-drive/cmm8ctinj000n1gvmu5vs1pd4/registrations?page=1&limit=20&sortBy=registeredAt&sortOrder=desc \u001b[32m200\u001b[0m 47.932 ms - 1014\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:33:23"}
+{"approved":2,"level":"info","message":"Approved pending registrations","mockDriveId":"cmm8ctinj000n1gvmu5vs1pd4","service":"preplyte-api","skipped":0,"timestamp":"2026-03-02 04:33:26"}
+{"level":"info","message":"\u001b[0mPOST /api/institute/mock-drive/cmm8ctinj000n1gvmu5vs1pd4/registrations/approve-all \u001b[32m200\u001b[0m 28.763 ms - 100\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:33:26"}
+{"level":"info","message":"\u001b[0mGET /api/institute/mock-drive/cmm8ctinj000n1gvmu5vs1pd4/registrations?page=1&limit=20&sortBy=registeredAt&sortOrder=desc \u001b[32m200\u001b[0m 21.078 ms - 1016\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:33:26"}
+{"level":"info","message":"\u001b[0mGET /api/institute/mock-drive/cmm8ctinj000n1gvmu5vs1pd4/stats \u001b[32m200\u001b[0m 32.564 ms - 259\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:33:28"}
+{"level":"info","message":"\u001b[0mGET /api/institute/mock-drive/cmm8ctinj000n1gvmu5vs1pd4/batches?page=1&limit=20&sortBy=scheduledStartTime&sortOrder=asc \u001b[32m200\u001b[0m 51.558 ms - 174\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:33:33"}
+{"batchId":"cmm8cws8z00131gvmckd722db","batchNumber":1,"level":"info","message":"Batch created","mockDriveId":"cmm8ctinj000n1gvmu5vs1pd4","service":"preplyte-api","timestamp":"2026-03-02 04:33:55"}
+{"level":"info","message":"\u001b[0mPOST /api/institute/mock-drive/cmm8ctinj000n1gvmu5vs1pd4/batches \u001b[32m201\u001b[0m 57.592 ms - 565\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:33:55"}
+{"level":"info","message":"\u001b[0mGET /api/institute/mock-drive/cmm8ctinj000n1gvmu5vs1pd4/batches?page=1&limit=20&sortBy=scheduledStartTime&sortOrder=asc \u001b[32m200\u001b[0m 20.059 ms - 428\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:33:55"}
+{"level":"info","message":"\u001b[0mGET /api/institute/mock-drive/cmm8ctinj000n1gvmu5vs1pd4/batches/cmm8cws8z00131gvmckd722db \u001b[32m200\u001b[0m 83.872 ms - 567\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:34:01"}
+{"level":"info","message":"\u001b[0mGET /api/institute/mock-drive/cmm8ctinj000n1gvmu5vs1pd4/batches/cmm8cws8z00131gvmckd722db/students \u001b[32m200\u001b[0m 66.580 ms - 70\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:34:01"}
+{"level":"info","message":"\u001b[0mGET /api/institute/mock-drive/cmm8ctinj000n1gvmu5vs1pd4/registrations?hasBatch=false&status=APPROVED&limit=100 \u001b[32m200\u001b[0m 44.479 ms - 1017\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:34:01"}
+{"assigned":2,"batchId":"cmm8cws8z00131gvmckd722db","failed":0,"level":"info","message":"Students assigned","service":"preplyte-api","timestamp":"2026-03-02 04:34:07"}
+{"level":"info","message":"\u001b[0mPOST /api/institute/mock-drive/cmm8ctinj000n1gvmu5vs1pd4/batches/cmm8cws8z00131gvmckd722db/assign \u001b[32m200\u001b[0m 52.592 ms - 82\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:34:07"}
+{"level":"info","message":"\u001b[0mGET /api/institute/mock-drive/cmm8ctinj000n1gvmu5vs1pd4/batches/cmm8cws8z00131gvmckd722db \u001b[32m200\u001b[0m 62.409 ms - 567\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:34:07"}
+{"level":"info","message":"\u001b[0mGET /api/institute/mock-drive/cmm8ctinj000n1gvmu5vs1pd4/batches/cmm8cws8z00131gvmckd722db/students \u001b[32m200\u001b[0m 64.518 ms - 715\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:34:07"}
+{"level":"info","message":"\u001b[0mGET /api/institute/mock-drive/cmm8ctinj000n1gvmu5vs1pd4/registrations?hasBatch=false&status=APPROVED&limit=100 \u001b[32m200\u001b[0m 24.371 ms - 286\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:34:07"}
+{"level":"info","message":"\u001b[0mGET /api/institute/mock-drive/cmm8ctinj000n1gvmu5vs1pd4/batches/cmm8cws8z00131gvmckd722db/students \u001b[36m304\u001b[0m 49.784 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:34:07"}
+{"level":"info","message":"\u001b[0mGET /api/institute/mock-drive/cmm8ctinj000n1gvmu5vs1pd4/batches?page=1&limit=20&sortBy=scheduledStartTime&sortOrder=asc \u001b[32m200\u001b[0m 138.889 ms - 428\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:34:12"}
+{"level":"info","message":"\u001b[0mGET /api/institute/mock-drive/cmm8ctinj000n1gvmu5vs1pd4/stats \u001b[32m200\u001b[0m 55.314 ms - 259\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:34:13"}
+{"level":"info","message":"\u001b[0mGET /api/institute/mock-drive?page=1&limit=10&sortBy=createdAt&sortOrder=desc \u001b[32m200\u001b[0m 66.298 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:34:16"}
+{"level":"info","message":"\u001b[0mGET /api/mock-drives?page=1&limit=10&status=PUBLISHED%2CREGISTRATION_OPEN%2CREGISTRATION_CLOSED%2CIN_PROGRESS \u001b[32m200\u001b[0m 50.838 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:34:30"}
+{"level":"info","message":"\u001b[0mGET /api/institute/mock-drive/cmm8cs6wb000k1gvm0o4fa4zr \u001b[36m304\u001b[0m 73.823 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:34:39"}
+{"level":"info","message":"\u001b[0mGET /api/institute/mock-drive/cmm8cs6wb000k1gvm0o4fa4zr/stats \u001b[36m304\u001b[0m 16.035 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:34:49"}
+{"level":"info","message":"\u001b[0mGET /api/institute/mock-drive?page=1&limit=10&sortBy=createdAt&sortOrder=desc \u001b[36m304\u001b[0m 55.693 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:34:58"}
+{"instituteId":"c1d2e3f4g5h6i7j8k9l0","level":"info","message":"Deleting mock drive","mockDriveId":"cmm8cs6wb000k1gvm0o4fa4zr","service":"preplyte-api","timestamp":"2026-03-02 04:35:06"}
+{"level":"info","message":"Mock drive deleted","mockDriveId":"cmm8cs6wb000k1gvm0o4fa4zr","service":"preplyte-api","timestamp":"2026-03-02 04:35:06"}
+{"level":"info","message":"\u001b[0mDELETE /api/institute/mock-drive/cmm8cs6wb000k1gvm0o4fa4zr \u001b[32m200\u001b[0m 33.511 ms - 72\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:35:06"}
+{"level":"info","message":"Auto-updated 1 drives to REGISTRATION_CLOSED","service":"preplyte-api","timestamp":"2026-03-02 04:35:06"}
+{"level":"info","message":"\u001b[0mGET /api/institute/mock-drive?page=1&limit=10&sortBy=createdAt&sortOrder=desc \u001b[32m200\u001b[0m 53.828 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:35:06"}
+{"level":"info","message":"\u001b[0mGET /api/institute/mock-drive/cmm8cp9co000g1gvmoqv513g8 \u001b[36m304\u001b[0m 70.500 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:35:11"}
+{"level":"info","message":"\u001b[0mGET /api/institute/mock-drive/cmm8cp9co000g1gvmoqv513g8/stats \u001b[32m200\u001b[0m 24.767 ms - 259\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:35:11"}
+{"instituteId":"c1d2e3f4g5h6i7j8k9l0","level":"info","message":"Deleting mock drive","mockDriveId":"cmm8cp9co000g1gvmoqv513g8","service":"preplyte-api","timestamp":"2026-03-02 04:35:17"}
+{"level":"info","message":"Mock drive deleted","mockDriveId":"cmm8cp9co000g1gvmoqv513g8","service":"preplyte-api","timestamp":"2026-03-02 04:35:17"}
+{"level":"info","message":"\u001b[0mDELETE /api/institute/mock-drive/cmm8cp9co000g1gvmoqv513g8 \u001b[32m200\u001b[0m 38.577 ms - 72\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:35:17"}
+{"level":"info","message":"\u001b[0mGET /api/institute/mock-drive/cmm8cp9co000g1gvmoqv513g8/stats \u001b[33m404\u001b[0m 26.746 ms - 124\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:35:17"}
+{"instituteId":"c1d2e3f4g5h6i7j8k9l0","level":"warn","message":"Mock drive not found","mockDriveId":"cmm8cp9co000g1gvmoqv513g8","service":"preplyte-api","timestamp":"2026-03-02 04:35:17"}
+{"level":"info","message":"\u001b[0mGET /api/institute/mock-drive/cmm8cp9co000g1gvmoqv513g8 \u001b[33m404\u001b[0m 69.090 ms - 124\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:35:17"}
+{"level":"info","message":"\u001b[0mGET /api/institute/mock-drive?page=1&limit=10&sortBy=createdAt&sortOrder=desc \u001b[32m200\u001b[0m 62.509 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:35:18"}
+{"level":"info","message":"\u001b[0mGET /api/mock-drives/cmm8co6n200051gvmbkhweu7p \u001b[32m200\u001b[0m 87.230 ms - 870\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:35:33"}
+{"level":"info","message":"\u001b[0mGET /api/mock-drives/cmm8co6n200051gvmbkhweu7p/eligibility \u001b[36m304\u001b[0m 88.075 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:35:33"}
+{"level":"info","message":"\u001b[0mGET /api/mock-drives?page=1&limit=10&status=PUBLISHED%2CREGISTRATION_OPEN%2CREGISTRATION_CLOSED%2CIN_PROGRESS \u001b[32m200\u001b[0m 56.309 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:35:36"}
+{"level":"info","message":"\u001b[0mGET /api/mock-drives?page=1&limit=10&status=PUBLISHED%2CREGISTRATION_OPEN%2CREGISTRATION_CLOSED%2CIN_PROGRESS \u001b[32m200\u001b[0m 59.473 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:35:45"}
+{"level":"info","message":"Auto-updated 1 drives to COMPLETED","service":"preplyte-api","timestamp":"2026-03-02 04:36:05"}
+{"level":"info","message":"Auto-updated 1 drives to IN_PROGRESS","service":"preplyte-api","timestamp":"2026-03-02 04:36:05"}
+{"level":"info","message":"\u001b[0mGET /api/mock-drives/cmm8ctinj000n1gvmu5vs1pd4 \u001b[32m200\u001b[0m 81.309 ms - 1014\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:36:05"}
+{"level":"info","message":"\u001b[0mGET /api/mock-drives/cmm8ctinj000n1gvmu5vs1pd4/eligibility \u001b[32m200\u001b[0m 84.834 ms - 358\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:36:05"}
+{"level":"info","message":"\u001b[0mGET /api/mock-drives/cmm8ctinj000n1gvmu5vs1pd4/attempt \u001b[32m200\u001b[0m 5.949 ms - 77\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:36:13"}
+{"level":"info","message":"\u001b[0mPOST /api/mock-drives/cmm8ctinj000n1gvmu5vs1pd4/start \u001b[32m201\u001b[0m 80.361 ms - 747\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:36:15"}
+{"ip":"127.0.0.1","level":"warn","message":"Rate limit exceeded","method":"GET","path":"/mock-drives/cmm8ctinj000n1gvmu5vs1pd4/attempt","service":"preplyte-api","timestamp":"2026-03-02 04:36:15"}
+{"level":"info","message":"\u001b[0mGET /api/mock-drives/cmm8ctinj000n1gvmu5vs1pd4/attempt \u001b[33m429\u001b[0m 2.057 ms - 117\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:36:15"}
+{"ip":"127.0.0.1","level":"warn","message":"Rate limit exceeded","method":"GET","path":"/mock-drives/cmm8ctinj000n1gvmu5vs1pd4/attempt","service":"preplyte-api","timestamp":"2026-03-02 04:36:16"}
+{"level":"info","message":"\u001b[0mGET /api/mock-drives/cmm8ctinj000n1gvmu5vs1pd4/attempt \u001b[33m429\u001b[0m 1.339 ms - 117\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:36:16"}
+{"ip":"127.0.0.1","level":"warn","message":"Rate limit exceeded","method":"POST","path":"/mock-drives/cmm8ctinj000n1gvmu5vs1pd4/start","service":"preplyte-api","timestamp":"2026-03-02 04:36:34"}
+{"level":"info","message":"\u001b[0mPOST /api/mock-drives/cmm8ctinj000n1gvmu5vs1pd4/start \u001b[33m429\u001b[0m 0.756 ms - 117\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:36:34"}
+{"baseURL":"https://judge0-ce.p.rapidapi.com","level":"info","message":"Judge0 client initialized","service":"preplyte-api","timestamp":"2026-03-02 04:37:55","useRapidAPI":true}
+{"level":"info","message":"[TTS] Using Deepgram for text-to-speech","service":"preplyte-api","timestamp":"2026-03-02 04:37:56"}
+{"keyLength":39,"keyPrefix":"AIzaSyC7yj...","level":"info","message":"Gemini API Key loaded:","service":"preplyte-api","timestamp":"2026-03-02 04:37:56"}
+{"environment":"development","host":"0.0.0.0","level":"info","message":"Starting server...","port":4000,"service":"preplyte-api","timestamp":"2026-03-02 04:37:56"}
+{"level":"info","message":"Checking database connection...","service":"preplyte-api","timestamp":"2026-03-02 04:37:56"}
+{"level":"info","message":"✅ Database connected successfully","service":"preplyte-api","timestamp":"2026-03-02 04:37:56"}
+{"level":"info","message":"[WS Gateway] WebSocket server initialized","path":"/ws/interview/:sessionId","service":"preplyte-api","timestamp":"2026-03-02 04:37:56"}
+{"api":"http://localhost:4000/api","environment":"development","health":"http://localhost:4000/health","host":"0.0.0.0","level":"info","message":"🚀 Server running","port":4000,"service":"preplyte-api","timestamp":"2026-03-02 04:37:56","websocket":"ws://localhost:4000/ws/interview/:sessionId"}
+{"intervalHours":24,"level":"info","message":"Starting token cleanup scheduler","service":"preplyte-api","timestamp":"2026-03-02 04:37:56"}
+{"level":"info","message":"Starting token cleanup job","service":"preplyte-api","timestamp":"2026-03-02 04:37:56"}
+{"count":0,"level":"info","message":"Cleaned up expired tokens","service":"preplyte-api","timestamp":"2026-03-02 04:37:56"}
+{"level":"info","message":"Token cleanup completed","service":"preplyte-api","timestamp":"2026-03-02 04:37:56","tokensRemoved":0}
+{"code":"ATTEMPT_EXISTS","ip":"127.0.0.1","level":"warn","message":"Operational error Attempt already exists for this mock drive","method":"POST","path":"/api/mock-drives/cmm8ctinj000n1gvmu5vs1pd4/start","requestId":"1453412e-fd13-43d8-a802-2fbff395f6eb","service":"preplyte-api","timestamp":"2026-03-02 04:38:07","userAgent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36","userId":"cmluqfswb0007p3qckrd6vla6"}
+{"level":"info","message":"\u001b[0mPOST /api/mock-drives/cmm8ctinj000n1gvmu5vs1pd4/start \u001b[33m400\u001b[0m 40.751 ms - 157\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:38:07"}
+{"level":"info","message":"\u001b[0mGET /api/mock-drives/cmm8ctinj000n1gvmu5vs1pd4/attempt \u001b[32m200\u001b[0m 28.098 ms - 829\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:38:16"}
+{"level":"info","message":"\u001b[0mPOST /api/mock-drives/cmm8ctinj000n1gvmu5vs1pd4/modules/cmm8ctiwx000p1gvmzm2vuy5t/start \u001b[32m200\u001b[0m 70.816 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:38:23"}
+{"level":"info","message":"\u001b[0mGET /api/mock-drives/cmm8ctinj000n1gvmu5vs1pd4/attempt \u001b[32m200\u001b[0m 19.941 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:38:23"}
+{"level":"info","message":"\u001b[0mPOST /api/mock-drives/cmm8ctinj000n1gvmu5vs1pd4/modules/cmm8ctiwx000p1gvmzm2vuy5t/aptitude/answer \u001b[32m200\u001b[0m 49.182 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:38:44"}
+{"level":"info","message":"\u001b[0mGET /api/mock-drives/cmm8ctinj000n1gvmu5vs1pd4/attempt \u001b[32m200\u001b[0m 16.774 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:38:44"}
+{"level":"info","message":"\u001b[0mPOST /api/mock-drives/cmm8ctinj000n1gvmu5vs1pd4/modules/cmm8ctiwx000p1gvmzm2vuy5t/aptitude/answer \u001b[32m200\u001b[0m 46.887 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:38:53"}
+{"level":"info","message":"\u001b[0mGET /api/mock-drives/cmm8ctinj000n1gvmu5vs1pd4/attempt \u001b[32m200\u001b[0m 19.181 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:38:53"}
+{"level":"info","message":"\u001b[0mPOST /api/mock-drives/cmm8ctinj000n1gvmu5vs1pd4/modules/cmm8ctiwx000p1gvmzm2vuy5t/aptitude/answer \u001b[32m200\u001b[0m 28.242 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:39:08"}
+{"level":"info","message":"\u001b[0mGET /api/mock-drives/cmm8ctinj000n1gvmu5vs1pd4/attempt \u001b[32m200\u001b[0m 13.414 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:39:08"}
+{"level":"info","message":"\u001b[0mPOST /api/mock-drives/cmm8ctinj000n1gvmu5vs1pd4/modules/cmm8ctiwx000p1gvmzm2vuy5t/aptitude/answer \u001b[32m200\u001b[0m 34.956 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:39:12"}
+{"level":"info","message":"\u001b[0mGET /api/mock-drives/cmm8ctinj000n1gvmu5vs1pd4/attempt \u001b[32m200\u001b[0m 14.026 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:39:12"}
+{"level":"info","message":"\u001b[0mPOST /api/mock-drives/cmm8ctinj000n1gvmu5vs1pd4/modules/cmm8ctiwx000p1gvmzm2vuy5t/aptitude/answer \u001b[32m200\u001b[0m 33.201 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:39:15"}
+{"level":"info","message":"\u001b[0mGET /api/mock-drives/cmm8ctinj000n1gvmu5vs1pd4/attempt \u001b[32m200\u001b[0m 15.070 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:39:15"}
+{"level":"info","message":"\u001b[0mPOST /api/mock-drives/cmm8ctinj000n1gvmu5vs1pd4/modules/cmm8ctiwx000p1gvmzm2vuy5t/submit \u001b[32m200\u001b[0m 199.287 ms - 252\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:39:18"}
+{"level":"info","message":"\u001b[0mGET /api/mock-drives/cmm8ctinj000n1gvmu5vs1pd4/attempt \u001b[32m200\u001b[0m 28.465 ms - 476\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:39:18"}
+{"level":"info","message":"\u001b[0mGET /api/mock-drives/cmm8ctinj000n1gvmu5vs1pd4/report \u001b[32m200\u001b[0m 70.623 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:39:28"}
+{"level":"info","message":"\u001b[0mGET /api/mock-drives/cmm8ctinj000n1gvmu5vs1pd4 \u001b[33m401\u001b[0m 1.658 ms - 108\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:39:38"}
+{"level":"info","message":"\u001b[0mGET /api/mock-drives/cmm8ctinj000n1gvmu5vs1pd4/eligibility \u001b[33m401\u001b[0m 1.085 ms - 108\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:39:38"}
+{"level":"info","message":"Token refreshed successfully","service":"preplyte-api","timestamp":"2026-03-02 04:39:38","userId":"cmluqlns4000gp3qc2r9ju34o"}
+{"level":"info","message":"\u001b[0mPOST /api/auth/refresh \u001b[32m200\u001b[0m 30.678 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:39:38"}
+{"level":"info","message":"\u001b[0mGET /api/mock-drives/cmm8ctinj000n1gvmu5vs1pd4 \u001b[32m200\u001b[0m 93.088 ms - 1014\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:39:38"}
+{"level":"info","message":"\u001b[0mGET /api/mock-drives/cmm8ctinj000n1gvmu5vs1pd4/eligibility \u001b[32m200\u001b[0m 102.067 ms - 358\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:39:38"}
+{"level":"info","message":"\u001b[0mGET /api/mock-drives/cmm8ctinj000n1gvmu5vs1pd4/attempt \u001b[32m200\u001b[0m 10.724 ms - 77\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:39:40"}
+{"level":"info","message":"\u001b[0mPOST /api/mock-drives/cmm8ctinj000n1gvmu5vs1pd4/start \u001b[32m201\u001b[0m 53.129 ms - 747\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:39:42"}
+{"level":"info","message":"\u001b[0mGET /api/mock-drives/cmm8ctinj000n1gvmu5vs1pd4/attempt \u001b[32m200\u001b[0m 12.259 ms - 829\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:39:42"}
+{"level":"info","message":"\u001b[0mPOST /api/mock-drives/cmm8ctinj000n1gvmu5vs1pd4/modules/cmm8ctiwx000p1gvmzm2vuy5t/start \u001b[32m200\u001b[0m 54.114 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:39:44"}
+{"level":"info","message":"\u001b[0mGET /api/mock-drives/cmm8ctinj000n1gvmu5vs1pd4/attempt \u001b[32m200\u001b[0m 14.162 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:39:44"}
+{"level":"info","message":"\u001b[0mPOST /api/mock-drives/cmm8ctinj000n1gvmu5vs1pd4/modules/cmm8ctiwx000p1gvmzm2vuy5t/aptitude/answer \u001b[32m200\u001b[0m 28.752 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:39:48"}
+{"level":"info","message":"\u001b[0mGET /api/mock-drives/cmm8ctinj000n1gvmu5vs1pd4/attempt \u001b[32m200\u001b[0m 13.955 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:39:48"}
+{"level":"info","message":"\u001b[0mPOST /api/mock-drives/cmm8ctinj000n1gvmu5vs1pd4/modules/cmm8ctiwx000p1gvmzm2vuy5t/aptitude/answer \u001b[32m200\u001b[0m 30.575 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:39:51"}
+{"level":"info","message":"\u001b[0mGET /api/mock-drives/cmm8ctinj000n1gvmu5vs1pd4/attempt \u001b[32m200\u001b[0m 13.310 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:39:51"}
+{"level":"info","message":"\u001b[0mPOST /api/mock-drives/cmm8ctinj000n1gvmu5vs1pd4/modules/cmm8ctiwx000p1gvmzm2vuy5t/aptitude/answer \u001b[32m200\u001b[0m 28.242 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:39:56"}
+{"level":"info","message":"\u001b[0mGET /api/mock-drives/cmm8ctinj000n1gvmu5vs1pd4/attempt \u001b[32m200\u001b[0m 12.688 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:39:56"}
+{"level":"info","message":"\u001b[0mPOST /api/mock-drives/cmm8ctinj000n1gvmu5vs1pd4/modules/cmm8ctiwx000p1gvmzm2vuy5t/aptitude/answer \u001b[32m200\u001b[0m 31.227 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:39:59"}
+{"level":"info","message":"\u001b[0mGET /api/mock-drives/cmm8ctinj000n1gvmu5vs1pd4/attempt \u001b[32m200\u001b[0m 12.737 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:39:59"}
+{"level":"info","message":"\u001b[0mPOST /api/mock-drives/cmm8ctinj000n1gvmu5vs1pd4/modules/cmm8ctiwx000p1gvmzm2vuy5t/aptitude/answer \u001b[32m200\u001b[0m 26.458 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:40:01"}
+{"level":"info","message":"\u001b[0mGET /api/mock-drives/cmm8ctinj000n1gvmu5vs1pd4/attempt \u001b[32m200\u001b[0m 12.730 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:40:01"}
+{"level":"info","message":"\u001b[0mPOST /api/mock-drives/cmm8ctinj000n1gvmu5vs1pd4/modules/cmm8ctiwx000p1gvmzm2vuy5t/aptitude/answer \u001b[32m200\u001b[0m 27.511 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:40:06"}
+{"level":"info","message":"\u001b[0mGET /api/mock-drives/cmm8ctinj000n1gvmu5vs1pd4/attempt \u001b[32m200\u001b[0m 12.231 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:40:06"}
+{"level":"info","message":"\u001b[0mPOST /api/mock-drives/cmm8ctinj000n1gvmu5vs1pd4/modules/cmm8ctiwx000p1gvmzm2vuy5t/submit \u001b[32m200\u001b[0m 139.629 ms - 250\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:40:09"}
+{"level":"info","message":"\u001b[0mGET /api/mock-drives/cmm8ctinj000n1gvmu5vs1pd4/attempt \u001b[32m200\u001b[0m 31.256 ms - 476\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:40:09"}
+{"level":"info","message":"\u001b[0mGET /api/mock-drives/cmm8ctinj000n1gvmu5vs1pd4/report \u001b[32m200\u001b[0m 61.464 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:40:13"}
+{"level":"info","message":"\u001b[0mGET /api/mock-drives/cmm8ctinj000n1gvmu5vs1pd4/eligibility \u001b[36m304\u001b[0m 70.852 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:40:51"}
+{"level":"info","message":"\u001b[0mGET /api/mock-drives/cmm8ctinj000n1gvmu5vs1pd4 \u001b[36m304\u001b[0m 81.397 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:40:51"}
+{"level":"info","message":"\u001b[0mGET /api/mock-drives?page=1&limit=10&status=PUBLISHED%2CREGISTRATION_OPEN%2CREGISTRATION_CLOSED%2CIN_PROGRESS \u001b[32m200\u001b[0m 62.053 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:40:54"}
+{"level":"info","message":"\u001b[0mGET /api/mock-drives/cmm8ctinj000n1gvmu5vs1pd4 \u001b[33m401\u001b[0m 1.129 ms - 108\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:41:01"}
+{"level":"info","message":"\u001b[0mGET /api/mock-drives/cmm8ctinj000n1gvmu5vs1pd4/eligibility \u001b[33m401\u001b[0m 1.130 ms - 108\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:41:01"}
+{"level":"warn","message":"Refresh token reuse detected","revokedAt":"2026-03-01T23:09:38.862Z","service":"preplyte-api","timestamp":"2026-03-02 04:41:02","tokenId":"cmm8ckiun00011gvmssra7qlv","userId":"cmluqlns4000gp3qc2r9ju34o"}
+{"level":"info","message":"User logged out from all devices","service":"preplyte-api","timestamp":"2026-03-02 04:41:02","userId":"cmluqlns4000gp3qc2r9ju34o"}
+{"code":"UNAUTHORIZED","ip":"127.0.0.1","level":"warn","message":"Operational error Token reuse detected. All sessions have been revoked for security.","method":"POST","path":"/api/auth/refresh","requestId":"mm8d5x53-7d567b9c0a4edfca","service":"preplyte-api","timestamp":"2026-03-02 04:41:02","userAgent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36"}
+{"level":"info","message":"\u001b[0mPOST /api/auth/refresh \u001b[33m401\u001b[0m 13.102 ms - 168\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:41:02"}
+{"level":"info","message":"\u001b[0mGET /api/mock-drives/cmm8ctinj000n1gvmu5vs1pd4/eligibility \u001b[33m401\u001b[0m 0.661 ms - 85\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:41:03"}
+{"level":"info","message":"\u001b[0mGET /api/mock-drives/cmm8ctinj000n1gvmu5vs1pd4 \u001b[33m401\u001b[0m 0.631 ms - 85\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:41:03"}
+{"level":"info","message":"User logged in","service":"preplyte-api","timestamp":"2026-03-02 04:41:17","userId":"cmluqlns4000gp3qc2r9ju34o"}
+{"level":"info","message":"\u001b[0mPOST /api/auth/login \u001b[32m200\u001b[0m 285.013 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:41:17"}
+{"level":"info","message":"\u001b[0mGET /api/dashboard/student \u001b[36m304\u001b[0m 169.175 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:41:20"}
+{"level":"info","message":"\u001b[0mGET /api/mock-drives?page=1&limit=10&status=PUBLISHED%2CREGISTRATION_OPEN%2CREGISTRATION_CLOSED%2CIN_PROGRESS \u001b[36m304\u001b[0m 75.111 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:41:22"}
+{"level":"info","message":"\u001b[0mGET /api/mock-drives/cmm8ctinj000n1gvmu5vs1pd4 \u001b[36m304\u001b[0m 106.065 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:41:25"}
+{"level":"info","message":"\u001b[0mGET /api/mock-drives/cmm8ctinj000n1gvmu5vs1pd4/eligibility \u001b[36m304\u001b[0m 106.875 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:41:25"}
+{"level":"info","message":"\u001b[0mGET /api/institute/mock-drive?page=1&limit=10&sortBy=createdAt&sortOrder=desc \u001b[33m401\u001b[0m 1.656 ms - 108\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:41:30"}
+{"level":"info","message":"Token refreshed successfully","service":"preplyte-api","timestamp":"2026-03-02 04:41:30","userId":"cmluqaidk0003zwnltac2vpan"}
+{"level":"info","message":"\u001b[0mPOST /api/auth/refresh \u001b[32m200\u001b[0m 33.218 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:41:30"}
+{"level":"info","message":"\u001b[0mGET /api/institute/mock-drive?page=1&limit=10&sortBy=createdAt&sortOrder=desc \u001b[32m200\u001b[0m 45.265 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:41:30"}
+{"level":"info","message":"\u001b[0mGET /api/institute/mock-drive/cmm8ctinj000n1gvmu5vs1pd4/stats \u001b[32m200\u001b[0m 47.078 ms - 259\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:41:34"}
+{"level":"info","message":"\u001b[0mGET /api/institute/mock-drive/cmm8ctinj000n1gvmu5vs1pd4 \u001b[32m200\u001b[0m 102.900 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:41:34"}
+{"level":"info","message":"\u001b[0mGET /api/institute/mock-drive/cmm8ctinj000n1gvmu5vs1pd4/batches?page=1&limit=20&sortBy=scheduledStartTime&sortOrder=asc \u001b[32m200\u001b[0m 38.966 ms - 428\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:41:41"}
+{"level":"info","message":"\u001b[0mGET /api/institute/mock-drive/cmm8ctinj000n1gvmu5vs1pd4/batches/cmm8cws8z00131gvmckd722db \u001b[32m200\u001b[0m 123.737 ms - 567\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:41:46"}
+{"level":"info","message":"\u001b[0mGET /api/institute/mock-drive/cmm8ctinj000n1gvmu5vs1pd4/batches/cmm8cws8z00131gvmckd722db/students \u001b[32m200\u001b[0m 125.409 ms - 727\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:41:46"}
+{"level":"info","message":"\u001b[0mGET /api/institute/mock-drive/cmm8ctinj000n1gvmu5vs1pd4/registrations?hasBatch=false&status=APPROVED&limit=100 \u001b[36m304\u001b[0m 28.217 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:41:46"}
+{"level":"info","message":"\u001b[0mGET /api/mock-drives?page=1&limit=10&status=PUBLISHED%2CREGISTRATION_OPEN%2CREGISTRATION_CLOSED%2CIN_PROGRESS \u001b[36m304\u001b[0m 70.480 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:45:26"}
+{"level":"info","message":"\u001b[0mGET /api/mock-drives/cmm8ctinj000n1gvmu5vs1pd4 \u001b[36m304\u001b[0m 99.270 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:45:28"}
+{"level":"info","message":"\u001b[0mGET /api/mock-drives/cmm8ctinj000n1gvmu5vs1pd4/eligibility \u001b[36m304\u001b[0m 107.448 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:45:28"}
+{"level":"info","message":"\u001b[0mGET /api/mock-drives/cmm8ctinj000n1gvmu5vs1pd4/attempt \u001b[36m304\u001b[0m 14.304 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:45:35"}
+{"level":"info","message":"\u001b[0mGET /api/mock-drives/cmm8ctinj000n1gvmu5vs1pd4/report \u001b[36m304\u001b[0m 52.358 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:45:46"}
+{"level":"info","message":"\u001b[0mGET /api/institute/mock-drive/cmm8ctinj000n1gvmu5vs1pd4/batches?page=1&limit=20&sortBy=scheduledStartTime&sortOrder=asc \u001b[36m304\u001b[0m 90.857 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:46:28"}
+{"level":"info","message":"\u001b[0mGET /api/institute/mock-drive/cmm8ctinj000n1gvmu5vs1pd4 \u001b[36m304\u001b[0m 143.405 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:46:28"}
+{"level":"info","message":"\u001b[0mGET /api/institute/mock-drive/cmm8ctinj000n1gvmu5vs1pd4/stats \u001b[36m304\u001b[0m 85.441 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:46:30"}
+{"level":"info","message":"\u001b[0mGET /api/institute/mock-drive?page=1&limit=10&sortBy=createdAt&sortOrder=desc \u001b[36m304\u001b[0m 560.611 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:46:33"}
+{"baseURL":"https://judge0-ce.p.rapidapi.com","level":"info","message":"Judge0 client initialized","service":"preplyte-api","timestamp":"2026-03-02 04:46:39","useRapidAPI":true}
+{"level":"info","message":"[TTS] Using Deepgram for text-to-speech","service":"preplyte-api","timestamp":"2026-03-02 04:46:39"}
+{"keyLength":39,"keyPrefix":"AIzaSyC7yj...","level":"info","message":"Gemini API Key loaded:","service":"preplyte-api","timestamp":"2026-03-02 04:46:40"}
+{"environment":"development","host":"0.0.0.0","level":"info","message":"Starting server...","port":4000,"service":"preplyte-api","timestamp":"2026-03-02 04:46:40"}
+{"level":"info","message":"Checking database connection...","service":"preplyte-api","timestamp":"2026-03-02 04:46:40"}
+{"level":"info","message":"✅ Database connected successfully","service":"preplyte-api","timestamp":"2026-03-02 04:46:40"}
+{"level":"info","message":"[WS Gateway] WebSocket server initialized","path":"/ws/interview/:sessionId","service":"preplyte-api","timestamp":"2026-03-02 04:46:40"}
+{"api":"http://localhost:4000/api","environment":"development","health":"http://localhost:4000/health","host":"0.0.0.0","level":"info","message":"🚀 Server running","port":4000,"service":"preplyte-api","timestamp":"2026-03-02 04:46:40","websocket":"ws://localhost:4000/ws/interview/:sessionId"}
+{"intervalHours":24,"level":"info","message":"Starting token cleanup scheduler","service":"preplyte-api","timestamp":"2026-03-02 04:46:40"}
+{"level":"info","message":"Starting token cleanup job","service":"preplyte-api","timestamp":"2026-03-02 04:46:40"}
+{"count":0,"level":"info","message":"Cleaned up expired tokens","service":"preplyte-api","timestamp":"2026-03-02 04:46:40"}
+{"level":"info","message":"Token cleanup completed","service":"preplyte-api","timestamp":"2026-03-02 04:46:40","tokensRemoved":0}
+{"instituteId":"c1d2e3f4g5h6i7j8k9l0","level":"info","message":"Duplicating mock drive","mockDriveId":"cmm8ctinj000n1gvmu5vs1pd4","service":"preplyte-api","timestamp":"2026-03-02 04:46:40"}
+{"level":"info","message":"Mock drive duplicated","newId":"cmm8dd6g500025fiv7xgki79g","originalId":"cmm8ctinj000n1gvmu5vs1pd4","service":"preplyte-api","timestamp":"2026-03-02 04:46:40"}
+{"level":"info","message":"\u001b[0mPOST /api/institute/mock-drive/cmm8ctinj000n1gvmu5vs1pd4/duplicate \u001b[32m201\u001b[0m 156.483 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:46:40"}
+{"level":"info","message":"\u001b[0mGET /api/institute/mock-drive?page=1&limit=10&sortBy=createdAt&sortOrder=desc \u001b[32m200\u001b[0m 61.877 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:46:40"}
+{"level":"info","message":"\u001b[0mGET /api/institute/mock-drive/cmm8dd6g500025fiv7xgki79g \u001b[32m200\u001b[0m 96.420 ms - -\u001b[0m","service":"preplyte-api","timestamp":"2026-03-02 04:46:47"}
+{"baseURL":"https://judge0-ce.p.rapidapi.com","level":"info","message":"Judge0 client initialized","service":"preplyte-api","timestamp":"2026-03-02 04:46:59","useRapidAPI":true}
+{"level":"info","message":"[TTS] Using Deepgram for text-to-speech","service":"preplyte-api","timestamp":"2026-03-02 04:46:59"}
+{"keyLength":39,"keyPrefix":"AIzaSyC7yj...","level":"info","message":"Gemini API Key loaded:","service":"preplyte-api","timestamp":"2026-03-02 04:46:59"}
+{"environment":"development","host":"0.0.0.0","level":"info","message":"Starting server...","port":4000,"service":"preplyte-api","timestamp":"2026-03-02 04:46:59"}
+{"level":"info","message":"Checking database connection...","service":"preplyte-api","timestamp":"2026-03-02 04:46:59"}
+{"level":"info","message":"✅ Database connected successfully","service":"preplyte-api","timestamp":"2026-03-02 04:46:59"}
+{"level":"info","message":"[WS Gateway] WebSocket server initialized","path":"/ws/interview/:sessionId","service":"preplyte-api","timestamp":"2026-03-02 04:46:59"}
+{"api":"http://localhost:4000/api","environment":"development","health":"http://localhost:4000/health","host":"0.0.0.0","level":"info","message":"🚀 Server running","port":4000,"service":"preplyte-api","timestamp":"2026-03-02 04:46:59","websocket":"ws://localhost:4000/ws/interview/:sessionId"}
+{"intervalHours":24,"level":"info","message":"Starting token cleanup scheduler","service":"preplyte-api","timestamp":"2026-03-02 04:46:59"}
+{"level":"info","message":"Starting token cleanup job","service":"preplyte-api","timestamp":"2026-03-02 04:46:59"}
+{"count":0,"level":"info","message":"Cleaned up expired tokens","service":"preplyte-api","timestamp":"2026-03-02 04:47:00"}
+{"level":"info","message":"Token cleanup completed","service":"preplyte-api","timestamp":"2026-03-02 04:47:00","tokensRemoved":0}

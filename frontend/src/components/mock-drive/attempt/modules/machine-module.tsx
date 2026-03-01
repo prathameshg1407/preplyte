@@ -256,6 +256,7 @@ export function MachineModule({
             status: latestSub.status,
             testCasesPassed: latestSub.testCasesPassed,
             testCasesTotal: latestSub.testCasesTotal,
+            testCaseResults: latestSub.testCaseResults,
             executionTime: latestSub.executionTime,
             memoryUsed: latestSub.memoryUsed,
             compileError: latestSub.compileError,

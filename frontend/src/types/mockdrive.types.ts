@@ -389,6 +389,17 @@ export interface AptitudeModuleData {
 }
 
 // Machine Coding Module Data
+export interface TestCaseResultDetails {
+  testCaseId: string;
+  passed: boolean;
+  input: string;
+  expectedOutput: string;
+  actualOutput: string | null;
+  executionTime: number | null;
+  memoryUsed: number | null;
+  error: string | null;
+}
+
 export interface MachineSubmissionData {
   id: string;
   code: string;
@@ -397,6 +408,7 @@ export interface MachineSubmissionData {
   status: SubmissionStatus;
   testCasesPassed: number;
   testCasesTotal: number;
+  testCaseResults?: TestCaseResultDetails[];
   executionTime: number | null;
   memoryUsed: number | null;
   stdout: string | null;
