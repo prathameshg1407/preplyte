@@ -233,7 +233,16 @@ export const InterviewModule: FC<InterviewModuleProps> = ({
     if (lastMessage && lastMessage.role === 'assistant' && lastProcessedQuestionId.current !== lastMessage.id) {
       lastProcessedQuestionId.current = lastMessage.id;
       // Start thinking/fetching audio state
-      getAudioMutation.mutate({ driveId, moduleId });
+      getAudioMutation.mutate(
+        { driveId, moduleId },
+        {
+          onSuccess: (response) => {
+            if (response.updatedData) {
+              updateLocalModuleData(response.updatedData);
+            }
+          },
+        }
+      );
     }
   }, [conversation, isComplete, respondMutation.isPending, skipMutation.isPending, getAudioMutation, driveId, moduleId]);
 
@@ -321,7 +330,7 @@ export const InterviewModule: FC<InterviewModuleProps> = ({
           <div className="mt-8 h-20 w-full max-w-sm flex items-center justify-center">
             <AudioVisualizer
               isActive={isRecording || isAudioPlaying}
-              volume={isRecording ? volume : 50}
+              volume={isRecording ? volume : 0.5}
             />
           </div>
 
