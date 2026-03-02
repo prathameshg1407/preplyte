@@ -428,14 +428,11 @@ class MockInterviewWebSocketGateway {
             if (workingData.responses.length === 0 && workingData.conversation.length === 0) {
                 await this.generateAndSpeakOpening(connection);
             } else {
-                // Find if the LAST thing was a question that needs repeating
-                const lastConv = workingData.conversation[workingData.conversation.length - 1];
-                if (lastConv && lastConv.role === 'assistant') {
-                    await this.speakQuestion(connection, lastConv.content, 'existing');
-                } else if (workingData.responses.length > 0 && workingData.conversation.length > 0) {
-                    // Send session state
-                    this.sendSessionState(connection);
-                }
+                // Resume reconnect: DO NOT re-speak the last question.
+                // The frontend displays the transcript so the user can see the question.
+                // Just ensure we're listening and update the client on current state.
+                connection.isListening = true;
+                this.sendSessionState(connection);
             }
 
             if (connection.pendingAudioChunks.length > 0 && connection.transcriber) {

@@ -1,3 +1,6 @@
+// src/lib/contexts/mock-interview-ws-context.tsx
+// Mirrors the practice interview WS context architecture for real-time conversation
+
 import React, {
     createContext,
     useContext,
@@ -5,15 +8,21 @@ import React, {
     useRef,
     useState,
     ReactNode,
+    useCallback,
 } from "react";
 import { useAuthStore } from "@/lib/store/auth-store";
 import { useToast } from "@/components/ui/use-toast";
+
+// =====================================================
+// TYPES
+// =====================================================
 
 export type ConnectionState =
     | "DISCONNECTED"
     | "CONNECTING"
     | "CONNECTED"
     | "ERROR";
+
 export type InterviewState =
     | "INITIALIZING"
     | "READY"
@@ -29,21 +38,30 @@ export interface WSResponse {
     error?: string;
 }
 
+// Must match WS_EVENTS in backend/src/module/practice/interview/interview.constants.ts
 export const MockInterviewWSEvents = {
     CLIENT: {
-        INITIALIZE: "INITIALIZE",
         AUDIO_CHUNK: "audio_chunk",
-        PING: "PING",
+        START_RECORDING: "start_recording",
+        STOP_RECORDING: "stop_recording",
+        END_INTERVIEW: "end_interview",
+        PING: "ping",
+        PONG: "pong",
     },
     SERVER: {
-        INITIALIZED: "INITIALIZED",
-        QUESTION: "QUESTION",
-        AI_SPEAKING: "AI_SPEAKING",
-        SESSION_STATE: "SESSION_STATE",
-        ERROR: "ERROR",
-        INTERVIEW_ENDED: "INTERVIEW_ENDED",
-        AI_AUDIO: "AI_AUDIO",
-        PONG: "PONG",
+        CONNECTED: "connected",
+        SESSION_READY: "session_ready",
+        TRANSCRIPTION: "transcription",
+        TRANSCRIPTION_FINAL: "transcription_final",
+        AI_THINKING: "ai_thinking",
+        AI_SPEAKING: "ai_speaking",
+        AI_AUDIO: "ai_audio",
+        AI_DONE: "ai_done",
+        SESSION_STATE: "session_state",
+        ERROR: "error",
+        INTERVIEW_ENDED: "interview_ended",
+        PING: "ping",
+        PONG: "pong",
     },
 };
 
@@ -51,148 +69,151 @@ interface MockInterviewContextType {
     connectionState: ConnectionState;
     interviewState: InterviewState;
     currentQuestion: string | null;
-    transcription: string; // The active transcribed text received (can be used for UI)
-    connect: (attemptId: string) => void;
+    transcription: string;
+    isConnected: boolean;
+    isConnecting: boolean;
+    connect: (moduleAttemptId: string) => void;
     disconnect: () => void;
-    sendAnswer: (answer: string) => void;
-    endInterview: () => void; // Optional if you have an explicit end
+    // Real-time binary audio (mirrors practice interview)
+    sendAudio: (audioData: ArrayBuffer) => void;
+    sendStartRecording: () => void;
+    sendStopRecording: () => void;
+    endInterview: () => void;
     registerAudioHandler: (handler: (data: ArrayBuffer) => void) => () => void;
+    registerAiDoneHandler: (handler: () => void) => () => void;
 }
 
-const MockInterviewContext = createContext<MockInterviewContextType | null>(
-    null,
-);
+// =====================================================
+// CONTEXT
+// =====================================================
+
+const MockInterviewContext = createContext<MockInterviewContextType | null>(null);
+
+// =====================================================
+// PROVIDER
+// =====================================================
+
+const MAX_RECONNECT_ATTEMPTS = 3;
+const RECONNECT_DELAY_MS = 2000;
 
 export function MockInterviewProvider({ children }: { children: ReactNode }) {
     const accessToken = useAuthStore((s) => s.accessToken);
     const { toast } = useToast();
 
-    const [connectionState, setConnectionState] =
-        useState<ConnectionState>("DISCONNECTED");
-    const [interviewState, setInterviewState] =
-        useState<InterviewState>("INITIALIZING");
+    // =====================================================
+    // STATE
+    // =====================================================
+
+    const [connectionState, setConnectionState] = useState<ConnectionState>("DISCONNECTED");
+    const [interviewState, setInterviewState] = useState<InterviewState>("INITIALIZING");
     const [currentQuestion, setCurrentQuestion] = useState<string | null>(null);
     const [transcription, setTranscription] = useState<string>("");
+    const [isConnected, setIsConnected] = useState(false);
+    const [isConnecting, setIsConnecting] = useState(false);
 
-    const ws = useRef<WebSocket | null>(null);
-    const reconnectAttempts = useRef(0);
-    const maxReconnectAttempts = 5;
+    // =====================================================
+    // REFS (no stale closures — use refs for values needed in callbacks)
+    // =====================================================
 
-    // Handler refs
+    const wsRef = useRef<WebSocket | null>(null);
+    const attemptIdRef = useRef<string>("");
+    const reconnectAttemptsRef = useRef(0);
+    const isManualDisconnectRef = useRef(false); // Prevents reconnect on intentional close
+    const interviewStateRef = useRef<InterviewState>("INITIALIZING"); // Ref to avoid stale closures
+    const mountedRef = useRef(true);
+
+    // Handler registries
     const audioHandlersRef = useRef<Set<(data: ArrayBuffer) => void>>(new Set());
+    const aiDoneHandlersRef = useRef<Set<() => void>>(new Set());
 
-    const notifyAudioHandlers = (data: ArrayBuffer) => {
-        audioHandlersRef.current.forEach((handler) => handler(data));
-    };
+    // =====================================================
+    // HANDLER REGISTRY
+    // =====================================================
 
-    const registerAudioHandler = (handler: (data: ArrayBuffer) => void) => {
+    const registerAudioHandler = useCallback((handler: (data: ArrayBuffer) => void) => {
         audioHandlersRef.current.add(handler);
-        return () => {
-            audioHandlersRef.current.delete(handler);
-        };
-    };
+        return () => { audioHandlersRef.current.delete(handler); };
+    }, []);
 
-    const connect = (attemptId: string) => {
-        if (ws.current?.readyState === WebSocket.OPEN) return;
+    const registerAiDoneHandler = useCallback((handler: () => void) => {
+        aiDoneHandlersRef.current.add(handler);
+        return () => { aiDoneHandlersRef.current.delete(handler); };
+    }, []);
 
-        if (!accessToken) {
-            console.warn(
-                "No access token available for Mock Drive WebSocket connection",
-            );
-            return;
+    // =====================================================
+    // HELPERS
+    // =====================================================
+
+    const setInterviewStateWithRef = useCallback((state: InterviewState) => {
+        interviewStateRef.current = state;
+        setInterviewState(state);
+    }, []);
+
+    const sendJson = useCallback((payload: object) => {
+        const ws = wsRef.current;
+        if (ws?.readyState === WebSocket.OPEN) {
+            try {
+                ws.send(JSON.stringify(payload));
+                return true;
+            } catch { return false; }
         }
+        return false;
+    }, []);
 
-        setConnectionState("CONNECTING");
+    // =====================================================
+    // MESSAGE HANDLER
+    // =====================================================
 
-        const baseUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8000';
-        const wsUrl = `${baseUrl}/ws/mock-drive/interview/${attemptId}?token=${accessToken}`;
-
-        try {
-            ws.current = new WebSocket(wsUrl);
-
-            ws.current.onopen = () => {
-                console.log("[MockInterview WS] Connected");
-                setConnectionState("CONNECTED");
-                reconnectAttempts.current = 0;
-
-                // Initializing logic triggers automatically on connection in the gateway, but you can also send explicitly
-                ws.current?.send(
-                    JSON.stringify({ type: MockInterviewWSEvents.CLIENT.INITIALIZE }),
-                );
-            };
-
-            ws.current.onmessage = (event) => {
-                try {
-                    const response: WSResponse = JSON.parse(event.data);
-                    handleMessage(response);
-                } catch (err) {
-                    console.error("[MockInterview WS] Failed to parse message", err);
-                }
-            };
-
-            ws.current.onerror = (error) => {
-                console.error("[MockInterview WS] Error:", error);
-                setConnectionState("ERROR");
-            };
-
-            ws.current.onclose = () => {
-                console.log("[MockInterview WS] Disconnected");
-                setConnectionState("DISCONNECTED");
-
-                // Basic reconnection logic
-                if (
-                    reconnectAttempts.current < maxReconnectAttempts &&
-                    interviewState !== "COMPLETED"
-                ) {
-                    reconnectAttempts.current += 1;
-                    setTimeout(
-                        () => connect(attemptId),
-                        1000 * reconnectAttempts.current,
-                    );
-                }
-            };
-        } catch (err) {
-            console.error("Failed to initialize WebSocket:", err);
-            setConnectionState("ERROR");
-        }
-    };
-
-    const handleMessage = (msg: WSResponse) => {
+    const handleMessage = useCallback((msg: WSResponse) => {
         switch (msg.type) {
-            case MockInterviewWSEvents.SERVER.SESSION_STATE:
-                setInterviewState(msg.data.state);
+            case MockInterviewWSEvents.SERVER.CONNECTED:
+                console.log("[MockInterview WS] Server confirmed connection");
                 break;
 
-            case MockInterviewWSEvents.SERVER.INITIALIZED:
-                setInterviewState("READY");
-                if (msg.data?.question) {
-                    setCurrentQuestion(msg.data.question);
+            case MockInterviewWSEvents.SERVER.SESSION_READY:
+                setIsConnected(true);
+                setIsConnecting(false);
+                setConnectionState("CONNECTED");
+                setInterviewStateWithRef("READY");
+                if (msg.data?.currentQuestion?.question) {
+                    setCurrentQuestion(msg.data.currentQuestion.question);
                 }
                 break;
 
-            case MockInterviewWSEvents.SERVER.QUESTION:
-                if (msg.data.question) {
-                    setCurrentQuestion(msg.data.question);
-                }
-                setInterviewState("INTERVIEWING");
-                // If there's audio, the frontend InterviewModule will listen to the same WS or we handle it here
-                // Current implementation is relying on direct events or state updates
+            // Live transcription as user speaks
+            case MockInterviewWSEvents.SERVER.TRANSCRIPTION:
+                setTranscription(msg.data?.text || "");
                 break;
 
+            // Final transcription — AI starts processing
+            case MockInterviewWSEvents.SERVER.TRANSCRIPTION_FINAL:
+                setTranscription(msg.data?.text || "");
+                setInterviewStateWithRef("AI_PROCESSING");
+                break;
+
+            // AI is formulating a response
+            case MockInterviewWSEvents.SERVER.AI_THINKING:
+                setInterviewStateWithRef("AI_PROCESSING");
+                break;
+
+            // AI is about to speak — text is ready
             case MockInterviewWSEvents.SERVER.AI_SPEAKING:
-                setInterviewState("AI_SPEAKING");
+                setInterviewStateWithRef("AI_SPEAKING");
+                if (msg.data?.text) {
+                    setCurrentQuestion(msg.data.text);
+                }
                 break;
 
+            // Audio chunk from TTS — decode and forward to audio handlers
             case MockInterviewWSEvents.SERVER.AI_AUDIO: {
-                if (msg.data && msg.data.chunk) {
+                if (msg.data?.chunk) {
                     try {
                         const binaryString = window.atob(msg.data.chunk);
-                        const len = binaryString.length;
-                        const bytes = new Uint8Array(len);
-                        for (let i = 0; i < len; i++) {
+                        const bytes = new Uint8Array(binaryString.length);
+                        for (let i = 0; i < binaryString.length; i++) {
                             bytes[i] = binaryString.charCodeAt(i);
                         }
-                        notifyAudioHandlers(bytes.buffer);
+                        audioHandlersRef.current.forEach((h) => h(bytes.buffer));
                     } catch (e) {
                         console.error("[MockInterview WS] Audio decode error:", e);
                     }
@@ -200,57 +221,230 @@ export function MockInterviewProvider({ children }: { children: ReactNode }) {
                 break;
             }
 
+            // ALL audio chunks done — signal playback start
+            case MockInterviewWSEvents.SERVER.AI_DONE:
+                console.log("[MockInterview WS] AI done, triggering audio playback");
+                // Disable auto-reconnect once the interview is in progress.
+                // The gateway no longer re-speaks on reconnect, so reconnects
+                // would just cause confusing mid-interview disconnects.
+                reconnectAttemptsRef.current = MAX_RECONNECT_ATTEMPTS;
+                aiDoneHandlersRef.current.forEach((h) => h());
+                break;
+
+            // Progress update or state sync (also sent on reconnect resume)
+            case MockInterviewWSEvents.SERVER.SESSION_STATE:
+                // Transition to INTERVIEWING so mic auto-starts in the module
+                setInterviewStateWithRef("INTERVIEWING");
+                setIsConnected(true);
+                setIsConnecting(false);
+                break;
+
             case MockInterviewWSEvents.SERVER.INTERVIEW_ENDED:
-                setInterviewState("COMPLETED");
-                if (msg.data.feedbackUrl) {
-                    window.location.href = msg.data.feedbackUrl;
-                }
+                setInterviewStateWithRef("COMPLETED");
+                setIsConnected(false);
+                console.log("[MockInterview WS] Interview ended");
                 break;
 
             case MockInterviewWSEvents.SERVER.ERROR:
                 toast({
                     title: "Interview Error",
-                    description: msg.error || "Something went wrong.",
+                    description: msg.data?.message || msg.error || "Something went wrong.",
                     variant: "destructive",
                 });
-                setInterviewState("ERROR");
+                setInterviewStateWithRef("ERROR");
+                break;
+
+            // Respond to heartbeat ping immediately
+            case MockInterviewWSEvents.SERVER.PING:
+                sendJson({ type: MockInterviewWSEvents.CLIENT.PONG });
                 break;
 
             default:
-                console.log(`[MockInterview WS] Unhandled event: ${msg.type}`);
+                // Ignore unrecognized events (safe)
+                break;
         }
-    };
+    }, [setInterviewStateWithRef, toast, sendJson]);
 
-    const disconnect = () => {
-        if (ws.current) {
-            ws.current.close();
-            ws.current = null;
+    // =====================================================
+    // DISCONNECT
+    // =====================================================
+
+    const disconnect = useCallback(() => {
+        console.log("[MockInterview WS] Manual disconnect");
+        isManualDisconnectRef.current = true;
+        reconnectAttemptsRef.current = 0;
+
+        const ws = wsRef.current;
+        if (ws) {
+            wsRef.current = null;
+            // Null out handlers first to prevent onclose from triggering reconnect
+            ws.onopen = null;
+            ws.onmessage = null;
+            ws.onerror = null;
+            ws.onclose = null;
+            if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
+                try { ws.close(1000, "User disconnect"); } catch { /* ignore */ }
+            }
         }
+
+        setIsConnected(false);
+        setIsConnecting(false);
         setConnectionState("DISCONNECTED");
-    };
+    }, []);
 
-    const sendAnswer = (answer: string) => {
-        if (ws.current?.readyState === WebSocket.OPEN) {
-            ws.current.send(
-                JSON.stringify({
-                    type: MockInterviewWSEvents.CLIENT.AUDIO_CHUNK,
-                    data: { response: answer },
-                }),
-            );
-            setInterviewState("AI_PROCESSING");
-        } else {
-            toast({
-                title: "Connection Lost",
-                description: "Cannot send answer, attempting to reconnect...",
-                variant: "destructive",
-            });
+    // =====================================================
+    // CONNECT
+    // =====================================================
+
+    const connect = useCallback((moduleAttemptId: string) => {
+        // Already connected to this attempt - avoid duplicate connections
+        if (wsRef.current?.readyState === WebSocket.OPEN && attemptIdRef.current === moduleAttemptId) {
+            return;
         }
-    };
 
-    const endInterview = () => {
-        // Optional: The server usually triggers INTREVIEW_ENDED when target questions are hit.
-        // But a manual trigger might be useful. Right now, there is no explicit manual end WS event mapped in the gateway, but we could add one.
-    };
+        // Already connecting to the same attempt
+        if (wsRef.current?.readyState === WebSocket.CONNECTING && attemptIdRef.current === moduleAttemptId) return;
+
+        if (!accessToken) {
+            console.warn("[MockInterview WS] No access token");
+            return;
+        }
+
+        attemptIdRef.current = moduleAttemptId;
+        isManualDisconnectRef.current = false;
+
+        setIsConnecting(true);
+        setConnectionState("CONNECTING");
+
+        const baseUrl = process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:4000";
+        const wsUrl = `${baseUrl}/ws/mock-drive/interview/${moduleAttemptId}?token=${accessToken}`;
+
+        try {
+            const ws = new WebSocket(wsUrl);
+            wsRef.current = ws;
+            // Enable binary for audio (only if we need raw binary later)
+            ws.binaryType = "arraybuffer";
+
+            ws.onopen = () => {
+                console.log("[MockInterview WS] Connected");
+                reconnectAttemptsRef.current = 0;
+                // NOTE: Don't set isConnected=true here. Wait for session_ready.
+                if (mountedRef.current) {
+                    setConnectionState("CONNECTING"); // Still initializing on server side
+                }
+            };
+
+            ws.onmessage = (event) => {
+                if (!mountedRef.current) return;
+                try {
+                    // Handle raw binary audio (if server ever sends binary)
+                    if (event.data instanceof ArrayBuffer) {
+                        audioHandlersRef.current.forEach((h) => h(event.data));
+                        return;
+                    }
+                    const msg: WSResponse = JSON.parse(event.data);
+                    handleMessage(msg);
+                } catch (e) {
+                    console.error("[MockInterview WS] Parse error:", e);
+                }
+            };
+
+            ws.onerror = () => {
+                console.error("[MockInterview WS] WebSocket error");
+                setConnectionState("ERROR");
+            };
+
+            ws.onclose = (event) => {
+                if (wsRef.current === ws) wsRef.current = null;
+                if (!mountedRef.current) return;
+
+                console.log("[MockInterview WS] Closed:", event.code, event.reason);
+                setIsConnected(false);
+                setIsConnecting(false);
+                setConnectionState("DISCONNECTED");
+
+                // Only reconnect if NOT a manual disconnect and NOT completed
+                // Use ref (not state) to avoid stale closure
+                if (
+                    !isManualDisconnectRef.current &&
+                    interviewStateRef.current !== "COMPLETED" &&
+                    interviewStateRef.current !== "ERROR" &&
+                    event.code !== 1000 &&
+                    reconnectAttemptsRef.current < MAX_RECONNECT_ATTEMPTS
+                ) {
+                    reconnectAttemptsRef.current += 1;
+                    const delay = RECONNECT_DELAY_MS * reconnectAttemptsRef.current;
+                    console.log(`[MockInterview WS] Reconnecting in ${delay}ms (attempt ${reconnectAttemptsRef.current})`);
+                    setTimeout(() => {
+                        if (mountedRef.current && !isManualDisconnectRef.current) {
+                            connect(attemptIdRef.current);
+                        }
+                    }, delay);
+                }
+            };
+        } catch (err) {
+            console.error("[MockInterview WS] Failed to create WebSocket:", err);
+            setIsConnecting(false);
+            setConnectionState("ERROR");
+        }
+    }, [accessToken, handleMessage]);
+
+    // =====================================================
+    // AUDIO AND CONTROL ACTIONS
+    // =====================================================
+
+    /**
+     * Send real-time binary audio chunks to the server (mirrors practice interview).
+     * The gateway streams these to Deepgram for live transcription.
+     */
+    const sendAudio = useCallback((audioData: ArrayBuffer) => {
+        const ws = wsRef.current;
+        if (ws?.readyState === WebSocket.OPEN) {
+            ws.send(audioData);
+        }
+    }, []);
+
+    /**
+     * Notify server that user started recording (gateway sets isListening=true).
+     */
+    const sendStartRecording = useCallback(() => {
+        sendJson({ type: MockInterviewWSEvents.CLIENT.START_RECORDING });
+    }, [sendJson]);
+
+    /**
+     * Notify server that user stopped recording (gateway processes accumulated transcript).
+     */
+    const sendStopRecording = useCallback(() => {
+        sendJson({ type: MockInterviewWSEvents.CLIENT.STOP_RECORDING });
+    }, [sendJson]);
+
+    const endInterview = useCallback(() => {
+        sendJson({
+            type: MockInterviewWSEvents.CLIENT.END_INTERVIEW,
+            data: { reason: "completed" },
+        });
+    }, [sendJson]);
+
+    // =====================================================
+    // CLEANUP ON UNMOUNT
+    // =====================================================
+
+    useEffect(() => {
+        mountedRef.current = true;
+        return () => {
+            // On unmount: just mark as unmounted and clear handler sets
+            // DO NOT close the WS here — that's the consumer's (InterviewModuleInner's) job via disconnect().
+            // Closing the WS in Provider cleanup causes React StrictMode double-invoke to kill the connection
+            // before it's even established on the second mount.
+            mountedRef.current = false;
+            audioHandlersRef.current.clear();
+            aiDoneHandlersRef.current.clear();
+        };
+    }, []);
+
+    // =====================================================
+    // CONTEXT VALUE
+    // =====================================================
 
     return (
         <MockInterviewContext.Provider
@@ -259,11 +453,16 @@ export function MockInterviewProvider({ children }: { children: ReactNode }) {
                 interviewState,
                 currentQuestion,
                 transcription,
+                isConnected,
+                isConnecting,
                 connect,
                 disconnect,
-                sendAnswer,
+                sendAudio,
+                sendStartRecording,
+                sendStopRecording,
                 endInterview,
                 registerAudioHandler,
+                registerAiDoneHandler,
             }}
         >
             {children}
@@ -271,12 +470,14 @@ export function MockInterviewProvider({ children }: { children: ReactNode }) {
     );
 }
 
+// =====================================================
+// HOOK
+// =====================================================
+
 export const useMockInterviewWS = () => {
     const context = useContext(MockInterviewContext);
     if (!context) {
-        throw new Error(
-            "useMockInterviewWS must be used within a MockInterviewProvider",
-        );
+        throw new Error("useMockInterviewWS must be used within a MockInterviewProvider");
     }
     return context;
 };
