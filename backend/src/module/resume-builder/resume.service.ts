@@ -1,7 +1,7 @@
-import { PrismaClient, ResumeTemplateCategory } from '@prisma/client';
-import { 
-  ResumeTemplateResponse, 
-  ResumeResponse, 
+import { PrismaClient, ResumeTemplateCategory, Prisma } from '@prisma/client';
+import {
+  ResumeTemplateResponse,
+  ResumeResponse,
   ResumeListItem,
   ResumeContent,
   ResumeCustomization,
@@ -21,7 +21,7 @@ import { AppError } from '../../utils/errors';
 import { generateSlug } from '../../utils/helpers';
 
 export class ResumeService {
-  constructor(private prisma: PrismaClient) {}
+  constructor(private prisma: PrismaClient) { }
 
   // ============ Template Methods ============
 
@@ -62,7 +62,7 @@ export class ResumeService {
     });
 
     if (!template) {
-      throw new AppError('Template not found', 404);
+      throw new AppError('Template not found', '');
     }
 
     return this.mapTemplateToResponse(template);
@@ -74,7 +74,7 @@ export class ResumeService {
     });
 
     if (!template) {
-      throw new AppError('Template not found', 404);
+      throw new AppError('Template not found', '');
     }
 
     return this.mapTemplateToResponse(template);
@@ -102,7 +102,7 @@ export class ResumeService {
     });
 
     if (!template) {
-      throw new AppError('Template not found', 404);
+      throw new AppError('Template not found', '');
     }
 
     // Generate unique slug
@@ -140,7 +140,7 @@ export class ResumeService {
   }
 
   async getUserResumes(
-    userId: string, 
+    userId: string,
     filters: ResumeFiltersInput
   ): Promise<{ resumes: ResumeListItem[]; total: number; page: number; totalPages: number }> {
     const { page = 1, limit = 10, search, templateId, isComplete } = filters;
@@ -209,7 +209,7 @@ export class ResumeService {
     });
 
     if (!resume) {
-      throw new AppError('Resume not found', 404);
+      throw new AppError('Resume not found', '');
     }
 
     return this.mapResumeToResponse(resume);
@@ -227,15 +227,15 @@ export class ResumeService {
     });
 
     if (!resume) {
-      throw new AppError('Resume not found', 404);
+      throw new AppError('Resume not found', '');
     }
 
     return this.mapResumeToResponse(resume);
   }
 
   async updateResume(
-    userId: string, 
-    resumeId: string, 
+    userId: string,
+    resumeId: string,
     data: UpdateResumeInput
   ): Promise<ResumeResponse> {
     const existingResume = await this.prisma.userResume.findFirst({
@@ -243,7 +243,7 @@ export class ResumeService {
     });
 
     if (!existingResume) {
-      throw new AppError('Resume not found', 404);
+      throw new AppError('Resume not found', '');
     }
 
     // If changing template, verify it exists
@@ -253,7 +253,7 @@ export class ResumeService {
       });
 
       if (!template) {
-        throw new AppError('Template not found', 404);
+        throw new AppError('Template not found', '');
       }
     }
 
@@ -313,7 +313,7 @@ export class ResumeService {
     });
 
     if (!existingResume) {
-      throw new AppError('Resume not found', 404);
+      throw new AppError('Resume not found', '');
     }
 
     // Create version snapshot before update
@@ -331,7 +331,7 @@ export class ResumeService {
     if (section === 'customSections') {
       const customSections = data as any[];
       const currentOrder = existingResume.sectionOrder as string[];
-      
+
       if (customSections && customSections.length > 0) {
         // Add customSections to sectionOrder if not present
         if (!currentOrder.includes('customSections')) {
@@ -360,7 +360,7 @@ export class ResumeService {
     });
 
     if (!resume) {
-      throw new AppError('Resume not found', 404);
+      throw new AppError('Resume not found', '');
     }
 
     await this.prisma.userResume.delete({
@@ -369,8 +369,8 @@ export class ResumeService {
   }
 
   async duplicateResume(
-    userId: string, 
-    resumeId: string, 
+    userId: string,
+    resumeId: string,
     data: DuplicateResumeInput
   ): Promise<ResumeResponse> {
     const original = await this.prisma.userResume.findFirst({
@@ -379,7 +379,7 @@ export class ResumeService {
     });
 
     if (!original) {
-      throw new AppError('Resume not found', 404);
+      throw new AppError('Resume not found', '');
     }
 
     const title = data.newTitle || `${original.title} (Copy)`;
@@ -424,7 +424,7 @@ export class ResumeService {
     });
 
     if (!resume) {
-      throw new AppError('Resume not found', 404);
+      throw new AppError('Resume not found', '');
     }
 
     const template = await this.prisma.resumeTemplate.findUnique({
@@ -432,7 +432,7 @@ export class ResumeService {
     });
 
     if (!template) {
-      throw new AppError('Template not found', 404);
+      throw new AppError('Template not found', '');
     }
 
     // Create version before template change
@@ -443,7 +443,7 @@ export class ResumeService {
       data: {
         templateId,
         // Reset custom styles when changing template
-        customStyles: null,
+        customStyles: Prisma.DbNull,
         colorScheme: null,
         fontFamily: null,
       },
@@ -461,7 +461,7 @@ export class ResumeService {
     });
 
     if (!resume) {
-      throw new AppError('Resume not found', 404);
+      throw new AppError('Resume not found', '');
     }
 
     const versions = await this.prisma.resumeVersion.findMany({
@@ -479,8 +479,8 @@ export class ResumeService {
   }
 
   async restoreVersion(
-    userId: string, 
-    resumeId: string, 
+    userId: string,
+    resumeId: string,
     versionId: string
   ): Promise<ResumeResponse> {
     const resume = await this.prisma.userResume.findFirst({
@@ -488,7 +488,7 @@ export class ResumeService {
     });
 
     if (!resume) {
-      throw new AppError('Resume not found', 404);
+      throw new AppError('Resume not found', '');
     }
 
     const version = await this.prisma.resumeVersion.findFirst({
@@ -496,7 +496,7 @@ export class ResumeService {
     });
 
     if (!version) {
-      throw new AppError('Version not found', 404);
+      throw new AppError('Version not found', '');
     }
 
     // Create snapshot of current state before restore
@@ -537,14 +537,14 @@ export class ResumeService {
     });
 
     if (!resume) {
-      throw new AppError('Resume not found', 404);
+      throw new AppError('Resume not found', '');
     }
 
     // Get user profile and student profile with department
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       include: {
-        studentProfile: {
+        profile: {
           include: {
             department: true,
           },
@@ -553,13 +553,16 @@ export class ResumeService {
     });
 
     if (!user) {
-      throw new AppError('User not found', 404);
+      throw new AppError('User not found', '');
     }
 
     // Build personal info from profile
+    const nameParts = (user.name || '').split(' ');
+    const firstName = nameParts[0] || '';
+    const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
     const personalInfo: any = {
-      firstName: user.firstName || '',
-      lastName: user.lastName || '',
+      firstName,
+      lastName,
       email: user.email,
     };
 
@@ -568,11 +571,11 @@ export class ResumeService {
 
     // Build education from student profile
     let education: any[] = [];
-    if (user.studentProfile) {
-      const sp = user.studentProfile;
+    if (user.profile) {
+      const sp = user.profile;
       const currentYear = new Date().getFullYear();
       const courseYearNum = sp.courseYear ? parseInt(sp.courseYear) : undefined;
-      
+
       education.push({
         id: crypto.randomUUID(),
         institution: sp.collegeName || '',
@@ -587,8 +590,8 @@ export class ResumeService {
 
     // Build skills from profile
     let skills: any[] = [];
-    if (user.studentProfile?.skills && user.studentProfile.skills.length > 0) {
-      const profileSkills = user.studentProfile.skills as string[];
+    if (user.profile?.skills && user.profile.skills.length > 0) {
+      const profileSkills = user.profile.skills as string[];
       skills.push({
         id: crypto.randomUUID(),
         name: 'Technical Skills',
@@ -622,7 +625,7 @@ export class ResumeService {
     });
 
     if (!userResume) {
-      throw new AppError('Resume not found', 404);
+      throw new AppError('Resume not found', '');
     }
 
     // Check if user already has 5 resumes in profile
@@ -631,7 +634,7 @@ export class ResumeService {
     });
 
     if (existingResumesCount >= 5) {
-      throw new AppError('Maximum 5 resumes allowed in profile. Please delete one to add a new resume.', 400);
+      throw new AppError('Maximum 5 resumes allowed in profile. Please delete one to add a new resume.', '');
     }
 
     // Check if this resume is already linked to a profile resume
@@ -640,7 +643,7 @@ export class ResumeService {
     });
 
     if (existingLink) {
-      throw new AppError('This resume is already saved to your profile', 400);
+      throw new AppError('This resume is already saved to your profile', '');
     }
 
     // Generate file name
@@ -672,7 +675,7 @@ export class ResumeService {
     });
 
     if (!userResume) {
-      throw new AppError('Resume not found', 404);
+      throw new AppError('Resume not found', '');
     }
 
     // Find and delete the linked profile resume
@@ -681,7 +684,7 @@ export class ResumeService {
     });
 
     if (!profileResume) {
-      throw new AppError('Resume is not linked to profile', 404);
+      throw new AppError('Resume is not linked to profile', '');
     }
 
     await this.prisma.resume.delete({
@@ -692,8 +695,8 @@ export class ResumeService {
   // ============ Helper Methods ============
 
   private async generateUniqueSlug(
-    userId: string, 
-    baseSlug: string, 
+    userId: string,
+    baseSlug: string,
     excludeId?: string
   ): Promise<string> {
     let slug = baseSlug;
@@ -784,21 +787,21 @@ export class ResumeService {
     };
 
     // Check required sections
-    const hasPersonalInfo = content.personalInfo && 
-      content.personalInfo.firstName && 
-      content.personalInfo.lastName && 
+    const hasPersonalInfo = content.personalInfo &&
+      content.personalInfo.firstName &&
+      content.personalInfo.lastName &&
       content.personalInfo.email;
 
-    const hasExperience = content.experience && 
-      Array.isArray(content.experience) && 
+    const hasExperience = content.experience &&
+      Array.isArray(content.experience) &&
       content.experience.length > 0;
 
-    const hasEducation = content.education && 
-      Array.isArray(content.education) && 
+    const hasEducation = content.education &&
+      Array.isArray(content.education) &&
       content.education.length > 0;
 
-    const hasSkills = content.skills && 
-      Array.isArray(content.skills) && 
+    const hasSkills = content.skills &&
+      Array.isArray(content.skills) &&
       content.skills.length > 0;
 
     return !!(hasPersonalInfo && (hasExperience || hasEducation) && hasSkills);

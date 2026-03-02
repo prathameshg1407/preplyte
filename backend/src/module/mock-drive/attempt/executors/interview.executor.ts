@@ -56,7 +56,7 @@ interface AudioChunkPayload {
   isFinal?: boolean;
 }
 
-interface WorkingInterviewData {
+export interface WorkingInterviewData {
   config: AiInterviewConfig;
   conversation: ConversationMessage[];
   responses: InterviewResponseData[];
