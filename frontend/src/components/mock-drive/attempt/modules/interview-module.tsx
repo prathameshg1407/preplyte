@@ -1,16 +1,14 @@
 // src/components/mock-drive/attempt/modules/interview-module.tsx
-// Mirrors practice interview (interview-room.tsx) architecture for real-time conversation
-
 "use client";
 
-import { FC, useEffect, useRef, useCallback } from "react";
-import { Square, Check, Loader2, User, Bot, Mic, MicOff } from "lucide-react";
-import { nanoid } from "nanoid";
+import { FC, useEffect, useRef, useCallback, useState } from "react";
+import { Check, Loader2, User, Bot, Mic, MicOff } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
+import { nanoid } from "nanoid";
 import {
   AiInterviewModuleConfig,
   AiInterviewModuleData,
@@ -24,14 +22,12 @@ import {
   MockInterviewProvider,
   useMockInterviewWS,
 } from "@/lib/contexts/mock-interview-ws-context";
-
 import { AIAvatar } from "../ai-interview/interview/ai-avatar";
 import { AudioVisualizer } from "../ai-interview/interview/audio-visualizer";
 
-// =====================================================
-// PROPS
-// =====================================================
-
+// ─────────────────────────────────────────────────────────────────────────────
+// TYPES
+// ─────────────────────────────────────────────────────────────────────────────
 interface InterviewModuleProps {
   driveId: string;
   moduleId: string;
@@ -41,13 +37,10 @@ interface InterviewModuleProps {
   isSubmitting: boolean;
 }
 
-// =====================================================
-// INNER COMPONENT (wrapped by MockInterviewProvider)
-// =====================================================
-
+// ─────────────────────────────────────────────────────────────────────────────
+// INNER COMPONENT
+// ─────────────────────────────────────────────────────────────────────────────
 export const InterviewModuleInner: FC<InterviewModuleProps> = ({
-  driveId,
-  moduleId,
   config,
   data,
   onSubmit,
@@ -56,40 +49,24 @@ export const InterviewModuleInner: FC<InterviewModuleProps> = ({
   const interviewConfig = config as AiInterviewModuleConfig;
   const interviewData = data as AiInterviewModuleData | null;
 
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const { localModuleData, updateLocalModuleData } = useAttemptStore();
   const localData = localModuleData as AiInterviewModuleData | null;
-
-  // The WS gateway queries MockDriveModuleAttempt by its ID
   const moduleAttemptId = useAttemptStore((s) => s.currentModule?.moduleAttemptId);
 
-  // =====================================================
-  // WS CONTEXT
-  // =====================================================
-
+  // ─── WS Context ───────────────────────────────────────────────────────────
   const {
-    connect,
-    disconnect,
-    sendAudio,
-    sendStartRecording,
-    sendStopRecording,
-    endInterview,
-    isConnected,
-    isConnecting,
-    interviewState,
-    currentQuestion,
-    transcription,
-    registerAudioHandler,
-    registerAiDoneHandler,
+    connect, disconnect,
+    sendAudio, sendStartRecording, sendStopRecording, endInterview,
+    isConnected, isConnecting,
+    interviewState, currentQuestion, transcription,
+    registerAudioHandler, registerAiDoneHandler,
   } = useMockInterviewWS();
 
-  // =====================================================
-  // CONNECT ON MOUNT
-  // =====================================================
-
+  // ─── Connect on mount ─────────────────────────────────────────────────────
   const hasConnectedRef = useRef(false);
-
   useEffect(() => {
     if (moduleAttemptId && !hasConnectedRef.current) {
       hasConnectedRef.current = true;
@@ -102,209 +79,153 @@ export const InterviewModuleInner: FC<InterviewModuleProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [moduleAttemptId]);
 
-  // =====================================================
-  // AUDIO PLAYER
-  // =====================================================
-
+  // ─── Audio Player ─────────────────────────────────────────────────────────
   const isTransitioningRef = useRef(false);
-  // Track isComplete with a ref to avoid stale closure inside useAudioPlayer callbacks
   const isCompleteRef = useRef(false);
-  // isComplete is derived below but we need an early ref update pattern;
-  // we set this after deriving conversation/responses.
+
   const {
     isPlaying: isAudioPlaying,
     queueAudio,
     playAccumulated,
-    stop: stopAudio,
     isBuffering,
   } = useAudioPlayer({
     onPlaybackEnd: () => {
-      // AI finished speaking — auto-start mic for user's response
       if (!isCompleteRef.current && !isTransitioningRef.current) {
         handleStartRecording();
       }
     },
   });
 
-  // Queue audio chunks as they stream from the server
-  useEffect(() => {
-    return registerAudioHandler((data) => {
-      queueAudio(data);
-    });
-  }, [registerAudioHandler, queueAudio]);
+  useEffect(() => registerAudioHandler((d) => queueAudio(d)), [registerAudioHandler, queueAudio]);
+  useEffect(() => registerAiDoneHandler(() => playAccumulated()), [registerAiDoneHandler, playAccumulated]);
 
-  // When server signals AI is done streaming, play all queued audio
-  useEffect(() => {
-    return registerAiDoneHandler(() => {
-      playAccumulated();
-    });
-  }, [registerAiDoneHandler, playAccumulated]);
-
-  // =====================================================
-  // AUDIO RECORDER — streams binary chunks in real-time
-  // =====================================================
-
+  // ─── Audio Recorder ───────────────────────────────────────────────────────
   const { isRecording, startRecording, stopRecording, volume } = useAudioRecorder({
     onAudioData: (audioData) => {
-      // Mirror practice interview: stream binary chunks directly to gateway
-      if (isConnected) {
-        sendAudio(audioData);
-      }
+      if (isConnected) sendAudio(audioData);
     },
   });
 
-  // =====================================================
-  // SILENCE DETECTION (VAD)
-  // =====================================================
-
+  // ─── Silence VAD with countdown ───────────────────────────────────────────
+  const [silenceCountdown, setSilenceCountdown] = useState<number | null>(null);
   const silenceStartRef = useRef<number | null>(null);
   const silenceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const silenceIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  const clearSilenceTimers = useCallback(() => {
+    if (silenceTimeoutRef.current) { clearTimeout(silenceTimeoutRef.current); silenceTimeoutRef.current = null; }
+    if (silenceIntervalRef.current) { clearInterval(silenceIntervalRef.current); silenceIntervalRef.current = null; }
+    silenceStartRef.current = null;
+    setSilenceCountdown(null);
+  }, []);
 
   useEffect(() => {
-    const isComplete_ = (localData?.responses?.length ?? 0) >= (interviewConfig?.targetQuestions ?? 0);
+    const isComplete_ = isCompleteRef.current;
+    const shouldRunVAD = isRecording && !isAudioPlaying && !isBuffering
+      && interviewState !== "AI_PROCESSING" && !isSubmitting && !isComplete_
+      && !isTransitioningRef.current;
 
-    if (
-      isRecording &&
-      !isAudioPlaying &&
-      interviewState !== "AI_PROCESSING" &&
-      !isSubmitting &&
-      !isComplete_ &&
-      !isTransitioningRef.current
-    ) {
+    if (shouldRunVAD) {
       if (volume < 0.05) {
         if (!silenceStartRef.current) {
           silenceStartRef.current = Date.now();
+          setSilenceCountdown(3);
+          // Tick the countdown every 200ms
+          silenceIntervalRef.current = setInterval(() => {
+            const elapsed = (Date.now() - (silenceStartRef.current ?? Date.now())) / 1000;
+            const remaining = Math.ceil(Math.max(0, 3 - elapsed));
+            setSilenceCountdown(remaining);
+          }, 200);
+          // Auto-submit after 3s silence
           silenceTimeoutRef.current = setTimeout(() => {
-            silenceStartRef.current = null;
+            clearSilenceTimers();
             handleStopRecording();
-          }, 3000); // 3-second silence → stop recording
+          }, 3000);
         }
       } else {
-        // User is speaking — reset silence timer
-        if (silenceTimeoutRef.current) {
-          clearTimeout(silenceTimeoutRef.current);
-          silenceTimeoutRef.current = null;
-        }
-        silenceStartRef.current = null;
+        // Voice detected — reset silence timer
+        clearSilenceTimers();
       }
     } else {
-      if (silenceTimeoutRef.current) {
-        clearTimeout(silenceTimeoutRef.current);
-        silenceTimeoutRef.current = null;
-      }
-      silenceStartRef.current = null;
+      clearSilenceTimers();
     }
+    return clearSilenceTimers;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [volume, isRecording, isAudioPlaying, isBuffering, interviewState, isSubmitting]);
 
-    return () => {
-      if (silenceTimeoutRef.current) clearTimeout(silenceTimeoutRef.current);
-    };
-  }, [volume, isRecording, isAudioPlaying, interviewState, isSubmitting]);
-
-  // =====================================================
-  // RECORDING HANDLERS
-  // =====================================================
-
+  // ─── Recording handlers ───────────────────────────────────────────────────
   const handleStartRecording = useCallback(async () => {
-    if (isAudioPlaying || isTransitioningRef.current) return;
+    if (isAudioPlaying || isBuffering || isTransitioningRef.current) return;
     isTransitioningRef.current = true;
-    await startRecording();
-    sendStartRecording(); // Tell server we're listening
-    isTransitioningRef.current = false;
-  }, [isAudioPlaying, startRecording, sendStartRecording]);
+    try {
+      await startRecording();
+      sendStartRecording();
+    } finally {
+      isTransitioningRef.current = false;
+    }
+  }, [isAudioPlaying, isBuffering, startRecording, sendStartRecording]);
 
   const handleStopRecording = useCallback(() => {
     if (!isRecording || isTransitioningRef.current) return;
     isTransitioningRef.current = true;
+    clearSilenceTimers();
     stopRecording();
-    sendStopRecording(); // Tell server to process accumulated transcript
-    setTimeout(() => {
-      isTransitioningRef.current = false;
-    }, 500);
-  }, [isRecording, stopRecording, sendStopRecording]);
+    sendStopRecording();
+    setTimeout(() => { isTransitioningRef.current = false; }, 600);
+  }, [isRecording, stopRecording, sendStopRecording, clearSilenceTimers]);
 
-  // Auto-start mic when interview transitions to INTERVIEWING state without audio
-  // (e.g., after a reconnect where session_state fires but no audio plays)
-  const prevInterviewStateRef = useRef<string>("");
+  // ─── Auto-start mic when INTERVIEWING state (reconnect resume) ────────────
+  const prevInterviewStateRef = useRef("");
   useEffect(() => {
     const changed = interviewState !== prevInterviewStateRef.current;
     prevInterviewStateRef.current = interviewState;
     if (
-      changed &&
-      interviewState === "INTERVIEWING" &&
-      !isAudioPlaying &&
-      !isBuffering &&
-      !isRecording &&
-      !isTransitioningRef.current &&
-      !isComplete
+      changed && interviewState === "INTERVIEWING"
+      && !isAudioPlaying && !isBuffering && !isRecording
+      && !isTransitioningRef.current && !isCompleteRef.current
     ) {
-      // Short delay to let UI settle before starting mic
-      const t = setTimeout(() => handleStartRecording(), 300);
+      const t = setTimeout(() => handleStartRecording(), 400);
       return () => clearTimeout(t);
     }
   }, [interviewState]);
 
-  // =====================================================
-  // REAL-TIME CONVERSATION SYNC FROM WS EVENTS
-  // =====================================================
-
-  // The Zustand store only updates via REST. To show real-time conversation,
-  // we push messages to localModuleData as WS events arrive.
-
+  // ─── Real-time conversation sync from WS events ───────────────────────────
   const lastAiQuestionRef = useRef<string | null>(null);
-
   useEffect(() => {
-    // When AI_SPEAKING fires, currentQuestion updates
-    // Push the new assistant message to the local conversation immediately
     if (
-      currentQuestion &&
-      currentQuestion !== lastAiQuestionRef.current &&
-      interviewState === "AI_SPEAKING"
+      currentQuestion && currentQuestion !== lastAiQuestionRef.current
+      && interviewState === "AI_SPEAKING"
     ) {
       lastAiQuestionRef.current = currentQuestion;
-      const currentConv = localData?.conversation || interviewData?.conversation || [];
-      const alreadyExists = currentConv.some((m) => m.content === currentQuestion && m.role === "assistant");
-      if (!alreadyExists) {
-        const newMsg = {
-          id: nanoid(),
-          role: "assistant" as const,
-          content: currentQuestion,
-          timestamp: new Date().toISOString(),
-        };
+      const conv = localData?.conversation || interviewData?.conversation || [];
+      if (!conv.some((m) => m.content === currentQuestion && m.role === "assistant")) {
         updateLocalModuleData({
           ...localData,
-          conversation: [...currentConv, newMsg],
+          conversation: [...conv, { id: nanoid(), role: "assistant", content: currentQuestion, timestamp: new Date().toISOString() }],
         } as Partial<AiInterviewModuleData>);
       }
     }
   }, [currentQuestion, interviewState]);
 
   const lastUserTranscriptRef = useRef<string | null>(null);
-
   useEffect(() => {
-    // When TRANSCRIPTION_FINAL fires and AI starts processing, push user message
+    // Only push user message to conversation when FINAL transcript + AI starts processing
     if (
-      transcription &&
-      transcription !== lastUserTranscriptRef.current &&
-      interviewState === "AI_PROCESSING"
+      transcription && transcription !== lastUserTranscriptRef.current
+      && interviewState === "AI_PROCESSING"
     ) {
       lastUserTranscriptRef.current = transcription;
-      const currentConv = localData?.conversation || interviewData?.conversation || [];
-      const alreadyExists = currentConv.some((m) => m.content === transcription && m.role === "user");
-      if (!alreadyExists) {
-        const newMsg = {
-          id: nanoid(),
-          role: "user" as const,
-          content: transcription,
-          timestamp: new Date().toISOString(),
-        };
+      const conv = localData?.conversation || interviewData?.conversation || [];
+      if (!conv.some((m) => m.content === transcription && m.role === "user")) {
         updateLocalModuleData({
           ...localData,
-          conversation: [...currentConv, newMsg],
+          conversation: [...conv, { id: nanoid(), role: "user", content: transcription, timestamp: new Date().toISOString() }],
         } as Partial<AiInterviewModuleData>);
       }
     }
   }, [transcription, interviewState]);
 
+  // ─── Local data sync ──────────────────────────────────────────────────────
   const isInitializedRef = useRef(false);
   useEffect(() => {
     if (!localData && interviewData && !isInitializedRef.current) {
@@ -313,285 +234,294 @@ export const InterviewModuleInner: FC<InterviewModuleProps> = ({
     }
   }, [localData, interviewData, updateLocalModuleData]);
 
-  // Auto-scroll transcript
-  const scrollToBottom = () => {
-    setTimeout(() => {
-      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, 100);
-  };
-
+  // ─── Derived state ────────────────────────────────────────────────────────
   const conversation = localData?.conversation || interviewData?.conversation || [];
   const responses = localData?.responses || interviewData?.responses || [];
   const targetQuestions = interviewConfig.targetQuestions;
   const questionsAnswered = responses.length;
   const isComplete = questionsAnswered >= targetQuestions;
-  // Keep ref in sync so callbacks always have the latest value
   isCompleteRef.current = isComplete;
 
+  // Auto-scroll transcript when conversation grows
   useEffect(() => {
-    scrollToBottom();
+    setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 80);
   }, [conversation.length]);
 
-  // =====================================================
-  // STATE LABELS
-  // =====================================================
-
-  const getStatusLabel = () => {
-    if (!isConnected && isConnecting) return { text: "Connecting...", cls: "text-yellow-500 animate-pulse" };
-    if (!isConnected) return { text: "Disconnected", cls: "text-red-500" };
-    if (isAudioPlaying || isBuffering) return { text: "AI Speaking...", cls: "text-primary animate-pulse" };
-    if (interviewState === "AI_PROCESSING") return { text: "AI Thinking...", cls: "text-primary animate-pulse" };
-    if (isRecording) return { text: "Listening... (3s silence to submit)", cls: "text-red-500 animate-pulse" };
-    if (transcription) return { text: "Processing your response...", cls: "text-yellow-500" };
-    if (interviewState === "READY" || interviewState === "INTERVIEWING") return { text: "Your turn to speak", cls: "text-muted-foreground" };
-    return { text: "Initializing...", cls: "text-muted-foreground" };
+  // ─── Status helpers ───────────────────────────────────────────────────────
+  const getMicState = () => {
+    if (!isConnected && isConnecting) return "connecting";
+    if (!isConnected) return "disconnected";
+    if (isAudioPlaying || isBuffering) return "ai_speaking";
+    if (interviewState === "AI_PROCESSING") return "ai_thinking";
+    if (isRecording) return "listening";
+    return "idle";
   };
 
-  const status = getStatusLabel();
-  const isInteractionDisabled = interviewState === "AI_PROCESSING" || isAudioPlaying || isBuffering || isSubmitting || !isConnected;
+  const micState = getMicState();
 
-  // =====================================================
+  const statusLabel: Record<string, { text: string; cls: string }> = {
+    connecting: { text: "Connecting to server...", cls: "text-yellow-500 animate-pulse" },
+    disconnected: { text: "Connection lost", cls: "text-red-500" },
+    ai_speaking: { text: "AI is speaking...", cls: "text-primary animate-pulse" },
+    ai_thinking: { text: "AI is thinking...", cls: "text-primary/70 animate-pulse" },
+    listening: {
+      text: silenceCountdown !== null
+        ? `Listening — auto-submits in ${silenceCountdown}s`
+        : "Listening... (speak your answer)",
+      cls: silenceCountdown !== null && silenceCountdown <= 1 ? "text-orange-500 font-semibold" : "text-red-500 animate-pulse",
+    },
+    idle: { text: "Click mic or speak to respond", cls: "text-muted-foreground" },
+  };
+
+  const currentStatus = statusLabel[micState] ?? statusLabel.idle;
+  const micDisabled = micState === "ai_speaking" || micState === "ai_thinking"
+    || micState === "connecting" || micState === "disconnected" || isSubmitting;
+
+  // ─────────────────────────────────────────────────────────────────────────
   // RENDER
-  // =====================================================
-
+  // ─────────────────────────────────────────────────────────────────────────
   return (
-    <div className="max-w-6xl mx-auto space-y-4">
-      {/* Header */}
-      <Card>
-        <CardHeader className="pb-3">
+    <div className="flex flex-col h-full max-w-6xl mx-auto gap-4">
+      {/* ── Header ── */}
+      <Card className="flex-shrink-0">
+        <CardHeader className="py-3">
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="text-lg">AI Interview</CardTitle>
-              <p className="text-sm text-muted-foreground mt-1">
-                {interviewConfig.jobTitle}
-                {interviewConfig.companyName && ` at ${interviewConfig.companyName}`}
-              </p>
+              <CardTitle className="text-base">AI Interview — {interviewConfig.jobTitle}</CardTitle>
+              {interviewConfig.companyName && (
+                <p className="text-xs text-muted-foreground">at {interviewConfig.companyName}</p>
+              )}
             </div>
             <div className="flex items-center gap-2">
-              {/* Connection status indicator */}
-              <div className={cn(
-                "w-2 h-2 rounded-full",
-                isConnected ? "bg-green-500" : isConnecting ? "bg-yellow-500 animate-pulse" : "bg-red-500"
-              )} title={isConnected ? "Connected" : isConnecting ? "Connecting..." : "Disconnected"} />
-              <Badge variant="outline">
-                {questionsAnswered}/{targetQuestions} Questions
+              <div
+                className={cn("w-2 h-2 rounded-full transition-colors",
+                  isConnected ? "bg-green-500" : isConnecting ? "bg-yellow-400 animate-pulse" : "bg-red-500"
+                )}
+                title={isConnected ? "Connected" : isConnecting ? "Connecting..." : "Disconnected"}
+              />
+              <Badge variant="outline" className="text-xs">
+                {questionsAnswered}/{targetQuestions} answered
               </Badge>
-              {isComplete && (
-                <Badge variant="default" className="bg-green-500">Complete</Badge>
-              )}
+              {isComplete && <Badge className="bg-green-500 text-xs">Complete</Badge>}
             </div>
           </div>
         </CardHeader>
       </Card>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 h-[600px]">
-        {/* Left pane: Avatar + Visualizer + Controls */}
-        <Card className="h-full flex flex-col justify-center items-center p-8 bg-muted/20 relative">
-          {/* Status label */}
-          <div className="absolute top-4 left-4 right-4 flex justify-between items-center text-sm font-medium">
-            <span className={status.cls}>{status.text}</span>
-            <span className="text-muted-foreground text-xs">Voice Mode</span>
-          </div>
+      {/* ── Main Grid ── */}
+      <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-2 gap-4 overflow-hidden">
 
-          {/* AI Avatar */}
-          <AIAvatar
-            isSpeaking={isAudioPlaying || isBuffering}
-            isListening={isRecording}
-            isProcessing={interviewState === "AI_PROCESSING" || isTransitioningRef.current}
-          />
+        {/* ── Left: Avatar + Controls ── */}
+        <Card className="flex flex-col overflow-hidden">
+          <CardContent className="flex-1 flex flex-col items-center justify-between p-6 min-h-0">
 
-          {/* Waveform */}
-          <div className="mt-8 h-20 w-full max-w-sm flex items-center justify-center">
-            <AudioVisualizer
-              isActive={isRecording || isAudioPlaying}
-              volume={isRecording ? volume : isAudioPlaying ? 0.5 : 0}
-            />
-          </div>
+            {/* Top: status label */}
+            <p className={cn("text-sm font-medium text-center transition-all min-h-[1.5rem]", currentStatus.cls)}>
+              {currentStatus.text}
+            </p>
 
-          {/* Live transcription bubble */}
-          {transcription && isRecording && (
-            <div className="mt-4 px-4 py-2 bg-muted rounded-lg max-w-sm animate-in fade-in">
-              <p className="text-sm text-muted-foreground italic">"{transcription}"</p>
+            {/* Avatar */}
+            <div className="flex flex-col items-center gap-4 flex-1 justify-center">
+              <AIAvatar
+                isSpeaking={isAudioPlaying || isBuffering}
+                isListening={isRecording && !isAudioPlaying}
+                isProcessing={interviewState === "AI_PROCESSING"}
+              />
+
+              <AudioVisualizer
+                isActive={isRecording || isAudioPlaying}
+                volume={isRecording ? volume : isAudioPlaying ? 0.5 : 0}
+                className="w-full max-w-xs"
+              />
+
+              {/* Live transcription bubble — ONLY here, not in right panel */}
+              {isRecording && transcription && (
+                <div className="max-w-xs w-full px-4 py-2 bg-muted rounded-xl border border-muted-foreground/20 animate-in fade-in">
+                  <p className="text-xs text-muted-foreground italic truncate">
+                    "{transcription}"
+                  </p>
+                </div>
+              )}
             </div>
-          )}
 
-          {/* Buffering indicator */}
-          {isBuffering && !isAudioPlaying && (
-            <div className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              <span>Receiving audio...</span>
-            </div>
-          )}
-
-          {!isComplete ? (
-            <div className="mt-8 flex flex-col items-center gap-4">
-              {/* Mic button */}
-              <div className="relative">
-                {isRecording && (
-                  <span className="absolute inset-0 rounded-full animate-ping bg-red-400 opacity-75" />
+            {/* Bottom: Mic button + silence ring */}
+            {!isComplete ? (
+              <div className="flex flex-col items-center gap-3">
+                {/* Silence countdown ring */}
+                {silenceCountdown !== null && isRecording && (
+                  <div className="relative flex items-center justify-center">
+                    <svg className="w-20 h-20 -rotate-90" viewBox="0 0 64 64">
+                      <circle cx="32" cy="32" r="28" fill="none" stroke="currentColor"
+                        className="text-muted-foreground/20" strokeWidth="4" />
+                      <circle cx="32" cy="32" r="28" fill="none"
+                        stroke="currentColor"
+                        className={silenceCountdown <= 1 ? "text-orange-500" : "text-red-500"}
+                        strokeWidth="4"
+                        strokeDasharray={`${2 * Math.PI * 28}`}
+                        strokeDashoffset={`${2 * Math.PI * 28 * (silenceCountdown / 3)}`}
+                        strokeLinecap="round"
+                        style={{ transition: "stroke-dashoffset 0.2s linear" }}
+                      />
+                    </svg>
+                    <span className={cn("absolute text-lg font-bold",
+                      silenceCountdown <= 1 ? "text-orange-500" : "text-red-500"
+                    )}>
+                      {silenceCountdown}
+                    </span>
+                  </div>
                 )}
+
+                {/* Mic button */}
+                {silenceCountdown === null && (
+                  <div className="relative">
+                    {isRecording && (
+                      <span className="absolute inset-0 rounded-full animate-ping bg-red-400/50" />
+                    )}
+                    <Button
+                      variant={isRecording ? "destructive" : "default"}
+                      size="icon"
+                      className={cn(
+                        "h-16 w-16 rounded-full shadow-lg transition-all hover:scale-105",
+                        isRecording ? "bg-red-500 hover:bg-red-600" : "",
+                      )}
+                      onClick={isRecording ? handleStopRecording : handleStartRecording}
+                      disabled={micDisabled && !isRecording}
+                    >
+                      {interviewState === "AI_PROCESSING" && !isRecording ? (
+                        <Loader2 className="h-6 w-6 animate-spin" />
+                      ) : isRecording ? (
+                        <MicOff className="h-6 w-6 text-white" />
+                      ) : (
+                        <Mic className="h-6 w-6" />
+                      )}
+                    </Button>
+                  </div>
+                )}
+
+                <p className="text-[11px] text-muted-foreground text-center leading-tight max-w-[180px]">
+                  {isRecording
+                    ? "Speak now — pausing 3s will auto-submit"
+                    : "Tap mic or speak to answer"}
+                </p>
+
                 <Button
-                  variant={isRecording ? "destructive" : "default"}
-                  size="icon"
-                  className={cn(
-                    "h-20 w-20 rounded-full shadow-lg transition-all transform hover:scale-105",
-                    isRecording ? "bg-red-500 hover:bg-red-600" : "bg-primary hover:bg-primary/90",
-                  )}
-                  onClick={isRecording ? handleStopRecording : handleStartRecording}
-                  disabled={isInteractionDisabled && !isRecording}
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => { endInterview(); setTimeout(onSubmit, 500); }}
+                  disabled={isSubmitting}
+                  className="text-xs text-destructive hover:text-destructive"
                 >
-                  {isRecording ? (
-                    <MicOff className="h-8 w-8 text-white" />
-                  ) : interviewState === "AI_PROCESSING" ? (
-                    <Loader2 className="h-8 w-8 text-white animate-spin" />
-                  ) : (
-                    <Mic className="h-8 w-8 text-white" />
-                  )}
+                  End Interview Early
                 </Button>
               </div>
-
-              <p className="text-xs text-muted-foreground text-center">
-                {isRecording
-                  ? "Speak your answer — auto-submits after 3s silence"
-                  : "Click mic to start your response"}
-              </p>
-
-              <Button
-                variant="outline"
-                onClick={() => onSubmit()}
-                disabled={isSubmitting}
-                className="text-destructive border-destructive hover:bg-destructive hover:text-destructive-foreground"
-              >
-                {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                End Interview Early
-              </Button>
-            </div>
-          ) : (
-            <div className="mt-12 flex flex-col items-center">
-              <span className="text-green-500 font-medium text-lg">Interview Complete!</span>
-              <p className="text-muted-foreground">You may now submit the module.</p>
-            </div>
-          )}
+            ) : (
+              <div className="flex flex-col items-center gap-3">
+                <p className="text-green-500 font-semibold">All questions answered!</p>
+                <Button onClick={onSubmit} disabled={isSubmitting}>
+                  {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Check className="mr-2 h-4 w-4" />}
+                  Submit Interview
+                </Button>
+              </div>
+            )}
+          </CardContent>
         </Card>
 
-        {/* Right pane: Conversation Transcript */}
-        <Card className="h-full flex flex-col border-l">
-          <CardContent className="flex-1 p-0 min-h-0 relative">
-            <ScrollArea className="h-full w-full p-4">
-              <div className="space-y-4 pb-4">
+        {/* ── Right: Conversation Transcript ── */}
+        <Card className="flex flex-col overflow-hidden">
+          <CardHeader className="py-3 flex-shrink-0 border-b">
+            <CardTitle className="text-sm text-muted-foreground font-medium">Conversation</CardTitle>
+          </CardHeader>
+          <CardContent className="flex-1 min-h-0 p-0 overflow-hidden">
+            <ScrollArea className="h-full">
+              <div className="p-4 space-y-4 pb-6">
+                {conversation.length === 0 && (
+                  <p className="text-sm text-muted-foreground text-center py-8">
+                    The conversation will appear here as the interview progresses.
+                  </p>
+                )}
+
                 {conversation.map((message) => (
                   <div
                     key={message.id}
                     className={cn(
-                      "flex gap-3",
-                      message.role === "user" && "flex-row-reverse",
+                      "flex gap-2.5",
+                      message.role === "user" && "flex-row-reverse"
                     )}
                   >
-                    <div
-                      className={cn(
-                        "w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0",
-                        message.role === "assistant"
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-muted",
-                      )}
-                    >
-                      {message.role === "assistant" ? (
-                        <Bot className="h-4 w-4" />
-                      ) : (
-                        <User className="h-4 w-4" />
-                      )}
+                    {/* Avatar icon */}
+                    <div className={cn(
+                      "w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 mt-1",
+                      message.role === "assistant" ? "bg-primary text-primary-foreground" : "bg-muted"
+                    )}>
+                      {message.role === "assistant"
+                        ? <Bot className="h-3.5 w-3.5" />
+                        : <User className="h-3.5 w-3.5" />
+                      }
                     </div>
-                    <div
-                      className={cn(
-                        "max-w-[80%] rounded-lg p-4",
-                        message.role === "assistant"
-                          ? "bg-muted"
-                          : "bg-primary text-primary-foreground",
-                      )}
-                    >
-                      <p className="whitespace-pre-wrap text-sm">{message.content}</p>
-                      <p
-                        className={cn(
-                          "text-xs mt-2",
-                          message.role === "assistant"
-                            ? "text-muted-foreground"
-                            : "text-primary-foreground/70",
-                        )}
-                      >
-                        {new Date(message.timestamp).toLocaleTimeString()}
+
+                    {/* Message bubble */}
+                    <div className={cn(
+                      "max-w-[80%] rounded-2xl px-4 py-3 text-sm leading-relaxed",
+                      message.role === "assistant"
+                        ? "bg-muted rounded-tl-sm"
+                        : "bg-primary text-primary-foreground rounded-tr-sm"
+                    )}>
+                      <p className="whitespace-pre-wrap">{message.content}</p>
+                      <p className={cn(
+                        "text-[10px] mt-1",
+                        message.role === "assistant" ? "text-muted-foreground" : "text-primary-foreground/60"
+                      )}>
+                        {new Date(message.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                       </p>
                     </div>
                   </div>
                 ))}
 
-                {/* Typing indicator while AI processes */}
+                {/* AI thinking indicator */}
                 {interviewState === "AI_PROCESSING" && (
-                  <div className="flex gap-3">
-                    <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center animate-pulse">
-                      <Bot className="h-4 w-4" />
+                  <div className="flex gap-2.5">
+                    <div className="w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center flex-shrink-0 mt-1">
+                      <Bot className="h-3.5 w-3.5" />
                     </div>
-                    <div className="bg-muted rounded-lg p-4 flex items-center gap-2">
-                      <span className="text-sm text-muted-foreground">AI is thinking</span>
+                    <div className="bg-muted rounded-2xl rounded-tl-sm px-4 py-3 flex items-center gap-1.5">
+                      <span className="text-xs text-muted-foreground">Thinking</span>
                       <span className="flex gap-1">
-                        <span className="w-1.5 h-1.5 bg-muted-foreground/50 rounded-full animate-bounce [animation-delay:-0.3s]" />
-                        <span className="w-1.5 h-1.5 bg-muted-foreground/50 rounded-full animate-bounce [animation-delay:-0.15s]" />
-                        <span className="w-1.5 h-1.5 bg-muted-foreground/50 rounded-full animate-bounce" />
+                        {[0, 1, 2].map((i) => (
+                          <span key={i} className="w-1.5 h-1.5 bg-muted-foreground/50 rounded-full animate-bounce"
+                            style={{ animationDelay: `${i * 0.15}s` }} />
+                        ))}
                       </span>
                     </div>
                   </div>
                 )}
 
-                {/* Live transcript while recording */}
-                {isRecording && transcription && (
-                  <div className="flex gap-3 flex-row-reverse">
-                    <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
-                      <User className="h-4 w-4" />
-                    </div>
-                    <div className="max-w-[80%] rounded-lg p-4 bg-red-50 border border-red-200 dark:bg-red-950/20 dark:border-red-800">
-                      <p className="text-sm italic text-muted-foreground">{transcription}...</p>
-                    </div>
-                  </div>
-                )}
-
-                <div ref={bottomRef} className="h-px w-full" />
+                <div ref={bottomRef} />
               </div>
             </ScrollArea>
           </CardContent>
         </Card>
       </div>
 
-      {/* Submit */}
-      <div className="flex justify-end pt-4">
-        <Button
-          onClick={onSubmit}
-          disabled={isSubmitting || interviewState === "AI_PROCESSING"}
-          size="lg"
-        >
-          {isSubmitting ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Submitting...
-            </>
-          ) : (
-            <>
-              <Check className="mr-2 h-4 w-4" />
-              {isComplete ? "Submit Interview" : "End Interview Early"}
-            </>
-          )}
-        </Button>
-      </div>
+      {/* ── Footer submit ── */}
+      {!isComplete && (
+        <div className="flex-shrink-0 flex justify-end pt-1">
+          <Button variant="outline" onClick={onSubmit} disabled={isSubmitting || interviewState === "AI_PROCESSING"} size="sm">
+            {isSubmitting
+              ? <><Loader2 className="mr-2 h-3 w-3 animate-spin" />Submitting...</>
+              : "Finish & Submit"
+            }
+          </Button>
+        </div>
+      )}
     </div>
   );
 };
 
-// =====================================================
-// EXPORTED COMPONENT (with provider)
-// =====================================================
-
-export const InterviewModule: FC<InterviewModuleProps> = (props) => {
-  return (
-    <MockInterviewProvider>
-      <InterviewModuleInner {...props} />
-    </MockInterviewProvider>
-  );
-};
+// ─────────────────────────────────────────────────────────────────────────────
+// EXPORTED WRAPPER
+// ─────────────────────────────────────────────────────────────────────────────
+export const InterviewModule: FC<InterviewModuleProps> = (props) => (
+  <MockInterviewProvider>
+    <InterviewModuleInner {...props} />
+  </MockInterviewProvider>
+);

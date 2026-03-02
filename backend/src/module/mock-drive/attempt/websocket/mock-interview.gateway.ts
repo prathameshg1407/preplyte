@@ -483,9 +483,12 @@ class MockInterviewWebSocketGateway {
                 });
             }
             this.send(connection.socket, { type: WS_EVENTS.SERVER.AI_DONE, data: { questionId: assistantMsg.id } });
+            // Transition frontend to INTERVIEWING so mic auto-starts
+            this.sendSessionState(connection);
 
         } finally {
             connection.isAISpeaking = false;
+            connection.isListening = true;
         }
     }
 
@@ -504,8 +507,11 @@ class MockInterviewWebSocketGateway {
                 });
             }
             this.send(connection.socket, { type: WS_EVENTS.SERVER.AI_DONE, data: {} });
+            // Transition frontend to INTERVIEWING so mic auto-starts
+            this.sendSessionState(connection);
         } finally {
             connection.isAISpeaking = false;
+            connection.isListening = true;
         }
     }
 

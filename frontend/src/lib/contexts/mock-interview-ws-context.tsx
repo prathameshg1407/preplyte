@@ -12,6 +12,8 @@ import React, {
 } from "react";
 import { useAuthStore } from "@/lib/store/auth-store";
 import { useToast } from "@/components/ui/use-toast";
+import { refreshTokenManually } from "@/lib/api/axios-instance";
+import { AUTH_STORAGE_KEYS, storage } from "@/lib/utils/storage";
 
 // =====================================================
 // TYPES
@@ -72,7 +74,7 @@ interface MockInterviewContextType {
     transcription: string;
     isConnected: boolean;
     isConnecting: boolean;
-    connect: (moduleAttemptId: string) => void;
+    connect: (moduleAttemptId: string) => Promise<void>;
     disconnect: () => void;
     // Real-time binary audio (mirrors practice interview)
     sendAudio: (audioData: ArrayBuffer) => void;
@@ -296,7 +298,7 @@ export function MockInterviewProvider({ children }: { children: ReactNode }) {
     // CONNECT
     // =====================================================
 
-    const connect = useCallback((moduleAttemptId: string) => {
+    const connect = useCallback(async (moduleAttemptId: string) => {
         // Already connected to this attempt - avoid duplicate connections
         if (wsRef.current?.readyState === WebSocket.OPEN && attemptIdRef.current === moduleAttemptId) {
             return;
@@ -316,8 +318,44 @@ export function MockInterviewProvider({ children }: { children: ReactNode }) {
         setIsConnecting(true);
         setConnectionState("CONNECTING");
 
+        // Get a fresh token: read from localStorage directly (avoids stale React state),
+        // and proactively refresh if expired within 60 seconds.
+        let token: string | null = storage.getRaw
+            ? storage.getRaw(AUTH_STORAGE_KEYS.ACCESS_TOKEN)
+            : (typeof window !== "undefined" ? localStorage.getItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN) : null);
+
+        const isTokenExpiredOrSoon = (t: string | null): boolean => {
+            if (!t) return true;
+            try {
+                const payload = JSON.parse(atob(t.split(".")[1]));
+                return payload.exp * 1000 < Date.now() + 60_000; // refresh if <60s left
+            } catch { return true; }
+        };
+
+        if (isTokenExpiredOrSoon(token)) {
+            console.log("[MockInterview WS] Token expired/expiring, refreshing...");
+            const ok = await refreshTokenManually();
+            if (!ok) {
+                console.error("[MockInterview WS] Token refresh failed, cannot connect");
+                setIsConnecting(false);
+                setConnectionState("ERROR");
+                return;
+            }
+            // Re-read the freshly stored token
+            token = storage.getRaw
+                ? storage.getRaw(AUTH_STORAGE_KEYS.ACCESS_TOKEN)
+                : (typeof window !== "undefined" ? localStorage.getItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN) : null);
+        }
+
+        if (!token) {
+            console.warn("[MockInterview WS] No access token after refresh attempt");
+            setIsConnecting(false);
+            setConnectionState("DISCONNECTED");
+            return;
+        }
+
         const baseUrl = process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:4000";
-        const wsUrl = `${baseUrl}/ws/mock-drive/interview/${moduleAttemptId}?token=${accessToken}`;
+        const wsUrl = `${baseUrl}/ws/mock-drive/interview/${moduleAttemptId}?token=${token}`;
 
         try {
             const ws = new WebSocket(wsUrl);
@@ -424,6 +462,21 @@ export function MockInterviewProvider({ children }: { children: ReactNode }) {
             data: { reason: "completed" },
         });
     }, [sendJson]);
+
+    // =====================================================
+    // KEEPALIVE PING — prevents code 1005 idle drops
+    // =====================================================
+    useEffect(() => {
+        const interval = setInterval(() => {
+            const ws = wsRef.current;
+            if (ws?.readyState === WebSocket.OPEN) {
+                try {
+                    ws.send(JSON.stringify({ type: MockInterviewWSEvents.CLIENT.PING }));
+                } catch { /* ignore */ }
+            }
+        }, 10_000); // every 10 seconds
+        return () => clearInterval(interval);
+    }, []);
 
     // =====================================================
     // CLEANUP ON UNMOUNT
