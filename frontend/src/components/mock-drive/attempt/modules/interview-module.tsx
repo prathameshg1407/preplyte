@@ -62,7 +62,9 @@ export const InterviewModule: FC<InterviewModuleProps> = ({
 
   // Auto-recording tracking
   const silenceStartRef = useRef<number | null>(null);
+  const silenceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastProcessedQuestionId = useRef<string | null>(null);
+  const playedAudioForQuestionIdRef = useRef<string | null>(null);
   const isTransitioningRef = useRef(false);
 
   const {
@@ -207,22 +209,42 @@ export const InterviewModule: FC<InterviewModuleProps> = ({
     }, 200);
   };
 
-  // Silence Detection for Auto-Submit
+  // Voice Activity Detection (VAD) Auto-Submit
   useEffect(() => {
+    // Only detect silence if we are actively recording and waiting for user input
     if (isRecording && !isAudioPlaying && !respondMutation.isPending && !isSubmitting && !isComplete && !isTransitioningRef.current) {
-      if (volume < 5) { // Silence threshold
+      if (volume < 0.05) { // Meaningful silence threshold on 0-1 scale
         if (!silenceStartRef.current) {
           silenceStartRef.current = Date.now();
-        } else if (Date.now() - silenceStartRef.current >= 2500) { // 2.5 seconds of silence
-          silenceStartRef.current = null;
-          handleStopRecording();
+          // Start a 3-second countdown to submit
+          silenceTimeoutRef.current = setTimeout(() => {
+            silenceStartRef.current = null;
+            handleStopRecording();
+          }, 3000);
         }
       } else {
+        // User spoke! Reset silence tracking
+        if (silenceTimeoutRef.current) {
+          clearTimeout(silenceTimeoutRef.current);
+          silenceTimeoutRef.current = null;
+        }
         silenceStartRef.current = null;
       }
     } else {
+      // Clear out running timeouts if state changes
+      if (silenceTimeoutRef.current) {
+        clearTimeout(silenceTimeoutRef.current);
+        silenceTimeoutRef.current = null;
+      }
       silenceStartRef.current = null;
     }
+
+    // Cleanup on unmount
+    return () => {
+      if (silenceTimeoutRef.current) {
+        clearTimeout(silenceTimeoutRef.current);
+      }
+    };
   }, [volume, isRecording, isAudioPlaying, respondMutation.isPending, isSubmitting, isComplete]);
 
   // Auto-fetch audio for new AI questions
@@ -250,6 +272,18 @@ export const InterviewModule: FC<InterviewModuleProps> = ({
     // Initial fetch of audio for the first message if needed, or if a pending transcription is pushed
     const pending = localData?.pendingTranscription;
     if (pending && pending.startsWith('AUDIO:')) {
+      const lastMessage = conversation[conversation.length - 1];
+      const isAssistant = lastMessage?.role === 'assistant';
+
+      // Ensure we only play this specific question's audio ONCE
+      if (isAssistant && lastMessage.id === playedAudioForQuestionIdRef.current) {
+        return;
+      }
+
+      if (isAssistant) {
+        playedAudioForQuestionIdRef.current = lastMessage.id;
+      }
+
       const base64 = pending.substring(6);
       try {
         const binaryString = window.atob(base64);
@@ -262,6 +296,7 @@ export const InterviewModule: FC<InterviewModuleProps> = ({
         queueAudio(bytes.buffer);
         playAccumulated();
 
+        // Still update local store for cleanliness, but the ref prevents looping on polls
         if (localData) {
           const newData = { ...localData, pendingTranscription: undefined };
           updateLocalModuleData(newData);
@@ -271,7 +306,7 @@ export const InterviewModule: FC<InterviewModuleProps> = ({
         console.error("Failed to decode audio", e);
       }
     }
-  }, [localData?.pendingTranscription, queueAudio, playAccumulated, updateLocalModuleData, localData]);
+  }, [localData?.pendingTranscription, queueAudio, playAccumulated, updateLocalModuleData, localData, conversation]);
 
   // Prevent accidental submission while AI is "thinking"
   const isInteractionDisabled = respondMutation.isPending || skipMutation.isPending || isSubmitting || isAudioPlaying;
@@ -308,7 +343,7 @@ export const InterviewModule: FC<InterviewModuleProps> = ({
         <Card className="h-full flex flex-col justify-center items-center p-8 bg-muted/20 relative">
           <div className="absolute top-4 left-4 right-4 flex justify-between items-center text-sm font-medium text-muted-foreground">
             {isRecording ? (
-              <span className="text-red-500 animate-pulse">Listening...</span>
+              <span className="text-red-500 animate-pulse">Listening... (Auto-submits after 3s of silence, or click microphone)</span>
             ) : isAudioPlaying ? (
               <span className="text-primary animate-pulse">AI Speaking...</span>
             ) : respondMutation.isPending ? (
