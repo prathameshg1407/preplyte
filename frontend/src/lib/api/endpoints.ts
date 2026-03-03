@@ -176,7 +176,10 @@ export const API_ENDPOINTS = {
     MOCK_DRIVE_BATCH_ASSIGN: (driveId: string, batchId: string) =>
       `/api/institute/mock-drive/${driveId}/batches/${batchId}/assign-students` as const,
 
-    // Analytics
+    // Analytics (institute-wide)
+    ANALYTICS: '/api/institute/analytics',
+
+    // Analytics (per mock-drive)
     MOCK_DRIVE_ANALYTICS: (id: string) =>
       `/api/institute/mock-drive/${id}/analytics` as const,
     MOCK_DRIVE_ANALYTICS_BATCHES: (id: string) =>

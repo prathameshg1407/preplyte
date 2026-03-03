@@ -1,6 +1,6 @@
 // src/app.ts
 
-import express, { Application, Request, Response } from 'express';
+import express, { Application, Request, RequestHandler, Response } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
@@ -17,6 +17,7 @@ import adminRoutes from './module/admin/admin.routes';
 import { profileRoutes } from './module/profile';
 import { mockDriveRoutes } from './module/instituteadmin/mock-drive';
 import { departmentRoutes } from './module/instituteadmin/department';
+import instituteAnalyticsRoutes from './module/instituteadmin/institute-analytics.routes';
 import { createMockDriveRoutes } from './module/mock-drive';
 import { dashboardRoutes } from './module/dashboard';
 import { eventRoutes } from './module/event';
@@ -159,7 +160,7 @@ app.use(express.urlencoded({ extended: true, limit: config.bodyLimit }));
 app.use(cookieParser(process.env.COOKIE_SECRET));
 
 // Initialize Passport
-app.use(passport.initialize());
+app.use(passport.initialize() as unknown as RequestHandler);
 
 // =====================================================
 // 5. RATE LIMITERS
@@ -320,6 +321,9 @@ app.use('/api/institute/mock-drive', mockDriveRoutes);
 
 //Institute department routes
 app.use('/api/institute/departments', departmentRoutes);
+
+// Institute analytics routes
+app.use('/api/institute/analytics', instituteAnalyticsRoutes);
 
 // Student mock drive routes
 app.use('/api/mock-drives', mockDriveLimiter, createMockDriveRoutes(prisma));
