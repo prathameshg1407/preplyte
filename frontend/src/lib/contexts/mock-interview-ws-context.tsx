@@ -187,10 +187,9 @@ export function MockInterviewProvider({ children }: { children: ReactNode }) {
                 setTranscription(msg.data?.text || "");
                 break;
 
-            // Final transcription — AI starts processing
+            // Final transcription — wait for AI_THINKING to switch state
             case MockInterviewWSEvents.SERVER.TRANSCRIPTION_FINAL:
                 setTranscription(msg.data?.text || "");
-                setInterviewStateWithRef("AI_PROCESSING");
                 break;
 
             // AI is formulating a response
@@ -226,10 +225,8 @@ export function MockInterviewProvider({ children }: { children: ReactNode }) {
             // ALL audio chunks done — signal playback start
             case MockInterviewWSEvents.SERVER.AI_DONE:
                 console.log("[MockInterview WS] AI done, triggering audio playback");
-                // Disable auto-reconnect once the interview is in progress.
-                // The gateway no longer re-speaks on reconnect, so reconnects
-                // would just cause confusing mid-interview disconnects.
-                reconnectAttemptsRef.current = MAX_RECONNECT_ATTEMPTS;
+                // Reset reconnect attempts so network drops during long pauses can recover
+                reconnectAttemptsRef.current = 0;
                 aiDoneHandlersRef.current.forEach((h) => h());
                 break;
 

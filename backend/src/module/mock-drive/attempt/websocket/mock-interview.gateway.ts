@@ -595,9 +595,10 @@ class MockInterviewWebSocketGateway {
     }
 
     private handleTranscription(connection: ActiveConnection, result: { text: string; isFinal: boolean; confidence: number }): void {
+        const liveText = (connection.currentTranscript + ' ' + result.text).trim();
         this.send(connection.socket, {
             type: result.isFinal ? WS_EVENTS.SERVER.TRANSCRIPTION_FINAL : WS_EVENTS.SERVER.TRANSCRIPTION,
-            data: { text: result.text, isFinal: result.isFinal, confidence: result.confidence },
+            data: { text: liveText, isFinal: result.isFinal, confidence: result.confidence },
         });
 
         if (result.isFinal && result.text.trim().length > 0) {

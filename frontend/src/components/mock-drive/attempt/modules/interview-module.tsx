@@ -63,20 +63,6 @@ export const InterviewModuleInner: FC<InterviewModuleProps> = ({
     registerAudioHandler, registerAiDoneHandler,
   } = useMockInterviewWS();
 
-  // ─── Connect on mount ─────────────────────────────────────────────────────
-  const hasConnectedRef = useRef(false);
-  useEffect(() => {
-    if (moduleAttemptId && !hasConnectedRef.current) {
-      hasConnectedRef.current = true;
-      connect(moduleAttemptId);
-    }
-    return () => {
-      hasConnectedRef.current = false;
-      disconnect();
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [moduleAttemptId]);
-
   // ─── Derived state (computed early so refs stay in sync) ──────────────────
   const conversation = localData?.conversation || interviewData?.conversation || [];
   const responses = localData?.responses || interviewData?.responses || [];
@@ -86,6 +72,39 @@ export const InterviewModuleInner: FC<InterviewModuleProps> = ({
 
   const isCompleteRef = useRef(false);
   isCompleteRef.current = isComplete;
+
+  // ─── Direct Start State ───────────────────────────────────────────────────
+  const isResuming = conversation.length > 0 || responses.length > 0;
+  const [hasStarted, setHasStarted] = useState(isResuming);
+
+  const handleStartInterview = () => {
+    try {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (AudioCtx) {
+        const ctx = new AudioCtx();
+        ctx.resume().then(() => ctx.close());
+      }
+    } catch (e) {
+      // ignore
+    }
+    setHasStarted(true);
+  };
+
+  // ─── Connect on mount ─────────────────────────────────────────────────────
+  const hasConnectedRef = useRef(false);
+  useEffect(() => {
+    if (moduleAttemptId && hasStarted && !hasConnectedRef.current) {
+      hasConnectedRef.current = true;
+      connect(moduleAttemptId);
+    }
+  }, [moduleAttemptId, hasStarted, connect]);
+
+  useEffect(() => {
+    return () => {
+      hasConnectedRef.current = false;
+      disconnect();
+    };
+  }, [disconnect]);
 
   // ─── Recording ────────────────────────────────────────────────────────────
   const isTransitioningRef = useRef(false);
@@ -279,6 +298,26 @@ export const InterviewModuleInner: FC<InterviewModuleProps> = ({
   // ─────────────────────────────────────────────────────────────────────────
   // RENDER
   // ─────────────────────────────────────────────────────────────────────────
+  if (!hasStarted) {
+    return (
+      <div className="flex flex-col h-full max-w-6xl mx-auto gap-4 items-center justify-center">
+        <Card className="max-w-md w-full text-center p-8 border-primary/20 bg-card/50 backdrop-blur-sm">
+          <CardHeader>
+            <CardTitle className="text-2xl">Ready for Interview?</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-muted-foreground text-sm">
+              The AI interviewer will speak the first question as soon as you connect. Please ensure your volume is up.
+            </p>
+            <Button size="lg" className="w-full font-semibold" onClick={handleStartInterview}>
+              Start Interview
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col h-full max-w-6xl mx-auto gap-4 overflow-hidden">
 
