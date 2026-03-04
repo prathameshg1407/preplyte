@@ -49,9 +49,7 @@ export const InterviewModuleInner: FC<InterviewModuleProps> = ({
   const interviewConfig = config as AiInterviewModuleConfig;
   const interviewData = data as AiInterviewModuleData | null;
 
-  const scrollAreaRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
-
   const { localModuleData, updateLocalModuleData } = useAttemptStore();
   const localData = localModuleData as AiInterviewModuleData | null;
   const moduleAttemptId = useAttemptStore((s) => s.currentModule?.moduleAttemptId);
@@ -79,34 +77,25 @@ export const InterviewModuleInner: FC<InterviewModuleProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [moduleAttemptId]);
 
-  // ─── Audio Player ─────────────────────────────────────────────────────────
-  const isTransitioningRef = useRef(false);
+  // ─── Derived state (computed early so refs stay in sync) ──────────────────
+  const conversation = localData?.conversation || interviewData?.conversation || [];
+  const responses = localData?.responses || interviewData?.responses || [];
+  const targetQuestions = interviewConfig.targetQuestions;
+  const questionsAnswered = responses.length;
+  const isComplete = questionsAnswered >= targetQuestions;
+
   const isCompleteRef = useRef(false);
+  isCompleteRef.current = isComplete;
 
-  const {
-    isPlaying: isAudioPlaying,
-    queueAudio,
-    playAccumulated,
-    isBuffering,
-  } = useAudioPlayer({
-    onPlaybackEnd: () => {
-      if (!isCompleteRef.current && !isTransitioningRef.current) {
-        handleStartRecording();
-      }
-    },
-  });
+  // ─── Recording ────────────────────────────────────────────────────────────
+  const isTransitioningRef = useRef(false);
 
-  useEffect(() => registerAudioHandler((d) => queueAudio(d)), [registerAudioHandler, queueAudio]);
-  useEffect(() => registerAiDoneHandler(() => playAccumulated()), [registerAiDoneHandler, playAccumulated]);
-
-  // ─── Audio Recorder ───────────────────────────────────────────────────────
+  // ─── Audio Recorder (must come before handlers that reference it) ─────────
   const { isRecording, startRecording, stopRecording, volume } = useAudioRecorder({
-    onAudioData: (audioData) => {
-      if (isConnected) sendAudio(audioData);
-    },
+    onAudioData: (audioData) => { if (isConnected) sendAudio(audioData); },
   });
 
-  // ─── Silence VAD with countdown ───────────────────────────────────────────
+  // ─── Silence timer helpers (must come before handleStopRecording) ──────────
   const [silenceCountdown, setSilenceCountdown] = useState<number | null>(null);
   const silenceStartRef = useRef<number | null>(null);
   const silenceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -119,51 +108,22 @@ export const InterviewModuleInner: FC<InterviewModuleProps> = ({
     setSilenceCountdown(null);
   }, []);
 
-  useEffect(() => {
-    const isComplete_ = isCompleteRef.current;
-    const shouldRunVAD = isRecording && !isAudioPlaying && !isBuffering
-      && interviewState !== "AI_PROCESSING" && !isSubmitting && !isComplete_
-      && !isTransitioningRef.current;
-
-    if (shouldRunVAD) {
-      if (volume < 0.05) {
-        if (!silenceStartRef.current) {
-          silenceStartRef.current = Date.now();
-          setSilenceCountdown(3);
-          // Tick the countdown every 200ms
-          silenceIntervalRef.current = setInterval(() => {
-            const elapsed = (Date.now() - (silenceStartRef.current ?? Date.now())) / 1000;
-            const remaining = Math.ceil(Math.max(0, 3 - elapsed));
-            setSilenceCountdown(remaining);
-          }, 200);
-          // Auto-submit after 3s silence
-          silenceTimeoutRef.current = setTimeout(() => {
-            clearSilenceTimers();
-            handleStopRecording();
-          }, 3000);
-        }
-      } else {
-        // Voice detected — reset silence timer
-        clearSilenceTimers();
-      }
-    } else {
-      clearSilenceTimers();
-    }
-    return clearSilenceTimers;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [volume, isRecording, isAudioPlaying, isBuffering, interviewState, isSubmitting]);
-
-  // ─── Recording handlers ───────────────────────────────────────────────────
   const handleStartRecording = useCallback(async () => {
-    if (isAudioPlaying || isBuffering || isTransitioningRef.current) return;
+    // Only block double-starts, NOT isAudioPlaying.
+    // onPlaybackEnd fires while React state still shows isAudioPlaying=true
+    // (batch update hasn't settled). Checking isAudioPlaying here would block
+    // mic start for every question after the first.
+    if (isTransitioningRef.current || isCompleteRef.current) return;
     isTransitioningRef.current = true;
     try {
       await startRecording();
       sendStartRecording();
+    } catch {
+      // mic permission denied → handle gracefully
     } finally {
       isTransitioningRef.current = false;
     }
-  }, [isAudioPlaying, isBuffering, startRecording, sendStartRecording]);
+  }, [startRecording, sendStartRecording]);
 
   const handleStopRecording = useCallback(() => {
     if (!isRecording || isTransitioningRef.current) return;
@@ -174,58 +134,101 @@ export const InterviewModuleInner: FC<InterviewModuleProps> = ({
     setTimeout(() => { isTransitioningRef.current = false; }, 600);
   }, [isRecording, stopRecording, sendStopRecording, clearSilenceTimers]);
 
-  // ─── Auto-start mic when INTERVIEWING state (reconnect resume) ────────────
-  const prevInterviewStateRef = useRef("");
-  useEffect(() => {
-    const changed = interviewState !== prevInterviewStateRef.current;
-    prevInterviewStateRef.current = interviewState;
-    if (
-      changed && interviewState === "INTERVIEWING"
-      && !isAudioPlaying && !isBuffering && !isRecording
-      && !isTransitioningRef.current && !isCompleteRef.current
-    ) {
-      const t = setTimeout(() => handleStartRecording(), 400);
-      return () => clearTimeout(t);
-    }
-  }, [interviewState]);
+  // ─── Audio Player ─────────────────────────────────────────────────────────
+  const { isPlaying: isAudioPlaying, queueAudio, playAccumulated, isBuffering } = useAudioPlayer({
+    onPlaybackEnd: () => {
+      // Audio just finished — start mic.
+      // Small delay so React can flush isPlaying=false before any state checks.
+      setTimeout(() => {
+        if (!isCompleteRef.current && !isTransitioningRef.current) {
+          handleStartRecording();
+        }
+      }, 150);
+    },
+  });
 
-  // ─── Real-time conversation sync from WS events ───────────────────────────
-  const lastAiQuestionRef = useRef<string | null>(null);
+  useEffect(() => registerAudioHandler((d) => queueAudio(d)), [registerAudioHandler, queueAudio]);
+  useEffect(() => registerAiDoneHandler(() => playAccumulated()), [registerAiDoneHandler, playAccumulated]);
+
+
+
+
   useEffect(() => {
-    if (
-      currentQuestion && currentQuestion !== lastAiQuestionRef.current
-      && interviewState === "AI_SPEAKING"
-    ) {
-      lastAiQuestionRef.current = currentQuestion;
-      const conv = localData?.conversation || interviewData?.conversation || [];
-      if (!conv.some((m) => m.content === currentQuestion && m.role === "assistant")) {
-        updateLocalModuleData({
-          ...localData,
-          conversation: [...conv, { id: nanoid(), role: "assistant", content: currentQuestion, timestamp: new Date().toISOString() }],
-        } as Partial<AiInterviewModuleData>);
+    const canVAD = isRecording && !isAudioPlaying && !isBuffering
+      && interviewState !== "AI_PROCESSING" && !isSubmitting && !isCompleteRef.current
+      && !isTransitioningRef.current;
+
+    if (canVAD) {
+      if (volume < 0.05) {
+        if (!silenceStartRef.current) {
+          silenceStartRef.current = Date.now();
+          setSilenceCountdown(3);
+          silenceIntervalRef.current = setInterval(() => {
+            const elapsed = (Date.now() - (silenceStartRef.current ?? Date.now())) / 1000;
+            setSilenceCountdown(Math.ceil(Math.max(0, 3 - elapsed)));
+          }, 200);
+          silenceTimeoutRef.current = setTimeout(() => {
+            clearSilenceTimers();
+            handleStopRecording();
+          }, 3000);
+        }
+      } else {
+        clearSilenceTimers();
       }
+    } else {
+      clearSilenceTimers();
     }
-  }, [currentQuestion, interviewState]);
+    return clearSilenceTimers;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [volume, isRecording, isAudioPlaying, isBuffering, interviewState, isSubmitting]);
 
-  const lastUserTranscriptRef = useRef<string | null>(null);
+  // ─── Conversation sync: commit user answer when next AI question arrives ──
+  // This ensures ONLY the final submitted answer appears in the right panel.
+  // Interim TRANSCRIPTION events update `transcription` state but are NOT pushed
+  // to conversation — only shown in the italic bubble below the avatar.
+  const pendingUserAnswerRef = useRef<string>("");
+  const lastCommittedAiQuestionRef = useRef<string | null>(null);
+
+  // Accumulate the latest transcription into the pending answer ref.
+  // `transcription` is overwritten by each TRANSCRIPTION event, so the last
+  // value before AI_PROCESSING transitions is the full final transcript.
   useEffect(() => {
-    // Only push user message to conversation when FINAL transcript + AI starts processing
-    if (
-      transcription && transcription !== lastUserTranscriptRef.current
-      && interviewState === "AI_PROCESSING"
-    ) {
-      lastUserTranscriptRef.current = transcription;
-      const conv = localData?.conversation || interviewData?.conversation || [];
-      if (!conv.some((m) => m.content === transcription && m.role === "user")) {
-        updateLocalModuleData({
-          ...localData,
-          conversation: [...conv, { id: nanoid(), role: "user", content: transcription, timestamp: new Date().toISOString() }],
-        } as Partial<AiInterviewModuleData>);
-      }
+    if (transcription) {
+      pendingUserAnswerRef.current = transcription;
     }
-  }, [transcription, interviewState]);
+  }, [transcription]);
 
-  // ─── Local data sync ──────────────────────────────────────────────────────
+  // When AI_SPEAKING fires with a new question:
+  // 1. Commit the pending user answer to conversation (if any)
+  // 2. Commit the new AI question to conversation
+  useEffect(() => {
+    if (!currentQuestion || currentQuestion === lastCommittedAiQuestionRef.current) return;
+
+    lastCommittedAiQuestionRef.current = currentQuestion;
+    const conv = localData?.conversation || interviewData?.conversation || [];
+    const newEntries = [];
+
+    // Commit user's answer first (if we have a pending one)
+    const userAnswer = pendingUserAnswerRef.current.trim();
+    if (userAnswer && !conv.some((m) => m.content === userAnswer && m.role === "user")) {
+      newEntries.push({ id: nanoid(), role: "user" as const, content: userAnswer, timestamp: new Date().toISOString() });
+    }
+    pendingUserAnswerRef.current = ""; // Clear after committing
+
+    // Commit the AI question
+    if (!conv.some((m) => m.content === currentQuestion && m.role === "assistant")) {
+      newEntries.push({ id: nanoid(), role: "assistant" as const, content: currentQuestion, timestamp: new Date().toISOString() });
+    }
+
+    if (newEntries.length > 0) {
+      updateLocalModuleData({
+        ...localData,
+        conversation: [...conv, ...newEntries],
+      } as Partial<AiInterviewModuleData>);
+    }
+  }, [currentQuestion]);
+
+  // ─── Local data init ──────────────────────────────────────────────────────
   const isInitializedRef = useRef(false);
   useEffect(() => {
     if (!localData && interviewData && !isInitializedRef.current) {
@@ -234,21 +237,15 @@ export const InterviewModuleInner: FC<InterviewModuleProps> = ({
     }
   }, [localData, interviewData, updateLocalModuleData]);
 
-  // ─── Derived state ────────────────────────────────────────────────────────
-  const conversation = localData?.conversation || interviewData?.conversation || [];
-  const responses = localData?.responses || interviewData?.responses || [];
-  const targetQuestions = interviewConfig.targetQuestions;
-  const questionsAnswered = responses.length;
-  const isComplete = questionsAnswered >= targetQuestions;
-  isCompleteRef.current = isComplete;
-
-  // Auto-scroll transcript when conversation grows
+  // ─── Auto-scroll ──────────────────────────────────────────────────────────
   useEffect(() => {
     setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 80);
   }, [conversation.length]);
 
   // ─── Status helpers ───────────────────────────────────────────────────────
-  const getMicState = () => {
+  type MicState = "connecting" | "disconnected" | "ai_speaking" | "ai_thinking" | "listening" | "idle";
+
+  const getMicState = (): MicState => {
     if (!isConnected && isConnecting) return "connecting";
     if (!isConnected) return "disconnected";
     if (isAudioPlaying || isBuffering) return "ai_speaking";
@@ -259,7 +256,7 @@ export const InterviewModuleInner: FC<InterviewModuleProps> = ({
 
   const micState = getMicState();
 
-  const statusLabel: Record<string, { text: string; cls: string }> = {
+  const STATUS: Record<MicState, { text: string; cls: string }> = {
     connecting: { text: "Connecting to server...", cls: "text-yellow-500 animate-pulse" },
     disconnected: { text: "Connection lost", cls: "text-red-500" },
     ai_speaking: { text: "AI is speaking...", cls: "text-primary animate-pulse" },
@@ -267,21 +264,24 @@ export const InterviewModuleInner: FC<InterviewModuleProps> = ({
     listening: {
       text: silenceCountdown !== null
         ? `Listening — auto-submits in ${silenceCountdown}s`
-        : "Listening... (speak your answer)",
-      cls: silenceCountdown !== null && silenceCountdown <= 1 ? "text-orange-500 font-semibold" : "text-red-500 animate-pulse",
+        : "Listening... speak your answer",
+      cls: silenceCountdown !== null && silenceCountdown <= 1
+        ? "text-orange-500 font-semibold"
+        : "text-red-500 animate-pulse",
     },
-    idle: { text: "Click mic or speak to respond", cls: "text-muted-foreground" },
+    idle: { text: "Tap mic to respond", cls: "text-muted-foreground" },
   };
 
-  const currentStatus = statusLabel[micState] ?? statusLabel.idle;
-  const micDisabled = micState === "ai_speaking" || micState === "ai_thinking"
-    || micState === "connecting" || micState === "disconnected" || isSubmitting;
+  const currentStatus = STATUS[micState];
+  const micDisabled = (micState === "ai_speaking" || micState === "ai_thinking"
+    || micState === "connecting" || micState === "disconnected" || isSubmitting) && !isRecording;
 
   // ─────────────────────────────────────────────────────────────────────────
   // RENDER
   // ─────────────────────────────────────────────────────────────────────────
   return (
-    <div className="flex flex-col h-full max-w-6xl mx-auto gap-4">
+    <div className="flex flex-col h-full max-w-6xl mx-auto gap-4 overflow-hidden">
+
       {/* ── Header ── */}
       <Card className="flex-shrink-0">
         <CardHeader className="py-3">
@@ -293,12 +293,9 @@ export const InterviewModuleInner: FC<InterviewModuleProps> = ({
               )}
             </div>
             <div className="flex items-center gap-2">
-              <div
-                className={cn("w-2 h-2 rounded-full transition-colors",
-                  isConnected ? "bg-green-500" : isConnecting ? "bg-yellow-400 animate-pulse" : "bg-red-500"
-                )}
-                title={isConnected ? "Connected" : isConnecting ? "Connecting..." : "Disconnected"}
-              />
+              <div className={cn("w-2 h-2 rounded-full transition-colors",
+                isConnected ? "bg-green-500" : isConnecting ? "bg-yellow-400 animate-pulse" : "bg-red-500"
+              )} />
               <Badge variant="outline" className="text-xs">
                 {questionsAnswered}/{targetQuestions} answered
               </Badge>
@@ -308,20 +305,20 @@ export const InterviewModuleInner: FC<InterviewModuleProps> = ({
         </CardHeader>
       </Card>
 
-      {/* ── Main Grid ── */}
+      {/* ── Main Grid — fixed height, content scrolls inside ── */}
       <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-2 gap-4 overflow-hidden">
 
         {/* ── Left: Avatar + Controls ── */}
-        <Card className="flex flex-col overflow-hidden">
-          <CardContent className="flex-1 flex flex-col items-center justify-between p-6 min-h-0">
+        <Card className="flex flex-col h-full overflow-hidden">
+          <CardContent className="flex-1 flex flex-col items-center justify-between p-6 min-h-0 overflow-hidden">
 
-            {/* Top: status label */}
-            <p className={cn("text-sm font-medium text-center transition-all min-h-[1.5rem]", currentStatus.cls)}>
+            {/* Status label */}
+            <p className={cn("text-sm font-medium text-center transition-all flex-shrink-0 min-h-[1.5rem]", currentStatus.cls)}>
               {currentStatus.text}
             </p>
 
-            {/* Avatar */}
-            <div className="flex flex-col items-center gap-4 flex-1 justify-center">
+            {/* Avatar area */}
+            <div className="flex flex-col items-center gap-3 flex-1 justify-center min-h-0 overflow-hidden py-2">
               <AIAvatar
                 isSpeaking={isAudioPlaying || isBuffering}
                 isListening={isRecording && !isAudioPlaying}
@@ -334,144 +331,119 @@ export const InterviewModuleInner: FC<InterviewModuleProps> = ({
                 className="w-full max-w-xs"
               />
 
-              {/* Live transcription bubble — ONLY here, not in right panel */}
+              {/* Live transcription — ONLY here, italic + small */}
               {isRecording && transcription && (
-                <div className="max-w-xs w-full px-4 py-2 bg-muted rounded-xl border border-muted-foreground/20 animate-in fade-in">
-                  <p className="text-xs text-muted-foreground italic truncate">
+                <div className="max-w-xs w-full px-3 py-1.5 bg-muted/60 rounded-xl border border-muted-foreground/15 animate-in fade-in">
+                  <p className="text-xs text-muted-foreground italic line-clamp-2">
                     "{transcription}"
                   </p>
                 </div>
               )}
             </div>
 
-            {/* Bottom: Mic button + silence ring */}
-            {!isComplete ? (
-              <div className="flex flex-col items-center gap-3">
-                {/* Silence countdown ring */}
-                {silenceCountdown !== null && isRecording && (
-                  <div className="relative flex items-center justify-center">
-                    <svg className="w-20 h-20 -rotate-90" viewBox="0 0 64 64">
-                      <circle cx="32" cy="32" r="28" fill="none" stroke="currentColor"
-                        className="text-muted-foreground/20" strokeWidth="4" />
-                      <circle cx="32" cy="32" r="28" fill="none"
-                        stroke="currentColor"
-                        className={silenceCountdown <= 1 ? "text-orange-500" : "text-red-500"}
-                        strokeWidth="4"
-                        strokeDasharray={`${2 * Math.PI * 28}`}
-                        strokeDashoffset={`${2 * Math.PI * 28 * (silenceCountdown / 3)}`}
-                        strokeLinecap="round"
-                        style={{ transition: "stroke-dashoffset 0.2s linear" }}
-                      />
-                    </svg>
-                    <span className={cn("absolute text-lg font-bold",
-                      silenceCountdown <= 1 ? "text-orange-500" : "text-red-500"
-                    )}>
-                      {silenceCountdown}
-                    </span>
-                  </div>
-                )}
-
-                {/* Mic button */}
-                {silenceCountdown === null && (
-                  <div className="relative">
-                    {isRecording && (
-                      <span className="absolute inset-0 rounded-full animate-ping bg-red-400/50" />
-                    )}
-                    <Button
-                      variant={isRecording ? "destructive" : "default"}
-                      size="icon"
-                      className={cn(
-                        "h-16 w-16 rounded-full shadow-lg transition-all hover:scale-105",
-                        isRecording ? "bg-red-500 hover:bg-red-600" : "",
+            {/* Mic controls */}
+            <div className="flex-shrink-0 flex flex-col items-center gap-2">
+              {!isComplete ? (
+                <>
+                  {/* Silence countdown ring */}
+                  {silenceCountdown !== null && isRecording ? (
+                    <div className="relative flex items-center justify-center">
+                      <svg className="w-16 h-16 -rotate-90" viewBox="0 0 64 64">
+                        <circle cx="32" cy="32" r="26" fill="none" stroke="currentColor"
+                          className="text-muted-foreground/20" strokeWidth="4" />
+                        <circle cx="32" cy="32" r="26" fill="none" stroke="currentColor"
+                          className={silenceCountdown <= 1 ? "text-orange-500" : "text-red-500"}
+                          strokeWidth="4"
+                          strokeDasharray={`${2 * Math.PI * 26}`}
+                          strokeDashoffset={`${2 * Math.PI * 26 * (silenceCountdown / 3)}`}
+                          strokeLinecap="round"
+                          style={{ transition: "stroke-dashoffset 0.2s linear" }}
+                        />
+                      </svg>
+                      <span className={cn("absolute text-base font-bold",
+                        silenceCountdown <= 1 ? "text-orange-500" : "text-red-500")}>
+                        {silenceCountdown}
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="relative">
+                      {isRecording && (
+                        <span className="absolute inset-0 rounded-full animate-ping bg-red-400/40" />
                       )}
-                      onClick={isRecording ? handleStopRecording : handleStartRecording}
-                      disabled={micDisabled && !isRecording}
-                    >
-                      {interviewState === "AI_PROCESSING" && !isRecording ? (
-                        <Loader2 className="h-6 w-6 animate-spin" />
-                      ) : isRecording ? (
-                        <MicOff className="h-6 w-6 text-white" />
-                      ) : (
-                        <Mic className="h-6 w-6" />
-                      )}
-                    </Button>
-                  </div>
-                )}
+                      <Button
+                        variant={isRecording ? "destructive" : "default"}
+                        size="icon"
+                        className={cn("h-14 w-14 rounded-full shadow-lg transition-all hover:scale-105",
+                          isRecording ? "bg-red-500 hover:bg-red-600" : "")}
+                        onClick={isRecording ? handleStopRecording : handleStartRecording}
+                        disabled={micDisabled}
+                      >
+                        {interviewState === "AI_PROCESSING" && !isRecording
+                          ? <Loader2 className="h-5 w-5 animate-spin" />
+                          : isRecording
+                            ? <MicOff className="h-5 w-5 text-white" />
+                            : <Mic className="h-5 w-5" />
+                        }
+                      </Button>
+                    </div>
+                  )}
 
-                <p className="text-[11px] text-muted-foreground text-center leading-tight max-w-[180px]">
-                  {isRecording
-                    ? "Speak now — pausing 3s will auto-submit"
-                    : "Tap mic or speak to answer"}
-                </p>
+                  <p className="text-[11px] text-muted-foreground text-center max-w-[160px] leading-tight">
+                    {isRecording ? "3s pause = auto-submit" : "Tap mic to respond"}
+                  </p>
 
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => { endInterview(); setTimeout(onSubmit, 500); }}
-                  disabled={isSubmitting}
-                  className="text-xs text-destructive hover:text-destructive"
-                >
-                  End Interview Early
-                </Button>
-              </div>
-            ) : (
-              <div className="flex flex-col items-center gap-3">
-                <p className="text-green-500 font-semibold">All questions answered!</p>
-                <Button onClick={onSubmit} disabled={isSubmitting}>
-                  {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Check className="mr-2 h-4 w-4" />}
-                  Submit Interview
-                </Button>
-              </div>
-            )}
+                  <Button variant="ghost" size="sm"
+                    onClick={() => { endInterview(); setTimeout(onSubmit, 500); }}
+                    disabled={isSubmitting}
+                    className="text-xs text-destructive hover:text-destructive mt-1">
+                    End Interview Early
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <p className="text-green-500 font-semibold text-sm">All questions answered!</p>
+                  <Button onClick={onSubmit} disabled={isSubmitting} className="mt-2">
+                    {isSubmitting
+                      ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Submitting...</>
+                      : <><Check className="mr-2 h-4 w-4" />Submit Interview</>
+                    }
+                  </Button>
+                </>
+              )}
+            </div>
           </CardContent>
         </Card>
 
-        {/* ── Right: Conversation Transcript ── */}
-        <Card className="flex flex-col overflow-hidden">
+        {/* ── Right: Transcript ── scrolls internally, never grows the grid ── */}
+        <Card className="flex flex-col h-full overflow-hidden">
           <CardHeader className="py-3 flex-shrink-0 border-b">
-            <CardTitle className="text-sm text-muted-foreground font-medium">Conversation</CardTitle>
+            <CardTitle className="text-sm text-muted-foreground font-medium">
+              Conversation Transcript
+            </CardTitle>
           </CardHeader>
+
+          {/* CardContent fills remaining height and clips overflow */}
           <CardContent className="flex-1 min-h-0 p-0 overflow-hidden">
-            <ScrollArea className="h-full">
+            <ScrollArea className="h-full w-full">
               <div className="p-4 space-y-4 pb-6">
                 {conversation.length === 0 && (
-                  <p className="text-sm text-muted-foreground text-center py-8">
+                  <p className="text-sm text-muted-foreground text-center py-10">
                     The conversation will appear here as the interview progresses.
                   </p>
                 )}
 
-                {conversation.map((message) => (
-                  <div
-                    key={message.id}
-                    className={cn(
-                      "flex gap-2.5",
-                      message.role === "user" && "flex-row-reverse"
-                    )}
-                  >
-                    {/* Avatar icon */}
-                    <div className={cn(
-                      "w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 mt-1",
-                      message.role === "assistant" ? "bg-primary text-primary-foreground" : "bg-muted"
-                    )}>
-                      {message.role === "assistant"
-                        ? <Bot className="h-3.5 w-3.5" />
-                        : <User className="h-3.5 w-3.5" />
-                      }
+                {conversation.map((msg) => (
+                  <div key={msg.id} className={cn("flex gap-2.5", msg.role === "user" && "flex-row-reverse")}>
+                    <div className={cn("w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5",
+                      msg.role === "assistant" ? "bg-primary text-primary-foreground" : "bg-muted")}>
+                      {msg.role === "assistant" ? <Bot className="h-3.5 w-3.5" /> : <User className="h-3.5 w-3.5" />}
                     </div>
-
-                    {/* Message bubble */}
-                    <div className={cn(
-                      "max-w-[80%] rounded-2xl px-4 py-3 text-sm leading-relaxed",
-                      message.role === "assistant"
-                        ? "bg-muted rounded-tl-sm"
-                        : "bg-primary text-primary-foreground rounded-tr-sm"
-                    )}>
-                      <p className="whitespace-pre-wrap">{message.content}</p>
-                      <p className={cn(
-                        "text-[10px] mt-1",
-                        message.role === "assistant" ? "text-muted-foreground" : "text-primary-foreground/60"
-                      )}>
-                        {new Date(message.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                    <div className={cn("max-w-[80%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed",
+                      msg.role === "assistant" ? "bg-muted rounded-tl-sm" : "bg-primary text-primary-foreground rounded-tr-sm")}>
+                      <p className="whitespace-pre-wrap">{msg.content}</p>
+                      <p className={cn("text-[10px] mt-1",
+                        msg.role === "assistant" ? "text-muted-foreground" : "text-primary-foreground/60")}>
+                        {new Date(msg.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                       </p>
                     </div>
                   </div>
@@ -480,12 +452,12 @@ export const InterviewModuleInner: FC<InterviewModuleProps> = ({
                 {/* AI thinking indicator */}
                 {interviewState === "AI_PROCESSING" && (
                   <div className="flex gap-2.5">
-                    <div className="w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center flex-shrink-0 mt-1">
+                    <div className="w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center flex-shrink-0 mt-0.5">
                       <Bot className="h-3.5 w-3.5" />
                     </div>
-                    <div className="bg-muted rounded-2xl rounded-tl-sm px-4 py-3 flex items-center gap-1.5">
+                    <div className="bg-muted rounded-2xl rounded-tl-sm px-3.5 py-2.5 flex items-center gap-1.5">
                       <span className="text-xs text-muted-foreground">Thinking</span>
-                      <span className="flex gap-1">
+                      <span className="flex gap-1 ml-1">
                         {[0, 1, 2].map((i) => (
                           <span key={i} className="w-1.5 h-1.5 bg-muted-foreground/50 rounded-full animate-bounce"
                             style={{ animationDelay: `${i * 0.15}s` }} />
@@ -494,7 +466,6 @@ export const InterviewModuleInner: FC<InterviewModuleProps> = ({
                     </div>
                   </div>
                 )}
-
                 <div ref={bottomRef} />
               </div>
             </ScrollArea>
@@ -502,10 +473,12 @@ export const InterviewModuleInner: FC<InterviewModuleProps> = ({
         </Card>
       </div>
 
-      {/* ── Footer submit ── */}
+      {/* ── Footer ── */}
       {!isComplete && (
-        <div className="flex-shrink-0 flex justify-end pt-1">
-          <Button variant="outline" onClick={onSubmit} disabled={isSubmitting || interviewState === "AI_PROCESSING"} size="sm">
+        <div className="flex-shrink-0 flex justify-end">
+          <Button variant="outline" size="sm"
+            onClick={onSubmit}
+            disabled={isSubmitting || interviewState === "AI_PROCESSING"}>
             {isSubmitting
               ? <><Loader2 className="mr-2 h-3 w-3 animate-spin" />Submitting...</>
               : "Finish & Submit"
@@ -518,7 +491,7 @@ export const InterviewModuleInner: FC<InterviewModuleProps> = ({
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// EXPORTED WRAPPER
+// WRAPPER
 // ─────────────────────────────────────────────────────────────────────────────
 export const InterviewModule: FC<InterviewModuleProps> = (props) => (
   <MockInterviewProvider>
