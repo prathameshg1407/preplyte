@@ -21,14 +21,22 @@ class InterviewService {
     async createSession(userId, input) {
         logger_1.logger.info('[InterviewService] Creating session', { userId, input });
         // Check for active sessions
+        // FIX: Added include { resume: true } so we can return the full object if found
         const activeSession = await db_1.prisma.aiInterviewSession.findFirst({
             where: {
                 userId,
                 status: { in: ['CREATED', 'STARTED', 'IN_PROGRESS'] },
             },
+            include: {
+                resume: true,
+            },
         });
+        // FIX: Instead of throwing ConflictError, return the existing session
         if (activeSession) {
-            throw new errors_1.ConflictError('You have an active interview session. Please complete or cancel it first.');
+            logger_1.logger.info('[InterviewService] Found active session, returning existing one', {
+                sessionId: activeSession.id,
+            });
+            return (0, interview_types_1.mapSessionToResponse)(activeSession);
         }
         // Validate resume if provided
         let resumeId = input.resumeId || null;
@@ -77,8 +85,13 @@ class InterviewService {
     async startSession(userId, sessionId) {
         logger_1.logger.info('[InterviewService] Starting session', { sessionId, userId });
         const session = await this.getSessionOrThrow(userId, sessionId);
+        // FIX: If already started, just return the current state instead of throwing error
         if (session.status !== 'CREATED') {
-            throw new errors_1.BadRequestError('Session has already been started or completed');
+            logger_1.logger.info('[InterviewService] Session already active, returning current state', { sessionId });
+            return {
+                session: (0, interview_types_1.mapSessionToResponse)(session),
+                openingMessage: null,
+            };
         }
         // Just update session status - WebSocket gateway will handle opening generation
         // This prevents duplicate opening generation from both REST API and WebSocket

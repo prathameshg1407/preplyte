@@ -166,6 +166,129 @@ class EnumsController {
             next(error);
         }
     }
+    /**
+     * GET /api/practice/enums/ai-interview-difficulties
+     */
+    async getAiInterviewDifficulties(_req, res, next) {
+        try {
+            const difficulties = [
+                {
+                    value: 'ENTRY',
+                    label: 'Entry Level',
+                    description: 'For freshers and entry-level positions',
+                    color: '#22c55e',
+                },
+                {
+                    value: 'MID',
+                    label: 'Mid Level',
+                    description: 'For 2-5 years of experience',
+                    color: '#f59e0b',
+                },
+                {
+                    value: 'SENIOR',
+                    label: 'Senior Level',
+                    description: 'For 5+ years of experience',
+                    color: '#ef4444',
+                },
+                {
+                    value: 'LEAD',
+                    label: 'Lead Level',
+                    description: 'For leadership and architect roles',
+                    color: '#8b5cf6',
+                },
+            ];
+            (0, response_1.sendSuccess)(res, { difficulties });
+        }
+        catch (error) {
+            next(error);
+        }
+    }
+    /**
+     * GET /api/practice/enums/module-types
+     */
+    async getModuleTypes(_req, res, next) {
+        try {
+            const moduleTypes = [
+                {
+                    value: 'APTITUDE',
+                    label: 'Aptitude Test',
+                    description: 'Quantitative, verbal, and logical reasoning questions',
+                    icon: 'brain',
+                },
+                {
+                    value: 'MACHINE_CODING',
+                    label: 'Machine Coding',
+                    description: 'Programming and algorithm questions',
+                    icon: 'code',
+                },
+                {
+                    value: 'AI_INTERVIEW',
+                    label: 'AI Interview',
+                    description: 'AI-powered behavioral and technical interview',
+                    icon: 'mic',
+                },
+            ];
+            (0, response_1.sendSuccess)(res, { moduleTypes });
+        }
+        catch (error) {
+            next(error);
+        }
+    }
+    /**
+     * GET /api/practice/enums/mock-drive-statuses
+     */
+    async getMockDriveStatuses(_req, res, next) {
+        try {
+            const statuses = [
+                {
+                    value: 'DRAFT',
+                    label: 'Draft',
+                    description: 'Mock drive is being created',
+                    color: '#6b7280',
+                },
+                {
+                    value: 'PUBLISHED',
+                    label: 'Published',
+                    description: 'Mock drive is published but registration not open',
+                    color: '#3b82f6',
+                },
+                {
+                    value: 'REGISTRATION_OPEN',
+                    label: 'Registration Open',
+                    description: 'Students can register for the mock drive',
+                    color: '#22c55e',
+                },
+                {
+                    value: 'REGISTRATION_CLOSED',
+                    label: 'Registration Closed',
+                    description: 'Registration period has ended',
+                    color: '#f59e0b',
+                },
+                {
+                    value: 'IN_PROGRESS',
+                    label: 'In Progress',
+                    description: 'Mock drive is currently active',
+                    color: '#8b5cf6',
+                },
+                {
+                    value: 'COMPLETED',
+                    label: 'Completed',
+                    description: 'Mock drive has finished',
+                    color: '#10b981',
+                },
+                {
+                    value: 'CANCELLED',
+                    label: 'Cancelled',
+                    description: 'Mock drive was cancelled',
+                    color: '#ef4444',
+                },
+            ];
+            (0, response_1.sendSuccess)(res, { statuses });
+        }
+        catch (error) {
+            next(error);
+        }
+    }
 }
 exports.EnumsController = EnumsController;
 exports.enumsController = new EnumsController();

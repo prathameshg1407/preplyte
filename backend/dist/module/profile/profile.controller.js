@@ -15,6 +15,7 @@ class ProfileController {
         this.getCompleteProfile = this.getCompleteProfile.bind(this);
         this.getUserProfile = this.getUserProfile.bind(this);
         this.updateUserProfile = this.updateUserProfile.bind(this);
+        this.getAvailableDepartments = this.getAvailableDepartments.bind(this);
         this.createStudentProfile = this.createStudentProfile.bind(this);
         this.getStudentProfile = this.getStudentProfile.bind(this);
         this.updateStudentProfile = this.updateStudentProfile.bind(this);
@@ -81,6 +82,27 @@ class ProfileController {
                 success: true,
                 message: 'Profile updated successfully',
                 data: profile,
+            });
+        }
+        catch (error) {
+            next(error);
+        }
+    }
+    // =================================================
+    // DEPARTMENT ENDPOINTS
+    // =================================================
+    /**
+     * GET /profile/departments
+     * Get available departments for the user's institute
+     */
+    async getAvailableDepartments(req, res, next) {
+        try {
+            const userId = this.getUserId(req);
+            const query = (0, profile_validation_1.parseDepartmentQuery)(req.query);
+            const result = await profile_service_1.profileService.getAvailableDepartments(userId, query.includeInactive);
+            res.status(profile_constants_1.HTTP_STATUS.OK).json({
+                success: true,
+                data: result,
             });
         }
         catch (error) {

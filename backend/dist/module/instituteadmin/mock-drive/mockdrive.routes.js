@@ -1,5 +1,8 @@
 "use strict";
 // src/modules/instituteadmin/mock-drive/mockdrive.routes.ts
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const mockdrive_controller_1 = require("./mockdrive.controller");
@@ -10,10 +13,15 @@ const registration_controller_1 = require("./registration/registration.controlle
 const analytics_controller_1 = require("./analytics/analytics.controller");
 const results_controller_1 = require("./results/results.controller");
 const auth_middleware_1 = require("../../../middleware/auth.middleware");
+const students_routes_1 = __importDefault(require("../students/students.routes"));
 const router = (0, express_1.Router)();
 // All routes require authentication and institute admin role
 router.use(auth_middleware_1.authenticate);
 router.use((0, auth_middleware_1.authorize)('INSTITUTE_ADMIN'));
+// ============================================
+// Students (mounted before mock-drive routes to avoid conflicts)
+// ============================================
+router.use('/students', students_routes_1.default);
 // ============================================
 // Mock Drive CRUD
 // ============================================

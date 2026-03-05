@@ -22,6 +22,7 @@ declare class ConversationEngineService {
     constructor();
     /**
      * Initialize a new conversation context
+     * Updated to support Resuming Sessions by loading previous responses
      */
     initializeContext(resume: ParsedResume, config: {
         jobTitle: string;
@@ -29,7 +30,7 @@ declare class ConversationEngineService {
         difficulty: AiInterviewDifficulty;
         focusAreas: string[];
         targetQuestions: number;
-    }): Promise<ConversationContext>;
+    }, previousResponses?: any[]): Promise<ConversationContext>;
     /**
      * Generate the opening message/question
      */

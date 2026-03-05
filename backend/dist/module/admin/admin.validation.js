@@ -71,7 +71,7 @@ exports.instituteStudentsSchema = zod_1.z.object({
     params: zod_1.z.object({ id: cuid }),
     query: zod_1.z.object({
         search: zod_1.z.string().max(200).optional(),
-        department: zod_1.z.string().max(100).optional(),
+        departmentId: zod_1.z.string().max(100).optional(),
         courseYear: zod_1.z.string().max(50).optional(),
         isActive: booleanString.optional(),
         sortBy: zod_1.z.enum(['name', 'email', 'createdAt', 'averageCgpa']).default('createdAt'),

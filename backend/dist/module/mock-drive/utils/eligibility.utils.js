@@ -91,18 +91,18 @@ function checkEligibility(profile, criteria) {
             failedCriteria.push(`Minimum 12th Marks: ${criteria.minMarks12}%`);
     }
     // Check department
-    if (criteria.allowedDepartments && criteria.allowedDepartments.length > 0) {
-        const passed = criteria.allowedDepartments.some((dept) => dept.toLowerCase() === profile.department.toLowerCase());
+    if (criteria.allowedDepartmentIds && criteria.allowedDepartmentIds.length > 0) {
+        const passed = criteria.allowedDepartmentIds.some((dept) => dept.toLowerCase() === profile.departmentId.toLowerCase());
         checks.push({
             criterion: 'Department',
             passed,
             details: passed
-                ? `Department ${profile.department} is allowed`
-                : `Department ${profile.department} is not in allowed list: ${criteria.allowedDepartments.join(', ')}`,
-            value: profile.department,
+                ? `Department ${profile.departmentId} is allowed`
+                : `Department ${profile.departmentId} is not in allowed list: ${criteria.allowedDepartmentIds.join(', ')}`,
+            value: profile.departmentId,
         });
         if (!passed)
-            failedCriteria.push(`Allowed Departments: ${criteria.allowedDepartments.join(', ')}`);
+            failedCriteria.push(`Allowed Departments: ${criteria.allowedDepartmentIds.join(', ')}`);
     }
     // Check course year
     if (criteria.allowedCourseYears && criteria.allowedCourseYears.length > 0) {

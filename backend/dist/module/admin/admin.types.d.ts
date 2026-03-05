@@ -91,7 +91,7 @@ export interface UserFilters extends PaginationParams, SortParams<'name' | 'emai
 }
 export interface StudentFilters extends PaginationParams, SortParams<'name' | 'email' | 'createdAt' | 'averageCgpa'> {
     search?: string;
-    department?: string;
+    departmentId?: string;
     courseYear?: string;
     isActive?: boolean;
 }
@@ -113,7 +113,7 @@ export interface UserWithDetails {
     profile?: {
         fullName: string;
         studentId: string;
-        department: string;
+        departmentId: string;
         courseYear: string;
         averageCgpa: number | null;
         skills: string[];

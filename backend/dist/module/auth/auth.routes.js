@@ -8,6 +8,7 @@ const express_1 = require("express");
 const express_rate_limit_1 = __importDefault(require("express-rate-limit"));
 const auth_controller_1 = require("./auth.controller");
 const auth_middleware_1 = require("../../middleware/auth.middleware");
+const google_oauth_service_1 = require("./google-oauth.service");
 const router = (0, express_1.Router)();
 exports.authRoutes = router;
 // ============================================
@@ -43,6 +44,31 @@ const generalLimiter = createRateLimiter(60 * 1000, // 1 minute
 router.post('/register', registerLimiter, auth_controller_1.register);
 router.post('/login', authLimiter, auth_controller_1.login);
 router.post('/refresh', refreshLimiter, auth_controller_1.refreshToken);
+// Google OAuth Routes
+router.get('/google', authLimiter, (req, res, next) => {
+    // Check if Google OAuth is configured
+    if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
+        return res.status(503).json({
+            success: false,
+            error: {
+                code: 'OAUTH_NOT_CONFIGURED',
+                message: 'Google OAuth is not configured. Please contact the administrator.',
+            },
+        });
+    }
+    next();
+}, google_oauth_service_1.passport.authenticate('google', { scope: ['profile', 'email'] }));
+router.get('/google/callback', (req, res, next) => {
+    // Check if Google OAuth is configured
+    if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
+        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+        return res.redirect(`${frontendUrl}/login?error=oauth_not_configured`);
+    }
+    next();
+}, google_oauth_service_1.passport.authenticate('google', {
+    failureRedirect: process.env.FRONTEND_URL || 'http://localhost:3000/login?error=oauth_failed',
+    session: false
+}), auth_controller_1.googleAuthCallback);
 // ============================================
 // Protected Routes
 // ============================================

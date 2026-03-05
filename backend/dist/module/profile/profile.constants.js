@@ -1,7 +1,7 @@
 "use strict";
 // src/module/profile/profile.constants.ts
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.PROFILE_CACHE_TTL = exports.PROFILE_CACHE_KEYS = exports.HTTP_STATUS = exports.DEPARTMENTS = exports.COURSE_YEARS = exports.STUDENT_ID_PATTERN = exports.ALLOWED_IMAGE_MIME_TYPES = exports.ALLOWED_RESUME_MIME_TYPES = exports.PROFILE_PHOTO_LIMITS = exports.RESUME_LIMITS = void 0;
+exports.PROFILE_CACHE_TTL = exports.PROFILE_CACHE_KEYS = exports.HTTP_STATUS = exports.COURSE_YEARS = exports.STUDENT_ID_PATTERN = exports.ALLOWED_IMAGE_MIME_TYPES = exports.ALLOWED_RESUME_MIME_TYPES = exports.PROFILE_PHOTO_LIMITS = exports.RESUME_LIMITS = void 0;
 // =====================================================
 // FILE UPLOAD LIMITS
 // =====================================================
@@ -36,17 +36,7 @@ exports.COURSE_YEARS = [
     '3rd Year',
     '4th Year',
 ];
-exports.DEPARTMENTS = [
-    'Computer Science',
-    'Information Technology',
-    'Electronics',
-    'Electrical',
-    'Mechanical',
-    'Civil',
-    'Chemical',
-    'Biotechnology',
-    'Other',
-];
+// Note: DEPARTMENTS removed - now managed per institute in database
 // =====================================================
 // HTTP STATUS CODES
 // =====================================================
@@ -64,9 +54,11 @@ exports.PROFILE_CACHE_KEYS = {
     studentProfile: (userId) => `profile:student:${userId}`,
     resumes: (userId) => `profile:resumes:${userId}`,
     defaultResume: (userId) => `profile:resume:default:${userId}`,
+    departments: (instituteId) => `profile:departments:${instituteId}`,
 };
 exports.PROFILE_CACHE_TTL = {
     STUDENT_PROFILE: 300, // 5 minutes
     RESUMES: 180, // 3 minutes
+    DEPARTMENTS: 600, // 10 minutes
 };
 //# sourceMappingURL=profile.constants.js.map

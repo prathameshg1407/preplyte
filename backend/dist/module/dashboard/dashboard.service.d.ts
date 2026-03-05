@@ -4,6 +4,8 @@ declare class DashboardService {
     private getStudentStats;
     private getStudentRecentTests;
     private getStudentUpcomingDrives;
+    private getStudentAppliedOpportunities;
+    private getStudentHackathonRegistrations;
     getInstituteAdminDashboard(userId: string, instituteId: string): Promise<InstituteAdminDashboardResponse>;
     private getInstituteStats;
     private getInstituteRecentDrives;

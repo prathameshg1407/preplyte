@@ -64,7 +64,7 @@ const baseEligibilitySchema = zod_1.z.object({
     maxCgpa: cgpaSchema,
     minMarks10: marksSchema,
     minMarks12: marksSchema,
-    allowedDepartments: zod_1.z
+    allowedDepartmentIds: zod_1.z
         .array(zod_1.z.string().min(1).max(100).trim())
         .max(50, 'Maximum 50 departments allowed')
         .optional()
@@ -124,7 +124,7 @@ exports.updateEligibilitySchema = baseEligibilitySchema.partial().refine((data) 
 // Query Schema
 // ============================================
 exports.eligibleStudentsQuerySchema = validation_utils_1.paginationSchema.extend({
-    department: zod_1.z.string().max(100).optional(),
+    departmentId: zod_1.z.string().max(100).optional(),
     courseYear: zod_1.z.string().max(20).optional(),
     search: validation_utils_1.searchSchema,
 });

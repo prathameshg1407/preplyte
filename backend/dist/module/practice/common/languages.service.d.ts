@@ -4,8 +4,8 @@ export declare class LanguagesService {
      */
     getAllLanguages(activeOnly?: boolean): Promise<{
         languages: {
-            name: string;
             id: string;
+            name: string;
             isActive: boolean;
             monacoId: string;
             judge0Id: number;
@@ -16,8 +16,8 @@ export declare class LanguagesService {
      * Get language details with template
      */
     getLanguageById(id: string): Promise<{
-        name: string;
         id: string;
+        name: string;
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
@@ -29,8 +29,8 @@ export declare class LanguagesService {
      * Get language by Judge0 ID
      */
     getLanguageByJudge0Id(judge0Id: number): Promise<{
-        name: string;
         id: string;
+        name: string;
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;

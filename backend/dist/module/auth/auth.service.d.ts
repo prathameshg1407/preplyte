@@ -2,36 +2,39 @@ import { RegisterDto, LoginDto } from './auth.controller';
 declare class AuthService {
     register(data: RegisterDto): Promise<{
         institute: {
-            name: string;
             id: string;
             domain: string;
+            name: string;
         } | null;
         email: string;
-        name: string | null;
         id: string;
+        name: string | null;
         isActive: boolean;
         createdAt: Date;
         role: import("@prisma/client").$Enums.UserRole;
-        lastLoginAt: Date | null;
         instituteId: string | null;
+        lastLoginAt: Date | null;
     }>;
     login(data: LoginDto): Promise<{
         user: {
             institute: {
-                name: string;
                 id: string;
                 domain: string;
+                name: string;
                 isActive: boolean;
             } | null;
             email: string;
-            name: string | null;
             id: string;
+            name: string | null;
             isActive: boolean;
             createdAt: Date;
             updatedAt: Date;
             role: import("@prisma/client").$Enums.UserRole;
-            lastLoginAt: Date | null;
             instituteId: string | null;
+            googleId: string | null;
+            provider: string | null;
+            avatar: string | null;
+            lastLoginAt: Date | null;
         };
         accessToken: string;
         refreshToken: string;
@@ -40,20 +43,23 @@ declare class AuthService {
     refreshToken(token: string): Promise<{
         user: {
             institute: {
-                name: string;
                 id: string;
                 domain: string;
+                name: string;
                 isActive: boolean;
             } | null;
             email: string;
-            name: string | null;
             id: string;
+            name: string | null;
             isActive: boolean;
             createdAt: Date;
             updatedAt: Date;
             role: import("@prisma/client").$Enums.UserRole;
-            lastLoginAt: Date | null;
             instituteId: string | null;
+            googleId: string | null;
+            provider: string | null;
+            avatar: string | null;
+            lastLoginAt: Date | null;
         };
         accessToken: string;
         refreshToken: string;
@@ -63,18 +69,18 @@ declare class AuthService {
     logoutAll(userId: string): Promise<void>;
     getUser(userId: string): Promise<{
         institute: {
-            name: string;
             id: string;
             domain: string;
+            name: string;
         } | null;
         email: string;
-        name: string | null;
         id: string;
+        name: string | null;
         isActive: boolean;
         createdAt: Date;
         role: import("@prisma/client").$Enums.UserRole;
-        lastLoginAt: Date | null;
         instituteId: string | null;
+        lastLoginAt: Date | null;
     }>;
     cleanupExpiredTokens(): Promise<number>;
     private generateTokens;

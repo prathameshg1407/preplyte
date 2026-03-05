@@ -14,8 +14,8 @@ export declare const createSessionSchema: z.ZodObject<{
     resumeId?: string | undefined;
     companyName?: string | null | undefined;
 }, {
-    resumeId?: string | undefined;
     difficulty?: "ENTRY" | "MID" | "SENIOR" | "LEAD" | undefined;
+    resumeId?: string | undefined;
     jobTitle?: string | undefined;
     companyName?: string | null | undefined;
     focusAreas?: string[] | undefined;
@@ -86,21 +86,21 @@ export declare const audioChunkSchema: z.ZodObject<{
     type: z.ZodLiteral<"audio_chunk">;
     data: z.ZodUnion<[z.ZodType<Buffer<ArrayBufferLike>, z.ZodTypeDef, Buffer<ArrayBufferLike>>, z.ZodString]>;
 }, "strip", z.ZodTypeAny, {
-    type: "audio_chunk";
     data: string | Buffer<ArrayBufferLike>;
+    type: "audio_chunk";
 }, {
-    type: "audio_chunk";
     data: string | Buffer<ArrayBufferLike>;
+    type: "audio_chunk";
 }>;
 export declare const endInterviewSchema: z.ZodObject<{
     type: z.ZodLiteral<"end_interview">;
     reason: z.ZodDefault<z.ZodOptional<z.ZodEnum<["completed", "cancelled", "timeout"]>>>;
 }, "strip", z.ZodTypeAny, {
     type: "end_interview";
-    reason: "timeout" | "completed" | "cancelled";
+    reason: "completed" | "timeout" | "cancelled";
 }, {
     type: "end_interview";
-    reason?: "timeout" | "completed" | "cancelled" | undefined;
+    reason?: "completed" | "timeout" | "cancelled" | undefined;
 }>;
 export declare const submitResponseSchema: z.ZodObject<{
     questionId: z.ZodString;

@@ -47,6 +47,11 @@ router.get('/user', profile_controller_1.profileController.getUserProfile);
 // PATCH /profile/user - Update basic user profile
 router.patch('/user', profile_controller_1.profileController.updateUserProfile);
 // =====================================================
+// DEPARTMENT ROUTES
+// =====================================================
+// GET /profile/departments - Get available departments for user's institute
+router.get('/departments', profile_controller_1.profileController.getAvailableDepartments);
+// =====================================================
 // STUDENT PROFILE ROUTES
 // =====================================================
 // POST /profile/student - Create student profile

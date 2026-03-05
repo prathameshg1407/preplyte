@@ -1,5 +1,4 @@
 "use strict";
-// src/modules/instituteadmin/mock-drive/index.ts
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     var desc = Object.getOwnPropertyDescriptor(m, k);
@@ -19,6 +18,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.mockDriveRoutes = void 0;
+// src/modules/instituteadmin/mock-drive/index.ts
+const express_1 = require("express");
+const students_routes_1 = __importDefault(require("../students/students.routes"));
+const router = (0, express_1.Router)();
+router.use('/', students_routes_1.default);
 // Main exports
 __exportStar(require("./mockdrive.types"), exports);
 __exportStar(require("./mockdrive.validation"), exports);

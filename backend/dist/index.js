@@ -39,6 +39,7 @@ const http_1 = require("http");
 const logger_1 = require("./utils/logger");
 const db_1 = require("./lib/db");
 const interview_1 = require("./module/practice/interview");
+const token_cleanup_1 = require("./lib/token-cleanup");
 const PORT = parseInt(process.env.PORT || '4000', 10);
 const HOST = process.env.HOST || '0.0.0.0';
 async function startServer() {
@@ -67,10 +68,14 @@ async function startServer() {
                 api: `http://localhost:${PORT}/api`,
                 websocket: `ws://localhost:${PORT}/ws/interview/:sessionId`,
             });
+            // Start token cleanup scheduler
+            (0, token_cleanup_1.startTokenCleanup)();
         });
         // Graceful shutdown
         const shutdown = async (signal) => {
             logger_1.logger.info(`${signal} received. Starting graceful shutdown...`);
+            // Stop token cleanup scheduler
+            (0, token_cleanup_1.stopTokenCleanup)();
             // Shutdown WebSocket gateway first
             interview_1.interviewGateway.shutdown();
             httpServer.close(async () => {

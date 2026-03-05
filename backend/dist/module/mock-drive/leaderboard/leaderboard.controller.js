@@ -12,8 +12,8 @@ class LeaderboardController {
         try {
             const userId = req.user.id;
             const { driveId } = req.params;
-            const { page, limit, batchId, department } = req.query;
-            const result = await this.service.getLeaderboard(userId, driveId, page ? parseInt(page, 10) : 1, limit ? parseInt(limit, 10) : 10, { batchId, department });
+            const { page, limit, batchId, departmentId } = req.query;
+            const result = await this.service.getLeaderboard(userId, driveId, page ? parseInt(page, 10) : 1, limit ? parseInt(limit, 10) : 10, { batchId, departmentId });
             (0, response_1.sendSuccess)(res, result, 'Leaderboard retrieved successfully');
         }
         catch (error) {

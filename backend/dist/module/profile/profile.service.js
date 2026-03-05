@@ -18,6 +18,58 @@ const pdf_parse_1 = __importDefault(require("pdf-parse"));
 // =====================================================
 class ProfileService {
     // =================================================
+    // DEPARTMENT METHODS
+    // =================================================
+    /**
+     * Get departments available for a user (based on their institute)
+     */
+    async getAvailableDepartments(userId, includeInactive = false) {
+        logger_1.logger.debug('[ProfileService] Fetching available departments', { userId });
+        const user = await db_1.prisma.user.findUnique({
+            where: { id: userId },
+            select: { instituteId: true },
+        });
+        if (!user) {
+            throw new errors_1.NotFoundError('User');
+        }
+        if (!user.instituteId) {
+            throw new errors_1.BadRequestError('User is not associated with any institute');
+        }
+        const departments = await db_1.prisma.department.findMany({
+            where: {
+                instituteId: user.instituteId,
+                ...(includeInactive ? {} : { isActive: true }),
+            },
+            orderBy: { name: 'asc' },
+        });
+        return {
+            departments: departments.map(profile_types_1.mapDepartmentToResponse),
+            total: departments.length,
+        };
+    }
+    /**
+     * Validate department belongs to user's institute
+     */
+    async validateDepartmentForUser(userId, departmentId) {
+        const user = await db_1.prisma.user.findUnique({
+            where: { id: userId },
+            select: { instituteId: true },
+        });
+        if (!user?.instituteId) {
+            throw new errors_1.BadRequestError('User is not associated with any institute');
+        }
+        const department = await db_1.prisma.department.findFirst({
+            where: {
+                id: departmentId,
+                instituteId: user.instituteId,
+                isActive: true,
+            },
+        });
+        if (!department) {
+            throw new errors_1.BadRequestError('Invalid department. Please select a department from your institute.');
+        }
+    }
+    // =================================================
     // USER PROFILE METHODS
     // =================================================
     /**
@@ -28,8 +80,12 @@ class ProfileService {
         const user = await db_1.prisma.user.findUnique({
             where: { id: userId },
             include: {
-                institute: { select: { name: true } },
-                profile: true,
+                institute: { select: { id: true, name: true } },
+                profile: {
+                    include: {
+                        department: true,
+                    },
+                },
                 resumes: { orderBy: { createdAt: 'desc' } },
             },
         });
@@ -37,6 +93,18 @@ class ProfileService {
             throw new errors_1.NotFoundError('User');
         }
         const profileCompletion = this.calculateProfileCompletion(user);
+        // Get available departments for the user
+        let availableDepartments = [];
+        if (user.instituteId) {
+            const departments = await db_1.prisma.department.findMany({
+                where: {
+                    instituteId: user.instituteId,
+                    isActive: true,
+                },
+                orderBy: { name: 'asc' },
+            });
+            availableDepartments = departments.map(profile_types_1.mapDepartmentToResponse);
+        }
         return {
             user: (0, profile_types_1.mapUserToProfileResponse)(user),
             studentProfile: user.profile
@@ -44,6 +112,7 @@ class ProfileService {
                 : null,
             resumes: user.resumes.map(profile_types_1.mapResumeToResponse),
             profileCompletion,
+            availableDepartments,
         };
     }
     /**
@@ -55,7 +124,11 @@ class ProfileService {
             where: { id: userId },
             include: {
                 institute: { select: { name: true } },
-                profile: true,
+                profile: {
+                    include: {
+                        department: true,
+                    },
+                },
                 resumes: { where: { isDefault: true }, take: 1 },
             },
         });
@@ -80,7 +153,11 @@ class ProfileService {
             },
             include: {
                 institute: { select: { name: true } },
-                profile: true,
+                profile: {
+                    include: {
+                        department: true,
+                    },
+                },
                 resumes: { where: { isDefault: true }, take: 1 },
             },
         });
@@ -109,6 +186,8 @@ class ProfileService {
         if (existingStudentId) {
             throw new errors_1.ConflictError('Student ID already registered');
         }
+        // Validate department belongs to user's institute
+        await this.validateDepartmentForUser(userId, input.departmentId);
         // Calculate average CGPA if semesters provided
         const averageCgpa = this.calculateAverageCgpa(input.cgpaSemesters);
         const profile = await db_1.prisma.studentProfile.create({
@@ -116,13 +195,17 @@ class ProfileService {
                 userId,
                 fullName: input.fullName,
                 studentId: input.studentId,
-                department: input.department,
+                departmentId: input.departmentId,
                 courseYear: input.courseYear,
+                numberOfBacklogs: input.numberOfBacklogs || 0,
                 skills: input.skills || [],
                 marks10: input.marks10,
                 marks12: input.marks12,
                 cgpaSemesters: input.cgpaSemesters || [],
                 averageCgpa,
+            },
+            include: {
+                department: true,
             },
         });
         logger_1.logger.info('[ProfileService] Student profile created', {
@@ -138,6 +221,9 @@ class ProfileService {
         logger_1.logger.debug('[ProfileService] Fetching student profile', { userId });
         const profile = await db_1.prisma.studentProfile.findUnique({
             where: { userId },
+            include: {
+                department: true,
+            },
         });
         return profile ? (0, profile_types_1.mapStudentProfileToResponse)(profile) : null;
     }
@@ -152,6 +238,10 @@ class ProfileService {
         if (!existingProfile) {
             throw new errors_1.NotFoundError('Student profile');
         }
+        // Validate department if being updated
+        if (input.departmentId) {
+            await this.validateDepartmentForUser(userId, input.departmentId);
+        }
         // Calculate new average CGPA if semesters updated
         const cgpaSemesters = input.cgpaSemesters ?? existingProfile.cgpaSemesters;
         const averageCgpa = this.calculateAverageCgpa(cgpaSemesters);
@@ -161,6 +251,9 @@ class ProfileService {
                 ...input,
                 averageCgpa,
                 updatedAt: new Date(),
+            },
+            include: {
+                department: true,
             },
         });
         logger_1.logger.info('[ProfileService] Student profile updated', { userId });
@@ -189,6 +282,7 @@ class ProfileService {
         logger_1.logger.info('[ProfileService] Adding skills', { userId, skillCount: skills.length });
         const profile = await db_1.prisma.studentProfile.findUnique({
             where: { userId },
+            include: { department: true },
         });
         if (!profile) {
             throw new errors_1.NotFoundError('Student profile');
@@ -200,6 +294,7 @@ class ProfileService {
         const updatedProfile = await db_1.prisma.studentProfile.update({
             where: { userId },
             data: { skills: updatedSkills },
+            include: { department: true },
         });
         return (0, profile_types_1.mapStudentProfileToResponse)(updatedProfile);
     }
@@ -210,6 +305,7 @@ class ProfileService {
         logger_1.logger.info('[ProfileService] Removing skills', { userId, skillCount: skills.length });
         const profile = await db_1.prisma.studentProfile.findUnique({
             where: { userId },
+            include: { department: true },
         });
         if (!profile) {
             throw new errors_1.NotFoundError('Student profile');
@@ -219,6 +315,7 @@ class ProfileService {
         const updatedProfile = await db_1.prisma.studentProfile.update({
             where: { userId },
             data: { skills: updatedSkills },
+            include: { department: true },
         });
         return (0, profile_types_1.mapStudentProfileToResponse)(updatedProfile);
     }
@@ -229,6 +326,7 @@ class ProfileService {
         logger_1.logger.info('[ProfileService] Updating academic marks', { userId });
         const profile = await db_1.prisma.studentProfile.findUnique({
             where: { userId },
+            include: { department: true },
         });
         if (!profile) {
             throw new errors_1.NotFoundError('Student profile');
@@ -243,6 +341,7 @@ class ProfileService {
                 cgpaSemesters,
                 averageCgpa,
             },
+            include: { department: true },
         });
         return (0, profile_types_1.mapStudentProfileToResponse)(updatedProfile);
     }
@@ -468,7 +567,7 @@ class ProfileService {
             const profileFields = [
                 { key: 'fullName', value: user.profile.fullName },
                 { key: 'studentId', value: user.profile.studentId },
-                { key: 'department', value: user.profile.department },
+                { key: 'department', value: user.profile.departmentId },
                 { key: 'courseYear', value: user.profile.courseYear },
                 { key: 'skills', value: user.profile.skills.length > 0 },
                 { key: 'marks10', value: user.profile.marks10 !== null },
@@ -515,7 +614,6 @@ class ProfileService {
     }
     async extractPublicIdAndDelete(fileUrl) {
         // Extract public ID from Cloudinary URL
-        // URL format: https://res.cloudinary.com/{cloud}/raw/upload/v123/{folder}/{publicId}.pdf
         const match = fileUrl.match(/\/upload\/v\d+\/(.+)\.\w+$/);
         if (match && match[1]) {
             await (0, cloudinary_1.deleteFile)(match[1], 'raw');

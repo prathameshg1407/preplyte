@@ -56,55 +56,81 @@ export default function AnalyticsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 pb-20">
       {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" asChild>
-            <Link href={`/institute-admin/mock-drives/${driveId}`}>
-              <ArrowLeft className="h-4 w-4" />
-            </Link>
-          </Button>
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight">Analytics</h1>
-            <p className="text-sm text-muted-foreground">{drive?.title}</p>
+      <div className="relative overflow-hidden rounded-3xl border border-border/40 bg-card/30 p-8 shadow-sm backdrop-blur-md sm:p-10">
+        <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-primary/5 blur-3xl opacity-50" />
+        
+        <div className="relative flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-4">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              asChild 
+              className="h-12 w-12 rounded-2xl bg-background/50 border border-border/40 hover:bg-background/80"
+            >
+              <Link href={`/institute-admin/mock-drives/${driveId}`}>
+                <ArrowLeft className="h-5 w-5" />
+              </Link>
+            </Button>
+            <div className="space-y-1">
+              <h1 className="text-3xl font-bold tracking-tight text-gradient">Drive Analytics</h1>
+              <div className="flex items-center gap-2 text-muted-foreground/80 font-medium">
+                <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary/40" />
+                {drive?.title}
+              </div>
+            </div>
           </div>
-        </div>
-        <div className="flex gap-2">
-          {/* Batch Filter */}
-          <Select
-            value={selectedBatchId || 'all'}
-            onValueChange={(value) =>
-              value === 'all' ? clearBatchFilter() : selectBatch(value)
-            }
-          >
-            <SelectTrigger className="w-48">
-              <SelectValue placeholder="All Batches" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Batches</SelectItem>
-              {batches.map((batch) => (
-                <SelectItem key={batch.id} value={batch.id}>
-                  {batch.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Button variant="outline" size="icon" onClick={() => refetch()}>
-            <RefreshCcw className="h-4 w-4" />
-          </Button>
+          
+          <div className="flex items-center gap-3">
+            {/* Batch Filter */}
+            <Select
+              value={selectedBatchId || 'all'}
+              onValueChange={(value) =>
+                value === 'all' ? clearBatchFilter() : selectBatch(value)
+              }
+            >
+              <SelectTrigger className="h-12 w-56 rounded-2xl border-border/40 bg-background/50 backdrop-blur-sm px-4 font-semibold hover:bg-background/80">
+                <SelectValue placeholder="All Batches" />
+              </SelectTrigger>
+              <SelectContent className="rounded-2xl border-border/40 shadow-xl">
+                <SelectItem value="all">All Batches</SelectItem>
+                {batches.map((batch) => (
+                  <SelectItem key={batch.id} value={batch.id}>
+                    {batch.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button 
+              variant="outline" 
+              size="icon" 
+              onClick={() => refetch()}
+              className="h-12 w-12 rounded-2xl border-border/40 bg-background/50 backdrop-blur-sm hover:bg-background/80"
+            >
+              <RefreshCcw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+            </Button>
+          </div>
         </div>
       </div>
 
       {/* Overview Cards */}
-      <AnalyticsOverviewCards overview={overview} />
+      <section className="space-y-6">
+        <div className="flex items-center gap-4 px-1">
+          <h2 className="text-sm font-bold uppercase tracking-[0.2em] text-muted-foreground/40">
+            Key Performance Indicators
+          </h2>
+          <div className="h-px flex-1 bg-border/40" />
+        </div>
+        <AnalyticsOverviewCards overview={overview} />
+      </section>
 
       {/* Charts Grid */}
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-8 lg:grid-cols-2">
         {/* Score Distribution */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Score Distribution</CardTitle>
+        <Card className="glass-card overflow-hidden">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg font-bold">Score Distribution</CardTitle>
           </CardHeader>
           <CardContent>
             <ScoreDistributionChart data={scoreDistribution} />
@@ -112,9 +138,9 @@ export default function AnalyticsPage() {
         </Card>
 
         {/* Module Performance */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Module Performance</CardTitle>
+        <Card className="glass-card overflow-hidden">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg font-bold">Module Intelligence</CardTitle>
           </CardHeader>
           <CardContent>
             <ModulePerformanceChart data={modulePerformance} />
@@ -124,9 +150,9 @@ export default function AnalyticsPage() {
 
       {/* Batch Comparison (only show if no batch is selected) */}
       {!selectedBatchId && batchComparison && batchComparison.length > 0 && (
-        <Card>
+        <Card className="glass-card overflow-hidden">
           <CardHeader>
-            <CardTitle>Batch Comparison</CardTitle>
+            <CardTitle className="text-lg font-bold">Batch Comparative Analysis</CardTitle>
           </CardHeader>
           <CardContent>
             <BatchComparisonChart data={batchComparison} />
@@ -136,9 +162,9 @@ export default function AnalyticsPage() {
 
       {/* Time Analysis */}
       {timeAnalysis && (
-        <Card>
+        <Card className="glass-card overflow-hidden">
           <CardHeader>
-            <CardTitle>Time Analysis</CardTitle>
+            <CardTitle className="text-lg font-bold">Time Depth Analysis</CardTitle>
           </CardHeader>
           <CardContent>
             <TimeAnalysisChart data={timeAnalysis} />
@@ -148,11 +174,16 @@ export default function AnalyticsPage() {
 
       {/* Department Breakdown */}
       {departmentBreakdown && departmentBreakdown.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Department Breakdown</CardTitle>
+        <Card className="glass-card overflow-hidden border-none shadow-sm">
+          <CardHeader className="px-0">
+            <div className="flex items-center gap-4 px-1">
+              <h2 className="text-sm font-bold uppercase tracking-[0.2em] text-muted-foreground/40">
+                Departmental Insights
+              </h2>
+              <div className="h-px flex-1 bg-border/40" />
+            </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-0 rounded-3xl border border-border/40 bg-card/20 overflow-hidden">
             <DepartmentBreakdownTable data={departmentBreakdown} />
           </CardContent>
         </Card>
@@ -160,6 +191,7 @@ export default function AnalyticsPage() {
     </div>
   );
 }
+
 
 function PageSkeleton() {
   return (

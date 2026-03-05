@@ -1,5 +1,4 @@
 "use strict";
-// src/module/practice/interview/websocket/interview.gateway.ts
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.InterviewWebSocketGateway = exports.interviewGateway = void 0;
 const ws_1 = require("ws");
@@ -274,6 +273,11 @@ class InterviewWebSocketGateway {
                     logger_1.logger.warn('[WS Gateway] Resume parsing failed, continuing without', error);
                 }
             }
+            // FIX: FETCH PREVIOUS RESPONSES FROM DB
+            const previousResponses = await db_1.prisma.aiInterviewResponse.findMany({
+                where: { sessionId: socket.sessionId },
+                orderBy: { questionOrder: 'asc' }
+            });
             // Initialize conversation context
             connection.context = await services_1.conversationEngineService.initializeContext(parsedResume || this.createMinimalResume(), {
                 jobTitle: session.jobTitle || 'Software Engineer',
@@ -281,8 +285,8 @@ class InterviewWebSocketGateway {
                 difficulty: session.difficulty,
                 focusAreas: session.focusAreas,
                 targetQuestions: session.totalQuestions,
-            });
-            // Initialize STT - MUST happen before setting isInitialized
+            }, previousResponses);
+            // Initialize STT
             try {
                 connection.transcriber = services_1.speechToTextService.createRealtimeTranscriber({
                     onTranscript: (result) => this.handleTranscription(connection, result),
@@ -296,11 +300,8 @@ class InterviewWebSocketGateway {
                 logger_1.logger.error('[WS Gateway] STT initialization failed', error);
                 connection.transcriber = null;
             }
-            // Generate opening if session is new
-            if (session.status === 'CREATED' || session.status === 'STARTED') {
-                await this.generateAndSpeakOpening(connection, session);
-            }
-            // Mark as initialized and ready to listen
+            // --- CRITICAL FIX: Send Session Ready BEFORE generating audio ---
+            // This ensures the frontend loader disappears before the voice starts.
             connection.isInitialized = true;
             connection.isInitializing = false;
             connection.isListening = true;
@@ -315,12 +316,19 @@ class InterviewWebSocketGateway {
                         : null,
                 },
             });
-            logger_1.logger.info('[WS Gateway] Interview initialized', {
+            logger_1.logger.info('[WS Gateway] Interview initialized - Ready signal sent', {
                 sessionId: socket.sessionId,
                 hasTranscriber: !!connection.transcriber,
                 isListening: connection.isListening,
-                pendingChunks: connection.pendingAudioChunks.length,
             });
+            // Now generate opening if session is new
+            if (previousResponses.length === 0 && (session.status === 'CREATED' || session.status === 'STARTED')) {
+                await this.generateAndSpeakOpening(connection, session);
+            }
+            else {
+                // RESUMING: Send current state
+                this.sendSessionState(connection);
+            }
             // Process any queued audio chunks
             if (connection.pendingAudioChunks.length > 0) {
                 logger_1.logger.info('[WS Gateway] Processing queued audio', {
@@ -494,8 +502,8 @@ class InterviewWebSocketGateway {
                     connection.isListening = true;
                 }
                 break;
-            case interview_constants_1.WS_EVENTS.CLIENT.PING:
             case 'ping':
+            case interview_constants_1.WS_EVENTS.CLIENT.PING:
                 socket.isAlive = true;
                 socket.lastPongTime = Date.now();
                 logger_1.logger.debug('[WS Gateway] Application ping received, sending pong', {
@@ -600,7 +608,7 @@ class InterviewWebSocketGateway {
                 await this.processUserResponse(connection, connection.currentTranscript.trim());
                 connection.currentTranscript = '';
             }
-        }, 3000); // 3 seconds of silence
+        }, 5000); // 3 seconds of silence
         this.responseProcessingTimeout.set(socket.id, timeout);
     }
     handleTranscriberError(connection, error) {
@@ -692,7 +700,7 @@ class InterviewWebSocketGateway {
             const session = await db_1.prisma.aiInterviewSession.findUnique({
                 where: { id: socket.sessionId },
             });
-            await db_1.prisma.aiInterviewResponse.create({
+            const savedResponse = await db_1.prisma.aiInterviewResponse.create({
                 data: {
                     sessionId: socket.sessionId,
                     category: nextQuestion.category,
@@ -714,10 +722,12 @@ class InterviewWebSocketGateway {
                 sessionId: socket.sessionId,
                 category: nextQuestion.category,
                 isFollowUp: nextQuestion.isFollowUp,
+                questionId: savedResponse.id
             });
             this.send(socket, {
                 type: interview_constants_1.WS_EVENTS.SERVER.AI_SPEAKING,
                 data: {
+                    id: savedResponse.id,
                     text: nextQuestion.question,
                     category: nextQuestion.category,
                     isFollowUp: nextQuestion.isFollowUp,
@@ -737,7 +747,7 @@ class InterviewWebSocketGateway {
             catch (ttsError) {
                 logger_1.logger.warn('[WS Gateway] TTS failed', ttsError);
             }
-            this.send(socket, { type: interview_constants_1.WS_EVENTS.SERVER.AI_DONE, data: { questionId: nextQuestion.question } });
+            this.send(socket, { type: interview_constants_1.WS_EVENTS.SERVER.AI_DONE, data: { questionId: savedResponse.id } });
             this.sendSessionState(connection);
         }
         catch (error) {

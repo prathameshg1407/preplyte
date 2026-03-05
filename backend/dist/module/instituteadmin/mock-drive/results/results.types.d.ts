@@ -17,7 +17,7 @@ export interface ResultListItem {
     userId: string;
     studentName: string;
     studentId: string | null;
-    department: string | null;
+    departmentId: string | null;
     batchName: string | null;
     status: MockDriveAttemptStatus;
     totalScore: number | null;
@@ -53,7 +53,7 @@ export interface DetailedResult {
         name: string;
         email: string;
         studentId: string | null;
-        department: string | null;
+        departmentId: string | null;
     };
     batch: {
         id: string;

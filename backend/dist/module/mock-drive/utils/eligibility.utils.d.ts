@@ -5,7 +5,7 @@ interface EligibilityCriteria {
     maxCgpa: number | null;
     minMarks10: number | null;
     minMarks12: number | null;
-    allowedDepartments: string[];
+    allowedDepartmentIds: string[];
     allowedCourseYears: string[];
     requiredSkills: string[];
     maxBacklogs: number | null;

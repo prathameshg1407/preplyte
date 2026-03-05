@@ -47,7 +47,7 @@ export declare const setEligibilitySchema: z.ZodEffects<z.ZodObject<{
     maxCgpa: z.ZodOptional<z.ZodNullable<z.ZodNumber>>;
     minMarks10: z.ZodOptional<z.ZodNullable<z.ZodNumber>>;
     minMarks12: z.ZodOptional<z.ZodNullable<z.ZodNumber>>;
-    allowedDepartments: z.ZodDefault<z.ZodOptional<z.ZodArray<z.ZodString, "many">>>;
+    allowedDepartmentIds: z.ZodDefault<z.ZodOptional<z.ZodArray<z.ZodString, "many">>>;
     allowedCourseYears: z.ZodDefault<z.ZodOptional<z.ZodArray<z.ZodString, "many">>>;
     requiredSkills: z.ZodDefault<z.ZodOptional<z.ZodArray<z.ZodString, "many">>>;
     maxBacklogs: z.ZodOptional<z.ZodNullable<z.ZodNumber>>;
@@ -82,7 +82,7 @@ export declare const setEligibilitySchema: z.ZodEffects<z.ZodObject<{
         matchType?: "all" | "any" | undefined;
     }>>>;
 }, "strip", z.ZodTypeAny, {
-    allowedDepartments: string[];
+    allowedDepartmentIds: string[];
     allowedCourseYears: string[];
     requiredSkills: string[];
     minCgpa?: number | null | undefined;
@@ -103,7 +103,7 @@ export declare const setEligibilitySchema: z.ZodEffects<z.ZodObject<{
     maxCgpa?: number | null | undefined;
     minMarks10?: number | null | undefined;
     minMarks12?: number | null | undefined;
-    allowedDepartments?: string[] | undefined;
+    allowedDepartmentIds?: string[] | undefined;
     allowedCourseYears?: string[] | undefined;
     requiredSkills?: string[] | undefined;
     maxBacklogs?: number | null | undefined;
@@ -116,7 +116,7 @@ export declare const setEligibilitySchema: z.ZodEffects<z.ZodObject<{
         matchType?: "all" | "any" | undefined;
     } | null | undefined;
 }>, {
-    allowedDepartments: string[];
+    allowedDepartmentIds: string[];
     allowedCourseYears: string[];
     requiredSkills: string[];
     minCgpa?: number | null | undefined;
@@ -137,7 +137,7 @@ export declare const setEligibilitySchema: z.ZodEffects<z.ZodObject<{
     maxCgpa?: number | null | undefined;
     minMarks10?: number | null | undefined;
     minMarks12?: number | null | undefined;
-    allowedDepartments?: string[] | undefined;
+    allowedDepartmentIds?: string[] | undefined;
     allowedCourseYears?: string[] | undefined;
     requiredSkills?: string[] | undefined;
     maxBacklogs?: number | null | undefined;
@@ -155,7 +155,7 @@ export declare const updateEligibilitySchema: z.ZodEffects<z.ZodObject<{
     maxCgpa: z.ZodOptional<z.ZodOptional<z.ZodNullable<z.ZodNumber>>>;
     minMarks10: z.ZodOptional<z.ZodOptional<z.ZodNullable<z.ZodNumber>>>;
     minMarks12: z.ZodOptional<z.ZodOptional<z.ZodNullable<z.ZodNumber>>>;
-    allowedDepartments: z.ZodOptional<z.ZodDefault<z.ZodOptional<z.ZodArray<z.ZodString, "many">>>>;
+    allowedDepartmentIds: z.ZodOptional<z.ZodDefault<z.ZodOptional<z.ZodArray<z.ZodString, "many">>>>;
     allowedCourseYears: z.ZodOptional<z.ZodDefault<z.ZodOptional<z.ZodArray<z.ZodString, "many">>>>;
     requiredSkills: z.ZodOptional<z.ZodDefault<z.ZodOptional<z.ZodArray<z.ZodString, "many">>>>;
     maxBacklogs: z.ZodOptional<z.ZodOptional<z.ZodNullable<z.ZodNumber>>>;
@@ -194,7 +194,7 @@ export declare const updateEligibilitySchema: z.ZodEffects<z.ZodObject<{
     maxCgpa?: number | null | undefined;
     minMarks10?: number | null | undefined;
     minMarks12?: number | null | undefined;
-    allowedDepartments?: string[] | undefined;
+    allowedDepartmentIds?: string[] | undefined;
     allowedCourseYears?: string[] | undefined;
     requiredSkills?: string[] | undefined;
     maxBacklogs?: number | null | undefined;
@@ -211,7 +211,7 @@ export declare const updateEligibilitySchema: z.ZodEffects<z.ZodObject<{
     maxCgpa?: number | null | undefined;
     minMarks10?: number | null | undefined;
     minMarks12?: number | null | undefined;
-    allowedDepartments?: string[] | undefined;
+    allowedDepartmentIds?: string[] | undefined;
     allowedCourseYears?: string[] | undefined;
     requiredSkills?: string[] | undefined;
     maxBacklogs?: number | null | undefined;
@@ -228,7 +228,7 @@ export declare const updateEligibilitySchema: z.ZodEffects<z.ZodObject<{
     maxCgpa?: number | null | undefined;
     minMarks10?: number | null | undefined;
     minMarks12?: number | null | undefined;
-    allowedDepartments?: string[] | undefined;
+    allowedDepartmentIds?: string[] | undefined;
     allowedCourseYears?: string[] | undefined;
     requiredSkills?: string[] | undefined;
     maxBacklogs?: number | null | undefined;
@@ -245,7 +245,7 @@ export declare const updateEligibilitySchema: z.ZodEffects<z.ZodObject<{
     maxCgpa?: number | null | undefined;
     minMarks10?: number | null | undefined;
     minMarks12?: number | null | undefined;
-    allowedDepartments?: string[] | undefined;
+    allowedDepartmentIds?: string[] | undefined;
     allowedCourseYears?: string[] | undefined;
     requiredSkills?: string[] | undefined;
     maxBacklogs?: number | null | undefined;
@@ -262,20 +262,20 @@ export declare const eligibleStudentsQuerySchema: z.ZodObject<{
     page: z.ZodDefault<z.ZodNumber>;
     limit: z.ZodDefault<z.ZodNumber>;
 } & {
-    department: z.ZodOptional<z.ZodString>;
+    departmentId: z.ZodOptional<z.ZodString>;
     courseYear: z.ZodOptional<z.ZodString>;
     search: z.ZodOptional<z.ZodString>;
 }, "strip", z.ZodTypeAny, {
     page: number;
     limit: number;
     search?: string | undefined;
-    department?: string | undefined;
+    departmentId?: string | undefined;
     courseYear?: string | undefined;
 }, {
     search?: string | undefined;
     page?: number | undefined;
     limit?: number | undefined;
-    department?: string | undefined;
+    departmentId?: string | undefined;
     courseYear?: string | undefined;
 }>;
 export declare const checkEligibilitySchema: z.ZodObject<{

@@ -1,6 +1,39 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.verifyToken = exports.me = exports.logoutAll = exports.logout = exports.refreshToken = exports.login = exports.register = void 0;
+exports.googleAuthCallback = exports.verifyToken = exports.me = exports.logoutAll = exports.logout = exports.refreshToken = exports.login = exports.register = void 0;
 const zod_1 = require("zod");
 const auth_service_1 = require("./auth.service");
 const response_1 = require("../../utils/response");
@@ -154,4 +187,25 @@ const verifyToken = async (req, res, _next) => {
     (0, response_1.sendSuccess)(res, { valid: true, user: req.user }, 'Token is valid');
 };
 exports.verifyToken = verifyToken;
+// ============================================
+// Google OAuth Controllers
+// ============================================
+const googleAuthCallback = async (req, res, next) => {
+    try {
+        if (!req.user) {
+            (0, response_1.sendError)(res, 'OAUTH_ERROR', 'Google authentication failed', 401);
+            return;
+        }
+        const { handleGoogleCallback } = await Promise.resolve().then(() => __importStar(require('./google-oauth.service')));
+        const result = await handleGoogleCallback(req.user);
+        // Redirect to frontend with tokens
+        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+        const redirectUrl = `${frontendUrl}/callback?accessToken=${result.accessToken}&refreshToken=${result.refreshToken}`;
+        res.redirect(redirectUrl);
+    }
+    catch (error) {
+        next(error);
+    }
+};
+exports.googleAuthCallback = googleAuthCallback;
 //# sourceMappingURL=auth.controller.js.map

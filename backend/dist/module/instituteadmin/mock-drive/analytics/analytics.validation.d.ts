@@ -117,11 +117,11 @@ export declare const exportAnalyticsSchema: z.ZodObject<{
     sections: z.ZodDefault<z.ZodArray<z.ZodEnum<["overview", "scoreDistribution", "modulePerformance", "batchComparison", "timeAnalysis", "questionAnalysis", "demographics", "completionTrend"]>, "many">>;
     batchId: z.ZodOptional<z.ZodString>;
 }, "strip", z.ZodTypeAny, {
-    format: "json" | "pdf" | "csv" | "xlsx";
+    format: "json" | "csv" | "pdf" | "xlsx";
     sections: ("overview" | "scoreDistribution" | "modulePerformance" | "batchComparison" | "timeAnalysis" | "completionTrend" | "questionAnalysis" | "demographics")[];
     batchId?: string | undefined;
 }, {
-    format?: "json" | "pdf" | "csv" | "xlsx" | undefined;
+    format?: "json" | "csv" | "pdf" | "xlsx" | undefined;
     batchId?: string | undefined;
     sections?: ("overview" | "scoreDistribution" | "modulePerformance" | "batchComparison" | "timeAnalysis" | "completionTrend" | "questionAnalysis" | "demographics")[] | undefined;
 }>;

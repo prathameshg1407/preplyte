@@ -12,14 +12,18 @@ const morgan_1 = __importDefault(require("morgan"));
 const compression_1 = __importDefault(require("compression"));
 const cookie_parser_1 = __importDefault(require("cookie-parser"));
 const express_rate_limit_1 = require("express-rate-limit");
+const google_oauth_service_1 = require("./module/auth/google-oauth.service");
 // Route Imports
 const auth_routes_1 = require("./module/auth/auth.routes");
 const practice_routes_1 = __importDefault(require("./module/practice/practice.routes"));
 const admin_routes_1 = __importDefault(require("./module/admin/admin.routes"));
 const profile_1 = require("./module/profile");
 const mock_drive_1 = require("./module/instituteadmin/mock-drive");
+const department_1 = require("./module/instituteadmin/department");
+const institute_analytics_routes_1 = __importDefault(require("./module/instituteadmin/institute-analytics.routes"));
 const mock_drive_2 = require("./module/mock-drive");
 const dashboard_1 = require("./module/dashboard");
+const event_1 = require("./module/event");
 // Middleware & Utils
 const error_middleware_1 = require("./middleware/error.middleware");
 const request_id_middleware_1 = require("./middleware/request-id.middleware");
@@ -134,6 +138,8 @@ app.use((0, compression_1.default)({
 app.use(express_1.default.json({ limit: config.bodyLimit }));
 app.use(express_1.default.urlencoded({ extended: true, limit: config.bodyLimit }));
 app.use((0, cookie_parser_1.default)(process.env.COOKIE_SECRET));
+// Initialize Passport
+app.use(google_oauth_service_1.passport.initialize());
 // =====================================================
 // 5. RATE LIMITERS
 // =====================================================
@@ -239,6 +245,10 @@ app.use('/api/profile/resumes', uploadLimiter);
 app.use('/api/profile', profileLimiter, profile_1.profileRoutes);
 // Institute admin mock drive routes
 app.use('/api/institute/mock-drive', mock_drive_1.mockDriveRoutes);
+//Institute department routes
+app.use('/api/institute/departments', department_1.departmentRoutes);
+// Institute analytics routes
+app.use('/api/institute/analytics', institute_analytics_routes_1.default);
 // Student mock drive routes
 app.use('/api/mock-drives', mockDriveLimiter, (0, mock_drive_2.createMockDriveRoutes)(db_1.prisma));
 // Practice routes - mounted at /api/practice
@@ -252,6 +262,7 @@ app.use('/api/mock-drives/:driveId/modules/:moduleId/machine/submit', codeExecut
 // Admin routes with specific rate limiter
 app.use('/api/admin', adminLimiter, admin_routes_1.default);
 app.use('/api/dashboard', dashboard_1.dashboardRoutes);
+app.use('/api/events', event_1.eventRoutes);
 // =====================================================
 // 8. ERROR HANDLING
 // =====================================================

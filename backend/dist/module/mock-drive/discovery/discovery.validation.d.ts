@@ -20,12 +20,12 @@ export declare const discoveryListSchema: z.ZodObject<{
         limit: number;
         registrationOpen: boolean;
         search?: string | undefined;
-        status?: ("IN_PROGRESS" | "COMPLETED" | "CANCELLED" | "DRAFT" | "PUBLISHED" | "REGISTRATION_OPEN" | "REGISTRATION_CLOSED")[] | undefined;
         instituteId?: string | undefined;
+        status?: ("IN_PROGRESS" | "COMPLETED" | "CANCELLED" | "DRAFT" | "PUBLISHED" | "REGISTRATION_OPEN" | "REGISTRATION_CLOSED")[] | undefined;
     }, {
         search?: string | undefined;
-        status?: string | string[] | undefined;
         instituteId?: string | undefined;
+        status?: string | string[] | undefined;
         page?: string | undefined;
         limit?: string | undefined;
         registrationOpen?: string | undefined;
@@ -36,14 +36,14 @@ export declare const discoveryListSchema: z.ZodObject<{
         limit: number;
         registrationOpen: boolean;
         search?: string | undefined;
-        status?: ("IN_PROGRESS" | "COMPLETED" | "CANCELLED" | "DRAFT" | "PUBLISHED" | "REGISTRATION_OPEN" | "REGISTRATION_CLOSED")[] | undefined;
         instituteId?: string | undefined;
+        status?: ("IN_PROGRESS" | "COMPLETED" | "CANCELLED" | "DRAFT" | "PUBLISHED" | "REGISTRATION_OPEN" | "REGISTRATION_CLOSED")[] | undefined;
     };
 }, {
     query: {
         search?: string | undefined;
-        status?: string | string[] | undefined;
         instituteId?: string | undefined;
+        status?: string | string[] | undefined;
         page?: string | undefined;
         limit?: string | undefined;
         registrationOpen?: string | undefined;

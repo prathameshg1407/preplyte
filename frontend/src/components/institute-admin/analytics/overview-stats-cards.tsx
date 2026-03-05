@@ -114,7 +114,7 @@ export function OverviewStatsCards({ summary, practiceStats }: OverviewStatsCard
 
   return (
     <motion.div
-      variants={{ hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.07 } } }}
+      variants={{ hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.05 } } }}
       initial="hidden"
       animate="show"
       className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"
@@ -122,24 +122,32 @@ export function OverviewStatsCards({ summary, practiceStats }: OverviewStatsCard
       {cards.map((card) => (
         <motion.div
           key={card.title}
-          variants={{ hidden: { opacity: 0, scale: 0.95 }, show: { opacity: 1, scale: 1 } }}
-          whileHover={{ y: -4, transition: { duration: 0.2 } }}
+          variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }}
         >
-          <Card className="relative overflow-hidden border-none shadow-lg glass-effect">
+          <Card className="group relative overflow-hidden glass-card h-full">
             <div className={cn(
-              'absolute top-0 right-0 w-24 h-24 -mr-12 -mt-12 rounded-full opacity-10 blur-2xl',
+              'absolute -right-4 -top-4 w-24 h-24 rounded-full opacity-10 blur-3xl transition-opacity group-hover:opacity-20',
               glowMap[card.color]
             )} />
-            <CardContent className="p-5">
-              <div className="flex items-center justify-between mb-3">
-                <div className={cn('p-2 rounded-lg border', colorMap[card.color])}>
-                  <card.icon className="h-4 w-4" />
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className={cn(
+                  'p-2.5 rounded-xl border shadow-sm transition-transform group-hover:scale-110',
+                  colorMap[card.color]
+                )}>
+                  <card.icon className="h-5 w-5" />
                 </div>
               </div>
-              <div className="space-y-0.5">
-                <p className="text-2xl font-bold tabular-nums">{card.value}</p>
-                <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60">{card.title}</p>
-                <p className="text-xs text-muted-foreground/80">{card.subtitle}</p>
+              <div className="space-y-1">
+                <p className="text-3xl font-bold tracking-tight text-gradient tabular-nums">
+                  {card.value}
+                </p>
+                <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/50">
+                  {card.title}
+                </p>
+                <p className="text-xs text-muted-foreground/70 line-clamp-1">
+                  {card.subtitle}
+                </p>
               </div>
             </CardContent>
           </Card>
@@ -148,3 +156,4 @@ export function OverviewStatsCards({ summary, practiceStats }: OverviewStatsCard
     </motion.div>
   );
 }
+

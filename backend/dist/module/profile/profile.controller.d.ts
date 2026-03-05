@@ -18,6 +18,11 @@ declare class ProfileController {
      */
     updateUserProfile(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void>;
     /**
+     * GET /profile/departments
+     * Get available departments for the user's institute
+     */
+    getAvailableDepartments(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void>;
+    /**
      * POST /profile/student
      * Create student profile
      */

@@ -31,39 +31,7 @@ declare class AdminService {
     toggleInstituteStatus(id: string): Promise<InstituteWithStats>;
     getInstituteStats(id: string): Promise<InstituteStats>;
     getInstituteStudents(id: string, filters: StudentFilters): Promise<{
-        students: Omit<{
-            institute: {
-                name: string;
-                id: string;
-                domain: string;
-            } | null;
-            profile: {
-                fullName: string;
-                studentId: string;
-                skills: string[];
-                department: string;
-                courseYear: string;
-                averageCgpa: number | null;
-            } | null;
-            _count: {
-                resumes: number;
-                aptitudeSessions: number;
-                machineSessions: number;
-                aiInterviewSessions: number;
-            };
-        } & {
-            email: string;
-            password: string;
-            name: string | null;
-            id: string;
-            isActive: boolean;
-            createdAt: Date;
-            updatedAt: Date;
-            role: import("@prisma/client").$Enums.UserRole;
-            lastLoginAt: Date | null;
-            tokenVersion: number;
-            instituteId: string | null;
-        }, "password">[];
+        students: unknown[];
         total: number;
         page: number;
         limit: number;
@@ -80,39 +48,7 @@ declare class AdminService {
     private findInstitute;
     private ensureUniqueDomain;
     listUsers(filters: UserFilters): Promise<{
-        users: Omit<{
-            institute: {
-                name: string;
-                id: string;
-                domain: string;
-            } | null;
-            profile: {
-                fullName: string;
-                studentId: string;
-                skills: string[];
-                department: string;
-                courseYear: string;
-                averageCgpa: number | null;
-            } | null;
-            _count: {
-                resumes: number;
-                aptitudeSessions: number;
-                machineSessions: number;
-                aiInterviewSessions: number;
-            };
-        } & {
-            email: string;
-            password: string;
-            name: string | null;
-            id: string;
-            isActive: boolean;
-            createdAt: Date;
-            updatedAt: Date;
-            role: import("@prisma/client").$Enums.UserRole;
-            lastLoginAt: Date | null;
-            tokenVersion: number;
-            instituteId: string | null;
-        }, "password">[];
+        users: unknown[];
         total: number;
         page: number;
         limit: number;

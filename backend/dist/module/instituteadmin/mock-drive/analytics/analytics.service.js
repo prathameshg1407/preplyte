@@ -317,15 +317,15 @@ class AnalyticsService {
             include: {
                 user: {
                     include: {
-                        profile: { select: { department: true } },
+                        profile: { select: { departmentId: true } },
                     },
                 },
             },
         });
-        const departmentMap = this.groupAttemptsByField(attempts, (a) => a.user.profile?.department ?? 'Unknown');
+        const departmentMap = this.groupAttemptsByField(attempts, (a) => a.user.profile?.departmentId ?? 'Unknown');
         return Array.from(departmentMap.entries())
-            .map(([department, stats]) => ({
-            department,
+            .map(([departmentId, stats]) => ({
+            departmentId,
             totalStudents: stats.total,
             completedStudents: stats.completed,
             averageScore: this.calculateAverage(stats.scores),

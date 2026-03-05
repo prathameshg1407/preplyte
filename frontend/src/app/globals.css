@@ -186,7 +186,7 @@
   }
 }
 
-/* Custom scrollbar for minimalistic look */
+/* Custom scrollbar and premium utilities */
 @layer utilities {
   .scrollbar-thin {
     scrollbar-width: thin;
@@ -209,5 +209,38 @@
 
   .scrollbar-thin::-webkit-scrollbar-thumb:hover {
     background-color: oklch(0.5 0 0);
+  }
+
+  /* Glassmorphism */
+  .glass-effect {
+    @apply bg-background/60 backdrop-blur-xl border border-border/50;
+  }
+  
+  .glass-card {
+    @apply bg-card/40 backdrop-blur-md border border-border/40 shadow-sm transition-all duration-300;
+  }
+
+  .glass-card:hover {
+    @apply bg-card/60 border-border/60 shadow-md transform -translate-y-0.5;
+  }
+
+  /* Premium Surfaces */
+  .surface-gradient {
+    @apply bg-[radial-gradient(circle_at_top_left,var(--background),var(--muted)/30)];
+  }
+
+  /* Text Gradients */
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-br from-foreground to-foreground/70;
+  }
+
+  /* Animations */
+  .animate-in-fade {
+    animation: fade-in 0.5s ease-out forwards;
+  }
+
+  @keyframes fade-in {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
   }
 }

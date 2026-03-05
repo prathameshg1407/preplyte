@@ -37,7 +37,7 @@ export interface StudentInfo {
     name: string;
     email: string;
     studentId: string | null;
-    department: string | null;
+    departmentId: string | null;
     courseYear: string | null;
     averageCgpa: number | null;
     marks10: number | null;
@@ -59,7 +59,7 @@ export interface RegistrationListItem {
     status: MockDriveRegistrationStatus;
     studentName: string;
     studentId: string | null;
-    department: string | null;
+    departmentId: string | null;
     courseYear: string | null;
     averageCgpa: number | null;
     batchId: string | null;

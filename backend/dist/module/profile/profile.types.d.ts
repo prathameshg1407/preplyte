@@ -1,4 +1,14 @@
-import { Resume, StudentProfile, User } from '@prisma/client';
+import { Resume, StudentProfile, User, Department } from '@prisma/client';
+export interface DepartmentResponse {
+    id: string;
+    name: string;
+    code: string | null;
+    description: string | null;
+}
+export interface DepartmentListResponse {
+    departments: DepartmentResponse[];
+    total: number;
+}
 export interface ResumeResponse {
     id: string;
     fileName: string;
@@ -28,8 +38,11 @@ export interface StudentProfileResponse {
     userId: string;
     fullName: string;
     studentId: string;
-    department: string;
+    departmentId: string;
+    departmentName: string;
+    departmentCode: string | null;
     courseYear: string;
+    numberOfBacklogs: number;
     skills: string[];
     marks10: number | null;
     marks12: number | null;
@@ -43,8 +56,9 @@ export interface StudentProfileResponse {
 export interface CreateStudentProfileInput {
     fullName: string;
     studentId: string;
-    department: string;
+    departmentId: string;
     courseYear: string;
+    numberOfBacklogs?: number;
     skills?: string[];
     marks10?: number;
     marks12?: number;
@@ -52,8 +66,9 @@ export interface CreateStudentProfileInput {
 }
 export interface UpdateStudentProfileInput {
     fullName?: string;
-    department?: string;
+    departmentId?: string;
     courseYear?: string;
+    numberOfBacklogs?: number;
     skills?: string[];
     marks10?: number;
     marks12?: number;
@@ -81,21 +96,27 @@ export interface CompleteProfileResponse {
     studentProfile: StudentProfileResponse | null;
     resumes: ResumeResponse[];
     profileCompletion: ProfileCompletionStatus;
+    availableDepartments: DepartmentResponse[];
 }
 export interface ProfileCompletionStatus {
     percentage: number;
     missingFields: string[];
     isComplete: boolean;
 }
+type StudentProfileWithDepartment = StudentProfile & {
+    department: Department;
+};
+export declare const mapDepartmentToResponse: (department: Department) => DepartmentResponse;
 export declare const mapResumeToResponse: (resume: Resume) => ResumeResponse;
-export declare const mapStudentProfileToResponse: (profile: StudentProfile) => StudentProfileResponse;
+export declare const mapStudentProfileToResponse: (profile: StudentProfileWithDepartment) => StudentProfileResponse;
 export declare const mapUserToProfileResponse: (user: User & {
     institute?: {
         name: string;
     } | null;
-    profile?: StudentProfile | null;
+    profile?: StudentProfileWithDepartment | null;
     resumes?: Resume[];
 }) => UserProfileResponse;
 export declare const isAllowedResumeMimeType: (mimeType: string) => boolean;
 export declare const isAllowedImageMimeType: (mimeType: string) => boolean;
+export {};
 //# sourceMappingURL=profile.types.d.ts.map

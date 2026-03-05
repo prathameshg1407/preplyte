@@ -33,5 +33,6 @@ export declare const logout: (req: AuthenticatedRequest, res: Response, next: Ne
 export declare const logoutAll: (req: AuthenticatedRequest, res: Response, next: NextFunction) => Promise<void>;
 export declare const me: (req: AuthenticatedRequest, res: Response, next: NextFunction) => Promise<void>;
 export declare const verifyToken: (req: AuthenticatedRequest, res: Response, _next: NextFunction) => Promise<void>;
+export declare const googleAuthCallback: (req: Request, res: Response, next: NextFunction) => Promise<void>;
 export {};
 //# sourceMappingURL=auth.controller.d.ts.map

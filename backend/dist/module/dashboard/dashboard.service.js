@@ -16,15 +16,19 @@ class DashboardService {
     // =================================================
     async getStudentDashboard(userId) {
         logger_1.logger.debug('[DashboardService] Fetching student dashboard', { userId });
-        const [stats, recentTests, upcomingTests] = await Promise.all([
+        const [stats, recentTests, upcomingTests, appliedOpportunities, hackathonRegistrations] = await Promise.all([
             this.getStudentStats(userId),
             this.getStudentRecentTests(userId),
             this.getStudentUpcomingDrives(userId),
+            this.getStudentAppliedOpportunities(userId),
+            this.getStudentHackathonRegistrations(userId),
         ]);
         return {
             stats,
             recentTests,
             upcomingTests,
+            appliedOpportunities,
+            hackathonRegistrations,
         };
     }
     async getStudentStats(userId) {
@@ -213,6 +217,84 @@ class DashboardService {
             };
         });
     }
+    async getStudentAppliedOpportunities(userId) {
+        const [jobApps, internshipApps] = await Promise.all([
+            db_1.prisma.jobApplication.findMany({
+                where: { userId },
+                include: {
+                    job: {
+                        select: { roleTitle: true, companyName: true },
+                    },
+                },
+                orderBy: { appliedAt: 'desc' },
+                take: dashboard_constants_1.DASHBOARD_LIMITS.RECENT_TESTS,
+            }),
+            db_1.prisma.internshipApplication.findMany({
+                where: { userId },
+                include: {
+                    internship: {
+                        select: { roleTitle: true, companyName: true },
+                    },
+                },
+                orderBy: { appliedAt: 'desc' },
+                take: dashboard_constants_1.DASHBOARD_LIMITS.RECENT_TESTS,
+            }),
+        ]);
+        const apps = [];
+        jobApps.forEach((app) => {
+            apps.push({
+                id: app.id,
+                title: app.job.roleTitle,
+                companyName: app.job.companyName,
+                type: 'JOB',
+                status: app.status,
+                appliedAt: app.appliedAt.toISOString(),
+            });
+        });
+        internshipApps.forEach((app) => {
+            apps.push({
+                id: app.id,
+                title: app.internship.roleTitle,
+                companyName: app.internship.companyName,
+                type: 'INTERNSHIP',
+                status: app.status,
+                appliedAt: app.appliedAt.toISOString(),
+            });
+        });
+        return apps
+            .sort((a, b) => new Date(b.appliedAt).getTime() - new Date(a.appliedAt).getTime())
+            .slice(0, dashboard_constants_1.DASHBOARD_LIMITS.RECENT_TESTS);
+    }
+    async getStudentHackathonRegistrations(userId) {
+        const registrations = await db_1.prisma.hackathonRegistration.findMany({
+            where: { userId },
+            include: {
+                hackathon: {
+                    select: { title: true },
+                },
+                team: {
+                    select: {
+                        leaderId: true,
+                    },
+                },
+            },
+            orderBy: { registeredAt: 'desc' },
+            take: dashboard_constants_1.DASHBOARD_LIMITS.RECENT_TESTS,
+        });
+        return registrations.map((reg) => {
+            let role = 'INDIVIDUAL';
+            if (reg.teamId) {
+                role = reg.team?.leaderId === userId ? 'LEADER' : 'MEMBER';
+            }
+            return {
+                id: reg.id,
+                title: reg.hackathon.title,
+                status: reg.status,
+                registrationDate: reg.registeredAt.toISOString(),
+                role,
+            };
+        });
+    }
     // =================================================
     // INSTITUTE ADMIN DASHBOARD
     // =================================================
@@ -367,7 +449,7 @@ class DashboardService {
                 userId: true,
                 studentName: true,
                 studentId: true,
-                department: true,
+                departmentId: true,
                 percentageScore: true,
             },
         });
@@ -379,7 +461,7 @@ class DashboardService {
                     userId: entry.userId,
                     studentName: entry.studentName,
                     studentId: entry.studentId,
-                    department: entry.department,
+                    departmentId: entry.departmentId,
                     scores: [],
                 });
             }
@@ -391,7 +473,7 @@ class DashboardService {
             userId: user.userId,
             studentName: user.studentName,
             studentId: user.studentId,
-            department: user.department,
+            departmentId: user.departmentId,
             avgScore: Math.round((user.scores.reduce((a, b) => a + b, 0) / user.scores.length) * 10) / 10,
             completedDrives: user.scores.length,
         }))

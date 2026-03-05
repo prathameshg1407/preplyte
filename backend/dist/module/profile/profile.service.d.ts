@@ -1,6 +1,14 @@
-import { ResumeResponse, ResumeListResponse, StudentProfileResponse, UserProfileResponse, CompleteProfileResponse, ExtractedResumeData } from './profile.types';
+import { ResumeResponse, ResumeListResponse, StudentProfileResponse, UserProfileResponse, CompleteProfileResponse, DepartmentListResponse, ExtractedResumeData } from './profile.types';
 import { CreateStudentProfileInput, UpdateStudentProfileInput, UpdateUserProfileInput } from './profile.validation';
 declare class ProfileService {
+    /**
+     * Get departments available for a user (based on their institute)
+     */
+    getAvailableDepartments(userId: string, includeInactive?: boolean): Promise<DepartmentListResponse>;
+    /**
+     * Validate department belongs to user's institute
+     */
+    private validateDepartmentForUser;
     /**
      * Get complete user profile with all related data
      */

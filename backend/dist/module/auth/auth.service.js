@@ -97,7 +97,7 @@ class AuthService {
                 },
             },
         });
-        if (!user || !(await bcryptjs_1.default.compare(password, user.password))) {
+        if (!user || !user.password || !(await bcryptjs_1.default.compare(password, user.password))) {
             throw new errors_1.UnauthorizedError('Invalid email or password');
         }
         if (!user.isActive) {
@@ -134,30 +134,59 @@ class AuthService {
             expiresIn: ACCESS_TOKEN_EXPIRY,
         };
     }
+    // auth.service.ts - Updated refreshToken method
     async refreshToken(token) {
         try {
-            const { payload } = await (0, jose_1.jwtVerify)(token, REFRESH_SECRET, {
-                issuer: JWT_ISSUER,
-                audience: JWT_AUDIENCE,
-            });
+            // First, verify the JWT structure
+            let payload;
+            try {
+                const result = await (0, jose_1.jwtVerify)(token, REFRESH_SECRET, {
+                    issuer: JWT_ISSUER,
+                    audience: JWT_AUDIENCE,
+                });
+                payload = result.payload;
+            }
+            catch (jwtError) {
+                logger_1.logger.warn('Invalid refresh token JWT', { error: jwtError });
+                throw new errors_1.UnauthorizedError('Invalid refresh token');
+            }
             const userId = payload.sub;
-            const tokenVersion = payload.tokenVersion || 0;
+            const tokenVersion = payload.tokenVersion ?? 0;
             const tokenHash = this.hashToken(token);
+            // Find the stored token
             const storedToken = await db_1.prisma.refreshToken.findFirst({
                 where: {
                     token: tokenHash,
                     userId,
                 },
             });
-            // Token reuse detection
-            if (storedToken?.revokedAt) {
+            // Token doesn't exist
+            if (!storedToken) {
+                logger_1.logger.warn('Refresh token not found in database', { userId });
+                throw new errors_1.UnauthorizedError('Invalid refresh token');
+            }
+            // Token reuse detection - if revoked, this is a reuse attempt
+            if (storedToken.revokedAt) {
+                logger_1.logger.warn('Refresh token reuse detected', {
+                    userId,
+                    tokenId: storedToken.id,
+                    revokedAt: storedToken.revokedAt,
+                });
+                // Revoke all tokens for this user
                 await this.logoutAll(userId);
-                logger_1.logger.warn('Refresh token reuse detected', { userId });
-                throw new errors_1.UnauthorizedError('Token reuse detected. All sessions revoked.');
+                throw new errors_1.UnauthorizedError('Token reuse detected. All sessions have been revoked for security.');
             }
-            if (!storedToken || storedToken.expiresAt < new Date()) {
-                throw new errors_1.UnauthorizedError('Invalid or expired refresh token');
+            // Token expired
+            if (storedToken.expiresAt < new Date()) {
+                logger_1.logger.debug('Refresh token expired', { userId, expiresAt: storedToken.expiresAt });
+                // Clean up expired token
+                await db_1.prisma.refreshToken.update({
+                    where: { id: storedToken.id },
+                    data: { revokedAt: new Date() },
+                });
+                throw new errors_1.UnauthorizedError('Refresh token expired');
             }
+            // Fetch user
             const user = await db_1.prisma.user.findUnique({
                 where: { id: userId },
                 include: {
@@ -166,23 +195,35 @@ class AuthService {
                     },
                 },
             });
-            if (!user?.isActive) {
+            if (!user) {
+                logger_1.logger.warn('User not found for refresh token', { userId });
+                throw new errors_1.UnauthorizedError('User not found');
+            }
+            if (!user.isActive) {
+                logger_1.logger.debug('Inactive user attempted token refresh', { userId });
                 throw new errors_1.UnauthorizedError('Account is inactive');
             }
+            // Check token version - if different, tokens have been invalidated
             if (user.tokenVersion !== tokenVersion) {
+                logger_1.logger.debug('Token version mismatch', {
+                    userId,
+                    tokenVersion,
+                    currentVersion: user.tokenVersion
+                });
                 throw new errors_1.UnauthorizedError('Session has been revoked');
             }
             if (user.institute && !user.institute.isActive) {
                 throw new errors_1.InstituteInactiveError(user.institute.name);
             }
+            // Generate new tokens
             const { accessToken, refreshToken: newRefreshToken } = await this.generateTokens({
                 id: user.id,
                 role: user.role,
                 instituteId: user.instituteId,
                 tokenVersion: user.tokenVersion,
             });
-            // Rotate refresh token
-            await Promise.all([
+            // Rotate refresh token - revoke old one and create new one atomically
+            await db_1.prisma.$transaction([
                 db_1.prisma.refreshToken.update({
                     where: { id: storedToken.id },
                     data: { revokedAt: new Date() },
@@ -195,6 +236,7 @@ class AuthService {
                     },
                 }),
             ]);
+            logger_1.logger.info('Token refreshed successfully', { userId: user.id });
             const { password: _, tokenVersion: __, ...safeUser } = user;
             return {
                 user: safeUser,
@@ -204,10 +246,11 @@ class AuthService {
             };
         }
         catch (error) {
-            if (error instanceof errors_1.UnauthorizedError || error instanceof errors_1.InstituteInactiveError) {
+            if (error instanceof errors_1.UnauthorizedError ||
+                error instanceof errors_1.InstituteInactiveError) {
                 throw error;
             }
-            logger_1.logger.error('Refresh token error', { error });
+            logger_1.logger.error('Unexpected refresh token error', { error });
             throw new errors_1.UnauthorizedError('Invalid refresh token');
         }
     }

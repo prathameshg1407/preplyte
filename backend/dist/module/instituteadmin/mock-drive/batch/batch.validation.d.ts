@@ -73,29 +73,29 @@ export declare const updateBatchSchema: z.ZodEffects<z.ZodObject<{
         CANCELLED: "CANCELLED";
     }>>;
 }, "strip", z.ZodTypeAny, {
-    status?: "CREATED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED" | "SCHEDULED" | undefined;
     name?: string | undefined;
+    status?: "CREATED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED" | "SCHEDULED" | undefined;
     scheduledStartTime?: Date | undefined;
     scheduledEndTime?: Date | undefined;
     maxCapacity?: number | null | undefined;
     notes?: string | null | undefined;
 }, {
-    status?: "CREATED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED" | "SCHEDULED" | undefined;
     name?: string | undefined;
+    status?: "CREATED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED" | "SCHEDULED" | undefined;
     scheduledStartTime?: Date | undefined;
     scheduledEndTime?: Date | undefined;
     maxCapacity?: number | null | undefined;
     notes?: string | null | undefined;
 }>, {
-    status?: "CREATED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED" | "SCHEDULED" | undefined;
     name?: string | undefined;
+    status?: "CREATED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED" | "SCHEDULED" | undefined;
     scheduledStartTime?: Date | undefined;
     scheduledEndTime?: Date | undefined;
     maxCapacity?: number | null | undefined;
     notes?: string | null | undefined;
 }, {
-    status?: "CREATED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED" | "SCHEDULED" | undefined;
     name?: string | undefined;
+    status?: "CREATED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED" | "SCHEDULED" | undefined;
     scheduledStartTime?: Date | undefined;
     scheduledEndTime?: Date | undefined;
     maxCapacity?: number | null | undefined;

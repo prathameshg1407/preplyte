@@ -1,7 +1,7 @@
 "use strict";
 // src/module/profile/profile.validation.ts
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.parseUpdateUserProfile = exports.parseUpdateStudentProfile = exports.parseCreateStudentProfile = exports.validateResumeFile = exports.profileQuerySchema = exports.updateUserProfileSchema = exports.updateStudentProfileSchema = exports.createStudentProfileSchema = exports.resumeIdParamSchema = void 0;
+exports.parseDepartmentQuery = exports.parseUpdateUserProfile = exports.parseUpdateStudentProfile = exports.parseCreateStudentProfile = exports.validateResumeFile = exports.departmentQuerySchema = exports.profileQuerySchema = exports.updateUserProfileSchema = exports.updateStudentProfileSchema = exports.createStudentProfileSchema = exports.resumeIdParamSchema = void 0;
 exports.parseResumeId = parseResumeId;
 const zod_1 = require("zod");
 const profile_constants_1 = require("./profile.constants");
@@ -10,10 +10,7 @@ const errors_1 = require("../../utils/errors");
 // RESUME VALIDATION SCHEMAS
 // =====================================================
 exports.resumeIdParamSchema = zod_1.z.object({
-    resumeId: zod_1.z.coerce
-        .number()
-        .int('Resume ID must be an integer')
-        .positive('Resume ID must be positive'),
+    resumeId: zod_1.z.string().min(1, 'Resume ID is required'),
 });
 // =====================================================
 // STUDENT PROFILE VALIDATION SCHEMAS
@@ -26,14 +23,22 @@ exports.createStudentProfileSchema = zod_1.z.object({
         .trim(),
     studentId: zod_1.z
         .string()
-        .regex(profile_constants_1.STUDENT_ID_PATTERN, 'Invalid student ID format (6-20 alphanumeric characters)')
+        .regex(profile_constants_1.STUDENT_ID_PATTERN, 'Invalid student ID format (3-30 alphanumeric characters)')
         .toUpperCase(),
-    department: zod_1.z.enum(profile_constants_1.DEPARTMENTS, {
-        errorMap: () => ({ message: 'Invalid department' }),
-    }),
+    departmentId: zod_1.z
+        .string()
+        .min(1, 'Department is required')
+        .trim(),
     courseYear: zod_1.z.enum(profile_constants_1.COURSE_YEARS, {
         errorMap: () => ({ message: 'Invalid course year' }),
     }),
+    numberOfBacklogs: zod_1.z
+        .number()
+        .int('Backlogs must be a whole number')
+        .min(0, 'Backlogs cannot be negative')
+        .max(50, 'Backlogs cannot exceed 50')
+        .optional()
+        .default(0),
     skills: zod_1.z
         .array(zod_1.z.string().min(1).max(50).trim())
         .max(20, 'Maximum 20 skills allowed')
@@ -65,15 +70,21 @@ exports.updateStudentProfileSchema = zod_1.z.object({
         .max(100, 'Full name must not exceed 100 characters')
         .trim()
         .optional(),
-    department: zod_1.z
-        .enum(profile_constants_1.DEPARTMENTS, {
-        errorMap: () => ({ message: 'Invalid department' }),
-    })
+    departmentId: zod_1.z
+        .string()
+        .min(1, 'Department ID cannot be empty')
+        .trim()
         .optional(),
     courseYear: zod_1.z
         .enum(profile_constants_1.COURSE_YEARS, {
         errorMap: () => ({ message: 'Invalid course year' }),
     })
+        .optional(),
+    numberOfBacklogs: zod_1.z
+        .number()
+        .int('Backlogs must be a whole number')
+        .min(0, 'Backlogs cannot be negative')
+        .max(50, 'Backlogs cannot exceed 50')
         .optional(),
     skills: zod_1.z
         .array(zod_1.z.string().min(1).max(50).trim())
@@ -115,6 +126,9 @@ exports.profileQuerySchema = zod_1.z.object({
     includeResumes: zod_1.z.coerce.boolean().optional().default(false),
     includeStudentProfile: zod_1.z.coerce.boolean().optional().default(true),
 });
+exports.departmentQuerySchema = zod_1.z.object({
+    includeInactive: zod_1.z.coerce.boolean().optional().default(false),
+});
 const validateResumeFile = (file) => {
     if (!file) {
         return { valid: false, error: 'No file provided' };
@@ -139,13 +153,9 @@ exports.validateResumeFile = validateResumeFile;
 // =====================================================
 // HELPER PARSERS
 // =====================================================
-// In profile.validation.ts
 function parseResumeId(value) {
     if (typeof value === 'string' && value.trim().length > 0) {
         return value.trim();
-    }
-    if (typeof value === 'number') {
-        return String(value);
     }
     throw new errors_1.BadRequestError('Invalid resume ID');
 }
@@ -161,4 +171,8 @@ const parseUpdateUserProfile = (data) => {
     return exports.updateUserProfileSchema.parse(data);
 };
 exports.parseUpdateUserProfile = parseUpdateUserProfile;
+const parseDepartmentQuery = (data) => {
+    return exports.departmentQuerySchema.parse(data);
+};
+exports.parseDepartmentQuery = parseDepartmentQuery;
 //# sourceMappingURL=profile.validation.js.map

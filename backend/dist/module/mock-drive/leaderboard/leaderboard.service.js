@@ -36,8 +36,8 @@ class LeaderboardService {
             mockDriveId: driveId,
             batchId: filters?.batchId || registration.batchId,
         };
-        if (filters?.department) {
-            where.department = filters.department;
+        if (filters?.departmentId) {
+            where.departmentId = filters.departmentId;
         }
         // Get total count
         const total = await this.prisma.mockDriveLeaderboard.count({ where });
@@ -68,7 +68,7 @@ class LeaderboardService {
             userId: entry.userId,
             studentName: entry.studentName,
             studentId: entry.studentId,
-            department: entry.department,
+            departmentId: entry.departmentId,
             totalScore: entry.totalScore,
             percentageScore: entry.percentageScore,
             moduleScores: entry.moduleScores || [],
@@ -146,7 +146,7 @@ class LeaderboardService {
             userId: entry.userId,
             studentName: entry.studentName,
             studentId: entry.studentId,
-            department: entry.department,
+            departmentId: entry.departmentId,
             totalScore: entry.totalScore,
             percentageScore: entry.percentageScore,
             moduleScores: entry.moduleScores || [],

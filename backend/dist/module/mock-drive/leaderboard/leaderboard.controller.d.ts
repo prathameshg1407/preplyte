@@ -5,7 +5,7 @@ interface LeaderboardQueryParams {
     page?: string;
     limit?: string;
     batchId?: string;
-    department?: string;
+    departmentId?: string;
 }
 interface MyRankQueryParams {
     batchId?: string;

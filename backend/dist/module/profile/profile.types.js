@@ -1,12 +1,19 @@
 "use strict";
 // src/module/profile/profile.types.ts
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.isAllowedImageMimeType = exports.isAllowedResumeMimeType = exports.mapUserToProfileResponse = exports.mapStudentProfileToResponse = exports.mapResumeToResponse = void 0;
+exports.isAllowedImageMimeType = exports.isAllowedResumeMimeType = exports.mapUserToProfileResponse = exports.mapStudentProfileToResponse = exports.mapResumeToResponse = exports.mapDepartmentToResponse = void 0;
 // =====================================================
 // MAPPER FUNCTIONS
 // =====================================================
+const mapDepartmentToResponse = (department) => ({
+    id: department.id,
+    name: department.name,
+    code: department.code,
+    description: department.description,
+});
+exports.mapDepartmentToResponse = mapDepartmentToResponse;
 const mapResumeToResponse = (resume) => ({
-    id: resume.id, // Now correctly expects string
+    id: resume.id,
     fileName: resume.fileName,
     fileUrl: resume.fileUrl,
     fileSize: resume.fileSize,
@@ -21,8 +28,11 @@ const mapStudentProfileToResponse = (profile) => ({
     userId: profile.userId,
     fullName: profile.fullName,
     studentId: profile.studentId,
-    department: profile.department,
+    departmentId: profile.departmentId,
+    departmentName: profile.department.name,
+    departmentCode: profile.department.code,
     courseYear: profile.courseYear,
+    numberOfBacklogs: profile.numberOfBacklogs,
     skills: profile.skills,
     marks10: profile.marks10,
     marks12: profile.marks12,

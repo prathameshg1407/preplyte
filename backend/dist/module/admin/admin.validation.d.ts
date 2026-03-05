@@ -15,26 +15,26 @@ export declare const createInstituteSchema: z.ZodObject<{
             location?: string | null | undefined;
         }>>;
     }, "strip", z.ZodTypeAny, {
-        name: string;
         domain: string;
+        name: string;
         isActive: boolean;
         profile?: {
             logoUrl?: string | null | undefined;
             location?: string | null | undefined;
         } | undefined;
     }, {
-        name: string;
         domain: string;
-        isActive?: boolean | undefined;
+        name: string;
         profile?: {
             logoUrl?: string | null | undefined;
             location?: string | null | undefined;
         } | undefined;
+        isActive?: boolean | undefined;
     }>;
 }, "strip", z.ZodTypeAny, {
     body: {
-        name: string;
         domain: string;
+        name: string;
         isActive: boolean;
         profile?: {
             logoUrl?: string | null | undefined;
@@ -43,13 +43,13 @@ export declare const createInstituteSchema: z.ZodObject<{
     };
 }, {
     body: {
-        name: string;
         domain: string;
-        isActive?: boolean | undefined;
+        name: string;
         profile?: {
             logoUrl?: string | null | undefined;
             location?: string | null | undefined;
         } | undefined;
+        isActive?: boolean | undefined;
     };
 }>;
 export declare const updateInstituteSchema: z.ZodObject<{
@@ -75,47 +75,47 @@ export declare const updateInstituteSchema: z.ZodObject<{
             location?: string | null | undefined;
         }>>;
     }, "strip", z.ZodTypeAny, {
-        name?: string | undefined;
-        domain?: string | undefined;
-        isActive?: boolean | undefined;
         profile?: {
             logoUrl?: string | null | undefined;
             location?: string | null | undefined;
         } | undefined;
+        domain?: string | undefined;
+        name?: string | undefined;
+        isActive?: boolean | undefined;
     }, {
-        name?: string | undefined;
-        domain?: string | undefined;
-        isActive?: boolean | undefined;
         profile?: {
             logoUrl?: string | null | undefined;
             location?: string | null | undefined;
         } | undefined;
+        domain?: string | undefined;
+        name?: string | undefined;
+        isActive?: boolean | undefined;
     }>;
 }, "strip", z.ZodTypeAny, {
     params: {
         id: string;
     };
     body: {
-        name?: string | undefined;
-        domain?: string | undefined;
-        isActive?: boolean | undefined;
         profile?: {
             logoUrl?: string | null | undefined;
             location?: string | null | undefined;
         } | undefined;
+        domain?: string | undefined;
+        name?: string | undefined;
+        isActive?: boolean | undefined;
     };
 }, {
     params: {
         id: string;
     };
     body: {
-        name?: string | undefined;
-        domain?: string | undefined;
-        isActive?: boolean | undefined;
         profile?: {
             logoUrl?: string | null | undefined;
             location?: string | null | undefined;
         } | undefined;
+        domain?: string | undefined;
+        name?: string | undefined;
+        isActive?: boolean | undefined;
     };
 }>;
 export declare const instituteIdSchema: z.ZodObject<{
@@ -140,7 +140,7 @@ export declare const instituteFiltersSchema: z.ZodObject<{
         page: z.ZodDefault<z.ZodNumber>;
         limit: z.ZodDefault<z.ZodNumber>;
         search: z.ZodOptional<z.ZodString>;
-        isActive: z.ZodOptional<z.ZodEffects<z.ZodEnum<["true", "false"]>, boolean, "false" | "true">>;
+        isActive: z.ZodOptional<z.ZodEffects<z.ZodEnum<["true", "false"]>, boolean, "true" | "false">>;
         sortBy: z.ZodDefault<z.ZodEnum<["name", "createdAt", "totalStudents"]>>;
         sortOrder: z.ZodDefault<z.ZodEnum<["asc", "desc"]>>;
     }, "strip", z.ZodTypeAny, {
@@ -152,7 +152,7 @@ export declare const instituteFiltersSchema: z.ZodObject<{
         isActive?: boolean | undefined;
     }, {
         search?: string | undefined;
-        isActive?: "false" | "true" | undefined;
+        isActive?: "true" | "false" | undefined;
         page?: number | undefined;
         limit?: number | undefined;
         sortBy?: "name" | "createdAt" | "totalStudents" | undefined;
@@ -170,7 +170,7 @@ export declare const instituteFiltersSchema: z.ZodObject<{
 }, {
     query: {
         search?: string | undefined;
-        isActive?: "false" | "true" | undefined;
+        isActive?: "true" | "false" | undefined;
         page?: number | undefined;
         limit?: number | undefined;
         sortBy?: "name" | "createdAt" | "totalStudents" | undefined;
@@ -189,9 +189,9 @@ export declare const instituteStudentsSchema: z.ZodObject<{
         page: z.ZodDefault<z.ZodNumber>;
         limit: z.ZodDefault<z.ZodNumber>;
         search: z.ZodOptional<z.ZodString>;
-        department: z.ZodOptional<z.ZodString>;
+        departmentId: z.ZodOptional<z.ZodString>;
         courseYear: z.ZodOptional<z.ZodString>;
-        isActive: z.ZodOptional<z.ZodEffects<z.ZodEnum<["true", "false"]>, boolean, "false" | "true">>;
+        isActive: z.ZodOptional<z.ZodEffects<z.ZodEnum<["true", "false"]>, boolean, "true" | "false">>;
         sortBy: z.ZodDefault<z.ZodEnum<["name", "email", "createdAt", "averageCgpa"]>>;
         sortOrder: z.ZodDefault<z.ZodEnum<["asc", "desc"]>>;
     }, "strip", z.ZodTypeAny, {
@@ -201,16 +201,16 @@ export declare const instituteStudentsSchema: z.ZodObject<{
         sortOrder: "asc" | "desc";
         search?: string | undefined;
         isActive?: boolean | undefined;
-        department?: string | undefined;
+        departmentId?: string | undefined;
         courseYear?: string | undefined;
     }, {
         search?: string | undefined;
-        isActive?: "false" | "true" | undefined;
+        isActive?: "true" | "false" | undefined;
         page?: number | undefined;
         limit?: number | undefined;
         sortBy?: "email" | "name" | "createdAt" | "averageCgpa" | undefined;
         sortOrder?: "asc" | "desc" | undefined;
-        department?: string | undefined;
+        departmentId?: string | undefined;
         courseYear?: string | undefined;
     }>;
 }, "strip", z.ZodTypeAny, {
@@ -221,7 +221,7 @@ export declare const instituteStudentsSchema: z.ZodObject<{
         sortOrder: "asc" | "desc";
         search?: string | undefined;
         isActive?: boolean | undefined;
-        department?: string | undefined;
+        departmentId?: string | undefined;
         courseYear?: string | undefined;
     };
     params: {
@@ -230,12 +230,12 @@ export declare const instituteStudentsSchema: z.ZodObject<{
 }, {
     query: {
         search?: string | undefined;
-        isActive?: "false" | "true" | undefined;
+        isActive?: "true" | "false" | undefined;
         page?: number | undefined;
         limit?: number | undefined;
         sortBy?: "email" | "name" | "createdAt" | "averageCgpa" | undefined;
         sortOrder?: "asc" | "desc" | undefined;
-        department?: string | undefined;
+        departmentId?: string | undefined;
         courseYear?: string | undefined;
     };
     params: {
@@ -256,8 +256,8 @@ export declare const createUserSchema: z.ZodObject<{
         isActive: z.ZodDefault<z.ZodBoolean>;
     }, "strip", z.ZodTypeAny, {
         email: string;
-        password: string;
         isActive: boolean;
+        password: string;
         role: "PLATFORM_ADMIN" | "INSTITUTE_ADMIN" | "USER";
         name?: string | undefined;
         instituteId?: string | undefined;
@@ -272,8 +272,8 @@ export declare const createUserSchema: z.ZodObject<{
 }, "strip", z.ZodTypeAny, {
     body: {
         email: string;
-        password: string;
         isActive: boolean;
+        password: string;
         role: "PLATFORM_ADMIN" | "INSTITUTE_ADMIN" | "USER";
         name?: string | undefined;
         instituteId?: string | undefined;
@@ -309,16 +309,16 @@ export declare const updateUserSchema: z.ZodObject<{
         isActive: z.ZodOptional<z.ZodBoolean>;
     }, "strip", z.ZodTypeAny, {
         email?: string | undefined;
-        password?: string | undefined;
         name?: string | null | undefined;
         isActive?: boolean | undefined;
+        password?: string | undefined;
         role?: "PLATFORM_ADMIN" | "INSTITUTE_ADMIN" | "USER" | undefined;
         instituteId?: string | null | undefined;
     }, {
         email?: string | undefined;
-        password?: string | undefined;
         name?: string | null | undefined;
         isActive?: boolean | undefined;
+        password?: string | undefined;
         role?: "PLATFORM_ADMIN" | "INSTITUTE_ADMIN" | "USER" | undefined;
         instituteId?: string | null | undefined;
     }>;
@@ -328,9 +328,9 @@ export declare const updateUserSchema: z.ZodObject<{
     };
     body: {
         email?: string | undefined;
-        password?: string | undefined;
         name?: string | null | undefined;
         isActive?: boolean | undefined;
+        password?: string | undefined;
         role?: "PLATFORM_ADMIN" | "INSTITUTE_ADMIN" | "USER" | undefined;
         instituteId?: string | null | undefined;
     };
@@ -340,9 +340,9 @@ export declare const updateUserSchema: z.ZodObject<{
     };
     body: {
         email?: string | undefined;
-        password?: string | undefined;
         name?: string | null | undefined;
         isActive?: boolean | undefined;
+        password?: string | undefined;
         role?: "PLATFORM_ADMIN" | "INSTITUTE_ADMIN" | "USER" | undefined;
         instituteId?: string | null | undefined;
     };
@@ -375,8 +375,8 @@ export declare const userFiltersSchema: z.ZodObject<{
             USER: "USER";
         }>>;
         instituteId: z.ZodOptional<z.ZodString>;
-        isActive: z.ZodOptional<z.ZodEffects<z.ZodEnum<["true", "false"]>, boolean, "false" | "true">>;
-        hasProfile: z.ZodOptional<z.ZodEffects<z.ZodEnum<["true", "false"]>, boolean, "false" | "true">>;
+        isActive: z.ZodOptional<z.ZodEffects<z.ZodEnum<["true", "false"]>, boolean, "true" | "false">>;
+        hasProfile: z.ZodOptional<z.ZodEffects<z.ZodEnum<["true", "false"]>, boolean, "true" | "false">>;
         sortBy: z.ZodDefault<z.ZodEnum<["name", "email", "createdAt", "lastLoginAt"]>>;
         sortOrder: z.ZodDefault<z.ZodEnum<["asc", "desc"]>>;
     }, "strip", z.ZodTypeAny, {
@@ -391,14 +391,14 @@ export declare const userFiltersSchema: z.ZodObject<{
         hasProfile?: boolean | undefined;
     }, {
         search?: string | undefined;
-        isActive?: "false" | "true" | undefined;
+        isActive?: "true" | "false" | undefined;
         role?: "PLATFORM_ADMIN" | "INSTITUTE_ADMIN" | "USER" | undefined;
         instituteId?: string | undefined;
         page?: number | undefined;
         limit?: number | undefined;
         sortBy?: "email" | "name" | "createdAt" | "lastLoginAt" | undefined;
         sortOrder?: "asc" | "desc" | undefined;
-        hasProfile?: "false" | "true" | undefined;
+        hasProfile?: "true" | "false" | undefined;
     }>;
 }, "strip", z.ZodTypeAny, {
     query: {
@@ -415,14 +415,14 @@ export declare const userFiltersSchema: z.ZodObject<{
 }, {
     query: {
         search?: string | undefined;
-        isActive?: "false" | "true" | undefined;
+        isActive?: "true" | "false" | undefined;
         role?: "PLATFORM_ADMIN" | "INSTITUTE_ADMIN" | "USER" | undefined;
         instituteId?: string | undefined;
         page?: number | undefined;
         limit?: number | undefined;
         sortBy?: "email" | "name" | "createdAt" | "lastLoginAt" | undefined;
         sortOrder?: "asc" | "desc" | undefined;
-        hasProfile?: "false" | "true" | undefined;
+        hasProfile?: "true" | "false" | undefined;
     };
 }>;
 export declare const resetPasswordSchema: z.ZodObject<{
