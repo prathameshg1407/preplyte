@@ -33,6 +33,7 @@ enum QuestionType {
   QUANTITATIVE
   VERBAL
   LOGICAL
+  DATA_INTERPRETATION
 }
 
 enum TestCaseType {
