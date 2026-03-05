@@ -1,6 +1,7 @@
 // src/module/leaderboard/leaderboard.controller.ts
 
-import { Response } from 'express';
+import { Response, RequestHandler } from 'express';
+import { ParsedQs } from 'qs';
 import { AuthenticatedRequest } from '../../middleware/auth.middleware';
 import { asyncHandler } from '../../utils/async-handler';
 import { sendSuccess } from '../../utils/response';
@@ -14,7 +15,7 @@ import { ERROR_MESSAGES } from './leaderboard.constants';
 // GET LEADERBOARD
 // =====================================================
 
-export const getLeaderboard = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+export const getLeaderboard: RequestHandler = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
   const user = req.user!;
 
   // Parse and validate query params
@@ -43,7 +44,7 @@ export const getLeaderboard = asyncHandler(async (req: AuthenticatedRequest, res
 // GET LEADERBOARD CONFIG
 // =====================================================
 
-export const getLeaderboardConfig = asyncHandler(
+export const getLeaderboardConfig: RequestHandler = asyncHandler(
   async (req: AuthenticatedRequest, res: Response) => {
     const user = req.user!;
 
@@ -57,7 +58,7 @@ export const getLeaderboardConfig = asyncHandler(
 // GET MY SCORES BREAKDOWN
 // =====================================================
 
-export const getMyScores = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+export const getMyScores: RequestHandler = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
   const user = req.user!;
 
   const scores = await leaderboardService.getUserScoreBreakdown(user.id);
@@ -69,7 +70,7 @@ export const getMyScores = asyncHandler(async (req: AuthenticatedRequest, res: R
 // GET MY DETAILED STATS
 // =====================================================
 
-export const getMyDetailedStats = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+export const getMyDetailedStats: RequestHandler = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
   const user = req.user!;
 
   const stats = await leaderboardService.getUserDetailedStats(user.id);

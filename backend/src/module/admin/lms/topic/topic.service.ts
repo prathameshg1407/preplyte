@@ -19,7 +19,10 @@ export class TopicService {
         }
 
         const topic = await prisma.lmsTopic.create({
-            data,
+            data: {
+                ...data,
+                theoryContent: data.theoryContent || '',
+            },
         });
 
         // Get courseId to sync stats
@@ -61,7 +64,10 @@ export class TopicService {
 
         const updated = await prisma.lmsTopic.update({
             where: { id },
-            data,
+            data: {
+                ...data,
+                theoryContent: data.theoryContent === null ? '' : data.theoryContent,
+            },
         });
 
         const module = await prisma.lmsModule.findUnique({

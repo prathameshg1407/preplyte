@@ -25,6 +25,7 @@ import {
   UserReportItem,
   ActivityItem,
 } from './admin.types';
+import { AppError } from '../../utils/errors';
 
 // =====================================================
 // CONSTANTS
@@ -94,8 +95,8 @@ function totalPages(total: number, limit: number): number {
   return Math.ceil(total / limit);
 }
 
-function omitPassword<T extends { password?: string }>(obj: T): Omit<T, 'password'> {
-  const { password: _, ...rest } = obj;
+function omitPassword<T extends any>(obj: T): Omit<T, 'password'> {
+  const { password: _, ...rest } = obj as any;
   return rest;
 }
 
@@ -510,13 +511,13 @@ class AdminService {
 
   private async findInstitute(id: string) {
     const inst = await prisma.institute.findUnique({ where: { id } });
-    if (!inst) throw new Error(AdminErrors.INSTITUTE_NOT_FOUND);
+    if (!inst) throw new AppError('NOT_FOUND', AdminErrors.INSTITUTE_NOT_FOUND, 404);
     return inst;
   }
 
   private async ensureUniqueDomain(domain: string): Promise<void> {
     const exists = await prisma.institute.findUnique({ where: { domain } });
-    if (exists) throw new Error(AdminErrors.INSTITUTE_DOMAIN_EXISTS);
+    if (exists) throw new AppError('CONFLICT', AdminErrors.INSTITUTE_DOMAIN_EXISTS, 409);
   }
 
   // ===========================================
@@ -544,7 +545,7 @@ class AdminService {
 
   async getUser(id: string): Promise<UserWithDetails> {
     const user = await prisma.user.findUnique({ where: { id }, include: userInclude });
-    if (!user) throw new Error(AdminErrors.USER_NOT_FOUND);
+    if (!user) throw new AppError('NOT_FOUND', AdminErrors.USER_NOT_FOUND, 404);
     return omitPassword(user);
   }
 

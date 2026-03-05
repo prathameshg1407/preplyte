@@ -130,7 +130,7 @@ export interface UserWithDetails {
   institute?: { id: string; name: string; domain: string } | null;
   profile?: {
     fullName: string;
-    studentId: string;
+    studentId: string | null;
     // FIX: Allow null for individual users
     departmentId: string | null;
     courseYear: string | null;

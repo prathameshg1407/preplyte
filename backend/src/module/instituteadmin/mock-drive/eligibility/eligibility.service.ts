@@ -303,23 +303,23 @@ export class EligibilityService {
 
     // Check Department
     if (eligibility.allowedDepartmentIds.length > 0) {
-      const passed = eligibility.allowedDepartmentIds.includes(studentProfile.departmentId);
+      const passed = studentProfile.departmentId ? eligibility.allowedDepartmentIds.includes(studentProfile.departmentId) : false;
       checks.push({
         criterion: 'Department',
         passed,
         required: eligibility.allowedDepartmentIds.join(', '),
-        actual: studentProfile.departmentId,
+        actual: studentProfile.departmentId ?? 'N/A',
       });
     }
 
     // Check Course Year
     if (eligibility.allowedCourseYears.length > 0) {
-      const passed = eligibility.allowedCourseYears.includes(studentProfile.courseYear);
+      const passed = studentProfile.courseYear ? eligibility.allowedCourseYears.includes(studentProfile.courseYear) : false;
       checks.push({
         criterion: 'Course Year',
         passed,
         required: eligibility.allowedCourseYears.join(', '),
-        actual: studentProfile.courseYear,
+        actual: studentProfile.courseYear ?? 'N/A',
       });
     }
 
@@ -478,10 +478,10 @@ export class EligibilityService {
         id: s.id,
         userId: s.userId,
         fullName: s.fullName,
-        studentId: s.studentId,
-        departmentId: s.departmentId,
+        studentId: s.studentId ?? '',
+        departmentId: s.departmentId ?? '',
         departmentName: s.department?.name || null,
-        courseYear: s.courseYear,
+        courseYear: s.courseYear ?? '',
         averageCgpa: s.averageCgpa,
         marks10: s.marks10,
         marks12: s.marks12,

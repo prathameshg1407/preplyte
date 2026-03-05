@@ -1,11 +1,12 @@
-import { Request, Response } from 'express';
+import { Request, Response, RequestHandler } from 'express';
+import { ParsedQs } from 'qs';
 import { asyncHandler } from '../../../../utils/async-handler';
 import { sendSuccess } from '../../../../utils/response';
 import { analyticsService } from './analytics.service';
 import { logError } from '../../../../utils/logger';
 
 export class AnalyticsController {
-    getOverview = asyncHandler(async (req: Request, res: Response) => {
+    getOverview: RequestHandler = asyncHandler(async (req: Request, res: Response) => {
         try {
             const stats = await analyticsService.getOverview();
             return sendSuccess(res, stats);
@@ -15,7 +16,7 @@ export class AnalyticsController {
         }
     });
 
-    getEnrollmentTrends = asyncHandler(async (req: Request, res: Response) => {
+    getEnrollmentTrends: RequestHandler = asyncHandler(async (req: Request, res: Response) => {
         try {
             const { period } = req.query as { period?: 'week' | 'month' | 'year' };
             const trends = await analyticsService.getEnrollmentTrends(period);
@@ -26,7 +27,7 @@ export class AnalyticsController {
         }
     });
 
-    getTopCourses = asyncHandler(async (req: Request, res: Response) => {
+    getTopCourses: RequestHandler = asyncHandler(async (req: Request, res: Response) => {
         try {
             const courses = await analyticsService.getTopCourses();
             return sendSuccess(res, courses);
@@ -36,7 +37,7 @@ export class AnalyticsController {
         }
     });
 
-    getCategoryDistribution = asyncHandler(async (req: Request, res: Response) => {
+    getCategoryDistribution: RequestHandler = asyncHandler(async (req: Request, res: Response) => {
         try {
             const distribution = await analyticsService.getCategoryDistribution();
             return sendSuccess(res, distribution);

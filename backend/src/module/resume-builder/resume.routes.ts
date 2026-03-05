@@ -15,7 +15,7 @@ import { prisma } from '../../lib/db';
 
 const router = Router();
 
-const resumeService = new ResumeService(prisma);
+const resumeService = new ResumeService();
 const resumeController = new ResumeController(resumeService);
 
 // ============ Public Template Routes ============

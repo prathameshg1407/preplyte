@@ -1,4 +1,4 @@
-import { PrismaClient, ResumeTemplateCategory } from '@prisma/client';
+import { Prisma, PrismaClient, ResumeTemplateCategory } from '@prisma/client';
 import { 
   ResumeTemplateResponse, 
   ResumeResponse, 
@@ -18,10 +18,11 @@ import {
   DuplicateResumeInput,
 } from './resume.validation';
 import { AppError } from '../../utils/errors';
+import { prisma } from '../../lib/db';
 import { generateSlug } from '../../utils/helpers';
 
 export class ResumeService {
-  constructor(private prisma: PrismaClient) {}
+  constructor() {}
 
   // ============ Template Methods ============
 
@@ -45,7 +46,7 @@ export class ResumeService {
       ];
     }
 
-    const templates = await this.prisma.resumeTemplate.findMany({
+    const templates = await prisma.resumeTemplate.findMany({
       where,
       orderBy: [
         { popularity: 'desc' },
@@ -57,31 +58,31 @@ export class ResumeService {
   }
 
   async getTemplateById(templateId: string): Promise<ResumeTemplateResponse> {
-    const template = await this.prisma.resumeTemplate.findUnique({
+    const template = await prisma.resumeTemplate.findUnique({
       where: { id: templateId },
     });
 
     if (!template) {
-      throw new AppError('Template not found', 404);
+      throw new AppError('NOT_FOUND', 'Template not found', 404);
     }
 
     return this.mapTemplateToResponse(template);
   }
 
   async getTemplateBySlug(slug: string): Promise<ResumeTemplateResponse> {
-    const template = await this.prisma.resumeTemplate.findUnique({
+    const template = await prisma.resumeTemplate.findUnique({
       where: { slug },
     });
 
     if (!template) {
-      throw new AppError('Template not found', 404);
+      throw new AppError('NOT_FOUND', 'Template not found', 404);
     }
 
     return this.mapTemplateToResponse(template);
   }
 
   async getTemplateCategories(): Promise<{ category: ResumeTemplateCategory; count: number }[]> {
-    const categories = await this.prisma.resumeTemplate.groupBy({
+    const categories = await prisma.resumeTemplate.groupBy({
       by: ['category'],
       where: { isActive: true },
       _count: { id: true },
@@ -97,12 +98,12 @@ export class ResumeService {
 
   async createResume(userId: string, data: CreateResumeInput): Promise<ResumeResponse> {
     // Verify template exists
-    const template = await this.prisma.resumeTemplate.findUnique({
+    const template = await prisma.resumeTemplate.findUnique({
       where: { id: data.templateId },
     });
 
     if (!template) {
-      throw new AppError('Template not found', 404);
+      throw new AppError('NOT_FOUND', 'Template not found', 404);
     }
 
     // Generate unique slug
@@ -116,7 +117,7 @@ export class ResumeService {
       .filter(s => s.defaultVisible)
       .map(s => s.type);
 
-    const resume = await this.prisma.userResume.create({
+    const resume = await prisma.userResume.create({
       data: {
         userId,
         templateId: data.templateId,
@@ -131,7 +132,7 @@ export class ResumeService {
     });
 
     // Increment template popularity
-    await this.prisma.resumeTemplate.update({
+    await prisma.resumeTemplate.update({
       where: { id: data.templateId },
       data: { popularity: { increment: 1 } },
     });
@@ -161,7 +162,7 @@ export class ResumeService {
     }
 
     const [resumes, total] = await Promise.all([
-      this.prisma.userResume.findMany({
+      prisma.userResume.findMany({
         where,
         include: {
           template: {
@@ -176,7 +177,7 @@ export class ResumeService {
         skip,
         take: limit,
       }),
-      this.prisma.userResume.count({ where }),
+      prisma.userResume.count({ where }),
     ]);
 
     return {
@@ -198,7 +199,7 @@ export class ResumeService {
   }
 
   async getResumeById(userId: string, resumeId: string): Promise<ResumeResponse> {
-    const resume = await this.prisma.userResume.findFirst({
+    const resume = await prisma.userResume.findFirst({
       where: {
         id: resumeId,
         userId,
@@ -209,14 +210,14 @@ export class ResumeService {
     });
 
     if (!resume) {
-      throw new AppError('Resume not found', 404);
+      throw new AppError('NOT_FOUND', 'Resume not found', 404);
     }
 
     return this.mapResumeToResponse(resume);
   }
 
   async getResumeBySlug(userId: string, slug: string): Promise<ResumeResponse> {
-    const resume = await this.prisma.userResume.findFirst({
+    const resume = await prisma.userResume.findFirst({
       where: {
         slug,
         userId,
@@ -227,7 +228,7 @@ export class ResumeService {
     });
 
     if (!resume) {
-      throw new AppError('Resume not found', 404);
+      throw new AppError('NOT_FOUND', 'Resume not found', 404);
     }
 
     return this.mapResumeToResponse(resume);
@@ -238,22 +239,22 @@ export class ResumeService {
     resumeId: string, 
     data: UpdateResumeInput
   ): Promise<ResumeResponse> {
-    const existingResume = await this.prisma.userResume.findFirst({
+    const existingResume = await prisma.userResume.findFirst({
       where: { id: resumeId, userId },
     });
 
     if (!existingResume) {
-      throw new AppError('Resume not found', 404);
+      throw new AppError('NOT_FOUND', 'Resume not found', 404);
     }
 
     // If changing template, verify it exists
     if (data.templateId && data.templateId !== existingResume.templateId) {
-      const template = await this.prisma.resumeTemplate.findUnique({
+      const template = await prisma.resumeTemplate.findUnique({
         where: { id: data.templateId },
       });
 
       if (!template) {
-        throw new AppError('Template not found', 404);
+        throw new AppError('NOT_FOUND', 'Template not found', 404);
       }
     }
 
@@ -293,7 +294,7 @@ export class ResumeService {
     // Calculate completion status
     updateData.isComplete = this.calculateCompletionStatus(existingResume, data.content);
 
-    const resume = await this.prisma.userResume.update({
+    const resume = await prisma.userResume.update({
       where: { id: resumeId },
       data: updateData,
       include: { template: true },
@@ -308,12 +309,12 @@ export class ResumeService {
     section: ResumeSectionType,
     data: unknown
   ): Promise<ResumeResponse> {
-    const existingResume = await this.prisma.userResume.findFirst({
+    const existingResume = await prisma.userResume.findFirst({
       where: { id: resumeId, userId },
     });
 
     if (!existingResume) {
-      throw new AppError('Resume not found', 404);
+      throw new AppError('NOT_FOUND', 'Resume not found', 404);
     }
 
     // Create version snapshot before update
@@ -345,7 +346,7 @@ export class ResumeService {
       }
     }
 
-    const resume = await this.prisma.userResume.update({
+    const resume = await prisma.userResume.update({
       where: { id: resumeId },
       data: updateData,
       include: { template: true },
@@ -355,15 +356,15 @@ export class ResumeService {
   }
 
   async deleteResume(userId: string, resumeId: string): Promise<void> {
-    const resume = await this.prisma.userResume.findFirst({
+    const resume = await prisma.userResume.findFirst({
       where: { id: resumeId, userId },
     });
 
     if (!resume) {
-      throw new AppError('Resume not found', 404);
+      throw new AppError('NOT_FOUND', 'Resume not found', 404);
     }
 
-    await this.prisma.userResume.delete({
+    await prisma.userResume.delete({
       where: { id: resumeId },
     });
   }
@@ -373,19 +374,19 @@ export class ResumeService {
     resumeId: string, 
     data: DuplicateResumeInput
   ): Promise<ResumeResponse> {
-    const original = await this.prisma.userResume.findFirst({
+    const original = await prisma.userResume.findFirst({
       where: { id: resumeId, userId },
       include: { template: true },
     });
 
     if (!original) {
-      throw new AppError('Resume not found', 404);
+      throw new AppError('NOT_FOUND', 'Resume not found', 404);
     }
 
     const title = data.newTitle || `${original.title} (Copy)`;
     const slug = await this.generateUniqueSlug(userId, generateSlug(title));
 
-    const duplicate = await this.prisma.userResume.create({
+    const duplicate = await prisma.userResume.create({
       data: {
         userId,
         templateId: original.templateId,
@@ -419,31 +420,31 @@ export class ResumeService {
     resumeId: string,
     templateId: string
   ): Promise<ResumeResponse> {
-    const resume = await this.prisma.userResume.findFirst({
+    const resume = await prisma.userResume.findFirst({
       where: { id: resumeId, userId },
     });
 
     if (!resume) {
-      throw new AppError('Resume not found', 404);
+      throw new AppError('NOT_FOUND', 'Resume not found', 404);
     }
 
-    const template = await this.prisma.resumeTemplate.findUnique({
+    const template = await prisma.resumeTemplate.findUnique({
       where: { id: templateId },
     });
 
     if (!template) {
-      throw new AppError('Template not found', 404);
+      throw new AppError('NOT_FOUND', 'Template not found', 404);
     }
 
     // Create version before template change
     await this.createVersionSnapshot(resumeId, 'Changed template');
 
-    const updatedResume = await this.prisma.userResume.update({
+    const updatedResume = await prisma.userResume.update({
       where: { id: resumeId },
       data: {
         templateId,
         // Reset custom styles when changing template
-        customStyles: null,
+        customStyles: Prisma.JsonNull,
         colorScheme: null,
         fontFamily: null,
       },
@@ -456,15 +457,15 @@ export class ResumeService {
   // ============ Version History Methods ============
 
   async getResumeVersions(userId: string, resumeId: string): Promise<ResumeVersionResponse[]> {
-    const resume = await this.prisma.userResume.findFirst({
+    const resume = await prisma.userResume.findFirst({
       where: { id: resumeId, userId },
     });
 
     if (!resume) {
-      throw new AppError('Resume not found', 404);
+      throw new AppError('NOT_FOUND', 'Resume not found', 404);
     }
 
-    const versions = await this.prisma.resumeVersion.findMany({
+    const versions = await prisma.resumeVersion.findMany({
       where: { resumeId },
       orderBy: { version: 'desc' },
       take: 20, // Limit to last 20 versions
@@ -483,20 +484,20 @@ export class ResumeService {
     resumeId: string, 
     versionId: string
   ): Promise<ResumeResponse> {
-    const resume = await this.prisma.userResume.findFirst({
+    const resume = await prisma.userResume.findFirst({
       where: { id: resumeId, userId },
     });
 
     if (!resume) {
-      throw new AppError('Resume not found', 404);
+      throw new AppError('NOT_FOUND', 'Resume not found', 404);
     }
 
-    const version = await this.prisma.resumeVersion.findFirst({
+    const version = await prisma.resumeVersion.findFirst({
       where: { id: versionId, resumeId },
     });
 
     if (!version) {
-      throw new AppError('Version not found', 404);
+      throw new AppError('NOT_FOUND', 'Version not found', 404);
     }
 
     // Create snapshot of current state before restore
@@ -504,7 +505,7 @@ export class ResumeService {
 
     const versionData = version.data as any;
 
-    const updatedResume = await this.prisma.userResume.update({
+    const updatedResume = await prisma.userResume.update({
       where: { id: resumeId },
       data: {
         personalInfo: versionData.personalInfo,
@@ -532,19 +533,19 @@ export class ResumeService {
   // ============ Import from Profile ============
 
   async importFromProfile(userId: string, resumeId: string): Promise<ResumeResponse> {
-    const resume = await this.prisma.userResume.findFirst({
+    const resume = await prisma.userResume.findFirst({
       where: { id: resumeId, userId },
     });
 
     if (!resume) {
-      throw new AppError('Resume not found', 404);
+      throw new AppError('NOT_FOUND', 'Resume not found', 404);
     }
 
     // Get user profile and student profile with department
-    const user = await this.prisma.user.findUnique({
+    const user = await prisma.user.findUnique({
       where: { id: userId },
       include: {
-        studentProfile: {
+        profile: {
           include: {
             department: true,
           },
@@ -553,13 +554,13 @@ export class ResumeService {
     });
 
     if (!user) {
-      throw new AppError('User not found', 404);
+      throw new AppError('NOT_FOUND', 'User not found', 404);
     }
 
     // Build personal info from profile
     const personalInfo: any = {
-      firstName: user.firstName || '',
-      lastName: user.lastName || '',
+      firstName: user.name?.split(' ')[0] || '',
+      lastName: user.name?.split(' ').slice(1).join(' ') || '',
       email: user.email,
     };
 
@@ -568,14 +569,14 @@ export class ResumeService {
 
     // Build education from student profile
     let education: any[] = [];
-    if (user.studentProfile) {
-      const sp = user.studentProfile;
+    if (user.profile) {
+      const sp = user.profile;
       const currentYear = new Date().getFullYear();
       const courseYearNum = sp.courseYear ? parseInt(sp.courseYear) : undefined;
       
       education.push({
         id: crypto.randomUUID(),
-        institution: sp.collegeName || '',
+        institution: 'Your College', // Default since collegeName is not in schema
         degree: 'Bachelor of Engineering', // Default, could be made configurable
         field: sp.department?.name || '',
         startDate: courseYearNum ? `${currentYear - courseYearNum + 1}` : '',
@@ -587,8 +588,8 @@ export class ResumeService {
 
     // Build skills from profile
     let skills: any[] = [];
-    if (user.studentProfile?.skills && user.studentProfile.skills.length > 0) {
-      const profileSkills = user.studentProfile.skills as string[];
+    if (user.profile?.skills && user.profile.skills.length > 0) {
+      const profileSkills = user.profile.skills as string[];
       skills.push({
         id: crypto.randomUUID(),
         name: 'Technical Skills',
@@ -599,7 +600,7 @@ export class ResumeService {
     // Create version before import
     await this.createVersionSnapshot(resumeId, 'Before profile import');
 
-    const updatedResume = await this.prisma.userResume.update({
+    const updatedResume = await prisma.userResume.update({
       where: { id: resumeId },
       data: {
         personalInfo,
@@ -616,38 +617,38 @@ export class ResumeService {
 
   async saveToProfile(userId: string, resumeId: string, fileName?: string): Promise<{ resumeId: string; fileName: string; message: string }> {
     // Verify the resume exists and belongs to the user
-    const userResume = await this.prisma.userResume.findFirst({
+    const userResume = await prisma.userResume.findFirst({
       where: { id: resumeId, userId },
       include: { template: true },
     });
 
     if (!userResume) {
-      throw new AppError('Resume not found', 404);
+      throw new AppError('NOT_FOUND', 'Resume not found', 404);
     }
 
     // Check if user already has 5 resumes in profile
-    const existingResumesCount = await this.prisma.resume.count({
+    const existingResumesCount = await prisma.resume.count({
       where: { userId },
     });
 
     if (existingResumesCount >= 5) {
-      throw new AppError('Maximum 5 resumes allowed in profile. Please delete one to add a new resume.', 400);
+      throw new AppError('BAD_REQUEST', 'Maximum 5 resumes allowed in profile. Please delete one to add a new resume.', 400);
     }
 
     // Check if this resume is already linked to a profile resume
-    const existingLink = await this.prisma.resume.findFirst({
+    const existingLink = await prisma.resume.findFirst({
       where: { linkedResumeId: resumeId },
     });
 
     if (existingLink) {
-      throw new AppError('This resume is already saved to your profile', 400);
+      throw new AppError('CONFLICT', 'This resume is already saved to your profile', 400);
     }
 
     // Generate file name
     const finalFileName = fileName || `${userResume.title}.pdf`;
 
     // Create a profile resume entry linked to the builder resume
-    const profileResume = await this.prisma.resume.create({
+    const profileResume = await prisma.resume.create({
       data: {
         userId,
         fileName: finalFileName,
@@ -667,24 +668,24 @@ export class ResumeService {
 
   async unlinkFromProfile(userId: string, resumeId: string): Promise<void> {
     // Verify the resume exists and belongs to the user
-    const userResume = await this.prisma.userResume.findFirst({
+    const userResume = await prisma.userResume.findFirst({
       where: { id: resumeId, userId },
     });
 
     if (!userResume) {
-      throw new AppError('Resume not found', 404);
+      throw new AppError('NOT_FOUND', 'Resume not found', 404);
     }
 
     // Find and delete the linked profile resume
-    const profileResume = await this.prisma.resume.findFirst({
+    const profileResume = await prisma.resume.findFirst({
       where: { linkedResumeId: resumeId, userId },
     });
 
     if (!profileResume) {
-      throw new AppError('Resume is not linked to profile', 404);
+      throw new AppError('NOT_FOUND', 'Resume is not linked to profile', 404);
     }
 
-    await this.prisma.resume.delete({
+    await prisma.resume.delete({
       where: { id: profileResume.id },
     });
   }
@@ -700,7 +701,7 @@ export class ResumeService {
     let counter = 1;
 
     while (true) {
-      const existing = await this.prisma.userResume.findFirst({
+      const existing = await prisma.userResume.findFirst({
         where: {
           userId,
           slug,
@@ -718,14 +719,14 @@ export class ResumeService {
   }
 
   private async createVersionSnapshot(resumeId: string, changeNote?: string): Promise<void> {
-    const resume = await this.prisma.userResume.findUnique({
+    const resume = await prisma.userResume.findUnique({
       where: { id: resumeId },
     });
 
     if (!resume) return;
 
     // Get current max version
-    const lastVersion = await this.prisma.resumeVersion.findFirst({
+    const lastVersion = await prisma.resumeVersion.findFirst({
       where: { resumeId },
       orderBy: { version: 'desc' },
     });
@@ -733,7 +734,7 @@ export class ResumeService {
     const newVersion = (lastVersion?.version || 0) + 1;
 
     // Create version snapshot
-    await this.prisma.resumeVersion.create({
+    await prisma.resumeVersion.create({
       data: {
         resumeId,
         version: newVersion,
@@ -759,7 +760,7 @@ export class ResumeService {
     });
 
     // Keep only last 20 versions
-    const versionsToDelete = await this.prisma.resumeVersion.findMany({
+    const versionsToDelete = await prisma.resumeVersion.findMany({
       where: { resumeId },
       orderBy: { version: 'desc' },
       skip: 20,
@@ -767,7 +768,7 @@ export class ResumeService {
     });
 
     if (versionsToDelete.length > 0) {
-      await this.prisma.resumeVersion.deleteMany({
+      await prisma.resumeVersion.deleteMany({
         where: {
           id: { in: versionsToDelete.map(v => v.id) },
         },

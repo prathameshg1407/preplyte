@@ -59,7 +59,7 @@ export interface StudentProfileResponse {
   id: string;
   userId: string;
   fullName: string;
-  studentId: string;
+  studentId: string | null;
   
   // FIX: Allow nulls for Individual Users
   departmentId: string | null;

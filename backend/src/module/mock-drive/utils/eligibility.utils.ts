@@ -111,7 +111,7 @@ export function checkEligibility(
   // Check department
   if (criteria.allowedDepartmentIds && criteria.allowedDepartmentIds.length > 0) {
     const passed = criteria.allowedDepartmentIds.some(
-      (dept) => dept.toLowerCase() === profile.departmentId.toLowerCase()
+      (dept) => dept.toLowerCase() === (profile.departmentId?.toLowerCase() || '')
     );
     checks.push({
       criterion: 'Department',
@@ -119,7 +119,7 @@ export function checkEligibility(
       details: passed
         ? `Department ${profile.departmentId} is allowed`
         : `Department ${profile.departmentId} is not in allowed list: ${criteria.allowedDepartmentIds.join(', ')}`,
-      value: profile.departmentId,
+      value: profile.departmentId ?? undefined,
     });
     if (!passed) failedCriteria.push(`Allowed Departments: ${criteria.allowedDepartmentIds.join(', ')}`);
   }
@@ -127,7 +127,7 @@ export function checkEligibility(
   // Check course year
   if (criteria.allowedCourseYears && criteria.allowedCourseYears.length > 0) {
     const passed = criteria.allowedCourseYears.some(
-      (year) => year.toLowerCase() === profile.courseYear.toLowerCase()
+      (year) => year.toLowerCase() === (profile.courseYear?.toLowerCase() || '')
     );
     checks.push({
       criterion: 'Course Year',
@@ -135,7 +135,7 @@ export function checkEligibility(
       details: passed
         ? `Course year ${profile.courseYear} is allowed`
         : `Course year ${profile.courseYear} is not in allowed list: ${criteria.allowedCourseYears.join(', ')}`,
-      value: profile.courseYear,
+      value: profile.courseYear ?? undefined,
     });
     if (!passed) failedCriteria.push(`Allowed Course Years: ${criteria.allowedCourseYears.join(', ')}`);
   }
