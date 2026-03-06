@@ -6,12 +6,12 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
-import { 
-  Brain, 
-  Code2, 
-  Mic, 
-  ArrowRight, 
-  Clock, 
+import {
+  Brain,
+  Code2,
+  Mic,
+  ArrowRight,
+  Clock,
   Zap,
   CheckCircle2,
   ChevronRight,
@@ -107,6 +107,27 @@ const modules: PracticeModule[] = [
       'Communication analysis'
     ],
     status: 'beta'
+  },
+  {
+    id: 'roadmap',
+    title: 'Career Roadmap',
+    subtitle: 'AI Career Guidance',
+    description: 'Don\'t know what to study? Let our AI guide you through a personalized learning path based on your goals.',
+    icon: Sparkles,
+    href: '/practice/roadmap',
+    color: 'text-blue-600 dark:text-blue-400',
+    gradient: 'from-blue-500/20 via-blue-500/10 to-transparent',
+    stats: {
+      questions: 'Dynamic',
+      avgTime: '5 min'
+    },
+    highlights: [
+      'Personalized goals',
+      'Curated tech stacks',
+      'Platform course matching',
+      'Step-by-step guidance'
+    ],
+    status: 'available'
   }
 ];
 
@@ -154,16 +175,16 @@ export default function PracticePage() {
         <div className="absolute left-0 top-1/4 h-[600px] w-[600px] -translate-x-1/2 rounded-full bg-gradient-to-r from-violet-500/5 to-transparent blur-3xl" />
         <div className="absolute right-0 top-1/3 h-[600px] w-[600px] translate-x-1/2 rounded-full bg-gradient-to-l from-emerald-500/5 to-transparent blur-3xl" />
       </div>
-      
+
       <div className="container mx-auto max-w-6xl px-4 py-12 lg:py-20">
-        
+
         {/* Hero Section */}
-        <motion.section 
+        <motion.section
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="mb-16 text-center lg:mb-20"
         >
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.1 }}
@@ -172,8 +193,8 @@ export default function PracticePage() {
             <Sparkles className="h-4 w-4" />
             Smart Practice System
           </motion.div>
-          
-          <motion.h1 
+
+          <motion.h1
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
@@ -184,26 +205,26 @@ export default function PracticePage() {
               Not Harder
             </span>
           </motion.h1>
-          
-          <motion.p 
+
+          <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
             className="mx-auto mb-12 max-w-2xl text-lg text-muted-foreground"
           >
-            Comprehensive preparation platform with adaptive learning. 
+            Comprehensive preparation platform with adaptive learning.
             Track progress, identify weaknesses, and improve systematically.
           </motion.p>
 
           {/* Quick Stats */}
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
             className="mx-auto flex max-w-lg items-center justify-center gap-8"
           >
             {stats.map((stat, index) => (
-              <motion.div 
+              <motion.div
                 key={stat.label}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -221,7 +242,7 @@ export default function PracticePage() {
         </motion.section>
 
         {/* Quick Actions */}
-        <motion.section 
+        <motion.section
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
@@ -257,7 +278,7 @@ export default function PracticePage() {
         </motion.section>
 
         {/* Main Modules */}
-        <motion.section 
+        <motion.section
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6 }}
@@ -270,9 +291,9 @@ export default function PracticePage() {
 
           <div className="grid gap-6 lg:grid-cols-3">
             {modules.map((module, index) => (
-              <ModuleCard 
-                key={module.id} 
-                module={module} 
+              <ModuleCard
+                key={module.id}
+                module={module}
                 onClick={() => router.push(module.href)}
                 index={index}
               />
@@ -281,7 +302,7 @@ export default function PracticePage() {
         </motion.section>
 
         {/* Features Grid */}
-        <motion.section 
+        <motion.section
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.7 }}
@@ -312,8 +333,8 @@ export default function PracticePage() {
                   bg: 'bg-emerald-500/10'
                 }
               ].map((feature, index) => (
-                <motion.div 
-                  key={feature.title} 
+                <motion.div
+                  key={feature.title}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.7 + index * 0.1 }}
@@ -345,7 +366,7 @@ export default function PracticePage() {
               <div className="absolute -left-10 -top-10 h-40 w-40 rounded-full bg-primary/10 blur-3xl" />
               <div className="absolute -bottom-10 -right-10 h-40 w-40 rounded-full bg-violet-500/10 blur-3xl" />
             </div>
-            
+
             <div className="relative">
               <motion.div
                 initial={{ scale: 0 }}
@@ -355,7 +376,7 @@ export default function PracticePage() {
               >
                 <Play className="h-7 w-7 text-primary-foreground" />
               </motion.div>
-              
+
               <h2 className="mb-3 text-2xl font-bold tracking-tight sm:text-3xl">
                 Ready to Begin?
               </h2>
@@ -363,17 +384,17 @@ export default function PracticePage() {
                 Start with aptitude tests — the most common first round in campus placements.
               </p>
               <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
-                <Button 
-                  size="lg" 
+                <Button
+                  size="lg"
                   onClick={() => router.push('/practice/aptitude')}
                   className="gap-2 text-base"
                 >
                   Start Aptitude Practice
                   <ArrowRight className="h-4 w-4" />
                 </Button>
-                <Button 
-                  size="lg" 
-                  variant="outline" 
+                <Button
+                  size="lg"
+                  variant="outline"
                   onClick={() => router.push('/practice/machine')}
                   className="gap-2 text-base"
                 >
@@ -390,18 +411,18 @@ export default function PracticePage() {
 }
 
 // Module Card Component
-function ModuleCard({ 
-  module, 
+function ModuleCard({
+  module,
   onClick,
   index
-}: { 
-  module: PracticeModule; 
+}: {
+  module: PracticeModule;
   onClick: () => void;
   index: number;
 }) {
   const isAvailable = module.status === 'available' || module.status === 'beta';
   const Icon = module.icon;
-  
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -411,8 +432,8 @@ function ModuleCard({
       onClick={isAvailable ? onClick : undefined}
       className={cn(
         "group relative overflow-hidden rounded-2xl border-2 bg-card transition-all duration-300",
-        isAvailable 
-          ? "cursor-pointer border-border hover:border-primary/30 hover:shadow-xl" 
+        isAvailable
+          ? "cursor-pointer border-border hover:border-primary/30 hover:shadow-xl"
           : "opacity-60 border-border"
       )}
     >
@@ -425,11 +446,11 @@ function ModuleCard({
       {/* Status Badge */}
       {module.status !== 'available' && (
         <div className="absolute right-4 top-4 z-10">
-          <Badge 
+          <Badge
             variant="secondary"
             className={cn(
-              module.status === 'beta' 
-                ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30' 
+              module.status === 'beta'
+                ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30'
                 : 'bg-muted text-muted-foreground'
             )}
           >
@@ -459,8 +480,8 @@ function ModuleCard({
         {/* Highlights */}
         <ul className="mb-6 space-y-2.5">
           {module.highlights.slice(0, 3).map((item, i) => (
-            <motion.li 
-              key={i} 
+            <motion.li
+              key={i}
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.7 + index * 0.1 + i * 0.05 }}

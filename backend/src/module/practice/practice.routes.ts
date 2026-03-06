@@ -10,12 +10,15 @@ import languagesRoutes from './common/languages.routes';
 import configRoutes from './common/config.routes';
 import enumsRoutes from './common/enums.routes';
 
+import roadmapRoutes from '../roadmap/roadmap.routes';
+
 const router = Router();
 
 // Practice Modules
 router.use('/aptitude', aptitudeRoutes);
 router.use('/machine', machineRoutes);
 router.use('/interview', interviewRoutes);
+router.use('/roadmap', roadmapRoutes);
 
 // Shared/Common APIs
 router.use('/languages', languagesRoutes);
