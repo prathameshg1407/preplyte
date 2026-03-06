@@ -232,6 +232,9 @@ export interface ResumeListItem {
   isComplete: boolean;
   lastAtsScore: number | null;
   updatedAt: string;
+  content: ResumeContent;
+  templateStyles: TemplateStyles;
+  templateLayout: TemplateLayout;
 }
 
 export interface ResumeVersionResponse {
