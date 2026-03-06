@@ -1,7 +1,7 @@
 import { Suspense } from 'react';
 import Link from 'next/link';
 import type { Metadata } from 'next';
-import { RegisterForm } from '@/components/auth/register-form';
+import { RegisterFormWithOTP } from '@/components/auth/register-form-with-otp';
 
 export const metadata: Metadata = {
   title: 'Register | Preplyte',
@@ -29,7 +29,7 @@ export default function RegisterPage() {
 
         {/* Form */}
         <Suspense fallback={<FormSkeleton rows={5} />}>
-          <RegisterForm />
+          <RegisterFormWithOTP />
         </Suspense>
       </div>
     </div>

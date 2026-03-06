@@ -9,6 +9,8 @@ import {
   refreshToken,
   verifyToken,
   googleAuthCallback,
+  sendEmailOTP,
+  verifyEmailOTP,
 } from './auth.controller';
 import { authenticate } from '../../middleware/auth.middleware';
 import { passport } from './google-oauth.service';
@@ -66,6 +68,12 @@ const generalLimiter = createRateLimiter(
   'Too many requests. Please slow down.'
 );
 
+const otpLimiter = createRateLimiter(
+  15 * 60 * 1000, // 15 minutes
+  5,
+  'Too many OTP requests. Please try again later.'
+);
+
 // ============================================
 // Public Routes
 // ============================================
@@ -73,6 +81,10 @@ const generalLimiter = createRateLimiter(
 router.post('/register', registerLimiter, register);
 router.post('/login', authLimiter, login);
 router.post('/refresh', refreshLimiter, refreshToken);
+
+// Email verification routes
+router.post('/send-otp', otpLimiter, sendEmailOTP);
+router.post('/verify-otp', otpLimiter, verifyEmailOTP);
 
 // Google OAuth Routes
 router.get(

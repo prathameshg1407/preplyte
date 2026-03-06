@@ -1,6 +1,7 @@
 // src/components/profile/index.ts
 
 export { ProfileCompletionCard } from './profile-completion-card';
+export { ProfileCompletionDialog } from './profile-completion-dialog';
 export { ResumeUploadCard } from './resume-upload-card';
 export { ResumeListCard } from './resume-list-card';
 export { StudentProfileForm } from './student-profile-form';

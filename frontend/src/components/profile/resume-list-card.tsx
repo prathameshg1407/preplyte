@@ -61,7 +61,6 @@ interface ResumeItemProps {
   index: number;
   onSetDefault: (id: string) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
-  onLink: (id: string) => Promise<void>;
   isUpdating: boolean;
   hasStudentProfile: boolean;
 }
@@ -71,7 +70,6 @@ function ResumeItem({
   index,
   onSetDefault,
   onDelete,
-  onLink,
   isUpdating,
   hasStudentProfile,
 }: ResumeItemProps) {
@@ -99,14 +97,7 @@ function ResumeItem({
     }
   };
 
-  const handleLink = async () => {
-    setIsLinking(true);
-    try {
-      await onLink(resume.id);
-    } finally {
-      setIsLinking(false);
-    }
-  };
+  
 
   return (
     <>
@@ -203,17 +194,6 @@ function ResumeItem({
               </DropdownMenuItem>
             )}
 
-            {hasStudentProfile && (
-              <DropdownMenuItem onClick={handleLink} disabled={isLinking}>
-                {isLinking ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <Link2 className="h-4 w-4 mr-2" />
-                )}
-                Link to Profile
-              </DropdownMenuItem>
-            )}
-
             <DropdownMenuSeparator />
 
             <DropdownMenuItem
@@ -295,9 +275,7 @@ export function ResumeListCard() {
               resume={resume}
               index={index}
               onSetDefault={setDefaultResume}
-              onDelete={deleteResume}
-              onLink={linkResumeToProfile}
-              isUpdating={isUpdating}
+              onDelete={deleteResume}              isUpdating={isUpdating}
               hasStudentProfile={hasStudentProfile}
             />
           ))}

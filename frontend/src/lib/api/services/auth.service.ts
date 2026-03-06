@@ -38,6 +38,12 @@ export const authService = {
   register: (credentials: RegisterCredentials): Promise<RegisterResponse> =>
     unwrap(apiClient.post(API_ENDPOINTS.AUTH.REGISTER, credentials)),
 
+  sendOTP: (email: string): Promise<ApiResponse<null>> =>
+    unwrap(apiClient.post(API_ENDPOINTS.AUTH.SEND_OTP, { email })),
+
+  verifyOTP: (email: string, otp: string): Promise<ApiResponse<{ verified: boolean }>> =>
+    unwrap(apiClient.post(API_ENDPOINTS.AUTH.VERIFY_OTP, { email, otp })),
+
   logout: async (): Promise<ApiResponse<null>> => {
     try {
       const refreshToken = storage.getRaw(AUTH_STORAGE_KEYS.REFRESH_TOKEN);
