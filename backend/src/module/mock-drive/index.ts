@@ -17,6 +17,7 @@ import {
   aptitudeAnswerSchema,
   aptitudeClearSchema,
   machineSubmitSchema,
+  machineRunSchema,
   interviewRespondSchema,
   interviewSkipSchema,
 } from './attempt/attempt.validation';
@@ -125,6 +126,12 @@ export function createMockDriveRoutes(prisma: PrismaClient): Router {
 
   // Machine coding module actions
   router.post(
+    '/:driveId/modules/:moduleId/machine/run',
+    validate(machineRunSchema),
+    attemptController.runMachineCode
+  );
+
+  router.post(
     '/:driveId/modules/:moduleId/machine/submit',
     validate(machineSubmitSchema),
     attemptController.submitMachineCode
@@ -141,6 +148,24 @@ export function createMockDriveRoutes(prisma: PrismaClient): Router {
     '/:driveId/modules/:moduleId/interview/skip',
     validate(interviewSkipSchema),
     attemptController.skipInterviewQuestion
+  );
+
+  router.post(
+    '/:driveId/modules/:moduleId/interview/next',
+    validate(moduleIdSchema),
+    attemptController.getNextInterviewQuestion
+  );
+
+  router.post(
+    '/:driveId/modules/:moduleId/interview/voice/start',
+    validate(moduleIdSchema),
+    attemptController.startVoiceMode
+  );
+
+  router.post(
+    '/:driveId/modules/:moduleId/interview/audio-question',
+    validate(moduleIdSchema),
+    attemptController.getAudioQuestion
   );
 
   // =====================================================

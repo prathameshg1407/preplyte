@@ -415,6 +415,7 @@ export interface SubmitCodeResponse {
   status: SubmissionStatus;
   testCasesPassed: number;
   testCasesTotal: number;
+  testCaseResults?: TestCaseResult[];
   executionTime: number | null;
   memoryUsed: number | null;
   submittedAt: string;

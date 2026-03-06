@@ -49,7 +49,7 @@ const config = {
   rateLimits: {
     general: {
       windowMs: 15 * 60 * 1000,
-      max: parseInt(process.env.RATE_LIMIT_GENERAL || '100', 10),
+      max: parseInt(process.env.RATE_LIMIT_GENERAL || '300', 10),
     },
     auth: {
       windowMs: 15 * 60 * 1000,
@@ -73,7 +73,7 @@ const config = {
     },
     mockDrive: {
       windowMs: 15 * 60 * 1000,
-      max: parseInt(process.env.RATE_LIMIT_MOCK_DRIVE || '100', 10),
+      max: parseInt(process.env.RATE_LIMIT_MOCK_DRIVE || '5000', 10),
     },
   },
 };

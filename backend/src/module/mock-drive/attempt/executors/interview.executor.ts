@@ -56,7 +56,7 @@ interface AudioChunkPayload {
   isFinal?: boolean;
 }
 
-interface WorkingInterviewData {
+export interface WorkingInterviewData {
   config: AiInterviewConfig;
   conversation: ConversationMessage[];
   responses: InterviewResponseData[];
@@ -388,6 +388,7 @@ export class InterviewModuleExecutor extends BaseModuleExecutor {
     return {
       conversation: updatedConversation,
       responses: updatedResponses,
+      pendingTranscription: '',
     };
   }
 
@@ -437,6 +438,7 @@ export class InterviewModuleExecutor extends BaseModuleExecutor {
     return {
       conversation: updatedConversation,
       responses: updatedResponses,
+      pendingTranscription: '',
     };
   }
 

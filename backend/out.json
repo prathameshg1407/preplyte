@@ -1,0 +1,162 @@
+[
+  {
+    "id": "cmluqamkz0054zwnlkrsep8eo",
+    "name": "JavaScript (Node.js 18)",
+    "monacoId": "javascript",
+    "judge0Id": 93,
+    "template": "// Read input from stdin\nconst readline = require('readline');\n\nconst rl = readline.createInterface({\n  input: process.stdin,\n  output: process.stdout\n});\n\nconst lines = [];\n\nrl.on('line', (line) => {\n  lines.push(line);\n});\n\nrl.on('close', () => {\n  // Your code here\n  const input = lines.join('\\n');\n  \n  // Process input and print output\n  console.log('Hello, World!');\n});",
+    "isActive": true,
+    "createdAt": "2026-02-20T10:09:50.292Z",
+    "updatedAt": "2026-02-20T10:09:50.292Z"
+  },
+  {
+    "id": "cmluqaml90055zwnlly4o2sb7",
+    "name": "TypeScript (5.0)",
+    "monacoId": "typescript",
+    "judge0Id": 94,
+    "template": "// Read input from stdin\nimport * as readline from 'readline';\n\nconst rl = readline.createInterface({\n  input: process.stdin,\n  output: process.stdout\n});\n\nconst lines: string[] = [];\n\nrl.on('line', (line: string) => {\n  lines.push(line);\n});\n\nrl.on('close', () => {\n  // Your code here\n  const input: string = lines.join('\\n');\n  \n  // Process input and print output\n  console.log('Hello, World!');\n});",
+    "isActive": true,
+    "createdAt": "2026-02-20T10:09:50.301Z",
+    "updatedAt": "2026-02-20T10:09:50.301Z"
+  },
+  {
+    "id": "cmluqamla0056zwnl7mhqgrem",
+    "name": "Python (3.11)",
+    "monacoId": "python",
+    "judge0Id": 92,
+    "template": "# Read input from stdin\nimport sys\n\ndef main():\n    # Read all input\n    input_data = sys.stdin.read().strip()\n    lines = input_data.split('\\n')\n    \n    # Your code here\n    \n    # Process input and print output\n    print('Hello, World!')\n\nif __name__ == '__main__':\n    main()",
+    "isActive": true,
+    "createdAt": "2026-02-20T10:09:50.303Z",
+    "updatedAt": "2026-02-20T10:09:50.303Z"
+  },
+  {
+    "id": "cmluqamlb0057zwnl0jp28yhw",
+    "name": "Java (OpenJDK 17)",
+    "monacoId": "java",
+    "judge0Id": 91,
+    "template": "import java.util.*;\nimport java.io.*;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner scanner = new Scanner(System.in);\n        \n        // Your code here\n        \n        // Read input\n        // String line = scanner.nextLine();\n        // int n = scanner.nextInt();\n        \n        // Process and print output\n        System.out.println(\"Hello, World!\");\n        \n        scanner.close();\n    }\n}",
+    "isActive": true,
+    "createdAt": "2026-02-20T10:09:50.304Z",
+    "updatedAt": "2026-02-20T10:09:50.304Z"
+  },
+  {
+    "id": "cmluqamlc0058zwnl2z34k2t2",
+    "name": "C++ (GCC 11)",
+    "monacoId": "cpp",
+    "judge0Id": 54,
+    "template": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios_base::sync_with_stdio(false);\n    cin.tie(NULL);\n    \n    // Your code here\n    \n    // Read input\n    // int n;\n    // cin >> n;\n    // string s;\n    // getline(cin, s);\n    \n    // Process and print output\n    cout << \"Hello, World!\" << endl;\n    \n    return 0;\n}",
+    "isActive": true,
+    "createdAt": "2026-02-20T10:09:50.305Z",
+    "updatedAt": "2026-02-20T10:09:50.305Z"
+  },
+  {
+    "id": "cmluqamld0059zwnlh5xe81fc",
+    "name": "C (GCC 11)",
+    "monacoId": "c",
+    "judge0Id": 50,
+    "template": "#include <stdio.h>\n#include <stdlib.h>\n#include <string.h>\n\nint main() {\n    // Your code here\n    \n    // Read input\n    // int n;\n    // scanf(\"%d\", &n);\n    // char s[1000];\n    // fgets(s, sizeof(s), stdin);\n    \n    // Process and print output\n    printf(\"Hello, World!\\n\");\n    \n    return 0;\n}",
+    "isActive": true,
+    "createdAt": "2026-02-20T10:09:50.306Z",
+    "updatedAt": "2026-02-20T10:09:50.306Z"
+  },
+  {
+    "id": "cmluqamle005azwnlktgkdvrd",
+    "name": "C# (Mono 6.12)",
+    "monacoId": "csharp",
+    "judge0Id": 51,
+    "template": "using System;\nusing System.Collections.Generic;\nusing System.Linq;\n\nclass Program {\n    static void Main(string[] args) {\n        // Your code here\n        \n        // Read input\n        // string line = Console.ReadLine();\n        // int n = int.Parse(Console.ReadLine());\n        \n        // Process and print output\n        Console.WriteLine(\"Hello, World!\");\n    }\n}",
+    "isActive": true,
+    "createdAt": "2026-02-20T10:09:50.307Z",
+    "updatedAt": "2026-02-20T10:09:50.307Z"
+  },
+  {
+    "id": "cmluqamlf005bzwnlpob7mhkb",
+    "name": "Go (1.21)",
+    "monacoId": "go",
+    "judge0Id": 95,
+    "template": "package main\n\nimport (\n\t\"bufio\"\n\t\"fmt\"\n\t\"os\"\n)\n\nfunc main() {\n\treader := bufio.NewReader(os.Stdin)\n\t\n\t// Your code here\n\t\n\t// Read input\n\t// line, _ := reader.ReadString('\\n')\n\t// var n int\n\t// fmt.Fscan(reader, &n)\n\t_ = reader\n\t\n\t// Process and print output\n\tfmt.Println(\"Hello, World!\")\n}",
+    "isActive": true,
+    "createdAt": "2026-02-20T10:09:50.308Z",
+    "updatedAt": "2026-02-20T10:09:50.308Z"
+  },
+  {
+    "id": "cmluqamlg005czwnl0zb7cs69",
+    "name": "Rust (1.72)",
+    "monacoId": "rust",
+    "judge0Id": 73,
+    "template": "use std::io::{self, BufRead, Write};\n\nfn main() {\n    let stdin = io::stdin();\n    let stdout = io::stdout();\n    let mut out = stdout.lock();\n    \n    // Your code here\n    \n    // Read input\n    // for line in stdin.lock().lines() {\n    //     let line = line.unwrap();\n    //     // process line\n    // }\n    let _ = stdin;\n    \n    // Process and print output\n    writeln!(out, \"Hello, World!\").unwrap();\n}",
+    "isActive": true,
+    "createdAt": "2026-02-20T10:09:50.309Z",
+    "updatedAt": "2026-02-20T10:09:50.309Z"
+  },
+  {
+    "id": "cmluqamlh005dzwnlqo5tov2i",
+    "name": "Ruby (3.2)",
+    "monacoId": "ruby",
+    "judge0Id": 72,
+    "template": "# Read input from stdin\n\n# Your code here\n\n# Read all input\n# input = $stdin.read.strip\n# lines = input.split(\"\\n\")\n\n# Read line by line\n# while line = gets\n#   line = line.chomp\n#   # process line\n# end\n\n# Process and print output\nputs 'Hello, World!'",
+    "isActive": true,
+    "createdAt": "2026-02-20T10:09:50.310Z",
+    "updatedAt": "2026-02-20T10:09:50.310Z"
+  },
+  {
+    "id": "cmluqamlj005ezwnlscuoa7x3",
+    "name": "PHP (8.2)",
+    "monacoId": "php",
+    "judge0Id": 68,
+    "template": "<?php\n\n// Read input from stdin\n\n// Your code here\n\n// Read all input\n// $input = trim(file_get_contents('php://stdin'));\n// $lines = explode(\"\\n\", $input);\n\n// Read line by line\n// while ($line = fgets(STDIN)) {\n//     $line = trim($line);\n//     // process line\n// }\n\n// Process and print output\necho \"Hello, World!\\n\";\n\n?>",
+    "isActive": true,
+    "createdAt": "2026-02-20T10:09:50.311Z",
+    "updatedAt": "2026-02-20T10:09:50.311Z"
+  },
+  {
+    "id": "cmluqamlk005fzwnl9bhyly6i",
+    "name": "Kotlin (1.9)",
+    "monacoId": "kotlin",
+    "judge0Id": 78,
+    "template": "import java.util.*\n\nfun main() {\n    val scanner = Scanner(System.`in`)\n    \n    // Your code here\n    \n    // Read input\n    // val line = scanner.nextLine()\n    // val n = scanner.nextInt()\n    \n    // Process and print output\n    println(\"Hello, World!\")\n}",
+    "isActive": true,
+    "createdAt": "2026-02-20T10:09:50.312Z",
+    "updatedAt": "2026-02-20T10:09:50.312Z"
+  },
+  {
+    "id": "cmluqamll005gzwnl5ncitddm",
+    "name": "Swift (5.9)",
+    "monacoId": "swift",
+    "judge0Id": 83,
+    "template": "import Foundation\n\n// Your code here\n\n// Read input\n// if let line = readLine() {\n//     // process line\n// }\n\n// Read all lines\n// var lines: [String] = []\n// while let line = readLine() {\n//     lines.append(line)\n// }\n\n// Process and print output\nprint(\"Hello, World!\")",
+    "isActive": true,
+    "createdAt": "2026-02-20T10:09:50.313Z",
+    "updatedAt": "2026-02-20T10:09:50.313Z"
+  },
+  {
+    "id": "cmluqamln005hzwnlnw58t0w2",
+    "name": "Scala (3.3)",
+    "monacoId": "scala",
+    "judge0Id": 81,
+    "template": "import scala.io.StdIn._\n\nobject Main extends App {\n  // Your code here\n  \n  // Read input\n  // val line = readLine()\n  // val n = readInt()\n  // val arr = readLine().split(\" \").map(_.toInt)\n  \n  // Process and print output\n  println(\"Hello, World!\")\n}",
+    "isActive": true,
+    "createdAt": "2026-02-20T10:09:50.315Z",
+    "updatedAt": "2026-02-20T10:09:50.315Z"
+  },
+  {
+    "id": "cmluqamlo005izwnlwi0ochot",
+    "name": "Perl (5.36)",
+    "monacoId": "perl",
+    "judge0Id": 85,
+    "template": "#!/usr/bin/perl\nuse strict;\nuse warnings;\n\n# Your code here\n\n# Read input\n# my $line = <STDIN>;\n# chomp($line);\n\n# Read all lines\n# my @lines = <STDIN>;\n# chomp(@lines);\n\n# Process and print output\nprint \"Hello, World!\\n\";",
+    "isActive": false,
+    "createdAt": "2026-02-20T10:09:50.316Z",
+    "updatedAt": "2026-02-20T10:09:50.316Z"
+  },
+  {
+    "id": "cmluqamlp005jzwnlaigif9qr",
+    "name": "Haskell (GHC 9.4)",
+    "monacoId": "haskell",
+    "judge0Id": 61,
+    "template": "import Control.Monad\n\nmain :: IO ()\nmain = do\n    -- Your code here\n    \n    -- Read input\n    -- line <- getLine\n    -- n <- readLn :: IO Int\n    -- contents <- getContents\n    -- let lns = lines contents\n    \n    -- Process and print output\n    putStrLn \"Hello, World!\"",
+    "isActive": false,
+    "createdAt": "2026-02-20T10:09:50.317Z",
+    "updatedAt": "2026-02-20T10:09:50.317Z"
+  }
+]

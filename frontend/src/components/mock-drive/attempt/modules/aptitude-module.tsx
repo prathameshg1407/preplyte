@@ -185,17 +185,16 @@ export const AptitudeModule: FC<AptitudeModuleProps> = ({
               {currentQuestion.options.map((opt, idx) => (
                 <div
                   key={opt.id}
-                  onClick={() => handleAnswer(opt.id)}
                   className={cn(
-                    'flex items-center space-x-3 p-4 rounded-lg border cursor-pointer transition-colors',
+                    'rounded-lg border transition-colors overflow-hidden',
                     currentQuestion.selectedOptionId === opt.id
                       ? 'border-primary bg-primary/5'
                       : 'hover:border-primary/50'
                   )}
                 >
-                  <RadioGroupItem value={opt.id} id={opt.id} />
-                  <Label htmlFor={opt.id} className="flex-1 cursor-pointer">
-                    {opt.content}
+                  <Label htmlFor={opt.id} className="cursor-pointer p-4 flex items-center space-x-3 w-full h-full m-0">
+                    <RadioGroupItem value={opt.id} id={opt.id} />
+                    <span className="flex-1 text-base">{opt.content}</span>
                   </Label>
                 </div>
               ))}

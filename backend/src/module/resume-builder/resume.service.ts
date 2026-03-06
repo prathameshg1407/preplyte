@@ -1,7 +1,7 @@
 import { Prisma, PrismaClient, ResumeTemplateCategory } from '@prisma/client';
-import { 
-  ResumeTemplateResponse, 
-  ResumeResponse, 
+import {
+  ResumeTemplateResponse,
+  ResumeResponse,
   ResumeListItem,
   ResumeContent,
   ResumeCustomization,
@@ -22,7 +22,7 @@ import { prisma } from '../../lib/db';
 import { generateSlug } from '../../utils/helpers';
 
 export class ResumeService {
-  constructor() {}
+  constructor() { }
 
   // ============ Template Methods ============
 
@@ -103,7 +103,11 @@ export class ResumeService {
     });
 
     if (!template) {
+<<<<<<< HEAD
       throw new AppError('NOT_FOUND', 'Template not found', 404);
+=======
+      throw new AppError('Template not found', '');
+>>>>>>> mockraj
     }
 
     // Generate unique slug
@@ -141,7 +145,7 @@ export class ResumeService {
   }
 
   async getUserResumes(
-    userId: string, 
+    userId: string,
     filters: ResumeFiltersInput
   ): Promise<{ resumes: ResumeListItem[]; total: number; page: number; totalPages: number }> {
     const { page = 1, limit = 10, search, templateId, isComplete } = filters;
@@ -251,8 +255,8 @@ export class ResumeService {
   }
 
   async updateResume(
-    userId: string, 
-    resumeId: string, 
+    userId: string,
+    resumeId: string,
     data: UpdateResumeInput
   ): Promise<ResumeResponse> {
     const existingResume = await prisma.userResume.findFirst({
@@ -260,7 +264,11 @@ export class ResumeService {
     });
 
     if (!existingResume) {
+<<<<<<< HEAD
       throw new AppError('NOT_FOUND', 'Resume not found', 404);
+=======
+      throw new AppError('Resume not found', '');
+>>>>>>> mockraj
     }
 
     // If changing template, verify it exists
@@ -270,7 +278,11 @@ export class ResumeService {
       });
 
       if (!template) {
+<<<<<<< HEAD
         throw new AppError('NOT_FOUND', 'Template not found', 404);
+=======
+        throw new AppError('Template not found', '');
+>>>>>>> mockraj
       }
     }
 
@@ -330,7 +342,11 @@ export class ResumeService {
     });
 
     if (!existingResume) {
+<<<<<<< HEAD
       throw new AppError('NOT_FOUND', 'Resume not found', 404);
+=======
+      throw new AppError('Resume not found', '');
+>>>>>>> mockraj
     }
 
     // Create version snapshot before update
@@ -348,7 +364,7 @@ export class ResumeService {
     if (section === 'customSections') {
       const customSections = data as any[];
       const currentOrder = existingResume.sectionOrder as string[];
-      
+
       if (customSections && customSections.length > 0) {
         // Add customSections to sectionOrder if not present
         if (!currentOrder.includes('customSections')) {
@@ -377,7 +393,11 @@ export class ResumeService {
     });
 
     if (!resume) {
+<<<<<<< HEAD
       throw new AppError('NOT_FOUND', 'Resume not found', 404);
+=======
+      throw new AppError('Resume not found', '');
+>>>>>>> mockraj
     }
 
     await prisma.userResume.delete({
@@ -386,8 +406,8 @@ export class ResumeService {
   }
 
   async duplicateResume(
-    userId: string, 
-    resumeId: string, 
+    userId: string,
+    resumeId: string,
     data: DuplicateResumeInput
   ): Promise<ResumeResponse> {
     const original = await prisma.userResume.findFirst({
@@ -396,7 +416,11 @@ export class ResumeService {
     });
 
     if (!original) {
+<<<<<<< HEAD
       throw new AppError('NOT_FOUND', 'Resume not found', 404);
+=======
+      throw new AppError('Resume not found', '');
+>>>>>>> mockraj
     }
 
     const title = data.newTitle || `${original.title} (Copy)`;
@@ -441,7 +465,11 @@ export class ResumeService {
     });
 
     if (!resume) {
+<<<<<<< HEAD
       throw new AppError('NOT_FOUND', 'Resume not found', 404);
+=======
+      throw new AppError('Resume not found', '');
+>>>>>>> mockraj
     }
 
     const template = await prisma.resumeTemplate.findUnique({
@@ -449,7 +477,11 @@ export class ResumeService {
     });
 
     if (!template) {
+<<<<<<< HEAD
       throw new AppError('NOT_FOUND', 'Template not found', 404);
+=======
+      throw new AppError('Template not found', '');
+>>>>>>> mockraj
     }
 
     // Create version before template change
@@ -478,7 +510,11 @@ export class ResumeService {
     });
 
     if (!resume) {
+<<<<<<< HEAD
       throw new AppError('NOT_FOUND', 'Resume not found', 404);
+=======
+      throw new AppError('Resume not found', '');
+>>>>>>> mockraj
     }
 
     const versions = await prisma.resumeVersion.findMany({
@@ -496,8 +532,8 @@ export class ResumeService {
   }
 
   async restoreVersion(
-    userId: string, 
-    resumeId: string, 
+    userId: string,
+    resumeId: string,
     versionId: string
   ): Promise<ResumeResponse> {
     const resume = await prisma.userResume.findFirst({
@@ -505,7 +541,11 @@ export class ResumeService {
     });
 
     if (!resume) {
+<<<<<<< HEAD
       throw new AppError('NOT_FOUND', 'Resume not found', 404);
+=======
+      throw new AppError('Resume not found', '');
+>>>>>>> mockraj
     }
 
     const version = await prisma.resumeVersion.findFirst({
@@ -574,9 +614,12 @@ export class ResumeService {
     }
 
     // Build personal info from profile
+    const nameParts = (user.name || '').split(' ');
+    const firstName = nameParts[0] || '';
+    const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
     const personalInfo: any = {
-      firstName: user.name?.split(' ')[0] || '',
-      lastName: user.name?.split(' ').slice(1).join(' ') || '',
+      firstName,
+      lastName,
       email: user.email,
     };
 
@@ -589,7 +632,7 @@ export class ResumeService {
       const sp = user.profile;
       const currentYear = new Date().getFullYear();
       const courseYearNum = sp.courseYear ? parseInt(sp.courseYear) : undefined;
-      
+
       education.push({
         id: crypto.randomUUID(),
         institution: 'Your College', // Default since collegeName is not in schema
@@ -709,8 +752,8 @@ export class ResumeService {
   // ============ Helper Methods ============
 
   private async generateUniqueSlug(
-    userId: string, 
-    baseSlug: string, 
+    userId: string,
+    baseSlug: string,
     excludeId?: string
   ): Promise<string> {
     let slug = baseSlug;
@@ -801,21 +844,21 @@ export class ResumeService {
     };
 
     // Check required sections
-    const hasPersonalInfo = content.personalInfo && 
-      content.personalInfo.firstName && 
-      content.personalInfo.lastName && 
+    const hasPersonalInfo = content.personalInfo &&
+      content.personalInfo.firstName &&
+      content.personalInfo.lastName &&
       content.personalInfo.email;
 
-    const hasExperience = content.experience && 
-      Array.isArray(content.experience) && 
+    const hasExperience = content.experience &&
+      Array.isArray(content.experience) &&
       content.experience.length > 0;
 
-    const hasEducation = content.education && 
-      Array.isArray(content.education) && 
+    const hasEducation = content.education &&
+      Array.isArray(content.education) &&
       content.education.length > 0;
 
-    const hasSkills = content.skills && 
-      Array.isArray(content.skills) && 
+    const hasSkills = content.skills &&
+      Array.isArray(content.skills) &&
       content.skills.length > 0;
 
     return !!(hasPersonalInfo && (hasExperience || hasEducation) && hasSkills);

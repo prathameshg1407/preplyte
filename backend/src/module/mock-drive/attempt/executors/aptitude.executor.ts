@@ -92,6 +92,13 @@ export class AptitudeModuleExecutor extends BaseModuleExecutor {
         aptitudeQuestion: {
           include: { options: true },
         },
+        module: {
+          include: {
+            mockDrive: {
+              select: { shuffleQuestions: true }
+            }
+          }
+        }
       },
     });
 
@@ -99,9 +106,12 @@ export class AptitudeModuleExecutor extends BaseModuleExecutor {
       throw new NotFoundError('Questions for this module');
     }
 
-    const shuffledQuestions = this.shuffleWithSeed(moduleQuestions, context.attemptId);
+    const shouldShuffle = moduleQuestions[0].module.mockDrive.shuffleQuestions;
+    const finalQuestions = shouldShuffle
+      ? this.shuffleWithSeed(moduleQuestions, context.attemptId)
+      : moduleQuestions;
 
-    const questions: AptitudeQuestionAttempt[] = shuffledQuestions.map((mq, index) => {
+    const questions: AptitudeQuestionAttempt[] = finalQuestions.map((mq, index) => {
       if (!mq.aptitudeQuestion) {
         throw new InternalError(`Question data missing for module question ${mq.id}`);
       }
@@ -162,7 +172,7 @@ export class AptitudeModuleExecutor extends BaseModuleExecutor {
       where: { id: { in: questionIds } },
       include: {
         aptitudeQuestion: {
-          include: { options: true }
+          select: { correctOptionId: true }
         }
       }
     });
@@ -170,13 +180,8 @@ export class AptitudeModuleExecutor extends BaseModuleExecutor {
     // 2. Map correct options
     const correctOptionsMap = new Map<string, string>(); // questionId -> correctOptionId
     moduleQuestions.forEach(mq => {
-      // Cast to any or helper type to avoid conflict with shared types
-      const aptQuestion = mq.aptitudeQuestion as any;
-      if (aptQuestion && aptQuestion.options) {
-        const correctOpt = aptQuestion.options.find((o: any) => o.isCorrect);
-        if (correctOpt) {
-          correctOptionsMap.set(mq.id, correctOpt.id);
-        }
+      if (mq.aptitudeQuestion && mq.aptitudeQuestion.correctOptionId) {
+        correctOptionsMap.set(mq.id, mq.aptitudeQuestion.correctOptionId);
       }
     });
 
@@ -206,8 +211,13 @@ export class AptitudeModuleExecutor extends BaseModuleExecutor {
 
     const { score, percentage } = calculateAptitudeScore(finalData, config);
 
-    const passingPercentage = (config as { passingPercentage?: number }).passingPercentage;
-    const isPassed = passingPercentage !== undefined ? percentage >= passingPercentage : true;
+    const threshold = (config as { passingPercentage?: number; passingScore?: number }).passingPercentage ?? (config as { passingScore?: number }).passingScore;
+    // Default to passing if no threshold is set, otherwise check percentage
+    const isPassed = typeof threshold === 'number'
+      ? (config as { passingScore?: number }).passingScore !== undefined
+        ? score >= threshold
+        : percentage >= threshold
+      : true;
 
     return {
       data: finalData,

@@ -2,7 +2,7 @@
 
 'use client';
 
-import { FC, useEffect, useCallback, useState } from 'react';
+import { FC, useEffect, useCallback, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { AttemptHeader } from '../attempt-header';
@@ -27,7 +27,8 @@ import { useProctoring } from '@/lib/hooks/mock-drive/use-proctoring';
 import {
   MockDriveModuleAttemptStatus,
   SubmitModuleResponse,
-  ProctoringSettings
+  ProctoringSettings,
+  MachineModuleData
 } from '@/types/mockdrive.types';
 
 interface AttemptContainerProps {
@@ -39,6 +40,7 @@ export const AttemptContainer: FC<AttemptContainerProps> = ({ driveId, driveTitl
   const router = useRouter();
   const [moduleResult, setModuleResult] = useState<SubmitModuleResponse | null>(null);
   const [attemptCompleted, setAttemptCompleted] = useState(false);
+  const isSubmittingRef = useRef(false);
 
   const { data: attemptData, isLoading, refetch } = useAttemptState(driveId);
   const startModuleMutation = useStartModule();
@@ -79,7 +81,8 @@ export const AttemptContainer: FC<AttemptContainerProps> = ({ driveId, driveTitl
 
   // Timer for current module
   const handleTimeExpire = useCallback(() => {
-    if (currentModule?.moduleId) {
+    if (currentModule?.moduleId && !submitModuleMutation.isPending && !isSubmittingRef.current) {
+      isSubmittingRef.current = true;
       submitModuleMutation.mutate(
         { driveId, moduleId: currentModule.moduleId },
         {
@@ -89,6 +92,9 @@ export const AttemptContainer: FC<AttemptContainerProps> = ({ driveId, driveTitl
               setAttemptCompleted(true);
             }
           },
+          onSettled: () => {
+            isSubmittingRef.current = false;
+          }
         }
       );
     }
@@ -123,7 +129,8 @@ export const AttemptContainer: FC<AttemptContainerProps> = ({ driveId, driveTitl
 
   // Handle submitting a module
   const handleSubmitModule = () => {
-    if (currentModule?.moduleId) {
+    if (currentModule?.moduleId && !submitModuleMutation.isPending && !isSubmittingRef.current) {
+      isSubmittingRef.current = true;
       submitModuleMutation.mutate(
         { driveId, moduleId: currentModule.moduleId },
         {
@@ -133,6 +140,9 @@ export const AttemptContainer: FC<AttemptContainerProps> = ({ driveId, driveTitl
               setAttemptCompleted(true);
             }
           },
+          onSettled: () => {
+            isSubmittingRef.current = false;
+          }
         }
       );
     }
@@ -253,10 +263,8 @@ export const AttemptContainer: FC<AttemptContainerProps> = ({ driveId, driveTitl
 
             {currentModule.moduleType === 'MACHINE_CODING' && (
               <MachineModule
-                driveId={driveId}
-                moduleId={currentModule.moduleId}
-                config={currentModule.config}
-                data={currentModule.data}
+                module={currentModule}
+                data={currentModule.data as MachineModuleData}
                 onSubmit={handleSubmitModule}
                 isSubmitting={submitModuleMutation.isPending}
               />

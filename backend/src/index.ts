@@ -5,6 +5,7 @@ import { createServer } from 'http';
 import { logger } from './utils/logger';
 import { prisma } from './lib/db';
 import { interviewGateway } from './module/practice/interview';
+import { mockInterviewGateway } from './module/mock-drive/attempt/websocket/mock-interview.gateway';
 import { startTokenCleanup, stopTokenCleanup } from './lib/token-cleanup';
 
 const PORT = parseInt(process.env.PORT || '4000', 10);
@@ -29,6 +30,7 @@ async function startServer() {
     // Initialize WebSocket gateway BEFORE starting the server
     // This registers the 'upgrade' event handler
     interviewGateway.initialize(httpServer);
+    mockInterviewGateway.initialize(httpServer);
 
     // Start the HTTP server
     httpServer.listen(PORT, HOST, () => {
@@ -54,6 +56,7 @@ async function startServer() {
 
       // Shutdown WebSocket gateway first
       interviewGateway.shutdown();
+      mockInterviewGateway.shutdown();
 
       httpServer.close(async () => {
         logger.info('HTTP server closed');
