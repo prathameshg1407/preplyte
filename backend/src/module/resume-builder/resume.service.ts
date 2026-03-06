@@ -103,11 +103,7 @@ export class ResumeService {
     });
 
     if (!template) {
-<<<<<<< HEAD
       throw new AppError('NOT_FOUND', 'Template not found', 404);
-=======
-      throw new AppError('Template not found', '');
->>>>>>> mockraj
     }
 
     // Generate unique slug
@@ -209,8 +205,8 @@ export class ResumeService {
           achievements: r.achievements || undefined,
           customSections: r.customSections || undefined,
         } as ResumeContent,
-        templateStyles: r.template.styles as TemplateStyles,
-        templateLayout: r.template.layout as TemplateLayout,
+        templateStyles: r.template.styles as unknown as TemplateStyles,
+        templateLayout: r.template.layout as unknown as TemplateLayout,
       })),
       total,
       page,
@@ -264,11 +260,7 @@ export class ResumeService {
     });
 
     if (!existingResume) {
-<<<<<<< HEAD
       throw new AppError('NOT_FOUND', 'Resume not found', 404);
-=======
-      throw new AppError('Resume not found', '');
->>>>>>> mockraj
     }
 
     // If changing template, verify it exists
@@ -278,11 +270,7 @@ export class ResumeService {
       });
 
       if (!template) {
-<<<<<<< HEAD
         throw new AppError('NOT_FOUND', 'Template not found', 404);
-=======
-        throw new AppError('Template not found', '');
->>>>>>> mockraj
       }
     }
 
@@ -342,11 +330,7 @@ export class ResumeService {
     });
 
     if (!existingResume) {
-<<<<<<< HEAD
       throw new AppError('NOT_FOUND', 'Resume not found', 404);
-=======
-      throw new AppError('Resume not found', '');
->>>>>>> mockraj
     }
 
     // Create version snapshot before update
@@ -393,11 +377,7 @@ export class ResumeService {
     });
 
     if (!resume) {
-<<<<<<< HEAD
       throw new AppError('NOT_FOUND', 'Resume not found', 404);
-=======
-      throw new AppError('Resume not found', '');
->>>>>>> mockraj
     }
 
     await prisma.userResume.delete({
@@ -416,11 +396,7 @@ export class ResumeService {
     });
 
     if (!original) {
-<<<<<<< HEAD
       throw new AppError('NOT_FOUND', 'Resume not found', 404);
-=======
-      throw new AppError('Resume not found', '');
->>>>>>> mockraj
     }
 
     const title = data.newTitle || `${original.title} (Copy)`;
@@ -465,11 +441,7 @@ export class ResumeService {
     });
 
     if (!resume) {
-<<<<<<< HEAD
       throw new AppError('NOT_FOUND', 'Resume not found', 404);
-=======
-      throw new AppError('Resume not found', '');
->>>>>>> mockraj
     }
 
     const template = await prisma.resumeTemplate.findUnique({
@@ -477,11 +449,7 @@ export class ResumeService {
     });
 
     if (!template) {
-<<<<<<< HEAD
       throw new AppError('NOT_FOUND', 'Template not found', 404);
-=======
-      throw new AppError('Template not found', '');
->>>>>>> mockraj
     }
 
     // Create version before template change
@@ -510,11 +478,7 @@ export class ResumeService {
     });
 
     if (!resume) {
-<<<<<<< HEAD
       throw new AppError('NOT_FOUND', 'Resume not found', 404);
-=======
-      throw new AppError('Resume not found', '');
->>>>>>> mockraj
     }
 
     const versions = await prisma.resumeVersion.findMany({
@@ -541,11 +505,7 @@ export class ResumeService {
     });
 
     if (!resume) {
-<<<<<<< HEAD
       throw new AppError('NOT_FOUND', 'Resume not found', 404);
-=======
-      throw new AppError('Resume not found', '');
->>>>>>> mockraj
     }
 
     const version = await prisma.resumeVersion.findFirst({
