@@ -29,7 +29,7 @@ import { AppError } from './utils/errors';
 import { prisma } from './lib/db';
 import lmsRoutes from './module/lms/lms.routes';
 import lmsAdminRoutes from './module/admin/lms/lms-admin.routes';
-import { leaderboardRoutes } from './module/leaderbord';
+import { leaderboardRoutes } from './module/leaderboard';
 
 // =====================================================
 // APP INITIALIZATION
@@ -359,6 +359,7 @@ app.use(
 // Admin routes with specific rate limiter
 app.use('/api/admin', adminLimiter, adminRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/leaderboard', leaderboardRoutes);
 
 // =====================================================
 // 8. ERROR HANDLING
