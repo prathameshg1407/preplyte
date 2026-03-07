@@ -41,7 +41,7 @@ import {
 } from 'lucide-react';
 import { useStudentDashboard } from '@/lib/hooks/use-student-dashboard';
 import { useProfile } from '@/lib/hooks/use-profile';
-import { ProfileCompletionDialog } from '@/components/profile';
+import { ProfileCompletionDialog } from '@/components/profile/profile-completion-dialog';
 import { LmsEnrollmentStatus, DifficultyLevel } from '@/types/lms.types';
 import type { LmsEnrollmentSummary, LmsRecentActivity, RecommendedCourse, RecentTest } from '@/types/dashboard.types';
 import { formatDistanceToNow } from 'date-fns';
@@ -900,7 +900,7 @@ function PracticeSessionItem({
       </div>
       <div className="text-right ml-2">
         <p className={`font-semibold text-sm ${scorePercent >= 70 ? 'text-green-600' :
-            scorePercent >= 50 ? 'text-yellow-600' : 'text-red-600'
+          scorePercent >= 50 ? 'text-yellow-600' : 'text-red-600'
           }`}>
           {scoreDisplay}
         </p>

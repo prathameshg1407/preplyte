@@ -1,6 +1,5 @@
 'use client';
 
-import { motion, AnimatePresence } from 'framer-motion';
 import { AlertCircle, BarChart3, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -36,153 +35,116 @@ export default function InstituteAnalyticsPage() {
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="space-y-10 pb-20"
-    >
-      {/* Page Header */}
-      <div className="relative overflow-hidden rounded-3xl border border-border/40 bg-card/30 p-8 shadow-sm backdrop-blur-md sm:p-10">
-        <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-primary/5 blur-3xl" />
-        <div className="absolute -left-20 -bottom-20 h-64 w-64 rounded-full bg-primary/5 blur-3xl" />
-        
-        <div className="relative flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
-          <div className="space-y-2">
-            <div className="flex items-center gap-3">
-              <div className="rounded-2xl bg-primary/10 p-2.5 text-primary shadow-sm border border-primary/20">
-                <BarChart3 className="h-6 w-6" />
-              </div>
-              <h1 className="text-4xl font-bold tracking-tight text-gradient sm:text-5xl">
-                Institute Analytics
-              </h1>
-            </div>
-            <p className="max-w-2xl text-lg text-muted-foreground/80 leading-relaxed font-medium">
-              A comprehensive intelligence dashboard monitoring performance across mock drives, 
-              aptitude training, and AI interviews.
-            </p>
-          </div>
-          <Button
-            variant="outline"
-            size="lg"
-            onClick={() => refetch()}
-            disabled={isFetching}
-            className="group h-12 gap-2 rounded-2xl border-border/40 bg-background/50 backdrop-blur-sm px-6 hover:bg-background/80"
-          >
-            <RefreshCw className={`h-4 w-4 transition-transform group-hover:rotate-180 ${isFetching ? 'animate-spin' : ''}`} />
-            <span className="font-semibold">Refresh Intelligence</span>
-          </Button>
+    <div className="space-y-6">
+      {/* Page Header (Matched to Base Branch) */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Institute Analytics</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Monitor performance across mock drives, aptitude training, and AI interviews.
+          </p>
         </div>
+        <Button
+          variant="outline"
+          onClick={() => refetch()}
+          disabled={isFetching}
+        >
+          <RefreshCw className={`mr-2 h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
+          Refresh Data
+        </Button>
       </div>
 
       {/* KPI Overview Cards */}
-      <section className="space-y-6">
-        <div className="flex items-center gap-4 px-1">
-          <h2 className="text-sm font-bold uppercase tracking-[0.2em] text-muted-foreground/40">
-            Performance Overview
-          </h2>
-          <div className="h-px flex-1 bg-border/40" />
-        </div>
+      <div className="space-y-4">
+        <h2 className="text-lg font-semibold tracking-tight">Performance Overview</h2>
         <OverviewStatsCards summary={data.summary} practiceStats={data.practiceStats} />
-      </section>
+      </div>
 
       {/* Practice Modules Analytics */}
-      <section className="space-y-6">
-        <div className="flex items-center gap-4 px-1">
-          <h2 className="text-sm font-bold uppercase tracking-[0.2em] text-muted-foreground/40">
-            Practice Intelligence
-          </h2>
-          <div className="h-px flex-1 bg-border/40" />
-        </div>
-        <div className="rounded-3xl border border-border/40 bg-card/20 p-1 shadow-sm transition-all duration-300 hover:shadow-md">
-          <PracticeActivityChart stats={data.practiceStats} />
-        </div>
-      </section>
+      <div className="space-y-4">
+        <h2 className="text-lg font-semibold tracking-tight">Practice Intelligence</h2>
+        <PracticeActivityChart stats={data.practiceStats} />
+      </div>
 
       {/* Charts Row 1: Trends */}
-      <section className="space-y-6">
-        <div className="flex items-center gap-4 px-1">
-          <h2 className="text-sm font-bold uppercase tracking-[0.2em] text-muted-foreground/40">
-            Trend Analysis
-          </h2>
-          <div className="h-px flex-1 bg-border/40" />
+      <div className="space-y-4">
+        <h2 className="text-lg font-semibold tracking-tight">Trend Analysis</h2>
+        <div className="grid gap-6 lg:grid-cols-2">
+          <DrivesOverTimeChart data={data.drivesOverTime} />
+          <ScoreDistributionChart
+            buckets={data.scoreDistribution.buckets}
+            totalStudents={data.scoreDistribution.totalStudents}
+          />
         </div>
-        <div className="grid gap-8 lg:grid-cols-2">
-          <div className="rounded-3xl border border-border/40 bg-card/20 p-1">
-            <DrivesOverTimeChart data={data.drivesOverTime} />
-          </div>
-          <div className="rounded-3xl border border-border/40 bg-card/20 p-1">
-            <ScoreDistributionChart
-              buckets={data.scoreDistribution.buckets}
-              totalStudents={data.scoreDistribution.totalStudents}
-            />
-          </div>
-        </div>
-      </section>
+      </div>
 
       {/* Charts Row 2: Mock Drive Depth */}
-      <section className="space-y-6">
-        <div className="flex items-center gap-4 px-1">
-          <h2 className="text-sm font-bold uppercase tracking-[0.2em] text-muted-foreground/40">
-            Mock Drive Context
-          </h2>
-          <div className="h-px flex-1 bg-border/40" />
+      <div className="space-y-4">
+        <h2 className="text-lg font-semibold tracking-tight">Mock Drive Context</h2>
+        <div className="grid gap-6 lg:grid-cols-2">
+          <DriveComparisonChart data={data.driveComparison} />
+          <DepartmentPerformanceChart data={data.departmentPerformance} />
         </div>
-        <div className="grid gap-8 lg:grid-cols-2">
-          <div className="rounded-3xl border border-border/40 bg-card/20 p-1">
-            <DriveComparisonChart data={data.driveComparison} />
-          </div>
-          <div className="rounded-3xl border border-border/40 bg-card/20 p-1">
-            <DepartmentPerformanceChart data={data.departmentPerformance} />
-          </div>
-        </div>
-      </section>
+      </div>
 
       {/* Top Performers Table */}
-      <section className="space-y-6">
-        <div className="flex items-center gap-4 px-1">
-          <h2 className="text-sm font-bold uppercase tracking-[0.2em] text-muted-foreground/40">
-            Student Leaderboard
-          </h2>
-          <div className="h-px flex-1 bg-border/40" />
-        </div>
-        <div className="rounded-3xl border border-border/40 bg-card/20 overflow-hidden shadow-sm transition-all duration-300 hover:shadow-md">
-          <TopPerformersTable performers={data.topPerformers} />
-        </div>
-      </section>
-    </motion.div>
+      <div className="space-y-4">
+        <h2 className="text-lg font-semibold tracking-tight">Student Leaderboard</h2>
+        <TopPerformersTable performers={data.topPerformers} />
+      </div>
+    </div>
   );
 }
 
-
 function AnalyticsSkeleton() {
   return (
-    <div className="space-y-8 pb-12">
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="space-y-2">
-          <Skeleton className="h-9 w-64" />
+          <Skeleton className="h-7 w-48" />
           <Skeleton className="h-4 w-96" />
         </div>
-        <Skeleton className="h-9 w-24" />
+        <Skeleton className="h-10 w-32" />
       </div>
+      
       {/* KPI Cards */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {[...Array(8)].map((_, i) => (
-          <Skeleton key={i} className="h-24 rounded-lg" />
-        ))}
+      <div className="space-y-4">
+        <Skeleton className="h-6 w-40" />
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {[...Array(4)].map((_, i) => (
+            <Skeleton key={i} className="h-24 rounded-xl" />
+          ))}
+        </div>
       </div>
+
       {/* Practice Chart */}
-      <Skeleton className="h-80 rounded-lg" />
+      <div className="space-y-4">
+        <Skeleton className="h-6 w-40" />
+        <Skeleton className="h-80 rounded-xl" />
+      </div>
+
       {/* Chart Rows */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Skeleton className="h-72 rounded-lg" />
-        <Skeleton className="h-72 rounded-lg" />
+      <div className="space-y-4">
+        <Skeleton className="h-6 w-40" />
+        <div className="grid gap-6 lg:grid-cols-2">
+          <Skeleton className="h-72 rounded-xl" />
+          <Skeleton className="h-72 rounded-xl" />
+        </div>
       </div>
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Skeleton className="h-72 rounded-lg" />
-        <Skeleton className="h-72 rounded-lg" />
+
+      <div className="space-y-4">
+        <Skeleton className="h-6 w-40" />
+        <div className="grid gap-6 lg:grid-cols-2">
+          <Skeleton className="h-72 rounded-xl" />
+          <Skeleton className="h-72 rounded-xl" />
+        </div>
       </div>
+
       {/* Performers Table */}
-      <Skeleton className="h-64 rounded-lg" />
+      <div className="space-y-4">
+        <Skeleton className="h-6 w-40" />
+        <Skeleton className="h-64 rounded-xl" />
+      </div>
     </div>
   );
 }
