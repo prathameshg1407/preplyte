@@ -35,10 +35,13 @@ import {
   Brain,
   MessageSquare,
   Laptop,
+  Building2,
+  Briefcase,
+  Users2,
 } from 'lucide-react';
 import { useStudentDashboard } from '@/lib/hooks/use-student-dashboard';
 import { useProfile } from '@/lib/hooks/use-profile';
-import { ProfileCompletionDialog } from '@/components/profile';
+import { ProfileCompletionDialog } from '@/components/profile/profile-completion-dialog';
 import { LmsEnrollmentStatus, DifficultyLevel } from '@/types/lms.types';
 import type { LmsEnrollmentSummary, LmsRecentActivity, RecommendedCourse, RecentTest } from '@/types/dashboard.types';
 import { formatDistanceToNow } from 'date-fns';
@@ -71,7 +74,6 @@ const practiceTypeConfig = {
   APTITUDE: {
     label: 'Aptitude Tests',
     icon: Brain,
-    // Muted neutral blue (low saturation, professional)
     color: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
     borderColor: 'border-slate-200 dark:border-slate-700',
     link: '/practice/aptitude',
@@ -80,7 +82,6 @@ const practiceTypeConfig = {
   MACHINE: {
     label: 'Coding Challenges',
     icon: Code,
-    // Muted neutral green replaced with gray-green tone
     color: 'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300',
     borderColor: 'border-zinc-200 dark:border-zinc-700',
     link: '/practice/machine',
@@ -89,7 +90,6 @@ const practiceTypeConfig = {
   INTERVIEW: {
     label: 'AI Interviews',
     icon: MessageSquare,
-    // Muted neutral purple replaced with slate tone
     color: 'bg-neutral-100 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300',
     borderColor: 'border-neutral-200 dark:border-neutral-700',
     link: '/practice/ai-interview',
@@ -107,7 +107,7 @@ export function StudentDashboard() {
     const checkProfile = async () => {
       // Check if user just logged in (flag set by login)
       const justLoggedIn = localStorage.getItem('justLoggedIn');
-      
+
       if (justLoggedIn === 'true') {
         await fetchCompleteProfile();
         // Clear the flag
@@ -121,7 +121,7 @@ export function StudentDashboard() {
   // Show dialog when profile completion is loaded and incomplete
   useEffect(() => {
     const justLoggedIn = sessionStorage.getItem('checkProfileCompletion');
-    
+
     if (justLoggedIn === 'true' && profileCompletion && !profileCompletion.isComplete) {
       setShowProfileDialog(true);
       sessionStorage.removeItem('checkProfileCompletion');
@@ -151,7 +151,7 @@ export function StudentDashboard() {
     );
   }
 
-  const { stats, recentTests, upcomingTests, lms } = data;
+  const { stats, recentTests, upcomingTests, lms, appliedOpportunities, hackathonRegistrations } = data;
 
   // Separate recent tests by type
   const aptitudeTests = recentTests.filter((t) => t.type === 'APTITUDE');
@@ -173,589 +173,623 @@ export function StudentDashboard() {
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">Welcome Back! 👋</h1>
             <p className="text-sm text-muted-foreground mt-1">
-              Track your progress and continue learning
+              Track your progress, manage applications, and continue learning
             </p>
           </div>
           <div className="flex gap-2">
             <Button variant="outline" asChild>
-            <Link href="/lms">
-              <BookOpen className="h-4 w-4 mr-2" />
-              Browse Courses
-            </Link>
-          </Button>
-          <Button asChild>
-            <Link href="/practice">
-              <Zap className="h-4 w-4 mr-2" />
-              Practice Now
-            </Link>
-          </Button>
-        </div>
-      </div>
-
-      {/* Main Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3 lg:w-auto lg:inline-grid">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="courses">My Courses</TabsTrigger>
-          <TabsTrigger value="practice">Practice</TabsTrigger>
-        </TabsList>
-
-        {/* ============================================= */}
-        {/* OVERVIEW TAB - All Stats Combined */}
-        {/* ============================================= */}
-        <TabsContent value="overview" className="space-y-6">
-          {/* Combined Stats Section */}
-          <div className="space-y-4">
-            {/* LMS Stats */}
-            <div>
-              <div className="flex items-center gap-2 mb-3">
-                <GraduationCap className="h-5 w-5 text-primary" />
-                <h2 className="text-lg font-semibold">Learning Progress</h2>
-              </div>
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <StatsCard
-                  title="Courses Enrolled"
-                  value={lms.stats.totalEnrollments}
-                  icon={BookOpen}
-                  description={`${lms.stats.inProgressCourses} in progress, ${lms.stats.completedCourses} completed`}
-                  color="text-blue-600"
-                />
-                <StatsCard
-                  title="LMS Points Earned"
-                  value={lms.stats.totalPointsEarned}
-                  icon={Trophy}
-                  description={`${lms.stats.moduleTestsPassed} module tests passed`}
-                  color="text-yellow-600"
-                />
-                <StatsCard
-                  title="Learning Hours"
-                  value={`${lms.stats.totalLearningHours}h`}
-                  icon={Clock}
-                  description={`${lms.stats.averageProgress}% avg progress`}
-                  color="text-green-600"
-                />
-                <StatsCard
-                  title="Certificates Earned"
-                  value={lms.stats.certificatesEarned}
-                  icon={Award}
-                  description={`${lms.stats.finalTestsPassed} final tests passed`}
-                  color="text-purple-600"
-                />
-              </div>
-            </div>
-
-            {/* Practice Stats */}
-            <div>
-              <div className="flex items-center gap-2 mb-3">
-                <Target className="h-5 w-5 text-primary" />
-                <h2 className="text-lg font-semibold">Practice Performance</h2>
-              </div>
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <ProgressStatsCard
-                  title="Aptitude Tests"
-                  value={stats.testsCompleted}
-                  total={stats.totalTests}
-                  icon={Brain}
-                  color="text-blue-600"
-                  bgColor="bg-blue-100 dark:bg-blue-900/30"
-                />
-                <ProgressStatsCard
-                  title="Coding Problems"
-                  value={stats.problemsSolved}
-                  total={stats.totalProblems}
-                  icon={Code}
-                  color="text-green-600"
-                  bgColor="bg-green-100 dark:bg-green-900/30"
-                />
-                <ProgressStatsCard
-                  title="AI Interviews"
-                  value={stats.interviewsCompleted}
-                  total={stats.totalInterviews}
-                  icon={MessageSquare}
-                  color="text-purple-600"
-                  bgColor="bg-purple-100 dark:bg-purple-900/30"
-                />
-                <ProgressStatsCard
-                  title="Overall Score"
-                  value={stats.overallScore}
-                  total={100}
-                  icon={TrendingUp}
-                  color="text-orange-600"
-                  bgColor="bg-orange-100 dark:bg-orange-900/30"
-                  isPercentage
-                />
-              </div>
-            </div>
+              <Link href="/lms">
+                <BookOpen className="h-4 w-4 mr-2" />
+                Browse Courses
+              </Link>
+            </Button>
+            <Button asChild>
+              <Link href="/practice">
+                <Zap className="h-4 w-4 mr-2" />
+                Practice Now
+              </Link>
+            </Button>
           </div>
+        </div>
 
-          {/* Continue Learning Section */}
-          {lms.enrollments.inProgress.length > 0 && (
+        {/* Main Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="grid w-full grid-cols-3 lg:w-auto lg:inline-grid">
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="courses">My Courses</TabsTrigger>
+            <TabsTrigger value="practice">Practice</TabsTrigger>
+          </TabsList>
+
+          {/* ============================================= */}
+          {/* OVERVIEW TAB - All Stats Combined */}
+          {/* ============================================= */}
+          <TabsContent value="overview" className="space-y-6">
+
+            {/* Quick Actions (Moved up for better visibility) */}
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                  <CardTitle className="text-lg">Continue Learning</CardTitle>
-                  <CardDescription>Pick up where you left off</CardDescription>
-                </div>
-                <Button variant="ghost" size="sm" asChild>
-                  <Link href="/lms">
-                    View All
-                    <ArrowRight className="h-4 w-4 ml-1" />
-                  </Link>
-                </Button>
+              <CardHeader>
+                <CardTitle className="text-base font-medium">Quick Actions</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                  {lms.enrollments.inProgress.slice(0, 3).map((enrollment) => (
-                    <CourseProgressCard key={enrollment.id} enrollment={enrollment} />
-                  ))}
+                <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-6">
+                  <Button variant="outline" className="h-20 flex-col gap-2" asChild>
+                    <Link href="/practice/aptitude">
+                      <Brain className="h-6 w-6 text-blue-600" />
+                      <span>Aptitude Test</span>
+                    </Link>
+                  </Button>
+                  <Button variant="outline" className="h-20 flex-col gap-2" asChild>
+                    <Link href="/practice/machine">
+                      <Code className="h-6 w-6 text-green-600" />
+                      <span>Start Coding</span>
+                    </Link>
+                  </Button>
+                  <Button variant="outline" className="h-20 flex-col gap-2" asChild>
+                    <Link href="/practice/ai-interview">
+                      <MessageSquare className="h-6 w-6 text-purple-600" />
+                      <span>Mock Interview</span>
+                    </Link>
+                  </Button>
+                  <Button variant="outline" className="h-20 flex-col gap-2" asChild>
+                    <Link href="/lms">
+                      <GraduationCap className="h-6 w-6 text-orange-600" />
+                      <span>Browse Courses</span>
+                    </Link>
+                  </Button>
+                  <Button variant="outline" className="h-20 flex-col gap-2" asChild>
+                    <Link href="/opportunities">
+                      <Briefcase className="h-6 w-6 text-indigo-600" />
+                      <span>Job Board</span>
+                    </Link>
+                  </Button>
+                  <Button variant="outline" className="h-20 flex-col gap-2" asChild>
+                    <Link href="/resume-builder">
+                      <FileText className="h-6 w-6 text-pink-600" />
+                      <span>Resume Builder</span>
+                    </Link>
+                  </Button>
                 </div>
               </CardContent>
             </Card>
-          )}
 
-          {/* Recent Practice Sessions - Separated by Type */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Recent Practice Sessions</CardTitle>
-              <CardDescription>Your latest practice activity by category</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-6 lg:grid-cols-3">
-                {/* Aptitude Tests */}
-                <PracticeSessionSection
-                  type="APTITUDE"
-                  tests={aptitudeTests}
-                  config={practiceTypeConfig.APTITUDE}
-                />
-
-                {/* Coding Challenges */}
-                <PracticeSessionSection
-                  type="MACHINE"
-                  tests={machineTests}
-                  config={practiceTypeConfig.MACHINE}
-                />
-
-                {/* AI Interviews */}
-                <PracticeSessionSection
-                  type="INTERVIEW"
-                  tests={interviewTests}
-                  config={practiceTypeConfig.INTERVIEW}
-                />
+            {/* Combined Stats Section */}
+            <div className="space-y-4">
+              {/* LMS Stats */}
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <GraduationCap className="h-5 w-5 text-primary" />
+                  <h2 className="text-lg font-semibold">Learning Progress</h2>
+                </div>
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                  <StatsCard
+                    title="Courses Enrolled"
+                    value={lms.stats.totalEnrollments}
+                    icon={BookOpen}
+                    description={`${lms.stats.inProgressCourses} in progress, ${lms.stats.completedCourses} completed`}
+                    color="text-blue-600"
+                  />
+                  <StatsCard
+                    title="LMS Points Earned"
+                    value={lms.stats.totalPointsEarned}
+                    icon={Trophy}
+                    description={`${lms.stats.moduleTestsPassed} module tests passed`}
+                    color="text-yellow-600"
+                  />
+                  <StatsCard
+                    title="Learning Hours"
+                    value={`${lms.stats.totalLearningHours}h`}
+                    icon={Clock}
+                    description={`${lms.stats.averageProgress}% avg progress`}
+                    color="text-green-600"
+                  />
+                  <StatsCard
+                    title="Certificates Earned"
+                    value={lms.stats.certificatesEarned}
+                    icon={Award}
+                    description={`${lms.stats.finalTestsPassed} final tests passed`}
+                    color="text-purple-600"
+                  />
+                </div>
               </div>
-            </CardContent>
-          </Card>
 
-          {/* Two Column Layout: Recent Activity & Upcoming */}
-          <div className="grid gap-6 lg:grid-cols-2">
-            {/* Recent LMS Activity */}
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle className="text-base font-medium">Recent Learning Activity</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {lms.recentActivity.length === 0 ? (
-                  <EmptyState message="No recent activity" icon={Clock} />
-                ) : (
-                  <ScrollArea className="h-[300px] pr-4">
-                    <div className="space-y-4">
-                      {lms.recentActivity.map((activity) => (
-                        <ActivityItem key={activity.id} activity={activity} />
-                      ))}
-                    </div>
-                  </ScrollArea>
-                )}
-              </CardContent>
-            </Card>
+              {/* Practice Stats */}
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <Target className="h-5 w-5 text-primary" />
+                  <h2 className="text-lg font-semibold">Practice Performance</h2>
+                </div>
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                  <ProgressStatsCard
+                    title="Aptitude Tests"
+                    value={stats.testsCompleted}
+                    total={stats.totalTests}
+                    icon={Brain}
+                    color="text-blue-600"
+                    bgColor="bg-blue-100 dark:bg-blue-900/30"
+                  />
+                  <ProgressStatsCard
+                    title="Coding Problems"
+                    value={stats.problemsSolved}
+                    total={stats.totalProblems}
+                    icon={Code}
+                    color="text-green-600"
+                    bgColor="bg-green-100 dark:bg-green-900/30"
+                  />
+                  <ProgressStatsCard
+                    title="AI Interviews"
+                    value={stats.interviewsCompleted}
+                    total={stats.totalInterviews}
+                    icon={MessageSquare}
+                    color="text-purple-600"
+                    bgColor="bg-purple-100 dark:bg-purple-900/30"
+                  />
+                  <ProgressStatsCard
+                    title="Overall Score"
+                    value={stats.overallScore}
+                    total={100}
+                    icon={TrendingUp}
+                    color="text-orange-600"
+                    bgColor="bg-orange-100 dark:bg-orange-900/30"
+                    isPercentage
+                  />
+                </div>
+              </div>
+            </div>
 
-            {/* Upcoming Tests */}
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle className="text-base font-medium">Upcoming Mock Drives</CardTitle>
-                <Button variant="ghost" size="sm" asChild>
-                  <Link href="/mock-drive">
-                    View All
-                    <ArrowRight className="h-4 w-4 ml-1" />
-                  </Link>
-                </Button>
-              </CardHeader>
-              <CardContent>
-                {upcomingTests.length === 0 ? (
-                  <EmptyState message="No upcoming tests" icon={Calendar} />
-                ) : (
-                  <ScrollArea className="h-[300px] pr-4">
-                    <div className="space-y-3">
-                      {upcomingTests.map((test) => (
-                        <div
-                          key={test.id}
-                          className="flex items-center justify-between p-3 border rounded-lg"
-                        >
-                          <div className="flex-1 min-w-0">
-                            <p className="font-medium text-sm truncate">{test.title}</p>
-                            <div className="flex items-center gap-2 mt-1">
-                              <span className="text-xs text-muted-foreground">
-                                {new Date(test.date).toLocaleDateString()}
-                              </span>
-                              <span className="text-xs px-1.5 py-0.5 rounded bg-secondary">
-                                {test.duration}
+            {/* Jobs & Hackathons (From Prathamesh) integrated into modern layout */}
+            <div className="grid gap-6 lg:grid-cols-2">
+              {/* Applied Opportunities */}
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <CardTitle className="text-base font-medium">Applied Opportunities</CardTitle>
+                  <Button variant="ghost" size="sm" asChild>
+                    <Link href="/opportunities">
+                      Browse More
+                      <ArrowRight className="h-4 w-4 ml-1" />
+                    </Link>
+                  </Button>
+                </CardHeader>
+                <CardContent>
+                  {appliedOpportunities.length === 0 ? (
+                    <EmptyState message="No applications yet" icon={Briefcase} />
+                  ) : (
+                    <ScrollArea className="h-[250px] pr-4">
+                      <div className="space-y-3">
+                        {appliedOpportunities.map((opportunity) => (
+                          <div
+                            key={opportunity.id}
+                            className="flex items-center justify-between p-3 border rounded-lg"
+                          >
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-sm truncate">{opportunity.title}</p>
+                              <div className="flex items-center gap-2 mt-1">
+                                <span className="text-xs text-muted-foreground flex items-center gap-1">
+                                  <Building2 className="h-3 w-3" />
+                                  {opportunity.companyName}
+                                </span>
+                                <span className="text-xs px-1.5 py-0.5 rounded bg-secondary flex items-center gap-1">
+                                  <Briefcase className="h-3 w-3" />
+                                  {opportunity.type}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="text-right ml-4">
+                              <OpportunityStatusBadge status={opportunity.status} />
+                              <p className="text-[10px] text-muted-foreground mt-1">
+                                {new Date(opportunity.appliedAt).toLocaleDateString()}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* My Hackathons */}
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <CardTitle className="text-base font-medium">My Hackathons</CardTitle>
+                  <Button variant="ghost" size="sm" asChild>
+                    <Link href="/hackathons">
+                      Find More
+                      <ArrowRight className="h-4 w-4 ml-1" />
+                    </Link>
+                  </Button>
+                </CardHeader>
+                <CardContent>
+                  {hackathonRegistrations.length === 0 ? (
+                    <EmptyState message="No hackathons registered" icon={Code} />
+                  ) : (
+                    <ScrollArea className="h-[250px] pr-4">
+                      <div className="space-y-3">
+                        {hackathonRegistrations.map((reg) => (
+                          <div
+                            key={reg.id}
+                            className="flex items-center justify-between p-3 border rounded-lg"
+                          >
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-sm truncate">{reg.title}</p>
+                              <div className="flex items-center gap-2 mt-1">
+                                <HackathonRoleBadge role={reg.role} />
+                                <span className="text-xs text-muted-foreground">
+                                  {new Date(reg.registrationDate).toLocaleDateString()}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="text-right ml-4">
+                              <span className="text-xs font-medium px-2 py-1 rounded-full bg-primary/10 text-primary">
+                                {reg.status}
                               </span>
                             </div>
                           </div>
-                          <Button size="sm" asChild>
-                            <Link href={`/mock-drive/${test.id}`}>View</Link>
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  </ScrollArea>
-                )}
-              </CardContent>
-            </Card>
-          </div>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
 
-          {/* Quick Actions */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base font-medium">Quick Actions</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-6">
-                <Button variant="outline" className="h-20 flex-col gap-2" asChild>
-                  <Link href="/practice/aptitude">
-                    <Brain className="h-6 w-6 text-blue-600" />
-                    <span>Aptitude Test</span>
-                  </Link>
-                </Button>
-                <Button variant="outline" className="h-20 flex-col gap-2" asChild>
-                  <Link href="/practice/machine">
-                    <Code className="h-6 w-6 text-green-600" />
-                    <span>Start Coding</span>
-                  </Link>
-                </Button>
-                <Button variant="outline" className="h-20 flex-col gap-2" asChild>
-                  <Link href="/practice/ai-interview">
-                    <MessageSquare className="h-6 w-6 text-purple-600" />
-                    <span>Mock Interview</span>
-                  </Link>
-                </Button>
-                <Button variant="outline" className="h-20 flex-col gap-2" asChild>
-                  <Link href="/lms">
-                    <GraduationCap className="h-6 w-6 text-orange-600" />
-                    <span>Browse Courses</span>
-                  </Link>
-                </Button>
-                <Button variant="outline" className="h-20 flex-col gap-2" asChild>
-                  <Link href="/mock-drive">
-                    <Laptop className="h-6 w-6 text-cyan-600" />
-                    <span>Mock Drives</span>
-                  </Link>
-                </Button>
-                <Button variant="outline" className="h-20 flex-col gap-2" asChild>
-                  <Link href="/resume-builder">
-                    <FileText className="h-6 w-6 text-pink-600" />
-                    <span>Resume Builder</span>
-                  </Link>
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+            {/* Continue Learning Section */}
+            {lms.enrollments.inProgress.length > 0 && (
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle className="text-lg">Continue Learning</CardTitle>
+                    <CardDescription>Pick up where you left off</CardDescription>
+                  </div>
+                  <Button variant="ghost" size="sm" asChild>
+                    <Link href="/lms">
+                      View All
+                      <ArrowRight className="h-4 w-4 ml-1" />
+                    </Link>
+                  </Button>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    {lms.enrollments.inProgress.slice(0, 3).map((enrollment) => (
+                      <CourseProgressCard key={enrollment.id} enrollment={enrollment} />
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
-          {/* Recommended Courses */}
-          {lms.recommendedCourses.length > 0 && (
+            {/* Two Column Layout: Recent Activity & Upcoming Tests */}
+            <div className="grid gap-6 lg:grid-cols-2">
+              {/* Recent LMS Activity */}
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <CardTitle className="text-base font-medium">Recent Learning Activity</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {lms.recentActivity.length === 0 ? (
+                    <EmptyState message="No recent activity" icon={Clock} />
+                  ) : (
+                    <ScrollArea className="h-[300px] pr-4">
+                      <div className="space-y-4">
+                        {lms.recentActivity.map((activity) => (
+                          <ActivityItem key={activity.id} activity={activity} />
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Upcoming Tests */}
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <CardTitle className="text-base font-medium">Upcoming Mock Drives</CardTitle>
+                  <Button variant="ghost" size="sm" asChild>
+                    <Link href="/mock-drive">
+                      View All
+                      <ArrowRight className="h-4 w-4 ml-1" />
+                    </Link>
+                  </Button>
+                </CardHeader>
+                <CardContent>
+                  {upcomingTests.length === 0 ? (
+                    <EmptyState message="No upcoming mock drives" icon={Calendar} />
+                  ) : (
+                    <ScrollArea className="h-[300px] pr-4">
+                      <div className="space-y-3">
+                        {upcomingTests.map((test) => (
+                          <div
+                            key={test.id}
+                            className="flex items-center justify-between p-3 border rounded-lg"
+                          >
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-sm truncate">{test.title}</p>
+                              <div className="flex items-center gap-2 mt-1">
+                                <span className="text-xs text-muted-foreground">
+                                  {new Date(test.date).toLocaleDateString()}
+                                </span>
+                                <span className="text-xs px-1.5 py-0.5 rounded bg-secondary">
+                                  {test.duration}
+                                </span>
+                                {test.difficulty && <DifficultyBadge difficulty={test.difficulty} />}
+                              </div>
+                            </div>
+                            <Button size="sm" asChild>
+                              <Link href={`/mock-drive/${test.id}`}>View</Link>
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Recommended Courses */}
+            {lms.recommendedCourses.length > 0 && (
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle className="text-lg">Recommended for You</CardTitle>
+                    <CardDescription>Based on popular courses</CardDescription>
+                  </div>
+                  <Button variant="ghost" size="sm" asChild>
+                    <Link href="/lms">
+                      Browse All
+                      <ArrowRight className="h-4 w-4 ml-1" />
+                    </Link>
+                  </Button>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+                    {lms.recommendedCourses.map((course) => (
+                      <RecommendedCourseCard key={course.id} course={course} />
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+
+          {/* ============================================= */}
+          {/* MY COURSES TAB */}
+          {/* ============================================= */}
+          <TabsContent value="courses" className="space-y-6">
+            {/* Course Stats */}
+            <div className="grid gap-4 md:grid-cols-4">
+              <StatsCard
+                title="Total Enrolled"
+                value={lms.stats.totalEnrollments}
+                icon={BookOpen}
+                color="text-blue-600"
+              />
+              <StatsCard
+                title="In Progress"
+                value={lms.stats.inProgressCourses}
+                icon={Play}
+                color="text-orange-600"
+              />
+              <StatsCard
+                title="Completed"
+                value={lms.stats.completedCourses}
+                icon={CheckCircle}
+                color="text-green-600"
+              />
+              <StatsCard
+                title="Average Progress"
+                value={`${lms.stats.averageProgress}%`}
+                icon={TrendingUp}
+                color="text-purple-600"
+              />
+            </div>
+
+            {/* In Progress Courses */}
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                  <CardTitle className="text-lg">Recommended for You</CardTitle>
-                  <CardDescription>Based on popular courses</CardDescription>
-                </div>
-                <Button variant="ghost" size="sm" asChild>
-                  <Link href="/lms">
-                    Browse All
-                    <ArrowRight className="h-4 w-4 ml-1" />
-                  </Link>
-                </Button>
+              <CardHeader>
+                <CardTitle className="text-lg">In Progress</CardTitle>
+                <CardDescription>
+                  Continue your learning journey
+                </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-                  {lms.recommendedCourses.map((course) => (
-                    <RecommendedCourseCard key={course.id} course={course} />
-                  ))}
-                </div>
+                {lms.enrollments.inProgress.length === 0 ? (
+                  <EmptyState
+                    message="No courses in progress"
+                    icon={BookOpen}
+                    action={
+                      <Button asChild className="mt-4">
+                        <Link href="/lms">Browse Courses</Link>
+                      </Button>
+                    }
+                  />
+                ) : (
+                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    {lms.enrollments.inProgress.map((enrollment) => (
+                      <CourseProgressCard key={enrollment.id} enrollment={enrollment} showDetails />
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
-          )}
-        </TabsContent>
 
-        {/* ============================================= */}
-        {/* MY COURSES TAB */}
-        {/* ============================================= */}
-        <TabsContent value="courses" className="space-y-6">
-          {/* Course Stats */}
-          <div className="grid gap-4 md:grid-cols-4">
-            <StatsCard
-              title="Total Enrolled"
-              value={lms.stats.totalEnrollments}
-              icon={BookOpen}
-              color="text-blue-600"
-            />
-            <StatsCard
-              title="In Progress"
-              value={lms.stats.inProgressCourses}
-              icon={Play}
-              color="text-orange-600"
-            />
-            <StatsCard
-              title="Completed"
-              value={lms.stats.completedCourses}
-              icon={CheckCircle}
-              color="text-green-600"
-            />
-            <StatsCard
-              title="Average Progress"
-              value={`${lms.stats.averageProgress}%`}
-              icon={TrendingUp}
-              color="text-purple-600"
-            />
-          </div>
+            {/* Completed Courses */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Completed</CardTitle>
+                <CardDescription>
+                  Your achievements and certifications
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {lms.enrollments.completed.length === 0 ? (
+                  <EmptyState
+                    message="No completed courses yet"
+                    icon={GraduationCap}
+                  />
+                ) : (
+                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    {lms.enrollments.completed.map((enrollment) => (
+                      <CompletedCourseCard key={enrollment.id} enrollment={enrollment} />
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-          {/* In Progress Courses */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">In Progress</CardTitle>
-              <CardDescription>
-                Continue your learning journey
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {lms.enrollments.inProgress.length === 0 ? (
-                <EmptyState 
-                  message="No courses in progress" 
-                  icon={BookOpen}
-                  action={
-                    <Button asChild className="mt-4">
-                      <Link href="/lms">Browse Courses</Link>
+          {/* ============================================= */}
+          {/* PRACTICE TAB */}
+          {/* ============================================= */}
+          <TabsContent value="practice" className="space-y-6">
+            {/* Practice Stats */}
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              <ProgressStatsCard
+                title="Aptitude Tests"
+                value={stats.testsCompleted}
+                total={stats.totalTests}
+                icon={Brain}
+                color="text-blue-600"
+                bgColor="bg-blue-100 dark:bg-blue-900/30"
+              />
+              <ProgressStatsCard
+                title="Coding Problems"
+                value={stats.problemsSolved}
+                total={stats.totalProblems}
+                icon={Code}
+                color="text-green-600"
+                bgColor="bg-green-100 dark:bg-green-900/30"
+              />
+              <ProgressStatsCard
+                title="AI Interviews"
+                value={stats.interviewsCompleted}
+                total={stats.totalInterviews}
+                icon={MessageSquare}
+                color="text-purple-600"
+                bgColor="bg-purple-100 dark:bg-purple-900/30"
+              />
+              <ProgressStatsCard
+                title="Overall Score"
+                value={stats.overallScore}
+                total={100}
+                icon={TrendingUp}
+                color="text-orange-600"
+                bgColor="bg-orange-100 dark:bg-orange-900/30"
+                isPercentage
+              />
+            </div>
+
+            {/* Practice Sessions by Type */}
+            <div className="grid gap-6 lg:grid-cols-3">
+              {/* Aptitude Tests Card */}
+              <Card className={`border-2 ${practiceTypeConfig.APTITUDE.borderColor}`}>
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${practiceTypeConfig.APTITUDE.color}`}>
+                        <Brain className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-base">Aptitude Tests</CardTitle>
+                        <CardDescription>{aptitudeTests.length} sessions</CardDescription>
+                      </div>
+                    </div>
+                    <Button size="sm" asChild>
+                      <Link href="/practice/aptitude">
+                        <Play className="h-4 w-4 mr-1" />
+                        Start
+                      </Link>
                     </Button>
-                  }
-                />
-              ) : (
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                  {lms.enrollments.inProgress.map((enrollment) => (
-                    <CourseProgressCard key={enrollment.id} enrollment={enrollment} showDetails />
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Completed Courses */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Completed</CardTitle>
-              <CardDescription>
-                Your achievements and certifications
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {lms.enrollments.completed.length === 0 ? (
-                <EmptyState 
-                  message="No completed courses yet" 
-                  icon={GraduationCap}
-                />
-              ) : (
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                  {lms.enrollments.completed.map((enrollment) => (
-                    <CompletedCourseCard key={enrollment.id} enrollment={enrollment} />
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* ============================================= */}
-        {/* PRACTICE TAB */}
-        {/* ============================================= */}
-        <TabsContent value="practice" className="space-y-6">
-          {/* Practice Stats */}
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <ProgressStatsCard
-              title="Aptitude Tests"
-              value={stats.testsCompleted}
-              total={stats.totalTests}
-              icon={Brain}
-              color="text-blue-600"
-              bgColor="bg-blue-100 dark:bg-blue-900/30"
-            />
-            <ProgressStatsCard
-              title="Coding Problems"
-              value={stats.problemsSolved}
-              total={stats.totalProblems}
-              icon={Code}
-              color="text-green-600"
-              bgColor="bg-green-100 dark:bg-green-900/30"
-            />
-            <ProgressStatsCard
-              title="AI Interviews"
-              value={stats.interviewsCompleted}
-              total={stats.totalInterviews}
-              icon={MessageSquare}
-              color="text-purple-600"
-              bgColor="bg-purple-100 dark:bg-purple-900/30"
-            />
-            <ProgressStatsCard
-              title="Overall Score"
-              value={stats.overallScore}
-              total={100}
-              icon={TrendingUp}
-              color="text-orange-600"
-              bgColor="bg-orange-100 dark:bg-orange-900/30"
-              isPercentage
-            />
-          </div>
-
-          {/* Practice Sessions by Type */}
-          <div className="grid gap-6 lg:grid-cols-3">
-            {/* Aptitude Tests Card */}
-            <Card className={`border-2 ${practiceTypeConfig.APTITUDE.borderColor}`}>
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${practiceTypeConfig.APTITUDE.color}`}>
-                      <Brain className="h-5 w-5" />
-                    </div>
-                    <div>
-                      <CardTitle className="text-base">Aptitude Tests</CardTitle>
-                      <CardDescription>{aptitudeTests.length} sessions</CardDescription>
-                    </div>
                   </div>
-                  <Button size="sm" asChild>
-                    <Link href="/practice/aptitude">
-                      <Play className="h-4 w-4 mr-1" />
-                      Start
-                    </Link>
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {aptitudeTests.length === 0 ? (
-                  <EmptyState message="No aptitude tests taken yet" icon={Brain} />
-                ) : (
-                  <ScrollArea className="h-[250px]">
-                    <div className="space-y-3">
-                      {aptitudeTests.map((test) => (
-                        <PracticeSessionItem key={test.id} test={test} />
-                      ))}
-                    </div>
-                  </ScrollArea>
-                )}
-              </CardContent>
-            </Card>
+                </CardHeader>
+                <CardContent>
+                  {aptitudeTests.length === 0 ? (
+                    <EmptyState message="No aptitude tests taken yet" icon={Brain} />
+                  ) : (
+                    <ScrollArea className="h-[250px]">
+                      <div className="space-y-3">
+                        {aptitudeTests.map((test) => (
+                          <PracticeSessionItem key={test.id} test={test} />
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  )}
+                </CardContent>
+              </Card>
 
-            {/* Coding Challenges Card */}
-            <Card className={`border-2 ${practiceTypeConfig.MACHINE.borderColor}`}>
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${practiceTypeConfig.MACHINE.color}`}>
-                      <Code className="h-5 w-5" />
+              {/* Coding Challenges Card */}
+              <Card className={`border-2 ${practiceTypeConfig.MACHINE.borderColor}`}>
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${practiceTypeConfig.MACHINE.color}`}>
+                        <Code className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-base">Coding Challenges</CardTitle>
+                        <CardDescription>{machineTests.length} sessions</CardDescription>
+                      </div>
                     </div>
-                    <div>
-                      <CardTitle className="text-base">Coding Challenges</CardTitle>
-                      <CardDescription>{machineTests.length} sessions</CardDescription>
-                    </div>
+                    <Button size="sm" asChild>
+                      <Link href="/practice/machine">
+                        <Play className="h-4 w-4 mr-1" />
+                        Start
+                      </Link>
+                    </Button>
                   </div>
-                  <Button size="sm" asChild>
-                    <Link href="/practice/machine">
-                      <Play className="h-4 w-4 mr-1" />
-                      Start
-                    </Link>
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {machineTests.length === 0 ? (
-                  <EmptyState message="No coding challenges taken yet" icon={Code} />
-                ) : (
-                  <ScrollArea className="h-[250px]">
-                    <div className="space-y-3">
-                      {machineTests.map((test) => (
-                        <PracticeSessionItem key={test.id} test={test} />
-                      ))}
-                    </div>
-                  </ScrollArea>
-                )}
-              </CardContent>
-            </Card>
+                </CardHeader>
+                <CardContent>
+                  {machineTests.length === 0 ? (
+                    <EmptyState message="No coding challenges taken yet" icon={Code} />
+                  ) : (
+                    <ScrollArea className="h-[250px]">
+                      <div className="space-y-3">
+                        {machineTests.map((test) => (
+                          <PracticeSessionItem key={test.id} test={test} />
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  )}
+                </CardContent>
+              </Card>
 
-            {/* AI Interviews Card */}
-            <Card className={`border-2 ${practiceTypeConfig.INTERVIEW.borderColor}`}>
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${practiceTypeConfig.INTERVIEW.color}`}>
-                      <MessageSquare className="h-5 w-5" />
+              {/* AI Interviews Card */}
+              <Card className={`border-2 ${practiceTypeConfig.INTERVIEW.borderColor}`}>
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${practiceTypeConfig.INTERVIEW.color}`}>
+                        <MessageSquare className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-base">AI Interviews</CardTitle>
+                        <CardDescription>{interviewTests.length} sessions</CardDescription>
+                      </div>
                     </div>
-                    <div>
-                      <CardTitle className="text-base">AI Interviews</CardTitle>
-                      <CardDescription>{interviewTests.length} sessions</CardDescription>
-                    </div>
+                    <Button size="sm" asChild>
+                      <Link href="/practice/ai-interview">
+                        <Play className="h-4 w-4 mr-1" />
+                        Start
+                      </Link>
+                    </Button>
                   </div>
-                  <Button size="sm" asChild>
-                    <Link href="/practice/ai-interview">
-                      <Play className="h-4 w-4 mr-1" />
-                      Start
-                    </Link>
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {interviewTests.length === 0 ? (
-                  <EmptyState message="No AI interviews taken yet" icon={MessageSquare} />
-                ) : (
-                  <ScrollArea className="h-[250px]">
-                    <div className="space-y-3">
-                      {interviewTests.map((test) => (
-                        <PracticeSessionItem key={test.id} test={test} isInterview />
-                      ))}
-                    </div>
-                  </ScrollArea>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Quick Actions */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base font-medium">Start Practicing</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-4 md:grid-cols-3">
-                <Button variant="outline" className="h-24 flex-col gap-2" asChild>
-                  <Link href="/practice/aptitude">
-                    <Brain className="h-8 w-8 text-blue-600" />
-                    <span className="font-medium">Aptitude Test</span>
-                    <span className="text-xs text-muted-foreground">Quantitative, Verbal, Logical</span>
-                  </Link>
-                </Button>
-                <Button variant="outline" className="h-24 flex-col gap-2" asChild>
-                  <Link href="/practice/machine">
-                    <Code className="h-8 w-8 text-green-600" />
-                    <span className="font-medium">Coding Challenge</span>
-                    <span className="text-xs text-muted-foreground">DSA Problems</span>
-                  </Link>
-                </Button>
-                <Button variant="outline" className="h-24 flex-col gap-2" asChild>
-                  <Link href="/practice/ai-interview">
-                    <MessageSquare className="h-8 w-8 text-purple-600" />
-                    <span className="font-medium">AI Mock Interview</span>
-                    <span className="text-xs text-muted-foreground">Technical & Behavioral</span>
-                  </Link>
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+                </CardHeader>
+                <CardContent>
+                  {interviewTests.length === 0 ? (
+                    <EmptyState message="No AI interviews taken yet" icon={MessageSquare} />
+                  ) : (
+                    <ScrollArea className="h-[250px]">
+                      <div className="space-y-3">
+                        {interviewTests.map((test) => (
+                          <PracticeSessionItem key={test.id} test={test} isInterview />
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
     </>
   );
@@ -841,94 +875,19 @@ function ProgressStatsCard({
   );
 }
 
-function PracticeSessionSection({
-  type,
-  tests,
-  config,
+function PracticeSessionItem({
+  test,
+  isInterview = false
 }: {
-  type: 'APTITUDE' | 'MACHINE' | 'INTERVIEW';
-  tests: RecentTest[];
-  config: {
-    label: string;
-    icon: React.ElementType;
-    color: string;
-    borderColor: string;
-    link: string;
-  };
-}) {
-  const Icon = config.icon;
-
-  return (
-    <div className={`border rounded-lg p-4 ${config.borderColor}`}>
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <div className={`h-8 w-8 rounded-lg flex items-center justify-center ${config.color}`}>
-            <Icon className="h-4 w-4" />
-          </div>
-          <h3 className="font-semibold text-sm">{config.label}</h3>
-        </div>
-        <Button variant="ghost" size="sm" asChild>
-          <Link href={config.link}>
-            <Play className="h-3 w-3 mr-1" />
-            Start
-          </Link>
-        </Button>
-      </div>
-
-      {tests.length === 0 ? (
-        <div className="text-center py-6">
-          <p className="text-sm text-muted-foreground">No sessions yet</p>
-          <Button variant="outline" size="sm" className="mt-2" asChild>
-            <Link href={config.link}>Take your first {type === 'INTERVIEW' ? 'interview' : 'test'}</Link>
-          </Button>
-        </div>
-      ) : (
-        <div className="space-y-2">
-          {tests.slice(0, 3).map((test) => (
-            <div
-              key={test.id}
-              className="flex items-center justify-between p-2 bg-muted/50 rounded-md text-sm"
-            >
-              <div className="flex-1 min-w-0">
-                <p className="font-medium truncate">{test.title}</p>
-                <p className="text-xs text-muted-foreground">
-                  {formatDistanceToNow(new Date(test.date), { addSuffix: true })}
-                </p>
-              </div>
-              <div className="text-right ml-2">
-                <p className="font-semibold">
-                  {type === 'INTERVIEW' ? `${test.score}%` : `${test.score}/${test.total}`}
-                </p>
-              </div>
-            </div>
-          ))}
-          {tests.length > 3 && (
-            <Button variant="ghost" size="sm" className="w-full" asChild>
-              <Link href={`${config.link}/history`}>
-                View all {tests.length} sessions
-                <ArrowRight className="h-3 w-3 ml-1" />
-              </Link>
-            </Button>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function PracticeSessionItem({ 
-  test, 
-  isInterview = false 
-}: { 
-  test: RecentTest; 
+  test: RecentTest;
   isInterview?: boolean;
 }) {
-  const scoreDisplay = isInterview 
-    ? `${test.score}%` 
+  const scoreDisplay = isInterview
+    ? `${test.score}%`
     : `${test.score}/${test.total}`;
-  
-  const scorePercent = isInterview 
-    ? test.score 
+
+  const scorePercent = isInterview
+    ? test.score
     : (test.score / test.total) * 100;
 
   return (
@@ -940,10 +899,9 @@ function PracticeSessionItem({
         </p>
       </div>
       <div className="text-right ml-2">
-        <p className={`font-semibold text-sm ${
-          scorePercent >= 70 ? 'text-green-600' : 
+        <p className={`font-semibold text-sm ${scorePercent >= 70 ? 'text-green-600' :
           scorePercent >= 50 ? 'text-yellow-600' : 'text-red-600'
-        }`}>
+          }`}>
           {scoreDisplay}
         </p>
         <Badge variant="secondary" className="text-xs">
@@ -951,6 +909,57 @@ function PracticeSessionItem({
         </Badge>
       </div>
     </div>
+  );
+}
+
+// Prathamesh's Sub-Components Added Here
+function OpportunityStatusBadge({ status }: { status: string }) {
+  const colorMap: Record<string, string> = {
+    APPLIED: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+    UNDER_REVIEW: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
+    SHORTLISTED: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
+    REJECTED: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+    HIRED: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+  };
+
+  return (
+    <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${colorMap[status.toUpperCase()] || 'bg-secondary'}`}>
+      {status}
+    </span>
+  );
+}
+
+function HackathonRoleBadge({ role }: { role: string }) {
+  const config: Record<string, { label: string; class: string; icon: any }> = {
+    LEADER: { label: 'Leader', class: 'bg-amber-100 text-amber-700', icon: Trophy },
+    MEMBER: { label: 'Member', class: 'bg-indigo-100 text-indigo-700', icon: Users2 },
+    INDIVIDUAL: { label: 'Solo', class: 'bg-slate-100 text-slate-700', icon: Code },
+  };
+
+  const item = config[role.toUpperCase()] || config.INDIVIDUAL;
+  const Icon = item.icon;
+
+  return (
+    <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full flex items-center gap-1 ${item.class}`}>
+      <Icon className="h-3 w-3" />
+      {item.label}
+    </span>
+  );
+}
+
+function DifficultyBadge({ difficulty }: { difficulty: string }) {
+  const diffMap: Record<string, { label: string; color: string }> = {
+    EASY: { label: 'Easy', color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100' },
+    MEDIUM: { label: 'Medium', color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100' },
+    HARD: { label: 'Hard', color: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100' },
+  };
+
+  const config = diffMap[difficulty] || diffMap.MEDIUM;
+
+  return (
+    <span className={`text-[10px] font-medium px-2 py-0.5 rounded ${config.color}`}>
+      {config.label}
+    </span>
   );
 }
 
@@ -1135,7 +1144,7 @@ function RecommendedCourseCard({ course }: { course: RecommendedCourse }) {
 
 function ActivityItem({ activity }: { activity: LmsRecentActivity }) {
   const Icon = activityIcons[activity.type] || BookOpen;
-  
+
   const iconColors: Record<string, string> = {
     ENROLLMENT: 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400',
     MODULE_COMPLETED: 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400',
@@ -1166,12 +1175,12 @@ function ActivityItem({ activity }: { activity: LmsRecentActivity }) {
   );
 }
 
-function EmptyState({ 
-  message, 
+function EmptyState({
+  message,
   icon: Icon = AlertCircle,
   action,
-}: { 
-  message: string; 
+}: {
+  message: string;
   icon?: React.ElementType;
   action?: React.ReactNode;
 }) {
@@ -1193,7 +1202,7 @@ function DashboardSkeleton() {
         <Skeleton className="h-7 w-48" />
         <Skeleton className="h-4 w-64" />
       </div>
-      
+
       {/* Stats Skeleton */}
       <div className="space-y-4">
         <Skeleton className="h-5 w-40" />

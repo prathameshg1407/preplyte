@@ -40,7 +40,7 @@ export default function InstituteAdminDashboard() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Welcome back! Here's an overview of your mock drives.
+            Welcome back! Here's an overview of your mock drives and events.
           </p>
         </div>
         <Button asChild>
@@ -79,8 +79,8 @@ export default function InstituteAdminDashboard() {
         />
       </div>
 
-      {/* Quick Actions */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      {/* Quick Actions - Updated to 4 columns to fit Prathamesh's Event Hub */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <QuickActionCard
           title="Create Mock Drive"
           description="Set up a new mock placement drive for your students"
@@ -103,6 +103,15 @@ export default function InstituteAdminDashboard() {
           icon={BarChart3}
           href="/institute/analytics"
           buttonText="View Analytics"
+          buttonVariant="outline"
+        />
+        {/* Prathamesh's Job & Event Hub Feature mapped to Base UI */}
+        <QuickActionCard
+          title="Event Hub"
+          description="Manage Jobs, Internships & Hackathons"
+          icon={Calendar}
+          href="/institute-admin/events"
+          buttonText="View Events"
           buttonVariant="outline"
         />
       </div>
@@ -189,8 +198,8 @@ function DashboardSkeleton() {
           </Card>
         ))}
       </div>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {[...Array(3)].map((_, i) => (
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        {[...Array(4)].map((_, i) => (
           <Card key={i}>
             <CardContent className="pt-6">
               <Skeleton className="h-5 w-32 mb-2" />

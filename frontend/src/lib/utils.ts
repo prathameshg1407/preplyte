@@ -4,6 +4,7 @@ import { twMerge } from "tailwind-merge"
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
+
 export function slugify(text: string): string {
   return text
     .toLowerCase()
@@ -26,13 +27,21 @@ export function formatDuration(minutes: number): string {
 }
 
 /**
- * Format number with Indian currency
+ * Format number with Indian currency (Supports Lakhs and Crores)
  */
-export function formatCurrency(amount: number, currency = 'INR'): string {
-  return new Intl.NumberFormat('en-IN', {
+export function formatCurrency(amount: number, currency: string = 'INR'): string {
+  if (currency === 'INR') {
+    if (amount >= 10000000) {
+      return `₹${(amount / 10000000).toFixed(2)} Cr`;
+    } else if (amount >= 100000) {
+      return `₹${(amount / 100000).toFixed(2)} L`;
+    } else {
+      return `₹${amount.toLocaleString('en-IN')}`;
+    }
+  }
+  return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency,
-    maximumFractionDigits: 0,
   }).format(amount);
 }
 

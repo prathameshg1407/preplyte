@@ -14,11 +14,6 @@ interface RetryConfig extends InternalAxiosRequestConfig {
   _isRetryRequest?: boolean;
 }
 
-interface RefreshSubscriber {
-  resolve: (token: string) => void;
-  reject: (error: Error) => void;
-}
-
 export const apiClient = axios.create({
   baseURL: API_CONFIG.BASE_URL,
   timeout: API_CONFIG.TIMEOUT,
@@ -30,28 +25,9 @@ export const apiClient = axios.create({
 // Token Management
 // ============================================
 
-let isRefreshing = false;
-let refreshSubscribers: RefreshSubscriber[] = [];
 let refreshPromise: Promise<string> | null = null;
 
-const subscribeTokenRefresh = (
-  resolve: (token: string) => void,
-  reject: (error: Error) => void
-): void => {
-  refreshSubscribers.push({ resolve, reject });
-};
 
-const onTokenRefreshed = (token: string): void => {
-  refreshSubscribers.forEach(({ resolve }) => resolve(token));
-  refreshSubscribers = [];
-  refreshPromise = null;
-};
-
-const onRefreshFailed = (error: Error): void => {
-  refreshSubscribers.forEach(({ reject }) => reject(error));
-  refreshSubscribers = [];
-  refreshPromise = null;
-};
 
 const getAccessToken = (): string | null => {
   if (typeof window === 'undefined') return null;
@@ -84,8 +60,6 @@ const redirectToLogin = (reason?: string): void => {
   clearAuthStorage();
   
   // Reset refresh state
-  isRefreshing = false;
-  refreshSubscribers = [];
   refreshPromise = null;
 
   const currentPath = window.location.pathname + window.location.search;
@@ -100,24 +74,67 @@ const redirectToLogin = (reason?: string): void => {
 // ============================================
 
 const performTokenRefresh = async (): Promise<string> => {
-  // If there's already a refresh in progress, return that promise
+  // 1. Check if we already have a refresh in progress in this tab
   if (refreshPromise) {
     logger.debug('[API] Reusing existing refresh promise');
     return refreshPromise;
   }
 
+  const getRecentToken = (): string | null => {
+    const lastUpdate = typeof window !== 'undefined' ? window.localStorage.getItem('token-updated') : null;
+    const now = Date.now();
+    // If updated in the last 5 seconds, it's likely fresh enough
+    if (lastUpdate && now - parseInt(lastUpdate) < 5000) {
+      return getAccessToken();
+    }
+    return null;
+  };
+
+  // 2. Proactive check
+  const freshToken = getRecentToken();
+  if (freshToken) {
+    logger.debug('[API] Using fresh token from recent update');
+    return Promise.resolve(freshToken);
+  }
+
   const refreshToken = getRefreshToken();
-  
   if (!refreshToken) {
     throw new Error('No refresh token available');
   }
 
-  logger.debug('[API] Attempting token refresh');
-
-  // Create and store the refresh promise to prevent concurrent refreshes
+  // 3. Create the refresh promise with cross-tab locking
   refreshPromise = (async () => {
+    const lockKey = 'preplyte_refresh_lock';
     try {
-      // Use a separate axios instance to avoid interceptor loops
+      // Add small jitter to prevent simultaneous lock attempts from multiple tabs
+      await new Promise(r => setTimeout(r, Math.random() * 200));
+
+      // Check again after jitter - another tab might have started/finished
+      const t = getRecentToken();
+      if (t) return t;
+
+      // Acquire basic lock
+      const now = Date.now();
+      const lock = window.localStorage.getItem(lockKey);
+      
+      if (lock && now - parseInt(lock) < 8000) {
+        logger.debug('[API] Another tab isRefreshing. Waiting for completion...');
+        // Wait up to 8 seconds for the other tab to finish
+        for (let i = 0; i < 8; i++) {
+          await new Promise(r => setTimeout(r, 1000));
+          const updatedToken = getRecentToken();
+          if (updatedToken) return updatedToken;
+          
+          // If lock is gone, we can try to take it
+          if (!window.localStorage.getItem(lockKey)) break;
+        }
+      }
+
+      // Take/Update lock
+      window.localStorage.setItem(lockKey, Date.now().toString());
+
+      logger.debug('[API] Proceeding with refresh request');
+
       const response = await axios.post(
         `${API_CONFIG.BASE_URL}${API_ENDPOINTS.AUTH.REFRESH}`,
         { refreshToken },
@@ -128,14 +145,11 @@ const performTokenRefresh = async (): Promise<string> => {
       );
 
       const data = response.data;
-      
-      // Handle both wrapped and unwrapped responses
       const authData = data?.data || data;
       const newAccessToken = authData?.accessToken;
       const newRefreshToken = authData?.refreshToken;
 
       if (!newAccessToken || !newRefreshToken) {
-        logger.error('[API] Invalid refresh response structure', { data });
         throw new Error('Invalid refresh response');
       }
 
@@ -143,17 +157,25 @@ const performTokenRefresh = async (): Promise<string> => {
       storage.set(AUTH_STORAGE_KEYS.ACCESS_TOKEN, newAccessToken);
       storage.set(AUTH_STORAGE_KEYS.REFRESH_TOKEN, newRefreshToken);
       
-      // Broadcast token update to other tabs
-      if (typeof window !== 'undefined') {
-        window.localStorage.setItem('token-updated', Date.now().toString());
-      }
+      // Update the timestamp to notify other tabs
+      window.localStorage.setItem('token-updated', Date.now().toString());
       
       logger.debug('[API] Token refresh successful');
-      
       return newAccessToken;
-    } catch (error) {
-      refreshPromise = null;
+    } catch (error: any) {
+      // If the error is 401/403, and another tab updated the token while we were waiting/requesting,
+      // it means our request failed because we used an old one that was already rotated.
+      // But we should check if a NEW one is now available.
+      const freshTokenAfterError = getRecentToken();
+      if (freshTokenAfterError) {
+        logger.debug('[API] Refresh failed but found a fresh token from another tab');
+        return freshTokenAfterError;
+      }
+      
       throw error;
+    } finally {
+      window.localStorage.removeItem(lockKey);
+      refreshPromise = null;
     }
   })();
 
@@ -209,7 +231,7 @@ apiClient.interceptors.response.use(
       status,
       url: config.url,
       isRetryRequest: config._isRetryRequest,
-      isRefreshing,
+      hasRefreshPromise: !!refreshPromise,
     });
 
     // Handle 401 - Token Refresh
@@ -238,62 +260,39 @@ apiClient.interceptors.response.use(
         return Promise.reject(error);
       }
 
-      // If already refreshing, queue this request
-      if (isRefreshing) {
-        logger.debug('[API] Token refresh in progress, queueing request');
-        
-        return new Promise((resolve, reject) => {
-          subscribeTokenRefresh(
-            (token: string) => {
-              config.headers.Authorization = `Bearer ${token}`;
-              config._isRetryRequest = true;
-              resolve(apiClient(config));
-            },
-            (refreshError: Error) => {
-              reject(refreshError);
-            }
-          );
+      // Use the shared refresh promise if one exists, or create a new one
+      if (!refreshPromise) {
+        logger.debug('[API] Starting token refresh process');
+      } else {
+        logger.debug('[API] Token refresh already in progress, waiting for completion');
+      }
+
+      // Get or create the refresh promise
+      const tokenPromise = performTokenRefresh();
+
+      // Wait for refresh and retry the original request
+      return tokenPromise
+        .then((newAccessToken) => {
+          logger.debug('[API] Token refresh completed, retrying request');
+          config.headers.Authorization = `Bearer ${newAccessToken}`;
+          config._isRetryRequest = true;
+          return apiClient(config);
+        })
+        .catch((refreshError: any) => {
+          logger.error('[API] Token refresh failed', refreshError);
+          
+          // Check if it's a token reuse error
+          const refreshErrorMessage = refreshError?.response?.data?.error?.message || 
+                                     refreshError?.response?.data?.message || 
+                                     refreshError?.message;
+          
+          const isTokenReuse = refreshErrorMessage?.toLowerCase().includes('token reuse');
+          
+          // Redirect to login with appropriate reason
+          redirectToLogin(isTokenReuse ? 'token_reuse' : 'refresh_failed');
+          
+          return Promise.reject(refreshError);
         });
-      }
-
-      // Start refresh process
-      isRefreshing = true;
-
-      try {
-        const newAccessToken = await performTokenRefresh();
-        
-        // Notify all queued requests
-        onTokenRefreshed(newAccessToken);
-
-        // Retry the original request
-        config.headers.Authorization = `Bearer ${newAccessToken}`;
-        config._isRetryRequest = true;
-        
-        return apiClient(config);
-      } catch (refreshError: any) {
-        logger.error('[API] Token refresh failed', refreshError);
-        
-        // Check if it's a token reuse error
-        const refreshErrorMessage = refreshError?.response?.data?.error?.message || 
-                                   refreshError?.response?.data?.message || 
-                                   refreshError?.message;
-        
-        const isTokenReuse = refreshErrorMessage?.toLowerCase().includes('token reuse');
-        
-        const error = refreshError instanceof Error 
-          ? refreshError 
-          : new Error('Token refresh failed');
-        
-        // Notify all queued requests of failure
-        onRefreshFailed(error);
-        
-        // Redirect to login with appropriate reason
-        redirectToLogin(isTokenReuse ? 'token_reuse' : 'refresh_failed');
-        
-        return Promise.reject(error);
-      } finally {
-        isRefreshing = false;
-      }
     }
 
     // Handle 403 - Forbidden (might indicate revoked token)
@@ -351,8 +350,6 @@ export const refreshTokenManually = async (): Promise<boolean> => {
 // ============================================
 
 export const resetApiClient = (): void => {
-  isRefreshing = false;
-  refreshSubscribers = [];
   refreshPromise = null;
 };
 
@@ -365,22 +362,10 @@ if (typeof window !== 'undefined') {
   window.addEventListener('storage', (event) => {
     // Token was updated in another tab
     if (event.key === 'token-updated' && event.newValue) {
-      logger.debug('[API] Token updated in another tab, reloading tokens');
+      logger.debug('[API] Token updated in another tab, clearing refresh promise');
       
-      // If we're currently refreshing, cancel it
-      if (isRefreshing) {
-        logger.debug('[API] Cancelling current refresh due to external update');
-        isRefreshing = false;
-        refreshPromise = null;
-        
-        // Resolve all pending requests with the new token
-        const newToken = getAccessToken();
-        if (newToken) {
-          onTokenRefreshed(newToken);
-        } else {
-          onRefreshFailed(new Error('Token cleared in another tab'));
-        }
-      }
+      // Clear the refresh promise so new requests use the updated token
+      refreshPromise = null;
     }
     
     // Auth was cleared in another tab

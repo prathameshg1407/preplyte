@@ -1,9 +1,11 @@
 'use client';
 
-import { useEffect } from 'react';
 import Link from 'next/link';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useAnalytics, useInstitutes } from '@/lib/hooks/use-admin';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -19,9 +21,10 @@ import {
   Settings,
   FileBarChart,
   AlertCircle,
+  Calendar,
 } from 'lucide-react';
-import { useAnalytics, useInstitutes } from '@/lib/hooks/use-admin';
 import { TrendsChart } from '@/components/admin/analytics/trends-chart';
+import { cn } from '@/lib/utils';
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -67,76 +70,109 @@ export default function AdminDashboard() {
   const completionRate = totalSessions > 0 ? Math.round((completedSessions / totalSessions) * 100) : 0;
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Platform Overview</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Monitor and manage the entire platform
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="space-y-10 pb-12"
+    >
+      {/* Header Section */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="space-y-1">
+          <h1 className="text-4xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">
+            Platform Hub
+          </h1>
+          <p className="text-base text-muted-foreground max-w-2xl">
+            Real-time analytics and ecosystem management across all integrated institutes.
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" asChild>
-            <Link href="/admin/institutes">Institutes</Link>
+        <div className="flex items-center gap-3">
+          <Button variant="outline" className="glass-effect border-primary/20 hover:bg-primary/5" asChild>
+            <Link href="/admin/institutes">
+              <Building2 className="mr-2 h-4 w-4" />
+              Institutes
+            </Link>
           </Button>
-          <Button size="sm" asChild>
-            <Link href="/admin/users">Users</Link>
+          <Button className="shadow-xl shadow-primary/20 gap-2" asChild>
+            <Link href="/admin/users">
+              <Plus className="h-4 w-4" />
+              New User
+            </Link>
           </Button>
         </div>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      {/* Stats Grid - Premium Glass Cards */}
+      <motion.div 
+        variants={{
+          hidden: { opacity: 0 },
+          show: {
+            opacity: 1,
+            transition: { staggerChildren: 0.1 }
+          }
+        }}
+        initial="hidden"
+        animate="show"
+        className="grid gap-6 md:grid-cols-2 lg:grid-cols-4"
+      >
         <StatCard
-          label="Institutes"
+          label="Total Institutes"
           value={analytics.overview.totalInstitutes || 0}
-          subValue={`${analytics.overview.activeInstitutes || 0} active`}
+          subValue={`${analytics.overview.activeInstitutes || 0} active platforms`}
           icon={Building2}
+          color="primary"
         />
         <StatCard
-          label="Users"
+          label="Global User Base"
           value={analytics.overview.totalUsers || 0}
-          subValue={`${analytics.overview.activeUsers || 0} active`}
+          subValue={`+${analytics.overview.activeUsers || 0} online today`}
           icon={Users}
+          color="blue"
         />
         <StatCard
-          label="Sessions"
+          label="Knowledge Sessions"
           value={totalSessions}
-          subValue={`${completionRate}% completed`}
+          subValue={`${completionRate}% retention rate`}
           icon={Activity}
+          color="emerald"
         />
         <StatCard
-          label="Students"
+          label="Enrolled Students"
           value={analytics.overview.totalStudents || 0}
-          subValue={`${analytics.overview.totalInstituteAdmins || 0} admins`}
+          subValue={`${analytics.overview.totalInstituteAdmins || 0} faculty admins`}
           icon={GraduationCap}
+          color="violet"
         />
-      </div>
+      </motion.div>
 
-      {/* Session Stats */}
-      <div className="grid gap-4 lg:grid-cols-3">
-        <SessionStatCard
-          title="Aptitude Tests"
-          icon={Brain}
-          total={analytics.sessions.totalAptitudeSessions || 0}
-          completed={analytics.sessions.completedAptitudeSessions || 0}
-          avgScore={analytics.performance.avgAptitudeScore || 0}
-        />
-        <SessionStatCard
-          title="Coding Tests"
-          icon={Code}
-          total={analytics.sessions.totalMachineSessions || 0}
-          completed={analytics.sessions.completedMachineSessions || 0}
-          avgScore={analytics.performance.avgMachineScore || 0}
-        />
-        <SessionStatCard
-          title="AI Interviews"
-          icon={MessageSquare}
-          total={analytics.sessions.totalInterviewSessions || 0}
-          completed={analytics.sessions.completedInterviewSessions || 0}
-          avgScore={analytics.performance.avgInterviewScore || 0}
-        />
+      {/* Session Performance Section */}
+      <div className="space-y-4">
+        <h2 className="text-xl font-bold px-1">Session Analytics</h2>
+        <div className="grid gap-6 lg:grid-cols-3">
+          <SessionStatCard
+            title="Aptitude Mastery"
+            icon={Brain}
+            total={analytics.sessions.totalAptitudeSessions || 0}
+            completed={analytics.sessions.completedAptitudeSessions || 0}
+            avgScore={analytics.performance.avgAptitudeScore || 0}
+            gradient="from-violet-500/20 to-fuchsia-500/20"
+          />
+          <SessionStatCard
+            title="Coding Proficiency"
+            icon={Code}
+            total={analytics.sessions.totalMachineSessions || 0}
+            completed={analytics.sessions.completedMachineSessions || 0}
+            avgScore={analytics.performance.avgMachineScore || 0}
+            gradient="from-emerald-500/20 to-teal-500/20"
+          />
+          <SessionStatCard
+            title="Interview Readiness"
+            icon={MessageSquare}
+            total={analytics.sessions.totalInterviewSessions || 0}
+            completed={analytics.sessions.completedInterviewSessions || 0}
+            avgScore={analytics.performance.avgInterviewScore || 0}
+            gradient="from-blue-500/20 to-indigo-500/20"
+          />
+        </div>
       </div>
 
       {/* Two Column Layout */}
@@ -259,6 +295,12 @@ export default function AdminDashboard() {
           </Link>
         </Button>
         <Button variant="outline" size="sm" asChild>
+          <Link href="/admin/events">
+            <Calendar className="h-4 w-4 mr-2" />
+            Manage Events
+          </Link>
+        </Button>
+        <Button variant="outline" size="sm" asChild>
           <Link href="/admin/reports">
             <FileBarChart className="h-4 w-4 mr-2" />
             View Reports
@@ -271,7 +313,7 @@ export default function AdminDashboard() {
           </Link>
         </Button>
       </div>
-    </div>
+    </motion.div>
   );
 }
 
@@ -284,27 +326,58 @@ function StatCard({
   value,
   subValue,
   icon: Icon,
+  color = 'primary'
 }: {
   label: string;
   value: number;
   subValue: string;
   icon: React.ElementType;
+  color?: 'primary' | 'blue' | 'emerald' | 'violet';
 }) {
+  const colorMap = {
+    primary: 'bg-primary/10 text-primary border-primary/20',
+    blue: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
+    emerald: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20',
+    violet: 'bg-violet-500/10 text-violet-500 border-violet-500/20'
+  };
+
   return (
-    <Card className="border-border">
-      <CardContent className="pt-6">
-        <div className="flex items-start justify-between">
-          <div>
-            <p className="text-sm text-muted-foreground">{label}</p>
-            <p className="text-2xl font-semibold tabular-nums mt-1">{value.toLocaleString()}</p>
-            <p className="text-xs text-muted-foreground mt-1">{subValue}</p>
+    <motion.div
+      variants={{
+        hidden: { opacity: 0, scale: 0.95 },
+        show: { opacity: 1, scale: 1 }
+      }}
+      whileHover={{ y: -5, transition: { duration: 0.2 } }}
+    >
+      <Card className="relative overflow-hidden group border-none shadow-lg glass-effect">
+        <div className={cn("absolute top-0 right-0 w-32 h-32 -mr-16 -mt-16 rounded-full opacity-10 blur-3xl", 
+          color === 'primary' ? 'bg-primary' : 
+          color === 'blue' ? 'bg-blue-500' :
+          color === 'emerald' ? 'bg-emerald-500' : 'bg-violet-500'
+        )} />
+        
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className={cn("p-2.5 rounded-xl border transition-colors", colorMap[color])}>
+              <Icon className="h-5 w-5" />
+            </div>
+            <div className="text-right">
+               <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60">{label}</span>
+            </div>
           </div>
-          <div className="h-9 w-9 rounded-md border border-border flex items-center justify-center">
-            <Icon className="h-4 w-4" />
+          
+          <div className="space-y-1">
+            <h3 className="text-3xl font-bold tabular-nums tracking-tight">
+              {value.toLocaleString()}
+            </h3>
+            <p className="text-sm font-medium text-muted-foreground/80 flex items-center gap-1.5">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+              {subValue}
+            </p>
           </div>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </motion.div>
   );
 }
 
@@ -314,34 +387,45 @@ function SessionStatCard({
   total,
   completed,
   avgScore,
+  gradient
 }: {
   title: string;
   icon: React.ElementType;
   total: number;
   completed: number;
   avgScore: number;
+  gradient: string;
 }) {
   const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
 
   return (
-    <Card className="border-border">
-      <CardContent className="pt-6">
-        <div className="flex items-center justify-between mb-4">
-          <span className="text-sm font-medium">{title}</span>
-          <Icon className="h-4 w-4 text-muted-foreground" />
+    <Card className={cn("relative overflow-hidden border-none shadow-md glass-effect bg-gradient-to-br", gradient)}>
+      <CardContent className="p-6">
+        <div className="flex items-center justify-between mb-6">
+          <div className="space-y-1">
+            <p className="text-sm font-bold text-foreground/70 uppercase tracking-tight">{title}</p>
+            <div className="flex items-center gap-2">
+               <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+               <span className="text-xs text-muted-foreground font-medium">Tracking Live Activity</span>
+            </div>
+          </div>
+          <div className="h-10 w-10 rounded-full bg-background/50 flex items-center justify-center backdrop-blur-sm border border-white/10">
+            <Icon className="h-5 w-5 text-primary" />
+          </div>
         </div>
+        
         <div className="grid grid-cols-3 gap-4">
-          <div>
-            <p className="text-xl font-semibold tabular-nums">{total}</p>
-            <p className="text-xs text-muted-foreground">Total</p>
+          <div className="space-y-1">
+            <p className="text-2xl font-black tabular-nums">{total}</p>
+            <p className="text-[10px] font-bold text-muted-foreground uppercase">Attempts</p>
           </div>
-          <div>
-            <p className="text-xl font-semibold tabular-nums">{completionRate}%</p>
-            <p className="text-xs text-muted-foreground">Complete</p>
+          <div className="space-y-1">
+            <p className="text-2xl font-black tabular-nums text-primary">{completionRate}%</p>
+            <p className="text-[10px] font-bold text-muted-foreground uppercase">Success</p>
           </div>
-          <div>
-            <p className="text-xl font-semibold tabular-nums">{avgScore.toFixed(0)}</p>
-            <p className="text-xs text-muted-foreground">Avg Score</p>
+          <div className="space-y-1">
+            <p className="text-2xl font-black tabular-nums">{avgScore.toFixed(0)}</p>
+            <p className="text-[10px] font-bold text-muted-foreground uppercase">Avg Pts</p>
           </div>
         </div>
       </CardContent>
