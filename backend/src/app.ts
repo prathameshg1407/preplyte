@@ -1,6 +1,6 @@
 // src/app.ts
 
-import express, { Application, Request, Response } from 'express';
+import express, { Application, Request, RequestHandler, Response } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
@@ -10,15 +10,16 @@ import { rateLimit, RateLimitRequestHandler } from 'express-rate-limit';
 import { passport } from './module/auth/google-oauth.service';
 
 // Route Imports
+
 import { authRoutes } from './module/auth/auth.routes';
 import practiceRoutes from './module/practice/practice.routes';
 import adminRoutes from './module/admin/admin.routes';
 import { profileRoutes } from './module/profile';
 import { mockDriveRoutes } from './module/instituteadmin/mock-drive';
 import { departmentRoutes } from './module/instituteadmin/department';
+import instituteAnalyticsRoutes from './module/instituteadmin/institute-analytics.routes';
 import { createMockDriveRoutes } from './module/mock-drive';
 import { dashboardRoutes } from './module/dashboard';
-import resumeRoutes from './module/resume-builder/resume.routes';
 
 // Middleware & Utils
 import { errorHandler, notFoundHandler } from './middleware/error.middleware';
@@ -161,7 +162,7 @@ app.use(express.urlencoded({ extended: true, limit: config.bodyLimit }));
 app.use(cookieParser(process.env.COOKIE_SECRET));
 
 // Initialize Passport
-app.use(passport.initialize());
+app.use(passport.initialize() as unknown as RequestHandler);
 
 // =====================================================
 // 5. RATE LIMITERS
@@ -329,6 +330,9 @@ app.use('/api/institute/mock-drive', mockDriveRoutes);
 //Institute department routes
 app.use('/api/institute/departments', departmentRoutes);
 
+// Institute analytics routes
+app.use('/api/institute/analytics', instituteAnalyticsRoutes);
+
 // Student mock drive routes
 app.use('/api/mock-drives', mockDriveLimiter, createMockDriveRoutes(prisma));
 
@@ -355,14 +359,6 @@ app.use(
 // Admin routes with specific rate limiter
 app.use('/api/admin', adminLimiter, adminRoutes);
 app.use('/api/dashboard', dashboardRoutes);
-app.use('/api/lms', lmsRoutes);
-app.use('/api/admin/lms', lmsAdminRoutes); // Add this
-
-//Leaderboard routes
-app.use('/api/leaderboard', leaderboardRoutes);
-
-// Resume Builder
-app.use('/api/resume-builder', resumeBuilderLimiter, resumeRoutes);
 
 // =====================================================
 // 8. ERROR HANDLING

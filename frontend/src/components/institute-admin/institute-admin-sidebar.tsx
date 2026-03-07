@@ -27,15 +27,16 @@ import {
   User,
   ChevronDown,
   Building2,
+  Calendar,
 } from 'lucide-react';
 
 const navigation = [
   { name: 'Dashboard', href: '/institute-admin', icon: LayoutDashboard },
+  { name: 'Events', href: '/institute-admin/events', icon: Calendar },
   { name: 'Mock Drives', href: '/institute-admin/mock-drives', icon: FileText },
   { name: 'Students', href: '/institute-admin/students', icon: Users },
   { name: 'Departments', href: '/institute-admin/departments', icon: Building2 },
   { name: 'Analytics', href: '/institute-admin/analytics', icon: BarChart3 },
-  { name: 'Settings', href: '/profile/settings', icon: Settings },
 ];
 
 export function InstituteAdminSidebar() {

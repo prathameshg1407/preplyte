@@ -52,6 +52,109 @@ enum SubmissionStatus {
 }
 
 // =====================================================
+// ENUMS - JOBS & INTERNSHIPS
+// =====================================================
+
+enum JobType {
+  FULL_TIME
+  PART_TIME
+  CONTRACT
+}
+
+enum InternshipType {
+  SUMMER
+  WINTER
+  SEMESTER
+  PART_TIME
+  FLEXIBLE
+}
+
+enum DurationType {
+  WEEKS
+  MONTHS
+}
+
+enum WorkMode {
+  ON_SITE
+  REMOTE
+  HYBRID
+}
+
+enum OpportunityStatus {
+  DRAFT
+  PUBLISHED
+  CLOSED
+  FILLED
+  CANCELLED
+}
+
+enum ApplicationStatus {
+  APPLIED
+  UNDER_REVIEW
+  SHORTLISTED
+  REJECTED
+  WITHDRAWN
+  HIRED
+}
+
+// =====================================================
+// ENUMS - HACKATHON
+// =====================================================
+
+enum HackathonStatus {
+  DRAFT
+  PUBLISHED
+  REGISTRATION_OPEN
+  REGISTRATION_CLOSED
+  ONGOING
+  SUBMISSION_OPEN
+  SUBMISSION_CLOSED
+  JUDGING
+  COMPLETED
+  CANCELLED
+}
+
+enum HackathonMode {
+  ONLINE
+  OFFLINE
+  HYBRID
+}
+
+enum ParticipationType {
+  INDIVIDUAL
+  TEAM
+  BOTH
+}
+
+enum HackathonRegistrationStatus {
+  REGISTERED
+  CONFIRMED
+  WITHDRAWN
+  DISQUALIFIED
+}
+
+enum TeamStatus {
+  FORMING
+  COMPLETE
+  LOCKED
+  DISQUALIFIED
+}
+
+enum TeamMemberRole {
+  LEADER
+  MEMBER
+}
+
+enum HackathonSubmissionStatus {
+  DRAFT
+  SUBMITTED
+  UNDER_REVIEW
+  DISQUALIFIED
+  SHORTLISTED
+  WINNER
+}
+
+// =====================================================
 // ENUMS - AI INTERVIEW
 // =====================================================
 
@@ -177,23 +280,23 @@ enum LmsTestAttemptStatus {
 // =====================================================
 
 model User {
-  id          String   @id @default(cuid())
-  email       String   @unique
-  password    String?
-  name        String?
-  role        UserRole @default(USER)
-  isActive    Boolean  @default(true)
-  instituteId String?
+  id                String   @id @default(cuid())
+  email             String   @unique
+  password          String?
+  name              String?
+  role              UserRole @default(USER)
+  isActive          Boolean  @default(true)
+  instituteId       String?
   profilePictureUrl String?
 
   // OAuth fields
-  googleId    String?  @unique
-  provider    String?  @default("local")
-  avatar      String?
+  googleId String? @unique
+  provider String? @default("local")
+  avatar   String?
 
   // Email verification
-  emailVerified Boolean  @default(false)
-  emailVerificationOtp String?
+  emailVerified            Boolean   @default(false)
+  emailVerificationOtp     String?
   emailVerificationOtpExpiry DateTime?
 
   createdAt    DateTime  @default(now())
@@ -202,15 +305,15 @@ model User {
   tokenVersion Int       @default(0)
 
   // Relations
-  institute        Institute?                @relation(fields: [instituteId], references: [id], onDelete: SetNull)
-  refreshTokens    RefreshToken[]
-  profile          StudentProfile?
-  resumes          Resume[]
-  userResumes      UserResume[]
+  institute            Institute?                @relation(fields: [instituteId], references: [id], onDelete: SetNull)
+  refreshTokens        RefreshToken[]
+  profile              StudentProfile?
+  resumes              Resume[]
+  userResumes          UserResume[]
 
   // Practice Sessions
-  aptitudeSessions AptitudePracticeSession[]
-  machineSessions  MachinePracticeSession[]
+  aptitudeSessions     AptitudePracticeSession[]
+  machineSessions      MachinePracticeSession[]
 
   // AI Interview
   aiInterviewSessions  AiInterviewSession[]
@@ -233,6 +336,18 @@ model User {
   // Roadmap
   roadmaps           UserRoadmap[]
 
+  // Jobs & Internships
+  jobApplications        JobApplication[]
+  internshipApplications InternshipApplication[]
+  createdJobs            JobPosting[]            @relation("JobCreatedBy")
+  createdInternships     Internship[]            @relation("InternshipCreatedBy")
+
+  // Hackathons
+  hackathonRegistrations   HackathonRegistration[]
+  hackathonTeamMemberships HackathonTeamMember[]
+  ledTeams                 HackathonTeam[]         @relation("TeamLeader")
+  createdHackathons        Hackathon[]             @relation("HackathonCreatedBy")
+
   @@index([email])
   @@index([instituteId])
   @@index([role, isActive])
@@ -240,8 +355,8 @@ model User {
 }
 
 model RefreshToken {
-  id        String    @id @default(cuid())
-  token     String    @unique
+  id        String   @id @default(cuid())
+  token     String   @unique
   userId    String
   expiresAt DateTime
   revokedAt DateTime?
@@ -271,10 +386,14 @@ model Institute {
   updatedAt DateTime @updatedAt
 
   // Relations
-  users       User[]
-  profile     InstituteProfile?
+  users      User[]
+  profile    InstituteProfile?
   departments Department[]
   mockDrives  MockDrive[]
+  // Jobs, Internships & Hackathons
+  jobPostings JobPosting[]
+  internships Internship[]
+  hackathons  Hackathon[]
 
   @@index([domain])
   @@index([isActive])
@@ -338,10 +457,10 @@ model StudentProfile {
 
   skills String[]
 
-  // Department relation (student selects from institute's departments)
+  // Department relation
   departmentId String?
   courseYear   String?
-  collegeName String?
+  collegeName  String?
 
   numberOfBacklogs Int @default(0)
 
@@ -392,6 +511,11 @@ model Resume {
   user                User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
   aiInterviewSessions AiInterviewSession[]
 
+  // Jobs, Internships & Hackathons
+  jobApplications        JobApplication[]
+  internshipApplications InternshipApplication[]
+  hackathonRegistrations HackathonRegistration[]
+
   @@index([userId])
   @@index([userId, isDefault])
   @@index([linkedResumeId])
@@ -412,20 +536,20 @@ enum ResumeTemplateCategory {
 }
 
 model ResumeTemplate {
-  id          String                  @id @default(cuid())
+  id          String                 @id @default(cuid())
   name        String
-  slug        String                  @unique
+  slug        String                 @unique
   description String?
   thumbnail   String?
-  category    ResumeTemplateCategory  @default(PROFESSIONAL)
+  category    ResumeTemplateCategory @default(PROFESSIONAL)
   layout      Json
   styles      Json
-  isActive    Boolean                 @default(true)
-  isPremium   Boolean                 @default(false)
-  popularity  Int                     @default(0)
+  isActive    Boolean                @default(true)
+  isPremium   Boolean                @default(false)
+  popularity  Int                    @default(0)
   
-  createdAt   DateTime                @default(now())
-  updatedAt   DateTime                @updatedAt
+  createdAt   DateTime               @default(now())
+  updatedAt   DateTime               @updatedAt
 
   userResumes UserResume[]
 
@@ -440,7 +564,7 @@ model UserResume {
   title          String   @default("Untitled Resume")
   slug           String?
   
-  // Content sections (stored as JSON)
+  // Content sections
   personalInfo   Json?
   summary        Json?
   experience     Json?
@@ -469,7 +593,7 @@ model UserResume {
   user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   template       ResumeTemplate  @relation(fields: [templateId], references: [id])
   versions       ResumeVersion[]
-  profileResume  Resume?         // Link to profile resume
+  profileResume  Resume?         
 
   @@unique([userId, slug])
   @@index([userId])
@@ -857,7 +981,7 @@ model MockDrive {
   showLeaderboard        Boolean @default(true)
   showResultsImmediately Boolean @default(false)
   resultsReleaseDate     DateTime?
-  shuffleQuestions       Boolean @default(true)
+  shuffleQuestions       Boolean   @default(true)
 
   enableProctoring   Boolean @default(false)
   proctoringSettings Json?
@@ -868,6 +992,7 @@ model MockDrive {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // Relations
   institute           Institute                @relation(fields: [instituteId], references: [id], onDelete: Cascade)
   eligibilityCriteria MockDriveEligibility?
   modules             MockDriveModule[]
@@ -936,7 +1061,7 @@ model MockDriveModule {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  mockDrive       MockDrive                  @relation(fields: [mockDriveId], references: [id], onDelete: Cascade)
+  mockDrive       MockDrive                 @relation(fields: [mockDriveId], references: [id], onDelete: Cascade)
   moduleQuestions MockDriveModuleQuestion[]
   moduleAttempts  MockDriveModuleAttempt[]
 
@@ -1033,7 +1158,7 @@ model MockDriveBatch {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  mockDrive     MockDrive               @relation(fields: [mockDriveId], references: [id], onDelete: Cascade)
+  mockDrive     MockDrive              @relation(fields: [mockDriveId], references: [id], onDelete: Cascade)
   registrations MockDriveRegistration[]
   attempts      MockDriveAttempt[]
   leaderboard   MockDriveLeaderboard[]
@@ -1156,7 +1281,7 @@ model MockDriveReport {
   comparedToAverage Float?
 
   recommendations String[]
-  aiInsights      String? @db.Text
+  aiInsights      String?  @db.Text
 
   generatedAt DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -1242,19 +1367,19 @@ model LmsCourse {
   // Basic Info
   title            String
   slug             String          @unique
-  shortDescription String          @db.VarChar(255) // 1 line description for card
+  shortDescription String          @db.VarChar(255) 
   description      String          @db.Text
   thumbnailUrl     String?
   previewVideoUrl  String?
 
-  // Course Stats (denormalized for performance)
+  // Course Stats
   totalModules Int   @default(0)
   totalTopics  Int   @default(0)
-  totalPoints  Int   @default(0) // Total achievable points
-  totalHours   Float @default(0) // Hours required to complete
+  totalPoints  Int   @default(0) 
+  totalHours   Float @default(0) 
 
   // Pricing
-  price         Float   @default(0) // 0 = free
+  price         Float   @default(0) 
   discountPrice Float?
   currency      String  @default("INR")
 
@@ -1264,13 +1389,13 @@ model LmsCourse {
 
   // Settings
   certificateEnabled Boolean @default(true)
-  passingPercentage  Float   @default(60) // Required to pass final test
+  passingPercentage  Float   @default(60) 
 
   // Metadata
-  tags       String[]
-  difficulty DifficultyLevel @default(MEDIUM)
-  instructor String?
-  language   String          @default("English")
+  tags          String[]
+  difficulty    DifficultyLevel @default(MEDIUM)
+  instructor    String?
+  language      String          @default("English")
   averageRating Float @default(0)
   ratingsCount  Int   @default(0)
 
@@ -1279,7 +1404,7 @@ model LmsCourse {
   publishedAt DateTime?
 
   // Relations
-  category    LmsCategory     @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  category    LmsCategory       @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   modules     LmsModule[]
   enrollments LmsEnrollment[]
   finalTest   LmsFinalTest?
@@ -1304,14 +1429,14 @@ model LmsModule {
 
   // Basic Info
   title            String
-  shortDescription String  @db.VarChar(500) // Topics summary
+  shortDescription String  @db.VarChar(500) 
   description      String? @db.Text
   order            Int
 
-  // Module Stats (denormalized)
-  totalTopics     Int   @default(0)
-  points          Int   @default(0) // Points for completing this module
-  estimatedMinutes Int   @default(0) // Time required
+  // Module Stats
+  totalTopics      Int   @default(0)
+  points           Int   @default(0) 
+  estimatedMinutes Int   @default(0) 
 
   isActive Boolean @default(true)
 
@@ -1344,15 +1469,15 @@ model LmsTopic {
   order       Int
 
   // Content
-  theoryContent String  @db.Text // Rich text / markdown content
-  videoUrl      String? // Video URL for "Watch Video" button
-  videoDuration Int?    // Duration in seconds
+  theoryContent String  @db.Text 
+  videoUrl      String? 
+  videoDuration Int?    
 
   // Topic Stats
   estimatedMinutes Int @default(10)
 
-  // Resources (optional attachments)
-  resources Json? // Array of { name, url, type }
+  // Resources
+  resources Json? 
 
   isActive Boolean @default(true)
 
@@ -1370,7 +1495,7 @@ model LmsTopic {
 }
 
 // =====================================================
-// LMS - MODULE TEST (After each module)
+// LMS - MODULE TEST
 // =====================================================
 
 model LmsModuleTest {
@@ -1382,13 +1507,13 @@ model LmsModuleTest {
 
   // Test Configuration
   totalQuestions   Int @default(10)
-  passingScore     Int @default(60) // Percentage
+  passingScore     Int @default(60) 
   timeLimitMinutes Int @default(30)
-  maxAttempts      Int @default(3) // -1 for unlimited
+  maxAttempts      Int @default(3) 
 
   // Points Configuration
   pointsPerQuestion Int @default(10)
-  totalPoints       Int @default(100) // Total achievable points
+  totalPoints       Int @default(100) 
 
   isActive Boolean @default(true)
 
@@ -1396,7 +1521,7 @@ model LmsModuleTest {
   updatedAt DateTime @updatedAt
 
   // Relations
-  module    LmsModule            @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  module    LmsModule          @relation(fields: [moduleId], references: [id], onDelete: Cascade)
   questions LmsTestQuestion[]
   attempts  LmsTestAttempt[]
 
@@ -1404,7 +1529,7 @@ model LmsModuleTest {
 }
 
 // =====================================================
-// LMS - FINAL TEST (End of course - one attempt only)
+// LMS - FINAL TEST
 // =====================================================
 
 model LmsFinalTest {
@@ -1416,7 +1541,7 @@ model LmsFinalTest {
 
   // Test Configuration
   totalQuestions   Int @default(50)
-  passingScore     Int @default(60) // Percentage required to pass
+  passingScore     Int @default(60) 
   timeLimitMinutes Int @default(120)
 
   // Points Configuration
@@ -1432,7 +1557,7 @@ model LmsFinalTest {
   updatedAt DateTime @updatedAt
 
   // Relations
-  course    LmsCourse         @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  course    LmsCourse          @relation(fields: [courseId], references: [id], onDelete: Cascade)
   questions LmsTestQuestion[]
   attempts  LmsTestAttempt[]
 
@@ -1446,7 +1571,7 @@ model LmsFinalTest {
 model LmsTestQuestion {
   id String @id @default(cuid())
 
-  // Polymorphic reference (either module test or final test)
+  // Polymorphic reference
   moduleTestId String?
   finalTestId  String?
 
@@ -1511,7 +1636,7 @@ model LmsEnrollment {
   progressPercent  Float @default(0)
 
   // Points & Scores
-  totalPointsEarned    Int @default(0)
+  totalPointsEarned      Int @default(0)
   moduleTestPointsEarned Int @default(0)
   finalTestPointsEarned  Int @default(0)
 
@@ -1522,13 +1647,13 @@ model LmsEnrollment {
   finalTestMarks     Int?
 
   // Timestamps
-  enrolledAt    DateTime  @default(now())
-  startedAt     DateTime?
-  completedAt   DateTime?
+  enrolledAt     DateTime  @default(now())
+  startedAt      DateTime?
+  completedAt    DateTime?
   lastAccessedAt DateTime?
 
   // Certificate
-  certificateUrl     String?
+  certificateUrl      String?
   certificateIssuedAt DateTime?
 
   createdAt DateTime @default(now())
@@ -1603,7 +1728,7 @@ model LmsTopicProgress {
   // Content Progress
   theoryCompleted Boolean @default(false)
   videoWatched    Boolean @default(false)
-  videoProgress   Int     @default(0) // Percentage of video watched
+  videoProgress   Int     @default(0) 
 
   // Time Tracking
   timeSpentMinutes Int @default(0)
@@ -1648,7 +1773,7 @@ model LmsTestAttempt {
   correctAnswers Int   @default(0)
   wrongAnswers   Int   @default(0)
   unanswered     Int   @default(0)
-  score          Float @default(0) // Percentage
+  score          Float @default(0) 
   pointsEarned   Int   @default(0)
   marksObtained  Int   @default(0)
   totalMarks     Int   @default(0)
@@ -1667,9 +1792,9 @@ model LmsTestAttempt {
   updatedAt DateTime @updatedAt
 
   // Relations
-  user       User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  moduleTest LmsModuleTest?     @relation(fields: [moduleTestId], references: [id], onDelete: Cascade)
-  finalTest  LmsFinalTest?      @relation(fields: [finalTestId], references: [id], onDelete: Cascade)
+  user       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  moduleTest LmsModuleTest?   @relation(fields: [moduleTestId], references: [id], onDelete: Cascade)
+  finalTest  LmsFinalTest?    @relation(fields: [finalTestId], references: [id], onDelete: Cascade)
   responses  LmsTestResponse[]
 
   @@index([userId])
@@ -1716,7 +1841,7 @@ model LmsCourseFeedback {
   userId    String
   courseId  String
   
-  rating    Int      // 1-5
+  rating    Int      
   comment   String?  @db.Text
   
   createdAt DateTime @default(now())
@@ -1746,8 +1871,8 @@ model LmsCourseComment {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  course    LmsCourse @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course    LmsCourse        @relation(fields: [courseId], references: [id], onDelete: Cascade)
   parent    LmsCourseComment? @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
   replies   LmsCourseComment[] @relation("CommentReplies")
   likes     LmsCourseCommentLike[]
@@ -1820,4 +1945,422 @@ model UserRoadmapStep {
 
   @@index([roadmapId])
   @@map("user_roadmap_steps")
+}
+
+
+// =====================================================
+// JOB POSTING
+// =====================================================
+
+model JobPosting {
+  id          String  @id @default(cuid())
+  instituteId String? 
+  createdById String
+
+  // Basic Info
+  companyName  String
+  roleTitle    String
+  description  String   @db.Text
+  requirements String[]
+
+  // Job Details
+  jobType  JobType
+  workMode WorkMode
+  location String
+
+  // Compensation
+  salaryMin      Int?
+  salaryMax      Int?
+  salaryCurrency String @default("INR")
+
+  // Availability
+  vacancies           Int
+  applicationDeadline DateTime
+
+  // Settings
+  isResumeRequired Boolean           @default(true)
+  status           OpportunityStatus @default(DRAFT)
+
+  // Eligibility (JSON)
+  eligibilityCriteria Json?
+
+  // Analytics
+  viewsCount          Int @default(0)
+  applicationsStarted Int @default(0)
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  publishedAt DateTime? 
+  closedAt    DateTime? 
+
+  // Soft Delete
+  isDeleted Boolean   @default(false)
+  deletedAt DateTime?
+  deletedBy String?
+
+  // Relations
+  institute    Institute?       @relation(fields: [instituteId], references: [id], onDelete: Cascade)
+  createdBy    User             @relation("JobCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
+  applications JobApplication[]
+
+  @@index([instituteId])
+  @@index([instituteId, status])
+  @@index([status])
+  @@index([createdById])
+  @@index([applicationDeadline])
+  @@index([status, applicationDeadline])
+  @@index([isDeleted])
+  @@index([status, createdAt])
+  @@index([instituteId, createdAt])
+  @@map("job_postings")
+}
+
+model JobApplication {
+  id       String  @id @default(cuid())
+  jobId    String
+  userId   String
+  resumeId String?
+
+  coverLetter String?           @db.Text
+  status      ApplicationStatus @default(APPLIED)
+
+  appliedAt  DateTime  @default(now())
+  reviewedAt DateTime?
+  reviewedBy String?
+  adminNotes String?   @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  job    JobPosting @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  user   User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  resume Resume?    @relation(fields: [resumeId], references: [id], onDelete: SetNull)
+
+  @@unique([jobId, userId])
+  @@index([jobId])
+  @@index([userId])
+  @@index([jobId, status])
+  @@index([userId, status])
+  @@index([status])
+  @@map("job_applications")
+}
+
+// =====================================================
+// INTERNSHIP
+// =====================================================
+
+model Internship {
+  id          String  @id @default(cuid())
+  instituteId String? 
+  createdById String
+
+  // Basic Info
+  companyName  String
+  roleTitle    String
+  description  String   @db.Text
+  requirements String[]
+
+  // Internship Specific
+  internshipType  InternshipType
+  durationValue   Int
+  durationType    DurationType
+  startDate       DateTime?
+  isFlexibleDates Boolean        @default(false)
+
+  // Work Details
+  workMode WorkMode
+  location String
+
+  // Compensation
+  stipendMin      Int?
+  stipendMax      Int?
+  stipendCurrency String  @default("INR")
+  isPaid          Boolean @default(true)
+
+  // PPO Details
+  hasPPO     Boolean @default(false)
+  ppoDetails String? @db.Text
+
+  // Availability
+  vacancies           Int
+  applicationDeadline DateTime
+
+  // Settings
+  isResumeRequired Boolean           @default(true)
+  status           OpportunityStatus @default(DRAFT)
+
+  // Eligibility (JSON)
+  eligibilityCriteria Json?
+
+  // Analytics
+  viewsCount          Int @default(0)
+  applicationsStarted Int @default(0)
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  publishedAt DateTime?
+  closedAt    DateTime?
+
+  // Soft Delete
+  isDeleted Boolean   @default(false)
+  deletedAt DateTime?
+  deletedBy String?
+
+  // Relations
+  institute    Institute?              @relation(fields: [instituteId], references: [id], onDelete: Cascade)
+  createdBy    User                    @relation("InternshipCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
+  applications InternshipApplication[]
+
+  @@index([instituteId])
+  @@index([instituteId, status])
+  @@index([status])
+  @@index([createdById])
+  @@index([applicationDeadline])
+  @@index([status, applicationDeadline])
+  @@index([internshipType])
+  @@index([isDeleted])
+  @@index([status, createdAt])
+  @@index([instituteId, createdAt])
+  @@map("internships")
+}
+
+model InternshipApplication {
+  id           String  @id @default(cuid())
+  internshipId String
+  userId       String
+  resumeId     String?
+
+  coverLetter   String?           @db.Text
+  availableFrom DateTime? 
+  status        ApplicationStatus @default(APPLIED)
+
+  appliedAt  DateTime  @default(now())
+  reviewedAt DateTime?
+  reviewedBy String?
+  adminNotes String?   @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  internship Internship @relation(fields: [internshipId], references: [id], onDelete: Cascade)
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  resume     Resume?    @relation(fields: [resumeId], references: [id], onDelete: SetNull)
+
+  @@unique([internshipId, userId])
+  @@index([internshipId])
+  @@index([userId])
+  @@index([internshipId, status])
+  @@index([userId, status])
+  @@index([status])
+  @@map("internship_applications")
+}
+
+// =====================================================
+// HACKATHON
+// =====================================================
+
+model Hackathon {
+  id          String  @id @default(cuid())
+  instituteId String? 
+  createdById String
+
+  // Basic Info
+  title       String
+  tagline     String?
+  description String   @db.Text
+  rules       String?  @db.Text
+  themes      String[]
+
+  // Event Details
+  mode       HackathonMode
+  venue      String?
+  websiteUrl String?
+  bannerUrl  String? 
+
+  // Contact info for queries
+  contactEmail String?
+  contactPhone String?
+
+  // Participation Config
+  participationType ParticipationType
+  minTeamSize       Int               @default(1)
+  maxTeamSize       Int               @default(4)
+
+  // Timeline
+  registrationStartDate DateTime
+  registrationEndDate   DateTime
+  eventStartDate        DateTime
+  eventEndDate          DateTime
+  submissionDeadline    DateTime
+  resultsDate           DateTime?
+
+  // Capacity
+  maxParticipants Int?
+
+  // Prizes (JSON array)
+  prizes Json?
+
+  // Settings
+  isResumeRequired Boolean         @default(false)
+  status           HackathonStatus @default(DRAFT)
+
+  // Eligibility (JSON)
+  eligibilityCriteria Json?
+
+  // Analytics
+  viewsCount           Int @default(0)
+  registrationsStarted Int @default(0)
+
+  // Analytics & Counts
+  participantCount Int @default(0) 
+  teamCount        Int @default(0) 
+
+  // Soft Delete
+  isDeleted Boolean   @default(false)
+  deletedAt DateTime?
+  deletedBy String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  institute     Institute?              @relation(fields: [instituteId], references: [id], onDelete: Cascade)
+  createdBy     User                    @relation("HackathonCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
+  registrations HackathonRegistration[]
+  teams         HackathonTeam[]
+  submissions   HackathonSubmission[]
+
+  @@index([instituteId])
+  @@index([instituteId, status])
+  @@index([status])
+  @@index([createdById])
+  @@index([registrationStartDate, registrationEndDate])
+  @@index([eventStartDate, eventEndDate])
+  @@index([status, eventStartDate])
+  @@index([isDeleted])
+  @@index([status, createdAt])
+  @@index([instituteId, createdAt])
+  @@map("hackathons")
+}
+
+model HackathonRegistration {
+  id          String  @id @default(cuid())
+  hackathonId String
+  userId      String
+  teamId      String? 
+
+  status   HackathonRegistrationStatus @default(REGISTERED)
+  resumeId String?
+
+  registeredAt DateTime  @default(now())
+  confirmedAt  DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  hackathon  Hackathon            @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
+  user       User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  team       HackathonTeam?       @relation(fields: [teamId], references: [id], onDelete: SetNull)
+  resume     Resume?              @relation(fields: [resumeId], references: [id], onDelete: SetNull)
+  submission HackathonSubmission? 
+
+  @@unique([hackathonId, userId])
+  @@index([hackathonId])
+  @@index([userId])
+  @@index([hackathonId, status])
+  @@index([teamId])
+  @@map("hackathon_registrations")
+}
+
+model HackathonTeam {
+  id          String @id @default(cuid())
+  hackathonId String
+  name        String
+  inviteCode  String @unique 
+  leaderId    String
+
+  status TeamStatus @default(FORMING)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  currentSize Int      @default(1) 
+
+  hackathon     Hackathon             @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
+  leader        User                  @relation("TeamLeader", fields: [leaderId], references: [id], onDelete: Cascade)
+  members       HackathonTeamMember[]
+  registrations HackathonRegistration[]
+  submission    HackathonSubmission?
+
+  @@index([hackathonId])
+  @@index([hackathonId, status])
+  @@index([inviteCode])
+  @@index([leaderId])
+  @@map("hackathon_teams")
+}
+
+model HackathonTeamMember {
+  id     String         @id @default(cuid())
+  teamId String
+  userId String
+  role   TeamMemberRole
+
+  joinedAt DateTime @default(now())
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  team HackathonTeam @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, userId])
+  @@index([teamId])
+  @@index([userId])
+  @@map("hackathon_team_members")
+}
+
+model HackathonSubmission {
+  id             String  @id @default(cuid())
+  hackathonId    String
+  teamId         String? 
+  registrationId String? 
+
+  // Project Details
+  projectName        String
+  projectDescription String   @db.Text
+  techStack          String[]
+
+  // Links
+  repositoryUrl   String
+  demoUrl         String?
+  videoUrl        String?
+  presentationUrl String?
+
+  // Files
+  screenshotsUrls String[]
+
+  // Submission Meta
+  status      HackathonSubmissionStatus @default(DRAFT)
+  submittedAt DateTime?
+
+  // Judging 
+  score    Float?
+  rank     Int?
+  feedback String? @db.Text
+  prizeWon String?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  lastSavedAt DateTime @default(now()) 
+
+  hackathon    Hackathon              @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
+  team         HackathonTeam?         @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  registration HackathonRegistration? @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId]) 
+  @@unique([registrationId]) 
+  @@index([hackathonId])
+  @@index([hackathonId, status])
+  @@index([status])
+  @@index([hackathonId, rank])
+  @@map("hackathon_submissions")
 }

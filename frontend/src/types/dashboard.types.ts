@@ -37,6 +37,27 @@ export interface UpcomingTest {
 }
 
 // =====================================================
+// JOBS & HACKATHONS (Prathamesh's Additions)
+// =====================================================
+
+export interface DashboardAppliedOpportunity {
+    id: string;
+    title: string;
+    companyName: string;
+    type: 'JOB' | 'INTERNSHIP';
+    status: string;
+    appliedAt: string;
+}
+
+export interface DashboardHackathonRegistration {
+    id: string;
+    title: string;
+    status: string;
+    registrationDate: string;
+    role: 'LEADER' | 'MEMBER' | 'INDIVIDUAL';
+}
+
+// =====================================================
 // LMS DASHBOARD TYPES
 // =====================================================
 
@@ -127,6 +148,9 @@ export interface StudentDashboardData {
     recentTests: RecentTest[];
     upcomingTests: UpcomingTest[];
     lms: LmsDashboardData;
+    // Added these two lines:
+    appliedOpportunities: DashboardAppliedOpportunity[];
+    hackathonRegistrations: DashboardHackathonRegistration[];
 }
 
 export interface AdminViewStudentDashboardData {

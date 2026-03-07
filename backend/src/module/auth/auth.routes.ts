@@ -90,11 +90,32 @@ router.post('/verify-otp', otpLimiter, verifyEmailOTP);
 router.get(
   '/google',
   authLimiter,
+  (req, res, next) => {
+    // Check if Google OAuth is configured
+    if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
+      return res.status(503).json({
+        success: false,
+        error: {
+          code: 'OAUTH_NOT_CONFIGURED',
+          message: 'Google OAuth is not configured. Please contact the administrator.',
+        },
+      });
+    }
+    next();
+  },
   passport.authenticate('google', { scope: ['profile', 'email'] })
 );
 
 router.get(
   '/google/callback',
+  (req, res, next) => {
+    // Check if Google OAuth is configured
+    if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+      return res.redirect(`${frontendUrl}/login?error=oauth_not_configured`);
+    }
+    next();
+  },
   passport.authenticate('google', { 
     failureRedirect: process.env.FRONTEND_URL || 'http://localhost:3000/login?error=oauth_failed',
     session: false 
