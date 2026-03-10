@@ -1,0 +1,70 @@
+           shortDescription: 
+"Learn about DevOps 
+Fundamentals & Culture",
+           points: 10,
+           estimatedMinutes: 
+60,
+           isActive: true,
+           order: 1,
+           duration: 600
+         },
+         create: {
+           courseId: 
+"course_devops_master",
+           id: 
+"mod_devops_intro",
+           title: "DevOps 
+Fundamentals & Culture",
+           description: 
+"Understanding DevOps 
+philosophy, principles, and 
+organizational 
+transformation",
+           shortDescription: 
+"Learn about DevOps 
+Fundamentals & Culture",
+           points: 10,
+           estimatedMinutes: 
+60,
+           isActive: true,
+           order: 1,
+           duration: 600,
+           ~~~~~~~~
+       ?   totalTopics?: Int,
+       ?   createdAt?: 
+DateTime,
+       ?   updatedAt?: 
+DateTime,
+       ?   topics?: LmsTopicU
+ncheckedCreateNestedManyWitho
+utModuleInput,
+       ?   moduleTest?: LmsMo
+duleTestUncheckedCreateNested
+OneWithoutModuleInput,
+       ?   moduleProgress?: L
+msModuleProgressUncheckedCrea
+teNestedManyWithoutModuleInpu
+t
+         }
+       })
+
+Unknown argument `duration`. 
+Available options are marked 
+with ?.
+    at wn (C:\Users\Kartik Vi
+chare\Desktop\NodePreplyte\pr
+eplyte\backend\node_modules\@
+prisma\client\runtime\library
+.js:29:1363)
+    at $n.handleRequestError 
+(C:\Users\Kartik Vichare\Desk
+top\NodePreplyte\preplyte\bac
+kend\node_modules\@prisma\cli
+ent\runtime\library.js:121:69
+58)
+    at 
+$n.handleAndLogRequestError 
+(C:\Users\Kartik Vichare\Desk
+top\NodePreplyte\preplyte\bac
+kend\node_modules\@prisma\cli
+ent\runtime\library.js:121:66

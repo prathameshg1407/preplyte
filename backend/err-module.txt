@@ -1,0 +1,98 @@
+`prisma.lmsModule.upsert()` 
+invocation in
+C:\Users\Kartik Vichare\Deskt
+op\NodePreplyte\preplyte\back
+end\prisma\seeds\lms-seed.ts:
+66:45
+
+  63 for (const moduleData 
+of modules) {
+  64   const { topics, 
+moduleTest, ...moduleFields 
+} = moduleData;
+  65 
+ΓåÆ 66   const module = 
+await 
+prisma.lmsModule.upsert({
+         where: {
+           courseId_order: {
+             courseId: 
+"course_devops_master",
+             order: 1
+           }
+         },
+         update: {
+           id: 
+"mod_devops_intro",
+           title: "DevOps 
+Fundamentals & Culture",
+           description: 
+"Understanding DevOps 
+philosophy, principles, and 
+organizational 
+transformation",
+           order: 1,
+           duration: 600
+         },
+         create: {
+           courseId: 
+"course_devops_master",
+           id: 
+"mod_devops_intro",
+           title: "DevOps 
+Fundamentals & Culture",
+           description: 
+"Understanding DevOps 
+philosophy, principles, and 
+organizational 
+transformation",
+           order: 1,
+           duration: 600,
+       +   shortDescription: 
+String
+         }
+       })
+
+Argument `shortDescription` 
+is missing.
+    at wn (C:\Users\Kartik Vi
+chare\Desktop\NodePreplyte\pr
+eplyte\backend\node_modules\@
+prisma\client\runtime\library
+.js:29:1363)
+    at $n.handleRequestError 
+(C:\Users\Kartik Vichare\Desk
+top\NodePreplyte\preplyte\bac
+kend\node_modules\@prisma\cli
+ent\runtime\library.js:121:69
+58)
+    at 
+$n.handleAndLogRequestError 
+(C:\Users\Kartik Vichare\Desk
+top\NodePreplyte\preplyte\bac
+kend\node_modules\@prisma\cli
+ent\runtime\library.js:121:66
+23)
+    at $n.request 
+(C:\Users\Kartik Vichare\Desk
+top\NodePreplyte\preplyte\bac
+kend\node_modules\@prisma\cli
+ent\runtime\library.js:121:63
+07)
+    at async l 
+(C:\Users\Kartik Vichare\Desk
+top\NodePreplyte\preplyte\bac
+kend\node_modules\@prisma\cli
+ent\runtime\library.js:130:96
+33)
+    at async seedLmsData 
+(C:\Users\Kartik Vichare\Desk
+top\NodePreplyte\preplyte\bac
+kend\prisma\seeds\lms-seed.ts
+:66:22)
+    at async main 
+(C:\Users\Kartik Vichare\Desk
+top\NodePreplyte\preplyte\bac
+kend\prisma\seed.ts:16:5) {
+  clientVersion: '5.22.0'
+}

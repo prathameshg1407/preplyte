@@ -36,8 +36,8 @@ export const updateTopicProgressSchema = z.object({
 });
 
 export const submitTestAnswerSchema = z.object({
-  questionId: z.string().cuid(),
-  selectedOptionId: z.string().cuid(),
+  questionId: z.string(),
+  selectedOptionId: z.string(),
 });
 
 export const submitTestSchema = z.object({

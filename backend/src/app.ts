@@ -361,6 +361,10 @@ app.use('/api/admin', adminLimiter, adminRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/leaderboard', leaderboardRoutes);
 
+// LMS routes
+app.use('/api/lms', lmsRoutes);
+
+
 // =====================================================
 // 8. ERROR HANDLING
 // =====================================================
