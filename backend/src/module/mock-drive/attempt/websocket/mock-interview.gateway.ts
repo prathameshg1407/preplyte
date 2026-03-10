@@ -48,6 +48,8 @@ interface ActiveConnection {
     isInitialized: boolean;
     isInitializing: boolean;
     pendingAudioChunks: Buffer[];
+    isProcessingResponse: boolean; // Re-entrancy guard: prevents double-submission
+    stopRecordingWaitTimer: NodeJS.Timeout | null; // Wait timer for final Deepgram transcript
 }
 
 interface JWTPayload {
@@ -266,6 +268,8 @@ class MockInterviewWebSocketGateway {
             isInitialized: false,
             isInitializing: false,
             pendingAudioChunks: [],
+            isProcessingResponse: false,
+            stopRecordingWaitTimer: null,
         };
 
         this.connections.set(connectionId, connection);
@@ -451,7 +455,9 @@ class MockInterviewWebSocketGateway {
     private async generateAndSpeakOpening(connection: ActiveConnection): Promise<void> {
         if (!connection.context || !connection.workingData) return;
 
+        // Mark both flags: AI is speaking and NOT listening so frontend audio is discarded
         connection.isAISpeaking = true;
+        connection.isListening = false;
         try {
             const opening = await conversationEngineService.generateOpening(connection.context);
 
@@ -483,17 +489,20 @@ class MockInterviewWebSocketGateway {
                 });
             }
             this.send(connection.socket, { type: WS_EVENTS.SERVER.AI_DONE, data: { questionId: assistantMsg.id } });
-            // Transition frontend to INTERVIEWING so mic auto-starts
+            // Transition frontend to INTERVIEWING so mic auto-starts after audio playback ends
             this.sendSessionState(connection);
 
         } finally {
             connection.isAISpeaking = false;
-            connection.isListening = true;
+            // isListening will be set to true by START_RECORDING from the frontend
+            // (mic auto-starts after audio playback ends on the client side)
         }
     }
 
     private async speakQuestion(connection: ActiveConnection, text: string, category: string): Promise<void> {
+        // Block listening immediately so any residual frontend audio is discarded
         connection.isAISpeaking = true;
+        connection.isListening = false;
         try {
             this.send(connection.socket, {
                 type: WS_EVENTS.SERVER.AI_SPEAKING,
@@ -507,11 +516,11 @@ class MockInterviewWebSocketGateway {
                 });
             }
             this.send(connection.socket, { type: WS_EVENTS.SERVER.AI_DONE, data: {} });
-            // Transition frontend to INTERVIEWING so mic auto-starts
+            // Transition frontend to INTERVIEWING so mic auto-starts after audio playback ends
             this.sendSessionState(connection);
         } finally {
             connection.isAISpeaking = false;
-            connection.isListening = true;
+            // isListening re-enabled by START_RECORDING from the frontend after playback
         }
     }
 
@@ -545,21 +554,29 @@ class MockInterviewWebSocketGateway {
                 break;
             case WS_EVENTS.CLIENT.STOP_RECORDING:
                 connection.isListening = false;
+                // Cancel any pending auto-submit timer (prevents double-submission)
                 if (this.responseProcessingTimeout.has(connection.socket.id)) {
                     clearTimeout(this.responseProcessingTimeout.get(connection.socket.id)!);
                     this.responseProcessingTimeout.delete(connection.socket.id);
                 }
-                if (connection.currentTranscript.trim().length > 0) {
-                    await this.processUserResponse(connection, connection.currentTranscript.trim());
-                    connection.currentTranscript = '';
-                } else {
-                    setTimeout(async () => {
-                        if (connection.currentTranscript.trim().length > 0 && !connection.isAISpeaking) {
-                            await this.processUserResponse(connection, connection.currentTranscript.trim());
-                            connection.currentTranscript = '';
-                        }
-                    }, 1500);
+                // Cancel any prior stop-recording wait timer
+                if (connection.stopRecordingWaitTimer) {
+                    clearTimeout(connection.stopRecordingWaitTimer);
+                    connection.stopRecordingWaitTimer = null;
                 }
+                // We always wait 1000ms for Deepgram to deliver the last final transcript.
+                // If currentTranscript already has content the wait will still proceed so we
+                // capture any in-flight final result that arrives shortly after stop.
+                connection.stopRecordingWaitTimer = setTimeout(async () => {
+                    connection.stopRecordingWaitTimer = null;
+                    const transcript = connection.currentTranscript.trim();
+                    if (transcript.length > 0 && !connection.isAISpeaking && !connection.isProcessingResponse) {
+                        connection.currentTranscript = '';
+                        await this.processUserResponse(connection, transcript);
+                    } else if (transcript.length === 0) {
+                        logger.warn('[Mock WS Gateway] STOP_RECORDING: no transcript captured, skipping');
+                    }
+                }, 1000);
                 break;
             case WS_EVENTS.CLIENT.END_INTERVIEW:
                 await this.endMockDriveInterview(connection, data?.reason || 'completed');
@@ -610,16 +627,24 @@ class MockInterviewWebSocketGateway {
     }
 
     private scheduleResponseProcessing(connection: ActiveConnection): void {
+        // This is a fallback auto-submit — only fires if STOP_RECORDING wasn't received.
+        // Now that STOP_RECORDING has a 1s wait, this timeout should rarely be needed.
         const existing = this.responseProcessingTimeout.get(connection.socket.id);
         if (existing) clearTimeout(existing);
 
         const timeout = setTimeout(async () => {
             this.responseProcessingTimeout.delete(connection.socket.id);
-            if (connection.currentTranscript.trim().length > 10 && !connection.isAISpeaking) {
+            // Guard: skip if already processing or stop-recording timer is pending
+            if (
+                connection.currentTranscript.trim().length > 10 &&
+                !connection.isAISpeaking &&
+                !connection.isProcessingResponse &&
+                connection.isListening // Only auto-submit if still in listening state (not stopped)
+            ) {
                 await this.processUserResponse(connection, connection.currentTranscript.trim());
                 connection.currentTranscript = '';
             }
-        }, 5000); // 3 seconds timeout handled mostly by frontend VAD now anyway, fallback
+        }, 8000); // Increased to 8s — frontend VAD at 5s handles normal flow; this is last resort
 
         this.responseProcessingTimeout.set(connection.socket.id, timeout);
     }
@@ -647,6 +672,12 @@ class MockInterviewWebSocketGateway {
 
     private async processUserResponse(connection: ActiveConnection, response: string): Promise<void> {
         if (!connection.context || !connection.workingData) return;
+        // Re-entrancy guard: prevent double-processing the same answer
+        if (connection.isProcessingResponse) {
+            logger.warn('[Mock WS Gateway] processUserResponse called while already processing — skipping');
+            return;
+        }
+        connection.isProcessingResponse = true;
 
         this.send(connection.socket, { type: WS_EVENTS.SERVER.AI_THINKING });
 
@@ -728,6 +759,8 @@ class MockInterviewWebSocketGateway {
         } catch (error) {
             logger.error('[Mock WS Gateway] Response processing failed', error);
             this.sendError(connection.socket, 'PROCESSING_ERROR', 'Failed to process response');
+        } finally {
+            connection.isProcessingResponse = false;
         }
     }
 
@@ -794,6 +827,12 @@ class MockInterviewWebSocketGateway {
         if (this.responseProcessingTimeout.has(connectionId)) {
             clearTimeout(this.responseProcessingTimeout.get(connectionId)!);
             this.responseProcessingTimeout.delete(connectionId);
+        }
+
+        // Clear the stop-recording wait timer to prevent dangling async callbacks
+        if (connection.stopRecordingWaitTimer) {
+            clearTimeout(connection.stopRecordingWaitTimer);
+            connection.stopRecordingWaitTimer = null;
         }
 
         if (connection.transcriber) {

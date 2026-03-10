@@ -23,6 +23,7 @@ interface UseAudioPlayerReturn {
   stop: () => void;
   clear: () => void;
   setVolume: (volume: number) => void;
+  resumeContext: () => Promise<void>;
 }
 
 // =====================================================
@@ -295,7 +296,7 @@ export function useAudioPlayer(
 
       // Close audio context
       if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
-        audioContextRef.current.close().catch(() => {});
+        audioContextRef.current.close().catch(() => { });
         audioContextRef.current = null;
       }
 
@@ -316,5 +317,8 @@ export function useAudioPlayer(
     stop,
     clear,
     setVolume,
+    resumeContext: async () => {
+      await resumeContext();
+    }
   };
 }

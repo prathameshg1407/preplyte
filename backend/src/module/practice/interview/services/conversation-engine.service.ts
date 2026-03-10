@@ -62,11 +62,7 @@ class ConversationEngineService {
   private groq: GroqApiManager;
 
   constructor() {
-    const apiKeys = (process.env.GROQ_API_KEYS || process.env.GROQ_API_KEY || '')
-      .split(',')
-      .filter(Boolean);
-    
-    this.groq = new GroqApiManager(apiKeys);
+    this.groq = new GroqApiManager();
   }
 
   // ===================================================
@@ -98,40 +94,40 @@ class ConversationEngineService {
     const sortedResponses = [...previousResponses].sort((a, b) => a.questionOrder - b.questionOrder);
 
     for (const resp of sortedResponses) {
-        // 1. Add AI Question to History
+      // 1. Add AI Question to History
+      history.push({
+        id: nanoid(),
+        role: 'assistant',
+        content: resp.question,
+        timestamp: new Date(resp.createdAt)
+      });
+
+      // 2. Add User Answer to History (if answered)
+      if (resp.answer) {
         history.push({
-            id: nanoid(),
-            role: 'assistant',
-            content: resp.question,
-            timestamp: new Date(resp.createdAt)
+          id: nanoid(),
+          role: 'user',
+          content: resp.answer,
+          timestamp: new Date(resp.updatedAt || resp.createdAt)
         });
+      }
 
-        // 2. Add User Answer to History (if answered)
-        if (resp.answer) {
-            history.push({
-                id: nanoid(),
-                role: 'user',
-                content: resp.answer,
-                timestamp: new Date(resp.updatedAt || resp.createdAt)
-            });
-        }
-
-        // 3. Rebuild Questions Asked List
-        questionsAsked.push({
-            id: resp.id,
-            category: resp.category,
-            question: resp.question,
-            order: resp.questionOrder,
-            followUpPotential: []
-        });
+      // 3. Rebuild Questions Asked List
+      questionsAsked.push({
+        id: resp.id,
+        category: resp.category,
+        question: resp.question,
+        order: resp.questionOrder,
+        followUpPotential: []
+      });
     }
 
     // Determine current topic based on last question
     const lastQuestion = questionsAsked[questionsAsked.length - 1];
     const currentTopic = lastQuestion ? lastQuestion.category : null;
-    const followUpDepth = lastQuestion?.category && questionsAsked.length >= 2 
-        && questionsAsked[questionsAsked.length - 2].category === lastQuestion.category 
-        ? 1 : 0; // Simple approximation for depth
+    const followUpDepth = lastQuestion?.category && questionsAsked.length >= 2
+      && questionsAsked[questionsAsked.length - 2].category === lastQuestion.category
+      ? 1 : 0; // Simple approximation for depth
 
     return {
       resume,
@@ -328,7 +324,7 @@ class ConversationEngineService {
       };
     } catch (error) {
       logger.error('[ConversationEngine] Scoring failed', error);
-      
+
       // Return default scores on failure
       return {
         scores: {
@@ -512,7 +508,7 @@ class ConversationEngineService {
 
   private async generateClosingQuestion(context: ConversationContext): Promise<QuestionGenerationResult> {
     const prompt = buildClosingPrompt(context.candidateProfile.name);
-    
+
     const response = await this.groq.complete(prompt, {
       temperature: 0.5,
       maxTokens: 300,

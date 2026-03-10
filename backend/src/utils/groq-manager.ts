@@ -55,10 +55,12 @@ export class GroqApiManager {
   private keyExhaustionResetTime = 0;
 
   constructor(
-    apiKeys: string[],
+    apiKeys: string[] = [],
     maxRetries: number = CONSTANTS.MAX_RETRIES ?? 3
   ) {
-    this.apiKeys = apiKeys.filter(Boolean);
+    this.apiKeys = apiKeys.length > 0
+      ? apiKeys.filter(Boolean)
+      : GroqApiManager.getApiKeysFromEnv();
     this.maxRetries = maxRetries;
 
     if (this.apiKeys.length === 0) {
@@ -66,6 +68,33 @@ export class GroqApiManager {
     }
 
     this.initializeClient();
+  }
+
+  /**
+   * Collect all Groq API keys from environment variables
+   * Checks GROQ_API_KEYS (comma separated), GROQ_API_KEY, and GROQ_API_KEY_1..4
+   */
+  static getApiKeysFromEnv(): string[] {
+    const keys: string[] = [];
+
+    // Comma separated list
+    if (process.env.GROQ_API_KEYS) {
+      keys.push(...process.env.GROQ_API_KEYS.split(',').filter(Boolean));
+    }
+
+    // Single key
+    if (process.env.GROQ_API_KEY) {
+      keys.push(process.env.GROQ_API_KEY);
+    }
+
+    // Numbered keys (as provided by user)
+    for (let i = 1; i <= 10; i++) {
+      const key = process.env[`GROQ_API_KEY_${i}`];
+      if (key) keys.push(key);
+    }
+
+    // Unique keys only
+    return Array.from(new Set(keys)).filter(Boolean);
   }
 
   // ===================================================

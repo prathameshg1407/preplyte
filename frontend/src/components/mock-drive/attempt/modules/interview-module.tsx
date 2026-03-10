@@ -2,7 +2,7 @@
 "use client";
 
 import { FC, useEffect, useRef, useCallback, useState } from "react";
-import { Check, Loader2, User, Bot, Mic, MicOff } from "lucide-react";
+import { Check, Loader2, User, Bot, Mic, MicOff, Play } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -17,7 +17,6 @@ import {
 } from "@/types/mockdrive.types";
 import { useAttemptStore } from "@/lib/store/mock-drive/attempt-store";
 import { useAudioRecorder } from "@/lib/hooks/use-audio-recorder";
-import { useAudioPlayer } from "@/lib/hooks/use-audio-player";
 import {
   MockInterviewProvider,
   useMockInterviewWS,
@@ -60,61 +59,79 @@ export const InterviewModuleInner: FC<InterviewModuleProps> = ({
     sendAudio, sendStartRecording, sendStopRecording, endInterview,
     isConnected, isConnecting,
     interviewState, currentQuestion, transcription,
-    registerAudioHandler, registerAiDoneHandler,
+    isPlaying: isAudioPlaying, isBuffering, isPendingPlayback,
+    resumeContext,
   } = useMockInterviewWS();
 
-  // ─── Derived state (computed early so refs stay in sync) ──────────────────
+  // ─── Derived state ────────────────────────────────────────────────────────
   const conversation = localData?.conversation || interviewData?.conversation || [];
   const responses = localData?.responses || interviewData?.responses || [];
   const targetQuestions = interviewConfig.targetQuestions;
   const questionsAnswered = responses.length;
   const isComplete = questionsAnswered >= targetQuestions;
-
   const isCompleteRef = useRef(false);
   isCompleteRef.current = isComplete;
 
-  // ─── Direct Start State ───────────────────────────────────────────────────
-  const isResuming = conversation.length > 0 || responses.length > 0;
-  const [hasStarted, setHasStarted] = useState(isResuming);
+  // ─── Begin Interview state ─────────────────────────────────────────────────
+  // "hasBegun" shows the Begin overlay. Clicking Begin is a user gesture = AudioContext unlocked.
+  const [hasBegun, setHasBegun] = useState(false);
+  const micStartedRef = useRef(false);
 
-  const handleStartInterview = () => {
-    try {
-      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
-      if (AudioCtx) {
-        const ctx = new AudioCtx();
-        ctx.resume().then(() => ctx.close());
-      }
-    } catch (e) {
-      // ignore
-    }
-    setHasStarted(true);
-  };
+  // ─── Persistent mic ────────────────────────────────────────────────────────
+  // The mic starts ONCE when the user clicks "Begin Interview" and stays open
+  // for the entire interview. Audio is always sent to the backend; the backend
+  // gates it via isListening / isAISpeaking. This eliminates getUserMedia() latency
+  // between turns (which caused the first few words of each answer to be cut off).
+  const { isRecording, startRecording, stopRecording, volume } = useAudioRecorder({
+    onAudioData: (audioData) => {
+      // Always send — backend discards data when not listening
+      if (isConnected) sendAudio(audioData);
+    },
+  });
 
-  // ─── Connect on mount ─────────────────────────────────────────────────────
+  // ─── isAnswering: backend is listening to our answer ──────────────────────
+  // This replaces using isRecording as a proxy for "user's turn".
+  // isRecording is always true once mic starts; isAnswering tracks conversation state.
+  const [isAnswering, setIsAnswering] = useState(false);
+  const isAnsweringRef = useRef(false);
+  isAnsweringRef.current = isAnswering;
+
+  // ─── Connection ────────────────────────────────────────────────────────────
   const hasConnectedRef = useRef(false);
+
   useEffect(() => {
-    if (moduleAttemptId && hasStarted && !hasConnectedRef.current) {
+    if (moduleAttemptId && !hasConnectedRef.current) {
       hasConnectedRef.current = true;
       connect(moduleAttemptId);
     }
-  }, [moduleAttemptId, hasStarted, connect]);
+  }, [moduleAttemptId, connect]);
 
   useEffect(() => {
     return () => {
       hasConnectedRef.current = false;
+      // Release mic on unmount
+      if (micStartedRef.current) stopRecording();
       disconnect();
     };
-  }, [disconnect]);
+  }, [disconnect, stopRecording]);
 
-  // ─── Recording ────────────────────────────────────────────────────────────
-  const isTransitioningRef = useRef(false);
+  // ─── Begin Interview ────────────────────────────────────────────────────────
+  const handleBeginInterview = useCallback(async () => {
+    setHasBegun(true);
+    // This click IS a user gesture → AudioContext can be resumed/created here
+    try { await resumeContext(); } catch { /* ignore */ }
+    // Start mic permanently — keep it warm for the entire interview
+    if (!micStartedRef.current && !isRecording) {
+      micStartedRef.current = true;
+      try {
+        await startRecording();
+      } catch {
+        micStartedRef.current = false;
+      }
+    }
+  }, [resumeContext, startRecording, isRecording]);
 
-  // ─── Audio Recorder (must come before handlers that reference it) ─────────
-  const { isRecording, startRecording, stopRecording, volume } = useAudioRecorder({
-    onAudioData: (audioData) => { if (isConnected) sendAudio(audioData); },
-  });
-
-  // ─── Silence timer helpers (must come before handleStopRecording) ──────────
+  // ─── Silence timers ────────────────────────────────────────────────────────
   const [silenceCountdown, setSilenceCountdown] = useState<number | null>(null);
   const silenceStartRef = useRef<number | null>(null);
   const silenceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -127,69 +144,65 @@ export const InterviewModuleInner: FC<InterviewModuleProps> = ({
     setSilenceCountdown(null);
   }, []);
 
-  const handleStartRecording = useCallback(async () => {
-    // Only block double-starts, NOT isAudioPlaying.
-    // onPlaybackEnd fires while React state still shows isAudioPlaying=true
-    // (batch update hasn't settled). Checking isAudioPlaying here would block
-    // mic start for every question after the first.
-    if (isTransitioningRef.current || isCompleteRef.current) return;
-    isTransitioningRef.current = true;
-    try {
-      await startRecording();
-      sendStartRecording();
-    } catch {
-      // mic permission denied → handle gracefully
-    } finally {
-      isTransitioningRef.current = false;
-    }
-  }, [startRecording, sendStartRecording]);
-
-  const handleStopRecording = useCallback(() => {
-    if (!isRecording || isTransitioningRef.current) return;
-    isTransitioningRef.current = true;
+  // ─── Submit answer (stop current answer turn) ─────────────────────────────
+  const handleSubmitAnswer = useCallback(() => {
+    if (!isAnsweringRef.current) return;
     clearSilenceTimers();
-    stopRecording();
+    setIsAnswering(false);
     sendStopRecording();
-    setTimeout(() => { isTransitioningRef.current = false; }, 600);
-  }, [isRecording, stopRecording, sendStopRecording, clearSilenceTimers]);
+  }, [clearSilenceTimers, sendStopRecording]);
 
-  // ─── Audio Player ─────────────────────────────────────────────────────────
-  const { isPlaying: isAudioPlaying, queueAudio, playAccumulated, isBuffering } = useAudioPlayer({
-    onPlaybackEnd: () => {
-      // Audio just finished — start mic.
-      // Small delay so React can flush isPlaying=false before any state checks.
-      setTimeout(() => {
-        if (!isCompleteRef.current && !isTransitioningRef.current) {
-          handleStartRecording();
-        }
-      }, 150);
-    },
-  });
+  // ─── Auto-send START_RECORDING when user's turn begins ────────────────────
+  // isUserTurn = conditions for when the user should be speaking
+  const isUserTurn =
+    hasBegun &&
+    isConnected &&
+    isRecording && // mic must be active
+    !isAudioPlaying &&
+    !isPendingPlayback &&
+    !isBuffering &&
+    interviewState === "INTERVIEWING" &&
+    !isSubmitting &&
+    !isComplete;
 
-  useEffect(() => registerAudioHandler((d) => queueAudio(d)), [registerAudioHandler, queueAudio]);
-  useEffect(() => registerAiDoneHandler(() => playAccumulated()), [registerAiDoneHandler, playAccumulated]);
-
-
-
-
+  const prevIsUserTurnRef = useRef(false);
   useEffect(() => {
-    const canVAD = isRecording && !isAudioPlaying && !isBuffering
-      && interviewState !== "AI_PROCESSING" && !isSubmitting && !isCompleteRef.current
-      && !isTransitioningRef.current;
+    if (isUserTurn && !prevIsUserTurnRef.current) {
+      // User's turn just started: tell backend to start listening
+      setIsAnswering(true);
+      sendStartRecording();
+    }
+    prevIsUserTurnRef.current = isUserTurn;
+  }, [isUserTurn, sendStartRecording]);
+
+  // ─── Clear isAnswering when AI takes over ─────────────────────────────────
+  useEffect(() => {
+    if (interviewState === "AI_PROCESSING" || interviewState === "AI_SPEAKING") {
+      if (isAnsweringRef.current) {
+        setIsAnswering(false);
+        clearSilenceTimers();
+      }
+    }
+  }, [interviewState, clearSilenceTimers]);
+
+  // ─── VAD: silence-based auto-submit ───────────────────────────────────────
+  useEffect(() => {
+    const canVAD = isAnswering && !isAudioPlaying && !isPendingPlayback
+      && !isSubmitting && !isCompleteRef.current;
 
     if (canVAD) {
       if (volume < 0.05) {
         if (!silenceStartRef.current) {
           silenceStartRef.current = Date.now();
-          setSilenceCountdown(3);
+          setSilenceCountdown(5);
           silenceIntervalRef.current = setInterval(() => {
             const elapsed = (Date.now() - (silenceStartRef.current ?? Date.now())) / 1000;
-            setSilenceCountdown(Math.ceil(Math.max(0, 3 - elapsed)));
+            setSilenceCountdown(Math.ceil(Math.max(0, 5 - elapsed)));
           }, 200);
           silenceTimeoutRef.current = setTimeout(() => {
             clearSilenceTimers();
-            handleStopRecording();
-          }, 3000);
+            handleSubmitAnswer();
+          }, 5000);
         }
       } else {
         clearSilenceTimers();
@@ -199,42 +212,32 @@ export const InterviewModuleInner: FC<InterviewModuleProps> = ({
     }
     return clearSilenceTimers;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [volume, isRecording, isAudioPlaying, isBuffering, interviewState, isSubmitting]);
+  }, [volume, isAnswering, isAudioPlaying, isPendingPlayback, isSubmitting]);
 
-  // ─── Conversation sync: commit user answer when next AI question arrives ──
-  // This ensures ONLY the final submitted answer appears in the right panel.
-  // Interim TRANSCRIPTION events update `transcription` state but are NOT pushed
-  // to conversation — only shown in the italic bubble below the avatar.
+  // ─── Conversation sync ────────────────────────────────────────────────────
   const pendingUserAnswerRef = useRef<string>("");
   const lastCommittedAiQuestionRef = useRef<string | null>(null);
 
-  // Accumulate the latest transcription into the pending answer ref.
-  // `transcription` is overwritten by each TRANSCRIPTION event, so the last
-  // value before AI_PROCESSING transitions is the full final transcript.
+  // Accumulate transcription into pending answer ref
   useEffect(() => {
-    if (transcription) {
+    if (transcription && transcription.trim().length > 0) {
       pendingUserAnswerRef.current = transcription;
     }
   }, [transcription]);
 
-  // When AI_SPEAKING fires with a new question:
-  // 1. Commit the pending user answer to conversation (if any)
-  // 2. Commit the new AI question to conversation
+  // Commit entries when a new AI question arrives
   useEffect(() => {
     if (!currentQuestion || currentQuestion === lastCommittedAiQuestionRef.current) return;
-
     lastCommittedAiQuestionRef.current = currentQuestion;
     const conv = localData?.conversation || interviewData?.conversation || [];
     const newEntries = [];
 
-    // Commit user's answer first (if we have a pending one)
     const userAnswer = pendingUserAnswerRef.current.trim();
     if (userAnswer && !conv.some((m) => m.content === userAnswer && m.role === "user")) {
       newEntries.push({ id: nanoid(), role: "user" as const, content: userAnswer, timestamp: new Date().toISOString() });
     }
-    pendingUserAnswerRef.current = ""; // Clear after committing
+    pendingUserAnswerRef.current = "";
 
-    // Commit the AI question
     if (!conv.some((m) => m.content === currentQuestion && m.role === "assistant")) {
       newEntries.push({ id: nanoid(), role: "assistant" as const, content: currentQuestion, timestamp: new Date().toISOString() });
     }
@@ -245,6 +248,7 @@ export const InterviewModuleInner: FC<InterviewModuleProps> = ({
         conversation: [...conv, ...newEntries],
       } as Partial<AiInterviewModuleData>);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentQuestion]);
 
   // ─── Local data init ──────────────────────────────────────────────────────
@@ -261,16 +265,16 @@ export const InterviewModuleInner: FC<InterviewModuleProps> = ({
     setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 80);
   }, [conversation.length]);
 
-  // ─── Status helpers ───────────────────────────────────────────────────────
-  type MicState = "connecting" | "disconnected" | "ai_speaking" | "ai_thinking" | "listening" | "idle";
+  // ─── Status helpers ────────────────────────────────────────────────────────
+  type MicState = "connecting" | "disconnected" | "ai_speaking" | "ai_thinking" | "answering" | "waiting";
 
   const getMicState = (): MicState => {
-    if (!isConnected && isConnecting) return "connecting";
+    if (isConnecting) return "connecting";
     if (!isConnected) return "disconnected";
-    if (isAudioPlaying || isBuffering) return "ai_speaking";
+    if (isAudioPlaying || isBuffering || isPendingPlayback) return "ai_speaking";
     if (interviewState === "AI_PROCESSING") return "ai_thinking";
-    if (isRecording) return "listening";
-    return "idle";
+    if (isAnswering) return "answering";
+    return "waiting";
   };
 
   const micState = getMicState();
@@ -280,7 +284,7 @@ export const InterviewModuleInner: FC<InterviewModuleProps> = ({
     disconnected: { text: "Connection lost", cls: "text-red-500" },
     ai_speaking: { text: "AI is speaking...", cls: "text-primary animate-pulse" },
     ai_thinking: { text: "AI is thinking...", cls: "text-primary/70 animate-pulse" },
-    listening: {
+    answering: {
       text: silenceCountdown !== null
         ? `Listening — auto-submits in ${silenceCountdown}s`
         : "Listening... speak your answer",
@@ -288,36 +292,59 @@ export const InterviewModuleInner: FC<InterviewModuleProps> = ({
         ? "text-orange-500 font-semibold"
         : "text-red-500 animate-pulse",
     },
-    idle: { text: "Tap mic to respond", cls: "text-muted-foreground" },
+    waiting: { text: "Waiting for AI...", cls: "text-muted-foreground animate-pulse" },
   };
 
   const currentStatus = STATUS[micState];
-  const micDisabled = (micState === "ai_speaking" || micState === "ai_thinking"
-    || micState === "connecting" || micState === "disconnected" || isSubmitting) && !isRecording;
 
   // ─────────────────────────────────────────────────────────────────────────
-  // RENDER
+  // BEGIN OVERLAY — shown until user clicks "Begin Interview"
   // ─────────────────────────────────────────────────────────────────────────
-  if (!hasStarted) {
+  if (!hasBegun) {
     return (
-      <div className="flex flex-col h-full max-w-6xl mx-auto gap-4 items-center justify-center">
-        <Card className="max-w-md w-full text-center p-8 border-primary/20 bg-card/50 backdrop-blur-sm">
-          <CardHeader>
-            <CardTitle className="text-2xl">Ready for Interview?</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-muted-foreground text-sm">
-              The AI interviewer will speak the first question as soon as you connect. Please ensure your volume is up.
+      <div className="flex flex-col h-full items-center justify-center gap-6 p-6">
+        <div className="max-w-md w-full p-8 bg-card rounded-2xl border shadow-lg text-center space-y-5">
+          <div className="space-y-2">
+            <h2 className="text-xl font-bold">Ready to Begin?</h2>
+            <p className="text-muted-foreground text-sm leading-relaxed">
+              Make sure your <strong>microphone is connected</strong> and your <strong>volume is turned up</strong>.
+              The AI will speak the first question automatically once you click Begin.
             </p>
-            <Button size="lg" className="w-full font-semibold" onClick={handleStartInterview}>
-              Start Interview
-            </Button>
-          </CardContent>
-        </Card>
+          </div>
+          <div className="bg-muted/50 rounded-xl p-3 text-sm text-muted-foreground space-y-1">
+            <p>🎤 Speak your answer clearly</p>
+            <p>⏱️ 5 seconds of silence = auto-submit</p>
+            <p>🔘 Tap mic button to submit early</p>
+          </div>
+          <Button
+            size="lg"
+            className="w-full h-12 text-base gap-2"
+            onClick={handleBeginInterview}
+            disabled={!isConnected && !isConnecting}
+          >
+            {isConnecting ? (
+              <><Loader2 className="h-4 w-4 animate-spin" />Connecting...</>
+            ) : !isConnected ? (
+              <><Loader2 className="h-4 w-4 animate-spin" />Waiting for connection...</>
+            ) : (
+              <><Play className="h-4 w-4" />Begin Interview</>
+            )}
+          </Button>
+          {/* Connection dot */}
+          <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+            <div className={cn("w-2 h-2 rounded-full",
+              isConnected ? "bg-green-500" : isConnecting ? "bg-yellow-400 animate-pulse" : "bg-red-500"
+            )} />
+            {isConnected ? "Connected" : isConnecting ? "Connecting..." : "Disconnected"}
+          </div>
+        </div>
       </div>
     );
   }
 
+  // ─────────────────────────────────────────────────────────────────────────
+  // MAIN INTERVIEW UI
+  // ─────────────────────────────────────────────────────────────────────────
   return (
     <div className="flex flex-col h-full max-w-6xl mx-auto gap-4 overflow-hidden">
 
@@ -344,7 +371,7 @@ export const InterviewModuleInner: FC<InterviewModuleProps> = ({
         </CardHeader>
       </Card>
 
-      {/* ── Main Grid — fixed height, content scrolls inside ── */}
+      {/* ── Main Grid ── */}
       <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-2 gap-4 overflow-hidden">
 
         {/* ── Left: Avatar + Controls ── */}
@@ -359,33 +386,33 @@ export const InterviewModuleInner: FC<InterviewModuleProps> = ({
             {/* Avatar area */}
             <div className="flex flex-col items-center gap-3 flex-1 justify-center min-h-0 overflow-hidden py-2">
               <AIAvatar
-                isSpeaking={isAudioPlaying || isBuffering}
-                isListening={isRecording && !isAudioPlaying}
+                isSpeaking={isAudioPlaying || isBuffering || isPendingPlayback}
+                isListening={isAnswering}
                 isProcessing={interviewState === "AI_PROCESSING"}
               />
 
               <AudioVisualizer
-                isActive={isRecording || isAudioPlaying}
-                volume={isRecording ? volume : isAudioPlaying ? 0.5 : 0}
+                isActive={isAnswering || isAudioPlaying}
+                volume={isAnswering ? volume : isAudioPlaying ? 0.5 : 0}
                 className="w-full max-w-xs"
               />
 
-              {/* Live transcription — ONLY here, italic + small */}
-              {isRecording && transcription && (
+              {/* Live transcription — shows while listening */}
+              {isAnswering && transcription && (
                 <div className="max-w-xs w-full px-3 py-1.5 bg-muted/60 rounded-xl border border-muted-foreground/15 animate-in fade-in">
                   <p className="text-xs text-muted-foreground italic line-clamp-2">
-                    "{transcription}"
+                    &ldquo;{transcription}&rdquo;
                   </p>
                 </div>
               )}
             </div>
 
-            {/* Mic controls */}
+            {/* Controls */}
             <div className="flex-shrink-0 flex flex-col items-center gap-2">
               {!isComplete ? (
                 <>
-                  {/* Silence countdown ring */}
-                  {silenceCountdown !== null && isRecording ? (
+                  {/* Silence countdown ring — replaces mic button when counting down */}
+                  {silenceCountdown !== null && isAnswering ? (
                     <div className="relative flex items-center justify-center">
                       <svg className="w-16 h-16 -rotate-90" viewBox="0 0 64 64">
                         <circle cx="32" cy="32" r="26" fill="none" stroke="currentColor"
@@ -394,7 +421,7 @@ export const InterviewModuleInner: FC<InterviewModuleProps> = ({
                           className={silenceCountdown <= 1 ? "text-orange-500" : "text-red-500"}
                           strokeWidth="4"
                           strokeDasharray={`${2 * Math.PI * 26}`}
-                          strokeDashoffset={`${2 * Math.PI * 26 * (silenceCountdown / 3)}`}
+                          strokeDashoffset={`${2 * Math.PI * 26 * (silenceCountdown / 5)}`}
                           strokeLinecap="round"
                           style={{ transition: "stroke-dashoffset 0.2s linear" }}
                         />
@@ -406,20 +433,22 @@ export const InterviewModuleInner: FC<InterviewModuleProps> = ({
                     </div>
                   ) : (
                     <div className="relative">
-                      {isRecording && (
+                      {/* Pulsing ring while listening */}
+                      {isAnswering && (
                         <span className="absolute inset-0 rounded-full animate-ping bg-red-400/40" />
                       )}
                       <Button
-                        variant={isRecording ? "destructive" : "default"}
+                        variant={isAnswering ? "destructive" : "default"}
                         size="icon"
                         className={cn("h-14 w-14 rounded-full shadow-lg transition-all hover:scale-105",
-                          isRecording ? "bg-red-500 hover:bg-red-600" : "")}
-                        onClick={isRecording ? handleStopRecording : handleStartRecording}
-                        disabled={micDisabled}
+                          isAnswering ? "bg-red-500 hover:bg-red-600" : "")}
+                        onClick={isAnswering ? handleSubmitAnswer : undefined}
+                        disabled={!isAnswering || isSubmitting || micState === "ai_speaking" || micState === "ai_thinking"}
+                        title={isAnswering ? "Submit answer now" : currentStatus.text}
                       >
-                        {interviewState === "AI_PROCESSING" && !isRecording
+                        {micState === "ai_thinking" && !isAnswering
                           ? <Loader2 className="h-5 w-5 animate-spin" />
-                          : isRecording
+                          : isAnswering
                             ? <MicOff className="h-5 w-5 text-white" />
                             : <Mic className="h-5 w-5" />
                         }
@@ -428,7 +457,7 @@ export const InterviewModuleInner: FC<InterviewModuleProps> = ({
                   )}
 
                   <p className="text-[11px] text-muted-foreground text-center max-w-[160px] leading-tight">
-                    {isRecording ? "3s pause = auto-submit" : "Tap mic to respond"}
+                    {isAnswering ? "5s pause = auto-submit" : currentStatus.text}
                   </p>
 
                   <Button variant="ghost" size="sm"
@@ -453,7 +482,7 @@ export const InterviewModuleInner: FC<InterviewModuleProps> = ({
           </CardContent>
         </Card>
 
-        {/* ── Right: Transcript ── scrolls internally, never grows the grid ── */}
+        {/* ── Right: Transcript ── */}
         <Card className="flex flex-col h-full overflow-hidden">
           <CardHeader className="py-3 flex-shrink-0 border-b">
             <CardTitle className="text-sm text-muted-foreground font-medium">
@@ -461,7 +490,6 @@ export const InterviewModuleInner: FC<InterviewModuleProps> = ({
             </CardTitle>
           </CardHeader>
 
-          {/* CardContent fills remaining height and clips overflow */}
           <CardContent className="flex-1 min-h-0 p-0 overflow-hidden">
             <ScrollArea className="h-full w-full">
               <div className="p-4 space-y-4 pb-6">
