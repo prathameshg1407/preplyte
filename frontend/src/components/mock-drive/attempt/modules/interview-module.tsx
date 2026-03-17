@@ -78,14 +78,15 @@ export const InterviewModuleInner: FC<InterviewModuleProps> = ({
   const micStartedRef = useRef(false);
 
   // ─── Persistent mic ────────────────────────────────────────────────────────
-  // The mic starts ONCE when the user clicks "Begin Interview" and stays open
-  // for the entire interview. Audio is always sent to the backend; the backend
-  // gates it via isListening / isAISpeaking. This eliminates getUserMedia() latency
-  // between turns (which caused the first few words of each answer to be cut off).
+  // The mic starts ONCE when the user clicks "Begin Interview" and stays open.
+  // IMPORTANT: We only send audio to the backend when isAnswering=true.
+  // Sending audio while AI is speaking caused backend WS instability (1005 closes)
+  // because the binary message handler ran concurrently with async TTS streaming.
   const { isRecording, startRecording, stopRecording, volume } = useAudioRecorder({
     onAudioData: (audioData) => {
-      // Always send — backend discards data when not listening
-      if (isConnected) sendAudio(audioData);
+      // Only send audio when it's the user's turn — backend gates it too,
+      // but sending always caused WS instability during AI speaking
+      if (isConnected && isAnsweringRef.current) sendAudio(audioData);
     },
   });
 
@@ -98,13 +99,9 @@ export const InterviewModuleInner: FC<InterviewModuleProps> = ({
 
   // ─── Connection ────────────────────────────────────────────────────────────
   const hasConnectedRef = useRef(false);
-
-  useEffect(() => {
-    if (moduleAttemptId && !hasConnectedRef.current) {
-      hasConnectedRef.current = true;
-      connect(moduleAttemptId);
-    }
-  }, [moduleAttemptId, connect]);
+  // Connection is initiated inside handleBeginInterview (below), NOT on mount.
+  // This ensures the AudioContext is unlocked by a user gesture BEFORE the WS
+  // connects and before the backend sends first-question audio chunks.
 
   useEffect(() => {
     return () => {
@@ -117,19 +114,28 @@ export const InterviewModuleInner: FC<InterviewModuleProps> = ({
 
   // ─── Begin Interview ────────────────────────────────────────────────────────
   const handleBeginInterview = useCallback(async () => {
+    if (hasConnectedRef.current) return; // prevent double-click
     setHasBegun(true);
-    // This click IS a user gesture → AudioContext can be resumed/created here
+
+    // Step 1: Resume AudioContext WITH this user gesture.
+    // This MUST happen before the WS connects so that when audio chunks
+    // arrive (first question TTS), the AudioContext is already running.
     try { await resumeContext(); } catch { /* ignore */ }
-    // Start mic permanently — keep it warm for the entire interview
+
+    // Step 2: Start mic permanently (keeps it warm between turns)
     if (!micStartedRef.current && !isRecording) {
       micStartedRef.current = true;
-      try {
-        await startRecording();
-      } catch {
-        micStartedRef.current = false;
-      }
+      try { await startRecording(); } catch { micStartedRef.current = false; }
     }
-  }, [resumeContext, startRecording, isRecording]);
+
+    // Step 3: Connect AFTER AudioContext is unlocked.
+    // Backend will immediately start generating + speaking the first question.
+    // By then AudioContext is ready, so audio chunks will actually play.
+    if (moduleAttemptId && !hasConnectedRef.current) {
+      hasConnectedRef.current = true;
+      connect(moduleAttemptId);
+    }
+  }, [resumeContext, startRecording, connect, isRecording, moduleAttemptId]);
 
   // ─── Silence timers ────────────────────────────────────────────────────────
   const [silenceCountdown, setSilenceCountdown] = useState<number | null>(null);
@@ -227,19 +233,21 @@ export const InterviewModuleInner: FC<InterviewModuleProps> = ({
 
   // Commit entries when a new AI question arrives
   useEffect(() => {
-    if (!currentQuestion || currentQuestion === lastCommittedAiQuestionRef.current) return;
-    lastCommittedAiQuestionRef.current = currentQuestion;
+    const qTrim = currentQuestion?.trim();
+    if (!qTrim || qTrim === lastCommittedAiQuestionRef.current?.trim()) return;
+    lastCommittedAiQuestionRef.current = qTrim;
+    
     const conv = localData?.conversation || interviewData?.conversation || [];
     const newEntries = [];
 
     const userAnswer = pendingUserAnswerRef.current.trim();
-    if (userAnswer && !conv.some((m) => m.content === userAnswer && m.role === "user")) {
+    if (userAnswer && !conv.some((m) => m.role === "user" && m.content.trim() === userAnswer)) {
       newEntries.push({ id: nanoid(), role: "user" as const, content: userAnswer, timestamp: new Date().toISOString() });
     }
     pendingUserAnswerRef.current = "";
 
-    if (!conv.some((m) => m.content === currentQuestion && m.role === "assistant")) {
-      newEntries.push({ id: nanoid(), role: "assistant" as const, content: currentQuestion, timestamp: new Date().toISOString() });
+    if (!conv.some((m) => m.role === "assistant" && m.content.trim() === qTrim)) {
+      newEntries.push({ id: nanoid(), role: "assistant" as const, content: qTrim, timestamp: new Date().toISOString() });
     }
 
     if (newEntries.length > 0) {
@@ -320,12 +328,10 @@ export const InterviewModuleInner: FC<InterviewModuleProps> = ({
             size="lg"
             className="w-full h-12 text-base gap-2"
             onClick={handleBeginInterview}
-            disabled={!isConnected && !isConnecting}
+            disabled={hasBegun}
           >
             {isConnecting ? (
               <><Loader2 className="h-4 w-4 animate-spin" />Connecting...</>
-            ) : !isConnected ? (
-              <><Loader2 className="h-4 w-4 animate-spin" />Waiting for connection...</>
             ) : (
               <><Play className="h-4 w-4" />Begin Interview</>
             )}
@@ -333,9 +339,9 @@ export const InterviewModuleInner: FC<InterviewModuleProps> = ({
           {/* Connection dot */}
           <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
             <div className={cn("w-2 h-2 rounded-full",
-              isConnected ? "bg-green-500" : isConnecting ? "bg-yellow-400 animate-pulse" : "bg-red-500"
+              isConnected ? "bg-green-500" : isConnecting ? "bg-yellow-400 animate-pulse" : "bg-muted"
             )} />
-            {isConnected ? "Connected" : isConnecting ? "Connecting..." : "Disconnected"}
+            {isConnected ? "Connected" : isConnecting ? "Connecting to server..." : "System Ready"}
           </div>
         </div>
       </div>

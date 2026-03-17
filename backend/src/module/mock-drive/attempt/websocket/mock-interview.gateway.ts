@@ -121,14 +121,17 @@ class MockInterviewWebSocketGateway {
             const now = Date.now();
             for (const [id, connection] of this.connections.entries()) {
                 const { socket } = connection;
-                if (!socket.isAlive) {
-                    logger.warn('[Mock WS Gateway] Connection dead (heartbeat failed)', { id });
+
+                // Connection stale check (no message of any kind for 2 minutes)
+                if (now - socket.lastPongTime > 120000) {
+                    logger.warn('[Mock WS Gateway] Connection dead (timeout)', { id });
                     this.cleanupConnection(id);
                     continue;
                 }
 
-                if (now - socket.lastPongTime > 60000) {
-                    logger.warn('[Mock WS Gateway] Connection stale (no pong)', { id });
+                // If no PING/PONG or message was received in the last 60s
+                if (!socket.isAlive) {
+                    logger.warn('[Mock WS Gateway] Connection dead (heartbeat failed)', { id });
                     this.cleanupConnection(id);
                     continue;
                 }
@@ -136,7 +139,7 @@ class MockInterviewWebSocketGateway {
                 socket.isAlive = false;
                 this.send(socket, { type: WS_EVENTS.SERVER.PING });
             }
-        }, 30000);
+        }, 60000);
     }
 
     private async handleUpgrade(
@@ -295,6 +298,10 @@ class MockInterviewWebSocketGateway {
     private setupSocketHandlers(socket: AuthenticatedSocket, connection: ActiveConnection): void {
         socket.on('message', async (data: RawData) => {
             connection.lastActivity = new Date();
+            // ANY message from the client counts as proof of life (isAlive = true)
+            socket.isAlive = true;
+            socket.lastPongTime = Date.now();
+            
             try {
                 if (this.isBinaryData(data)) {
                     const buffer = this.toBuffer(data);
@@ -419,6 +426,7 @@ class MockInterviewWebSocketGateway {
             connection.isListening = true;
 
             // Send Ready
+            logger.info('[Mock WS Gateway] Interview initialized', { id: connection.socket.id, isResume: workingData.responses.length > 0 });
             this.send(connection.socket, {
                 type: WS_EVENTS.SERVER.SESSION_READY,
                 data: {
@@ -428,15 +436,30 @@ class MockInterviewWebSocketGateway {
                 }
             });
 
-            // Are there NO responses AND NO conversation yet? Then generate opening.
-            if (workingData.responses.length === 0 && workingData.conversation.length === 0) {
+            // Decision: re-generate opening if no answers recorded yet (fresh or interrupted).
+            // We always re-speak the question even if conversation data exists, because:
+            //   1. The user may have refreshed/reconnected before answering.
+            //   2. The AudioContext is now properly unlocked (Begin button was clicked).
+            // If the user HAS answered questions (responses.length > 0), resume to the
+            // current unanswered question without re-speaking.
+            if (workingData.responses.length === 0) {
+                // Fresh start or interrupted before first answer — always speak the opening
+                // Clear any stale conversation to avoid duplicate entries
+                connection.workingData!.conversation = [];
+                connection.context!.history = [];
+                connection.context!.questionsAsked = [];
                 await this.generateAndSpeakOpening(connection);
             } else {
-                // Resume reconnect: DO NOT re-speak the last question.
-                // The frontend displays the transcript so the user can see the question.
-                // Just ensure we're listening and update the client on current state.
-                connection.isListening = true;
-                this.sendSessionState(connection);
+                // Resume mid-interview: re-speak the last unanswered question
+                const lastAsst = connection.workingData!.conversation
+                    .filter(m => m.role === 'assistant')
+                    .slice(-1)[0];
+                if (lastAsst) {
+                    await this.speakQuestion(connection, lastAsst.content, 'TECHNICAL');
+                } else {
+                    connection.isListening = true;
+                    this.sendSessionState(connection);
+                }
             }
 
             if (connection.pendingAudioChunks.length > 0 && connection.transcriber) {
@@ -460,6 +483,15 @@ class MockInterviewWebSocketGateway {
         connection.isListening = false;
         try {
             const opening = await conversationEngineService.generateOpening(connection.context);
+
+            // Add opening question to context so questionsAsked count is correct
+            connection.context.questionsAsked.push({
+                id: nanoid(),
+                category: 'INTRODUCTORY' as any,
+                question: opening.question,
+                order: 1,
+                followUpPotential: [],
+            });
 
             const assistantMsg = {
                 id: nanoid(),
@@ -495,7 +527,6 @@ class MockInterviewWebSocketGateway {
         } finally {
             connection.isAISpeaking = false;
             // isListening will be set to true by START_RECORDING from the frontend
-            // (mic auto-starts after audio playback ends on the client side)
         }
     }
 
@@ -531,6 +562,9 @@ class MockInterviewWebSocketGateway {
                 if (connection.isInitialized && !connection.isAISpeaking) {
                     connection.isListening = true;
                     connection.currentTranscript = '';
+                    logger.debug('[Mock WS Gateway] START_RECORDING received', { id: connection.socket.id });
+                } else {
+                    logger.warn('[Mock WS Gateway] START_RECORDING ignored (not initialized or AI speaking)', { id: connection.socket.id });
                 }
                 break;
             case WS_EVENTS.CLIENT.AUDIO_CHUNK:
@@ -550,9 +584,19 @@ class MockInterviewWebSocketGateway {
                     } catch (e) {
                         logger.error('[Mock WS Gateway] Error processing USER_ANSWER audio', e);
                     }
+                } else {
+                    if (data?.response?.length > 100) {
+                        logger.warn('[Mock WS Gateway] JSON AUDIO_CHUNK dropped', {
+                            id: connection.socket.id,
+                            isListening: connection.isListening,
+                            isAISpeaking: connection.isAISpeaking,
+                            hasTranscriber: !!connection.transcriber
+                        });
+                    }
                 }
                 break;
             case WS_EVENTS.CLIENT.STOP_RECORDING:
+                logger.debug('[Mock WS Gateway] STOP_RECORDING received', { id: connection.socket.id });
                 connection.isListening = false;
                 // Cancel any pending auto-submit timer (prevents double-submission)
                 if (this.responseProcessingTimeout.has(connection.socket.id)) {
@@ -607,8 +651,16 @@ class MockInterviewWebSocketGateway {
             if (connection.pendingAudioChunks.length < 100) connection.pendingAudioChunks.push(audioBuffer);
             return;
         }
-        if (!connection.isListening || connection.isAISpeaking) return;
-        if (connection.transcriber) connection.transcriber.sendAudio(audioBuffer);
+        if (!connection.isListening || connection.isAISpeaking) {
+            // Drop audio if not user turn
+            return;
+        }
+        
+        if (connection.transcriber) {
+            connection.transcriber.sendAudio(audioBuffer);
+        } else {
+            logger.warn('[Mock WS Gateway] BINARY AUDIO_CHUNK dropped: No transcriber', { id: connection.socket.id });
+        }
     }
 
     private handleTranscription(connection: ActiveConnection, result: { text: string; isFinal: boolean; confidence: number }): void {
@@ -654,7 +706,11 @@ class MockInterviewWebSocketGateway {
     }
 
     private handleTranscriberClose(connection: ActiveConnection): void {
-        if (this.connections.has(connection.socket.id) && connection.isListening && connection.isInitialized) {
+        // Always attempt to reconnect the transcriber if the interview connection is still active.
+        // Previously this was gated on connection.isListening, which meant the transcriber
+        // would NOT be reconnected if it closed while the AI was speaking (isListening=false).
+        // That caused all subsequent user turns to have no transcription.
+        if (this.connections.has(connection.socket.id) && connection.isInitialized) {
             this.reconnectTranscriber(connection);
         }
     }
@@ -731,8 +787,12 @@ class MockInterviewWebSocketGateway {
 
             this.sendSessionState(connection);
 
-            // Are we done?
-            if (connection.context.questionsAsked.length >= connection.context.config.targetQuestions) {
+            // Are we done? Use workingData.responses.length (persisted count) rather than
+            // questionsAsked.length (in-memory, can differ on reconnect).
+            const answeredCount = connection.workingData!.responses.length;
+            const targetCount = connection.context!.config.targetQuestions;
+            logger.debug('[Mock WS] Progress check', { answeredCount, targetCount });
+            if (answeredCount >= targetCount) {
                 await this.endMockDriveInterview(connection, 'completed');
                 return;
             }
@@ -839,8 +899,9 @@ class MockInterviewWebSocketGateway {
             try { connection.transcriber.stop(); } catch (e) { }
         }
 
+        // Use code 1000 (Normal Closure) so the browser sees a clean close, not 1005
         if (connection.socket.readyState === WebSocket.OPEN || connection.socket.readyState === WebSocket.CONNECTING) {
-            try { connection.socket.close(); } catch (e) { }
+            try { connection.socket.close(1000, 'Interview session ended'); } catch (e) { }
         }
 
         this.connections.delete(connectionId);
