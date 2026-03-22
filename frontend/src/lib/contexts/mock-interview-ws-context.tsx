@@ -179,10 +179,16 @@ export function MockInterviewProvider({ children }: { children: ReactNode }) {
         const ws = wsRef.current;
         if (ws?.readyState === WebSocket.OPEN) {
             try {
-                ws.send(JSON.stringify(payload));
+                const json = JSON.stringify(payload);
+                ws.send(json);
+                console.debug("[MockInterview WS] Sent JSON:", payload);
                 return true;
-            } catch { return false; }
+            } catch (e) { 
+                console.error("[MockInterview WS] sendJson error:", e);
+                return false; 
+            }
         }
+        console.warn("[MockInterview WS] sendJson failed: socket not OPEN", { state: ws?.readyState });
         return false;
     }, []);
 

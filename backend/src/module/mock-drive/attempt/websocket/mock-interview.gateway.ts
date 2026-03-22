@@ -307,7 +307,9 @@ class MockInterviewWebSocketGateway {
                     const buffer = this.toBuffer(data);
                     await this.handleAudioData(connection, buffer);
                 } else {
-                    const message = JSON.parse(data.toString());
+                    const messageString = data.toString();
+                    logger.debug('[Mock WS Gateway] JSON message received', { id: connection.socket.id, msg: messageString });
+                    const message = JSON.parse(messageString);
                     await this.handleMessage(connection, message);
                 }
             } catch (error) {
@@ -526,7 +528,9 @@ class MockInterviewWebSocketGateway {
 
         } finally {
             connection.isAISpeaking = false;
-            // isListening will be set to true by START_RECORDING from the frontend
+            // AUTO-LISTEN: ensure backend is listening after opening question
+            connection.isListening = true;
+            logger.debug('[Mock WS Gateway] AI opening done, isListening=true', { id: connection.socket.id });
         }
     }
 
@@ -551,7 +555,9 @@ class MockInterviewWebSocketGateway {
             this.sendSessionState(connection);
         } finally {
             connection.isAISpeaking = false;
-            // isListening re-enabled by START_RECORDING from the frontend after playback
+            // AUTO-LISTEN: ensure backend is listening after follow-up question
+            connection.isListening = true;
+            logger.debug('[Mock WS Gateway] AI question done, isListening=true', { id: connection.socket.id });
         }
     }
 
@@ -652,7 +658,14 @@ class MockInterviewWebSocketGateway {
             return;
         }
         if (!connection.isListening || connection.isAISpeaking) {
-            // Drop audio if not user turn
+            // Log once every 50 dropped chunks to avoid flooding
+            if (!connection.pendingAudioChunks.length || connection.pendingAudioChunks.length % 50 === 0) {
+                logger.debug('[Mock WS Gateway] Audio dropped (not listening or AI speaking)', { 
+                    id: connection.socket.id, 
+                    isListening: connection.isListening, 
+                    isAISpeaking: connection.isAISpeaking 
+                });
+            }
             return;
         }
         

@@ -166,7 +166,6 @@ export const InterviewModuleInner: FC<InterviewModuleProps> = ({
     isRecording && // mic must be active
     !isAudioPlaying &&
     !isPendingPlayback &&
-    !isBuffering &&
     interviewState === "INTERVIEWING" &&
     !isSubmitting &&
     !isComplete;
@@ -174,12 +173,14 @@ export const InterviewModuleInner: FC<InterviewModuleProps> = ({
   const prevIsUserTurnRef = useRef(false);
   useEffect(() => {
     if (isUserTurn && !prevIsUserTurnRef.current) {
-      // User's turn just started: tell backend to start listening
+      console.log("[InterviewModule] Transitioning to User Turn", {
+        hasBegun, isConnected, isRecording, isAudioPlaying, isPendingPlayback, interviewState
+      });
       setIsAnswering(true);
       sendStartRecording();
     }
     prevIsUserTurnRef.current = isUserTurn;
-  }, [isUserTurn, sendStartRecording]);
+  }, [isUserTurn, sendStartRecording, hasBegun, isConnected, isRecording, isAudioPlaying, isPendingPlayback, interviewState]);
 
   // ─── Clear isAnswering when AI takes over ─────────────────────────────────
   useEffect(() => {
