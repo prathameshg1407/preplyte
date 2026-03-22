@@ -19,9 +19,14 @@ import {
   MachineModuleData,
   AiInterviewModuleData,
 } from '../shared';
+import { GroqApiManager } from '../../../utils/groq-manager';
 
 export class ResultsService {
-  constructor(private prisma: PrismaClient) {}
+  private groqManager: GroqApiManager;
+
+  constructor(private prisma: PrismaClient) {
+    this.groqManager = new GroqApiManager();
+  }
 
   async getResultOverview(userId: string, driveId: string): Promise<ResultOverview> {
     const attempt = await this.prisma.mockDriveAttempt.findFirst({
@@ -144,18 +149,100 @@ export class ResultsService {
     // Get comparison stats
     const comparisonStats = await this.getComparisonStats(driveId, userId, attempt.batchId);
 
-    // Generate overall recommendations
-    const { recommendations, strengths, weaknesses } = this.generateOverallInsights(moduleReports);
+    let reportModel = attempt.report;
 
-    return {
-      overview,
-      moduleReports,
-      recommendations,
-      strengths,
-      weaknesses,
-      overallFeedback: this.generateOverallFeedback(overview, moduleReports),
-      comparisonStats,
-    };
+    if (!reportModel) {
+      const { recommendations: hrRecs, strengths: hrStrengths, weaknesses: hrWeak } = this.generateOverallInsights(moduleReports);
+      const hrFeedback = this.generateOverallFeedback(overview, moduleReports);
+
+      const prompt = `
+      You are an expert technical interviewer and career coach. Review the following mock drive assessment data for a candidate and generate personalized, constructive, and actionable feedback.
+
+      Overall Score: ${overview.percentageScore}%
+      Candidate PASSED: ${overview.isPassed ? 'Yes' : 'No'}
+
+      Module Performance:
+      ${moduleReports.map(m => `- ${m.moduleName || m.moduleType}: ${m.percentage}%`).join('\n')}
+
+      Generate a JSON response with the following structure:
+      {
+        "performanceSummary": "A 2-3 sentence overall feedback summary encouraging the candidate.",
+        "strengths": ["string", "string"], // 3-4 key strengths
+        "weaknesses": ["string", "string"], // 2-3 areas for improvement
+        "recommendations": ["string", "string"], // 3-4 actionable recommendations
+        "moduleFeedback": [
+          {
+            "moduleId": "string", // exact moduleId string from the input, MUST MATCH EXACTLY
+            "feedback": "1-2 sentences of specific feedback for this module based on their score"
+          }
+        ]
+      }
+      
+      Module IDs to use in moduleFeedback:
+      ${moduleReports.map(m => `- ${m.moduleId}`).join('\n')}
+      `;
+
+      try {
+        const aiResponse = await this.groqManager.generateJson<{
+          performanceSummary: string;
+          strengths: string[];
+          weaknesses: string[];
+          recommendations: string[];
+          moduleFeedback: Array<{moduleId: string; feedback: string}>;
+        }>(prompt, { systemPrompt: "You are an expert technical assessor generating feedback. ALWAYS return valid JSON."});
+
+        // Save to DB
+        reportModel = await this.prisma.mockDriveReport.create({
+          data: {
+            attemptId: attempt.id,
+            overallScore: overview.totalScore || 0,
+            overallPercentage: overview.percentageScore || 0,
+            overallRank: overview.rank,
+            totalParticipants: overview.totalParticipants,
+            performanceSummary: aiResponse.performanceSummary || hrFeedback,
+            strengths: aiResponse.strengths || hrStrengths,
+            weaknesses: aiResponse.weaknesses || hrWeak,
+            recommendations: aiResponse.recommendations || hrRecs,
+            moduleFeedback: aiResponse.moduleFeedback ? (aiResponse.moduleFeedback as any) : [],
+          }
+        });
+      } catch (e) {
+        console.error('[ResultsService] Failed to generate AI feedback:', e);
+      }
+    }
+
+    if (reportModel) {
+       const modFeedbackArr = reportModel.moduleFeedback as Array<{moduleId: string, feedback: string}> | undefined;
+       if (Array.isArray(modFeedbackArr)) {
+         for (const mr of moduleReports) {
+           const match = modFeedbackArr.find(mf => mf.moduleId === mr.moduleId);
+           if (match && match.feedback) {
+             mr.feedback = match.feedback;
+           }
+         }
+       }
+       
+       return {
+         overview,
+         moduleReports,
+         recommendations: reportModel.recommendations,
+         strengths: reportModel.strengths,
+         weaknesses: reportModel.weaknesses,
+         overallFeedback: reportModel.performanceSummary,
+         comparisonStats,
+       };
+    } else {
+       const { recommendations, strengths, weaknesses } = this.generateOverallInsights(moduleReports);
+       return {
+         overview,
+         moduleReports,
+         recommendations,
+         strengths,
+         weaknesses,
+         overallFeedback: this.generateOverallFeedback(overview, moduleReports),
+         comparisonStats,
+       };
+    }
   }
 
   private generateModuleAnalysis(

@@ -50,31 +50,31 @@ const config = {
   rateLimits: {
     general: {
       windowMs: 15 * 60 * 1000,
-      max: parseInt(process.env.RATE_LIMIT_GENERAL || '300', 10),
+      max: parseInt(process.env.RATE_LIMIT_GENERAL || (process.env.NODE_ENV === 'production' ? '300' : '10000'), 10),
     },
     auth: {
       windowMs: 15 * 60 * 1000,
-      max: parseInt(process.env.RATE_LIMIT_AUTH || '10', 10),
+      max: parseInt(process.env.RATE_LIMIT_AUTH || (process.env.NODE_ENV === 'production' ? '10' : '1000'), 10),
     },
     codeExecution: {
       windowMs: 1 * 60 * 1000,
-      max: parseInt(process.env.RATE_LIMIT_CODE || '30', 10),
+      max: parseInt(process.env.RATE_LIMIT_CODE || (process.env.NODE_ENV === 'production' ? '30' : '1000'), 10),
     },
     admin: {
       windowMs: 15 * 60 * 1000,
-      max: parseInt(process.env.RATE_LIMIT_ADMIN || '200', 10),
+      max: parseInt(process.env.RATE_LIMIT_ADMIN || (process.env.NODE_ENV === 'production' ? '200' : '5000'), 10),
     },
     profile: {
       windowMs: 15 * 60 * 1000,
-      max: parseInt(process.env.RATE_LIMIT_PROFILE || '50', 10),
+      max: parseInt(process.env.RATE_LIMIT_PROFILE || (process.env.NODE_ENV === 'production' ? '50' : '2000'), 10),
     },
     upload: {
       windowMs: 60 * 60 * 1000,
-      max: parseInt(process.env.RATE_LIMIT_UPLOAD || '10', 10),
+      max: parseInt(process.env.RATE_LIMIT_UPLOAD || (process.env.NODE_ENV === 'production' ? '10' : '500'), 10),
     },
     mockDrive: {
       windowMs: 15 * 60 * 1000,
-      max: parseInt(process.env.RATE_LIMIT_MOCK_DRIVE || '5000', 10),
+      max: parseInt(process.env.RATE_LIMIT_MOCK_DRIVE || '10000', 10),
     },
   },
 };
@@ -185,8 +185,8 @@ const createRateLimiter = (
     },
     standardHeaders: true,
     legacyHeaders: false,
-    // Skip rate limiting for tests and WebSocket paths
-    skip: (req) => config.isTest || req.path.startsWith('/ws/'),
+    // Skip rate limiting for tests, non-production environments, and WebSocket paths
+    skip: (req) => config.isTest || !config.isProduction || req.path.startsWith('/ws/'),
     keyGenerator: (req) => {
       return (
         (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ||

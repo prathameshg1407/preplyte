@@ -96,11 +96,11 @@ export const Recommendations: FC<RecommendationsProps> = ({
           {recommendations.length > 0 ? (
             <ul className="space-y-3">
               {recommendations.map((rec, index) => (
-                <li key={index} className="flex items-start gap-3 p-3 bg-blue-50 rounded-lg">
+                <li key={index} className="flex items-start gap-3 p-3 bg-blue-50 dark:bg-blue-950/40 rounded-lg border dark:border-blue-900/50">
                   <span className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-500 text-white text-sm font-medium flex-shrink-0">
                     {index + 1}
                   </span>
-                  <span className="text-sm">{rec}</span>
+                  <span className="text-sm text-foreground">{rec}</span>
                 </li>
               ))}
             </ul>
