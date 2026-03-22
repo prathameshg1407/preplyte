@@ -275,21 +275,14 @@ export const InterviewModuleInner: FC<InterviewModuleProps> = ({
   }, [interviewState, onSubmit]);
 
   // ─── Local data init ──────────────────────────────────────────────────────
-  // NOTE: We do NOT initialise from interviewData.conversation because the
-  // backend always re-generates the opening question on connect, so the
-  // stale conversation stored in moduleData would show a *different* opening
-  // question causing a visual duplicate. Instead we always start fresh and
-  // build the conversation from live WS events.
   const isInitializedRef = useRef(false);
   useEffect(() => {
     if (!localData && interviewData && !isInitializedRef.current) {
       isInitializedRef.current = true;
-      // Start with responses intact but empty conversation.
-      // The conversation will be rebuilt from live WS events.
-      updateLocalModuleData({
-        ...interviewData,
-        conversation: [],
-      } as Partial<AiInterviewModuleData>);
+      // Initialize with full interviewData (keep conversation and responses).
+      // The backend now correctly reuses the existing opening question if
+      // responses.length === 0, so we no longer need to clear it.
+      updateLocalModuleData(interviewData);
     }
   }, [localData, interviewData, updateLocalModuleData]);
 

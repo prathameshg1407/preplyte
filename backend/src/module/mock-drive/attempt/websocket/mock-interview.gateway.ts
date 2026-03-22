@@ -438,19 +438,34 @@ class MockInterviewWebSocketGateway {
                 }
             });
 
-            // Decision: re-generate opening if no answers recorded yet (fresh or interrupted).
-            // We always re-speak the question even if conversation data exists, because:
-            //   1. The user may have refreshed/reconnected before answering.
-            //   2. The AudioContext is now properly unlocked (Begin button was clicked).
-            // If the user HAS answered questions (responses.length > 0), resume to the
-            // current unanswered question without re-speaking.
             if (workingData.responses.length === 0) {
-                // Fresh start or interrupted before first answer — always speak the opening
-                // Clear any stale conversation to avoid duplicate entries
-                connection.workingData!.conversation = [];
-                connection.context!.history = [];
-                connection.context!.questionsAsked = [];
-                await this.generateAndSpeakOpening(connection);
+                // Decision: if no answers recorded yet, we always speak the opening.
+                // We check if an opening was already generated (e.g. by the executor or a previous connection).
+                const lastAsst = connection.workingData!.conversation
+                    .filter(m => m.role === 'assistant')
+                    .slice(-1)[0];
+
+                if (lastAsst) {
+                    logger.info('[Mock WS Gateway] Reusing existing opening question', { id: connection.socket.id });
+                    
+                    // Add opening question to context so questionsAsked count is correct
+                    if (connection.context!.questionsAsked.length === 0) {
+                        connection.context!.questionsAsked.push({
+                            id: lastAsst.id,
+                            category: 'INTRODUCTORY' as any,
+                            question: lastAsst.content,
+                            order: 1,
+                            followUpPotential: [],
+                        });
+                    }
+
+                    // Speak the existing question
+                    await this.speakQuestion(connection, lastAsst.content, 'INTRODUCTORY');
+                } else {
+                    // No assistant question exists — fallback to generating one
+                    logger.info('[Mock WS Gateway] Generating fresh opening question', { id: connection.socket.id });
+                    await this.generateAndSpeakOpening(connection);
+                }
             } else {
                 // Resume mid-interview: re-speak the last unanswered question
                 const lastAsst = connection.workingData!.conversation
