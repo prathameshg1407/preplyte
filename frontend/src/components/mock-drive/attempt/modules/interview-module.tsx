@@ -180,7 +180,8 @@ export const InterviewModuleInner: FC<InterviewModuleProps> = ({
       sendStartRecording();
     }
     prevIsUserTurnRef.current = isUserTurn;
-  }, [isUserTurn, sendStartRecording, hasBegun, isConnected, isRecording, isAudioPlaying, isPendingPlayback, interviewState]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isUserTurn]);
 
   // ─── Clear isAnswering when AI takes over ─────────────────────────────────
   useEffect(() => {
@@ -260,12 +261,35 @@ export const InterviewModuleInner: FC<InterviewModuleProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentQuestion]);
 
+  // ─── Auto-trigger onSubmit when interview ends via WebSocket ──────────────
+  // When WS sends INTERVIEW_ENDED, interviewState becomes "COMPLETED".
+  // We must call onSubmit() so attempt-container calls the submitModule API,
+  // which marks the module as done and advances to results/next module.
+  const hasSubmittedRef = useRef(false);
+  useEffect(() => {
+    if (interviewState === "COMPLETED" && !hasSubmittedRef.current) {
+      hasSubmittedRef.current = true;
+      console.log("[InterviewModule] Interview COMPLETED — calling onSubmit");
+      onSubmit();
+    }
+  }, [interviewState, onSubmit]);
+
   // ─── Local data init ──────────────────────────────────────────────────────
+  // NOTE: We do NOT initialise from interviewData.conversation because the
+  // backend always re-generates the opening question on connect, so the
+  // stale conversation stored in moduleData would show a *different* opening
+  // question causing a visual duplicate. Instead we always start fresh and
+  // build the conversation from live WS events.
   const isInitializedRef = useRef(false);
   useEffect(() => {
     if (!localData && interviewData && !isInitializedRef.current) {
       isInitializedRef.current = true;
-      updateLocalModuleData(interviewData);
+      // Start with responses intact but empty conversation.
+      // The conversation will be rebuilt from live WS events.
+      updateLocalModuleData({
+        ...interviewData,
+        conversation: [],
+      } as Partial<AiInterviewModuleData>);
     }
   }, [localData, interviewData, updateLocalModuleData]);
 

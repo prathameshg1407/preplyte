@@ -275,7 +275,17 @@ export class AttemptService {
     moduleId: string,
     isAutoSubmit: boolean = false
   ): Promise<SubmitModuleResponse> {
-    const attempt = await this.findAttemptWithModules(userId, driveId, 'IN_PROGRESS');
+    // For AI_INTERVIEW, the WS gateway pre-marks the module COMPLETED before
+    // this API call arrives. So we must look for the attempt in any status.
+    const attempt = await this.prisma.mockDriveAttempt.findFirst({
+      where: { mockDriveId: driveId, userId },
+      include: {
+        moduleAttempts: {
+          include: { module: true },
+          orderBy: { module: { order: 'asc' } },
+        },
+      },
+    });
 
     if (!attempt) {
       throw new AppError('NO_ACTIVE_ATTEMPT', 'No active attempt found', 404);
@@ -291,7 +301,12 @@ export class AttemptService {
 
     const moduleAttempt = attempt.moduleAttempts[moduleIndex];
 
-    if (moduleAttempt.status !== 'IN_PROGRESS') {
+    // AI_INTERVIEW modules can arrive already COMPLETED (pre-marked by WS gateway).
+    // For all others, require IN_PROGRESS.
+    const isAiInterview = moduleAttempt.module.moduleType === 'AI_INTERVIEW';
+    const isAlreadyCompleted = moduleAttempt.status === 'COMPLETED';
+
+    if (!isAiInterview && moduleAttempt.status !== 'IN_PROGRESS') {
       throw new AppError(
         'MODULE_NOT_IN_PROGRESS',
         `Module is ${moduleAttempt.status.toLowerCase()}`,
@@ -299,7 +314,7 @@ export class AttemptService {
       );
     }
 
-    // Finalize module
+    // Finalize module (executor reads saved moduleData)
     const executor = this.getExecutor(moduleAttempt.module.moduleType);
     const context = this.buildExecutorContext(attempt.id, moduleAttempt, userId);
     const result = await executor.finalize(context);
@@ -308,29 +323,45 @@ export class AttemptService {
       ? 'TIMED_OUT'
       : 'COMPLETED';
 
-    // Update module attempt
-    await this.prisma.mockDriveModuleAttempt.update({
-      where: { id: moduleAttempt.id },
-      data: {
-        status,
-        completedAt: new Date(),
-        moduleData: result.data as unknown as Prisma.InputJsonValue,
-        score: result.score,
-        maxScore: result.maxScore,
-        percentage: result.percentage,
-        isPassed: result.isPassed,
-        isAutoSubmitted: isAutoSubmit,
-        timeSpentSeconds: this.calculateTimeSpent(moduleAttempt.startedAt),
-      },
-    });
+    // Update module attempt — skip if AI_INTERVIEW already marked COMPLETED by gateway
+    if (!isAlreadyCompleted) {
+      await this.prisma.mockDriveModuleAttempt.update({
+        where: { id: moduleAttempt.id },
+        data: {
+          status,
+          completedAt: new Date(),
+          moduleData: result.data as unknown as Prisma.InputJsonValue,
+          score: result.score,
+          maxScore: result.maxScore,
+          percentage: result.percentage,
+          isPassed: result.isPassed,
+          isAutoSubmitted: isAutoSubmit,
+          timeSpentSeconds: this.calculateTimeSpent(moduleAttempt.startedAt),
+        },
+      });
+    } else {
+      // Update scores only (status/completedAt already set by gateway)
+      await this.prisma.mockDriveModuleAttempt.update({
+        where: { id: moduleAttempt.id },
+        data: {
+          moduleData: result.data as unknown as Prisma.InputJsonValue,
+          score: result.score,
+          maxScore: result.maxScore,
+          percentage: result.percentage,
+          isPassed: result.isPassed,
+          timeSpentSeconds: this.calculateTimeSpent(moduleAttempt.startedAt),
+        },
+      });
+    }
 
     // Handle next module or complete attempt
     const isLastModule = moduleIndex === attempt.moduleAttempts.length - 1;
     let nextModule: CurrentModuleState | null = null;
 
+    // Only complete the parent attempt if it is not already COMPLETED (e.g. WS already did it)
     if (!isLastModule) {
       nextModule = await this.unlockNextModule(attempt, moduleIndex);
-    } else {
+    } else if (attempt.status !== 'COMPLETED') {
       await this.completeAttempt(attempt.id);
     }
 

@@ -840,10 +840,16 @@ class MockInterviewWebSocketGateway {
     private async endMockDriveInterview(connection: ActiveConnection, reason: string): Promise<void> {
         if (!connection.workingData) return;
 
-        // Transition from IN_PROGRESS to COMPLETED
+        logger.info('[Mock WS Gateway] Ending interview', { attemptId: connection.socket.attemptId, reason });
+
+        // Mark only the MODULE attempt as COMPLETED.
+        // The parent MockDriveAttempt will be finalized by the submitModule API
+        // call triggered from the frontend's onSubmit() callback.
+        // This ensures scores, leaderboard, and attempt completion happen in the
+        // proper service layer with correct data.
         await prisma.mockDriveModuleAttempt.update({
             where: { id: connection.socket.attemptId },
-            data: { status: 'COMPLETED' }
+            data: { status: 'COMPLETED', completedAt: new Date() }
         });
 
         const attemptDataObj = await prisma.mockDriveModuleAttempt.findUnique({
