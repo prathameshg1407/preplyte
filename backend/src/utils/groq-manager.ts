@@ -4,17 +4,25 @@ import Groq from 'groq-sdk';
 import { CONSTANTS } from '../config/constants';
 import { logger } from './logger';
 import { InternalError } from './errors';
+import { tokenTracker, TokenCallType } from './token-tracker';
 
 // =====================================================
 // TYPES
 // =====================================================
 
-export interface GroqApiOptions {
+export interface TokenTrackingContext {
+  callType?: TokenCallType;
+  sessionId?: string;
+  userId?: string;
+}
+
+export interface CompleteOptions {
+  systemPrompt?: string;
   temperature?: number;
   maxTokens?: number;
   model?: string;
-  responseFormat?: 'json' | 'text';
-  systemPrompt?: string;
+  jsonMode?: boolean;
+  tracking?: TokenTrackingContext;
 }
 
 export interface GroqMessage {
@@ -22,8 +30,9 @@ export interface GroqMessage {
   content: string;
 }
 
-export interface GroqChatOptions extends GroqApiOptions {
+export interface GroqChatOptions extends CompleteOptions { // Extend CompleteOptions
   messages: GroqMessage[];
+  responseFormat?: 'json' | 'text'; // Add responseFormat here
 }
 
 type ChatCompletionMessage = {
@@ -55,10 +64,12 @@ export class GroqApiManager {
   private keyExhaustionResetTime = 0;
 
   constructor(
-    apiKeys: string[],
+    apiKeys: string[] = [],
     maxRetries: number = CONSTANTS.MAX_RETRIES ?? 3
   ) {
-    this.apiKeys = apiKeys.filter(Boolean);
+    this.apiKeys = apiKeys.length > 0
+      ? apiKeys.filter(Boolean)
+      : GroqApiManager.getApiKeysFromEnv();
     this.maxRetries = maxRetries;
 
     if (this.apiKeys.length === 0) {
@@ -68,24 +79,38 @@ export class GroqApiManager {
     this.initializeClient();
   }
 
+  /**
+   * Collect all Groq API keys from environment variables
+   * Checks GROQ_API_KEYS (comma separated), GROQ_API_KEY, and GROQ_API_KEY_1..4
+   */
+  static getApiKeysFromEnv(): string[] {
+    const keys: string[] = [];
+
+    // Comma separated list
+    if (process.env.GROQ_API_KEYS) {
+      keys.push(...process.env.GROQ_API_KEYS.split(',').filter(Boolean));
+    }
+
+    // Single key
+    if (process.env.GROQ_API_KEY) {
+      keys.push(process.env.GROQ_API_KEY);
+    }
+
+    // Numbered keys (as provided by user)
+    for (let i = 1; i <= 10; i++) {
+      const key = process.env[`GROQ_API_KEY_${i}`];
+      if (key) keys.push(key);
+    }
+
+    // Unique keys only
+    return Array.from(new Set(keys)).filter(Boolean);
+  }
+
   // ===================================================
   // PUBLIC METHODS
   // ===================================================
 
-  async callApi(
-    prompt: string,
-    options: GroqApiOptions = {}
-  ): Promise<Groq.Chat.ChatCompletion> {
-    const messages: GroqMessage[] = [];
-
-    if (options.systemPrompt) {
-      messages.push({ role: 'system', content: options.systemPrompt });
-    }
-
-    messages.push({ role: 'user', content: prompt });
-
-    return this.chat({ messages, ...options });
-  }
+  // Removed callApi as complete and chat are the primary entry points
 
   async chat(options: GroqChatOptions): Promise<Groq.Chat.ChatCompletion> {
     const {
@@ -93,10 +118,12 @@ export class GroqApiManager {
       temperature = CONSTANTS.GROQ_TEMPERATURE ?? 0.7,
       maxTokens = CONSTANTS.GROQ_MAX_TOKENS ?? 2048,
       model = CONSTANTS.GROQ_MODEL ?? 'llama-3.1-70b-versatile',
-      responseFormat = 'json',
+      responseFormat = 'text', // Default to text
+      systemPrompt, // Take systemPrompt from options
+      tracking,
     } = options;
 
-    const preparedMessages = this.prepareMessages(messages, responseFormat);
+    const preparedMessages = this.prepareMessages(messages, responseFormat, systemPrompt);
 
     if (Date.now() - this.keyExhaustionResetTime > 60000) {
       this.keyExhausted.clear();
@@ -129,8 +156,10 @@ export class GroqApiManager {
         try {
           await this.throttle();
 
+          const callStart = Date.now();
+
           // Fixed: Use inline object instead of typed variable
-          const result = await this.groq.chat.completions.create({
+          const response = await this.groq.chat.completions.create({
             messages: preparedMessages,
             model,
             temperature,
@@ -140,16 +169,37 @@ export class GroqApiManager {
             }),
           });
 
+          const callDurationMs = Date.now() - callStart;
           this.requestCount++;
           this.lastRequestTime = Date.now();
+
+          // ── Token Tracking ──────────────────────────────────
+          const usage = response.usage;
+          if (usage) {
+            tokenTracker.record({
+              timestamp: new Date().toISOString(),
+              callType: tracking?.callType ?? 'other',
+              model,
+              promptTokens: usage.prompt_tokens ?? 0,
+              completionTokens: usage.completion_tokens ?? 0,
+              totalTokens: usage.total_tokens ?? (usage.prompt_tokens ?? 0) + (usage.completion_tokens ?? 0),
+              durationMs: callDurationMs,
+              sessionId: tracking?.sessionId,
+              userId: tracking?.userId,
+              keyIndex: this.currentKeyIndex,
+              success: true,
+            });
+          }
+          // ────────────────────────────────────────────────────
 
           logger.debug('[GroqManager] API call successful', {
             attempt: attempt + 1,
             keyIndex: this.currentKeyIndex,
             model,
+            totalTokens: usage?.total_tokens,
           });
 
-          return result;
+          return response;
         } catch (error) {
           lastError = error as Error;
           const errorMessage = this.getErrorMessage(error);
@@ -187,9 +237,10 @@ export class GroqApiManager {
 
   async complete(
     prompt: string,
-    options: Omit<GroqApiOptions, 'responseFormat'> = {}
+    options: Omit<CompleteOptions, 'responseFormat'> = {}
   ): Promise<string> {
-    const result = await this.callApi(prompt, {
+    const result = await this.chat({
+      messages: [{ role: 'user', content: prompt }],
       ...options,
       responseFormat: 'text',
     });
@@ -199,9 +250,10 @@ export class GroqApiManager {
 
   async generateJson<T>(
     prompt: string,
-    options: Omit<GroqApiOptions, 'responseFormat'> = {}
+    options: Omit<CompleteOptions, 'responseFormat'> = {}
   ): Promise<T> {
-    const result = await this.callApi(prompt, {
+    const result = await this.chat({
+      messages: [{ role: 'user', content: prompt }],
       ...options,
       responseFormat: 'json',
     });
@@ -273,12 +325,19 @@ export class GroqApiManager {
 
   private prepareMessages(
     messages: GroqMessage[],
-    responseFormat: 'json' | 'text'
+    responseFormat: 'json' | 'text',
+    systemPrompt?: string
   ): ChatCompletionMessage[] {
-    const prepared: ChatCompletionMessage[] = messages.map((msg) => ({
+    const prepared: ChatCompletionMessage[] = [];
+    
+    if (systemPrompt) {
+      prepared.push({ role: 'system', content: systemPrompt });
+    }
+
+    prepared.push(...messages.map((msg) => ({
       role: msg.role,
       content: msg.content,
-    }));
+    })));
 
     if (responseFormat === 'json') {
       return this.ensureJsonInMessages(prepared);

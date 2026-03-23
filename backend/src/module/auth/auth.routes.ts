@@ -38,6 +38,7 @@ const createRateLimiter = (
         message,
       },
     },
+    skip: () => process.env.NODE_ENV !== 'production',
   });
 
 // ============================================
@@ -46,31 +47,31 @@ const createRateLimiter = (
 
 const authLimiter = createRateLimiter(
   15 * 60 * 1000, // 15 minutes
-  10,
+  1000,
   'Too many login attempts. Please try again later.'
 );
 
 const registerLimiter = createRateLimiter(
   60 * 60 * 1000, // 1 hour
-  5,
+  500,
   'Too many registration attempts. Please try again later.'
 );
 
 const refreshLimiter = createRateLimiter(
   15 * 60 * 1000, // 15 minutes
-  30,
+  1000,
   'Too many token refresh attempts.'
 );
 
 const generalLimiter = createRateLimiter(
   60 * 1000, // 1 minute
-  60,
+  5000,
   'Too many requests. Please slow down.'
 );
 
 const otpLimiter = createRateLimiter(
   15 * 60 * 1000, // 15 minutes
-  5,
+  500,
   'Too many OTP requests. Please try again later.'
 );
 
@@ -93,13 +94,14 @@ router.get(
   (req, res, next) => {
     // Check if Google OAuth is configured
     if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
-      return res.status(503).json({
+      res.status(503).json({
         success: false,
         error: {
           code: 'OAUTH_NOT_CONFIGURED',
           message: 'Google OAuth is not configured. Please contact the administrator.',
         },
       });
+      return;
     }
     next();
   },

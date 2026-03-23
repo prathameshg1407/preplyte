@@ -48,6 +48,8 @@ interface ActiveConnection {
     isInitialized: boolean;
     isInitializing: boolean;
     pendingAudioChunks: Buffer[];
+    isProcessingResponse: boolean; // Re-entrancy guard: prevents double-submission
+    stopRecordingWaitTimer: NodeJS.Timeout | null; // Wait timer for final Deepgram transcript
 }
 
 interface JWTPayload {
@@ -119,14 +121,17 @@ class MockInterviewWebSocketGateway {
             const now = Date.now();
             for (const [id, connection] of this.connections.entries()) {
                 const { socket } = connection;
-                if (!socket.isAlive) {
-                    logger.warn('[Mock WS Gateway] Connection dead (heartbeat failed)', { id });
+
+                // Connection stale check (no message of any kind for 2 minutes)
+                if (now - socket.lastPongTime > 120000) {
+                    logger.warn('[Mock WS Gateway] Connection dead (timeout)', { id });
                     this.cleanupConnection(id);
                     continue;
                 }
 
-                if (now - socket.lastPongTime > 60000) {
-                    logger.warn('[Mock WS Gateway] Connection stale (no pong)', { id });
+                // If no PING/PONG or message was received in the last 60s
+                if (!socket.isAlive) {
+                    logger.warn('[Mock WS Gateway] Connection dead (heartbeat failed)', { id });
                     this.cleanupConnection(id);
                     continue;
                 }
@@ -134,7 +139,7 @@ class MockInterviewWebSocketGateway {
                 socket.isAlive = false;
                 this.send(socket, { type: WS_EVENTS.SERVER.PING });
             }
-        }, 30000);
+        }, 60000);
     }
 
     private async handleUpgrade(
@@ -266,6 +271,8 @@ class MockInterviewWebSocketGateway {
             isInitialized: false,
             isInitializing: false,
             pendingAudioChunks: [],
+            isProcessingResponse: false,
+            stopRecordingWaitTimer: null,
         };
 
         this.connections.set(connectionId, connection);
@@ -291,12 +298,18 @@ class MockInterviewWebSocketGateway {
     private setupSocketHandlers(socket: AuthenticatedSocket, connection: ActiveConnection): void {
         socket.on('message', async (data: RawData) => {
             connection.lastActivity = new Date();
+            // ANY message from the client counts as proof of life (isAlive = true)
+            socket.isAlive = true;
+            socket.lastPongTime = Date.now();
+            
             try {
                 if (this.isBinaryData(data)) {
                     const buffer = this.toBuffer(data);
                     await this.handleAudioData(connection, buffer);
                 } else {
-                    const message = JSON.parse(data.toString());
+                    const messageString = data.toString();
+                    logger.debug('[Mock WS Gateway] JSON message received', { id: connection.socket.id, msg: messageString });
+                    const message = JSON.parse(messageString);
                     await this.handleMessage(connection, message);
                 }
             } catch (error) {
@@ -415,6 +428,7 @@ class MockInterviewWebSocketGateway {
             connection.isListening = true;
 
             // Send Ready
+            logger.info('[Mock WS Gateway] Interview initialized', { id: connection.socket.id, isResume: workingData.responses.length > 0 });
             this.send(connection.socket, {
                 type: WS_EVENTS.SERVER.SESSION_READY,
                 data: {
@@ -424,15 +438,45 @@ class MockInterviewWebSocketGateway {
                 }
             });
 
-            // Are there NO responses AND NO conversation yet? Then generate opening.
-            if (workingData.responses.length === 0 && workingData.conversation.length === 0) {
-                await this.generateAndSpeakOpening(connection);
+            if (workingData.responses.length === 0) {
+                // Decision: if no answers recorded yet, we always speak the opening.
+                // We check if an opening was already generated (e.g. by the executor or a previous connection).
+                const lastAsst = connection.workingData!.conversation
+                    .filter(m => m.role === 'assistant')
+                    .slice(-1)[0];
+
+                if (lastAsst) {
+                    logger.info('[Mock WS Gateway] Reusing existing opening question', { id: connection.socket.id });
+                    
+                    // Add opening question to context so questionsAsked count is correct
+                    if (connection.context!.questionsAsked.length === 0) {
+                        connection.context!.questionsAsked.push({
+                            id: lastAsst.id,
+                            category: 'INTRODUCTORY' as any,
+                            question: lastAsst.content,
+                            order: 1,
+                            followUpPotential: [],
+                        });
+                    }
+
+                    // Speak the existing question
+                    await this.speakQuestion(connection, lastAsst.content, 'INTRODUCTORY');
+                } else {
+                    // No assistant question exists — fallback to generating one
+                    logger.info('[Mock WS Gateway] Generating fresh opening question', { id: connection.socket.id });
+                    await this.generateAndSpeakOpening(connection);
+                }
             } else {
-                // Resume reconnect: DO NOT re-speak the last question.
-                // The frontend displays the transcript so the user can see the question.
-                // Just ensure we're listening and update the client on current state.
-                connection.isListening = true;
-                this.sendSessionState(connection);
+                // Resume mid-interview: re-speak the last unanswered question
+                const lastAsst = connection.workingData!.conversation
+                    .filter(m => m.role === 'assistant')
+                    .slice(-1)[0];
+                if (lastAsst) {
+                    await this.speakQuestion(connection, lastAsst.content, 'TECHNICAL');
+                } else {
+                    connection.isListening = true;
+                    this.sendSessionState(connection);
+                }
             }
 
             if (connection.pendingAudioChunks.length > 0 && connection.transcriber) {
@@ -451,9 +495,23 @@ class MockInterviewWebSocketGateway {
     private async generateAndSpeakOpening(connection: ActiveConnection): Promise<void> {
         if (!connection.context || !connection.workingData) return;
 
+        // Mark both flags: AI is speaking and NOT listening so frontend audio is discarded
         connection.isAISpeaking = true;
+        connection.isListening = false;
         try {
-            const opening = await conversationEngineService.generateOpening(connection.context);
+            const opening = await conversationEngineService.generateOpening(connection.context, {
+                sessionId: connection.socket.attemptId,
+                userId: connection.socket.userId,
+            });
+
+            // Add opening question to context so questionsAsked count is correct
+            connection.context.questionsAsked.push({
+                id: nanoid(),
+                category: 'INTRODUCTORY' as any,
+                question: opening.question,
+                order: 1,
+                followUpPotential: [],
+            });
 
             const assistantMsg = {
                 id: nanoid(),
@@ -483,17 +541,21 @@ class MockInterviewWebSocketGateway {
                 });
             }
             this.send(connection.socket, { type: WS_EVENTS.SERVER.AI_DONE, data: { questionId: assistantMsg.id } });
-            // Transition frontend to INTERVIEWING so mic auto-starts
+            // Transition frontend to INTERVIEWING so mic auto-starts after audio playback ends
             this.sendSessionState(connection);
 
         } finally {
             connection.isAISpeaking = false;
+            // AUTO-LISTEN: ensure backend is listening after opening question
             connection.isListening = true;
+            logger.debug('[Mock WS Gateway] AI opening done, isListening=true', { id: connection.socket.id });
         }
     }
 
     private async speakQuestion(connection: ActiveConnection, text: string, category: string): Promise<void> {
+        // Block listening immediately so any residual frontend audio is discarded
         connection.isAISpeaking = true;
+        connection.isListening = false;
         try {
             this.send(connection.socket, {
                 type: WS_EVENTS.SERVER.AI_SPEAKING,
@@ -507,11 +569,13 @@ class MockInterviewWebSocketGateway {
                 });
             }
             this.send(connection.socket, { type: WS_EVENTS.SERVER.AI_DONE, data: {} });
-            // Transition frontend to INTERVIEWING so mic auto-starts
+            // Transition frontend to INTERVIEWING so mic auto-starts after audio playback ends
             this.sendSessionState(connection);
         } finally {
             connection.isAISpeaking = false;
+            // AUTO-LISTEN: ensure backend is listening after follow-up question
             connection.isListening = true;
+            logger.debug('[Mock WS Gateway] AI question done, isListening=true', { id: connection.socket.id });
         }
     }
 
@@ -522,6 +586,9 @@ class MockInterviewWebSocketGateway {
                 if (connection.isInitialized && !connection.isAISpeaking) {
                     connection.isListening = true;
                     connection.currentTranscript = '';
+                    logger.debug('[Mock WS Gateway] START_RECORDING received', { id: connection.socket.id });
+                } else {
+                    logger.warn('[Mock WS Gateway] START_RECORDING ignored (not initialized or AI speaking)', { id: connection.socket.id });
                 }
                 break;
             case WS_EVENTS.CLIENT.AUDIO_CHUNK:
@@ -541,25 +608,43 @@ class MockInterviewWebSocketGateway {
                     } catch (e) {
                         logger.error('[Mock WS Gateway] Error processing USER_ANSWER audio', e);
                     }
+                } else {
+                    if (data?.response?.length > 100) {
+                        logger.warn('[Mock WS Gateway] JSON AUDIO_CHUNK dropped', {
+                            id: connection.socket.id,
+                            isListening: connection.isListening,
+                            isAISpeaking: connection.isAISpeaking,
+                            hasTranscriber: !!connection.transcriber
+                        });
+                    }
                 }
                 break;
             case WS_EVENTS.CLIENT.STOP_RECORDING:
+                logger.debug('[Mock WS Gateway] STOP_RECORDING received', { id: connection.socket.id });
                 connection.isListening = false;
+                // Cancel any pending auto-submit timer (prevents double-submission)
                 if (this.responseProcessingTimeout.has(connection.socket.id)) {
                     clearTimeout(this.responseProcessingTimeout.get(connection.socket.id)!);
                     this.responseProcessingTimeout.delete(connection.socket.id);
                 }
-                if (connection.currentTranscript.trim().length > 0) {
-                    await this.processUserResponse(connection, connection.currentTranscript.trim());
-                    connection.currentTranscript = '';
-                } else {
-                    setTimeout(async () => {
-                        if (connection.currentTranscript.trim().length > 0 && !connection.isAISpeaking) {
-                            await this.processUserResponse(connection, connection.currentTranscript.trim());
-                            connection.currentTranscript = '';
-                        }
-                    }, 1500);
+                // Cancel any prior stop-recording wait timer
+                if (connection.stopRecordingWaitTimer) {
+                    clearTimeout(connection.stopRecordingWaitTimer);
+                    connection.stopRecordingWaitTimer = null;
                 }
+                // We always wait 1000ms for Deepgram to deliver the last final transcript.
+                // If currentTranscript already has content the wait will still proceed so we
+                // capture any in-flight final result that arrives shortly after stop.
+                connection.stopRecordingWaitTimer = setTimeout(async () => {
+                    connection.stopRecordingWaitTimer = null;
+                    const transcript = connection.currentTranscript.trim();
+                    if (transcript.length > 0 && !connection.isAISpeaking && !connection.isProcessingResponse) {
+                        connection.currentTranscript = '';
+                        await this.processUserResponse(connection, transcript);
+                    } else if (transcript.length === 0) {
+                        logger.warn('[Mock WS Gateway] STOP_RECORDING: no transcript captured, skipping');
+                    }
+                }, 1000);
                 break;
             case WS_EVENTS.CLIENT.END_INTERVIEW:
                 await this.endMockDriveInterview(connection, data?.reason || 'completed');
@@ -590,8 +675,23 @@ class MockInterviewWebSocketGateway {
             if (connection.pendingAudioChunks.length < 100) connection.pendingAudioChunks.push(audioBuffer);
             return;
         }
-        if (!connection.isListening || connection.isAISpeaking) return;
-        if (connection.transcriber) connection.transcriber.sendAudio(audioBuffer);
+        if (!connection.isListening || connection.isAISpeaking) {
+            // Log once every 50 dropped chunks to avoid flooding
+            if (!connection.pendingAudioChunks.length || connection.pendingAudioChunks.length % 50 === 0) {
+                logger.debug('[Mock WS Gateway] Audio dropped (not listening or AI speaking)', { 
+                    id: connection.socket.id, 
+                    isListening: connection.isListening, 
+                    isAISpeaking: connection.isAISpeaking 
+                });
+            }
+            return;
+        }
+        
+        if (connection.transcriber) {
+            connection.transcriber.sendAudio(audioBuffer);
+        } else {
+            logger.warn('[Mock WS Gateway] BINARY AUDIO_CHUNK dropped: No transcriber', { id: connection.socket.id });
+        }
     }
 
     private handleTranscription(connection: ActiveConnection, result: { text: string; isFinal: boolean; confidence: number }): void {
@@ -610,16 +710,24 @@ class MockInterviewWebSocketGateway {
     }
 
     private scheduleResponseProcessing(connection: ActiveConnection): void {
+        // This is a fallback auto-submit — only fires if STOP_RECORDING wasn't received.
+        // Now that STOP_RECORDING has a 1s wait, this timeout should rarely be needed.
         const existing = this.responseProcessingTimeout.get(connection.socket.id);
         if (existing) clearTimeout(existing);
 
         const timeout = setTimeout(async () => {
             this.responseProcessingTimeout.delete(connection.socket.id);
-            if (connection.currentTranscript.trim().length > 10 && !connection.isAISpeaking) {
+            // Guard: skip if already processing or stop-recording timer is pending
+            if (
+                connection.currentTranscript.trim().length > 10 &&
+                !connection.isAISpeaking &&
+                !connection.isProcessingResponse &&
+                connection.isListening // Only auto-submit if still in listening state (not stopped)
+            ) {
                 await this.processUserResponse(connection, connection.currentTranscript.trim());
                 connection.currentTranscript = '';
             }
-        }, 5000); // 3 seconds timeout handled mostly by frontend VAD now anyway, fallback
+        }, 8000); // Increased to 8s — frontend VAD at 5s handles normal flow; this is last resort
 
         this.responseProcessingTimeout.set(connection.socket.id, timeout);
     }
@@ -629,7 +737,11 @@ class MockInterviewWebSocketGateway {
     }
 
     private handleTranscriberClose(connection: ActiveConnection): void {
-        if (this.connections.has(connection.socket.id) && connection.isListening && connection.isInitialized) {
+        // Always attempt to reconnect the transcriber if the interview connection is still active.
+        // Previously this was gated on connection.isListening, which meant the transcriber
+        // would NOT be reconnected if it closed while the AI was speaking (isListening=false).
+        // That caused all subsequent user turns to have no transcription.
+        if (this.connections.has(connection.socket.id) && connection.isInitialized) {
             this.reconnectTranscriber(connection);
         }
     }
@@ -647,6 +759,12 @@ class MockInterviewWebSocketGateway {
 
     private async processUserResponse(connection: ActiveConnection, response: string): Promise<void> {
         if (!connection.context || !connection.workingData) return;
+        // Re-entrancy guard: prevent double-processing the same answer
+        if (connection.isProcessingResponse) {
+            logger.warn('[Mock WS Gateway] processUserResponse called while already processing — skipping');
+            return;
+        }
+        connection.isProcessingResponse = true;
 
         this.send(connection.socket, { type: WS_EVENTS.SERVER.AI_THINKING });
 
@@ -669,7 +787,11 @@ class MockInterviewWebSocketGateway {
                 questionContent,
                 response,
                 questionCat as any,
-                connection.context
+                connection.context,
+                {
+                    sessionId: connection.socket.attemptId,
+                    userId: connection.socket.userId,
+                }
             );
 
             // Build out the Mock Drive response object format
@@ -700,15 +822,26 @@ class MockInterviewWebSocketGateway {
 
             this.sendSessionState(connection);
 
-            // Are we done?
-            if (connection.context.questionsAsked.length >= connection.context.config.targetQuestions) {
+            // Are we done? Use workingData.responses.length (persisted count) rather than
+            // questionsAsked.length (in-memory, can differ on reconnect).
+            const answeredCount = connection.workingData!.responses.length;
+            const targetCount = connection.context!.config.targetQuestions;
+            logger.debug('[Mock WS] Progress check', { answeredCount, targetCount });
+            if (answeredCount >= targetCount) {
                 await this.endMockDriveInterview(connection, 'completed');
                 return;
             }
 
             // Generate next question
             connection.isAISpeaking = true;
-            const nextQuestion = await conversationEngineService.generateNextQuestion(connection.context);
+            const nextQuestion = await conversationEngineService.generateNextQuestion(
+                connection.context,
+                undefined,
+                {
+                    sessionId: connection.socket.attemptId,
+                    userId: connection.socket.userId,
+                }
+            );
 
             const newAssisMsg = {
                 id: nanoid(),
@@ -728,16 +861,24 @@ class MockInterviewWebSocketGateway {
         } catch (error) {
             logger.error('[Mock WS Gateway] Response processing failed', error);
             this.sendError(connection.socket, 'PROCESSING_ERROR', 'Failed to process response');
+        } finally {
+            connection.isProcessingResponse = false;
         }
     }
 
     private async endMockDriveInterview(connection: ActiveConnection, reason: string): Promise<void> {
         if (!connection.workingData) return;
 
-        // Transition from IN_PROGRESS to COMPLETED
+        logger.info('[Mock WS Gateway] Ending interview', { attemptId: connection.socket.attemptId, reason });
+
+        // Mark only the MODULE attempt as COMPLETED.
+        // The parent MockDriveAttempt will be finalized by the submitModule API
+        // call triggered from the frontend's onSubmit() callback.
+        // This ensures scores, leaderboard, and attempt completion happen in the
+        // proper service layer with correct data.
         await prisma.mockDriveModuleAttempt.update({
             where: { id: connection.socket.attemptId },
-            data: { status: 'COMPLETED' }
+            data: { status: 'COMPLETED', completedAt: new Date() }
         });
 
         const attemptDataObj = await prisma.mockDriveModuleAttempt.findUnique({
@@ -796,12 +937,19 @@ class MockInterviewWebSocketGateway {
             this.responseProcessingTimeout.delete(connectionId);
         }
 
+        // Clear the stop-recording wait timer to prevent dangling async callbacks
+        if (connection.stopRecordingWaitTimer) {
+            clearTimeout(connection.stopRecordingWaitTimer);
+            connection.stopRecordingWaitTimer = null;
+        }
+
         if (connection.transcriber) {
             try { connection.transcriber.stop(); } catch (e) { }
         }
 
+        // Use code 1000 (Normal Closure) so the browser sees a clean close, not 1005
         if (connection.socket.readyState === WebSocket.OPEN || connection.socket.readyState === WebSocket.CONNECTING) {
-            try { connection.socket.close(); } catch (e) { }
+            try { connection.socket.close(1000, 'Interview session ended'); } catch (e) { }
         }
 
         this.connections.delete(connectionId);

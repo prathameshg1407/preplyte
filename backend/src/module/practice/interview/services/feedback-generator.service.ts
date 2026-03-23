@@ -36,11 +36,7 @@ class FeedbackGeneratorService {
   private groq: GroqApiManager;
 
   constructor() {
-    const apiKeys = (process.env.GROQ_API_KEYS || process.env.GROQ_API_KEY || '')
-      .split(',')
-      .filter(Boolean);
-
-    this.groq = new GroqApiManager(apiKeys);
+    this.groq = new GroqApiManager();
   }
 
   // ===================================================
@@ -102,7 +98,8 @@ class FeedbackGeneratorService {
       question: r.question,
       answer: r.answer,
       category: r.category,
-scores: (r.scoresJson as unknown as ResponseScores) || this.getDefaultScores(),    }));
+      scores: (r.scoresJson as unknown as ResponseScores) || this.getDefaultScores(),
+    }));
 
     // Generate AI feedback
     const generatedFeedback = await this.generateAIFeedback(
@@ -113,25 +110,25 @@ scores: (r.scoresJson as unknown as ResponseScores) || this.getDefaultScores(), 
     );
 
     // Save feedback to database
-  // Save feedback to database
-// Save feedback to database
-const savedFeedback = await prisma.aiInterviewFeedback.create({
-  data: {
-    sessionId,
-    userId: session.userId,
-    overallScore: generatedFeedback.overallScore,
-    overallSummary: generatedFeedback.overallSummary,
-    keyStrengths: generatedFeedback.keyStrengths,
-    areasForImprovement: generatedFeedback.areasForImprovement,
-    feedbackJson: {
-      categoryScores: generatedFeedback.categoryScores,
-      recommendations: generatedFeedback.recommendations,
-      hiringRecommendation: generatedFeedback.hiringRecommendation,
-      detailedAnalysis: generatedFeedback.detailedAnalysis,
-    } as unknown as Prisma.InputJsonValue,
-    generatedBy: 'ai',
-  },
-});
+    // Save feedback to database
+    // Save feedback to database
+    const savedFeedback = await prisma.aiInterviewFeedback.create({
+      data: {
+        sessionId,
+        userId: session.userId,
+        overallScore: generatedFeedback.overallScore,
+        overallSummary: generatedFeedback.overallSummary,
+        keyStrengths: generatedFeedback.keyStrengths,
+        areasForImprovement: generatedFeedback.areasForImprovement,
+        feedbackJson: {
+          categoryScores: generatedFeedback.categoryScores,
+          recommendations: generatedFeedback.recommendations,
+          hiringRecommendation: generatedFeedback.hiringRecommendation,
+          detailedAnalysis: generatedFeedback.detailedAnalysis,
+        } as unknown as Prisma.InputJsonValue,
+        generatedBy: 'ai',
+      },
+    });
 
     // Update session status
     await prisma.aiInterviewSession.update({

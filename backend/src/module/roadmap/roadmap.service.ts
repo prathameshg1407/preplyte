@@ -24,10 +24,7 @@ class RoadmapService {
     private groq: GroqApiManager;
 
     constructor() {
-        const apiKeys = (process.env.GROQ_API_KEYS || process.env.GROQ_API_KEY || '')
-            .split(',')
-            .filter(Boolean);
-        this.groq = new GroqApiManager(apiKeys);
+        this.groq = new GroqApiManager();
     }
 
     // ──────────────────────────────────────────────

@@ -61,29 +61,29 @@ export const ScoreBreakdown: FC<ScoreBreakdownProps> = ({ moduleReports }) => {
                 {/* Aptitude Module Analysis */}
                 {isAptitudeAnalysis(report.detailedAnalysis, report.moduleType) && (
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                    <div className="p-3 bg-green-50 rounded-lg text-center">
-                      <p className="text-2xl font-bold text-green-600">
+                    <div className="p-3 bg-green-50 dark:bg-green-950/40 border dark:border-green-900/50 rounded-lg text-center">
+                      <p className="text-2xl font-bold text-green-600 dark:text-green-400">
                         {report.detailedAnalysis.correct}
                       </p>
-                      <p className="text-xs text-green-600">Correct</p>
+                      <p className="text-xs text-green-600 dark:text-green-400">Correct</p>
                     </div>
-                    <div className="p-3 bg-red-50 rounded-lg text-center">
-                      <p className="text-2xl font-bold text-red-600">
+                    <div className="p-3 bg-red-50 dark:bg-red-950/40 border dark:border-red-900/50 rounded-lg text-center">
+                      <p className="text-2xl font-bold text-red-600 dark:text-red-400">
                         {report.detailedAnalysis.wrong}
                       </p>
-                      <p className="text-xs text-red-600">Wrong</p>
+                      <p className="text-xs text-red-600 dark:text-red-400">Wrong</p>
                     </div>
-                    <div className="p-3 bg-gray-50 rounded-lg text-center">
-                      <p className="text-2xl font-bold text-gray-600">
+                    <div className="p-3 bg-gray-50 dark:bg-gray-800/50 border dark:border-gray-700/50 rounded-lg text-center">
+                      <p className="text-2xl font-bold text-gray-600 dark:text-gray-300">
                         {report.detailedAnalysis.unanswered}
                       </p>
-                      <p className="text-xs text-gray-600">Unanswered</p>
+                      <p className="text-xs text-gray-600 dark:text-gray-400">Unanswered</p>
                     </div>
-                    <div className="p-3 bg-blue-50 rounded-lg text-center">
-                      <p className="text-2xl font-bold text-blue-600">
+                    <div className="p-3 bg-blue-50 dark:bg-blue-950/40 border dark:border-blue-900/50 rounded-lg text-center">
+                      <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
                         {report.detailedAnalysis.accuracy?.toFixed(1) || 0}%
                       </p>
-                      <p className="text-xs text-blue-600">Accuracy</p>
+                      <p className="text-xs text-blue-600 dark:text-blue-400">Accuracy</p>
                     </div>
                   </div>
                 )}
@@ -91,29 +91,29 @@ export const ScoreBreakdown: FC<ScoreBreakdownProps> = ({ moduleReports }) => {
                 {/* Machine Coding Module Analysis */}
                 {isMachineAnalysis(report.detailedAnalysis, report.moduleType) && (
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                    <div className="p-3 bg-green-50 rounded-lg text-center">
-                      <p className="text-2xl font-bold text-green-600">
+                    <div className="p-3 bg-green-50 dark:bg-green-950/40 border dark:border-green-900/50 rounded-lg text-center">
+                      <p className="text-2xl font-bold text-green-600 dark:text-green-400">
                         {report.detailedAnalysis.solved}
                       </p>
-                      <p className="text-xs text-green-600">Solved</p>
+                      <p className="text-xs text-green-600 dark:text-green-400">Solved</p>
                     </div>
-                    <div className="p-3 bg-yellow-50 rounded-lg text-center">
-                      <p className="text-2xl font-bold text-yellow-600">
+                    <div className="p-3 bg-yellow-50 dark:bg-yellow-950/40 border dark:border-yellow-900/50 rounded-lg text-center">
+                      <p className="text-2xl font-bold text-yellow-600 dark:text-yellow-500">
                         {report.detailedAnalysis.partial}
                       </p>
-                      <p className="text-xs text-yellow-600">Partial</p>
+                      <p className="text-xs text-yellow-600 dark:text-yellow-500">Partial</p>
                     </div>
-                    <div className="p-3 bg-gray-50 rounded-lg text-center">
-                      <p className="text-2xl font-bold text-gray-600">
+                    <div className="p-3 bg-gray-50 dark:bg-gray-800/50 border dark:border-gray-700/50 rounded-lg text-center">
+                      <p className="text-2xl font-bold text-gray-600 dark:text-gray-300">
                         {report.detailedAnalysis.unattempted}
                       </p>
-                      <p className="text-xs text-gray-600">Unattempted</p>
+                      <p className="text-xs text-gray-600 dark:text-gray-400">Unattempted</p>
                     </div>
-                    <div className="p-3 bg-blue-50 rounded-lg text-center">
-                      <p className="text-2xl font-bold text-blue-600">
+                    <div className="p-3 bg-blue-50 dark:bg-blue-950/40 border dark:border-blue-900/50 rounded-lg text-center">
+                      <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
                         {report.detailedAnalysis.totalSubmissions}
                       </p>
-                      <p className="text-xs text-blue-600">Submissions</p>
+                      <p className="text-xs text-blue-600 dark:text-blue-400">Submissions</p>
                     </div>
                   </div>
                 )}
@@ -121,29 +121,29 @@ export const ScoreBreakdown: FC<ScoreBreakdownProps> = ({ moduleReports }) => {
                 {/* AI Interview Module Analysis */}
                 {isInterviewAnalysis(report.detailedAnalysis, report.moduleType) && (
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                    <div className="p-3 bg-blue-50 rounded-lg text-center">
-                      <p className="text-2xl font-bold text-blue-600">
+                    <div className="p-3 bg-blue-50 dark:bg-blue-950/40 border dark:border-blue-900/50 rounded-lg text-center">
+                      <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
                         {report.detailedAnalysis.answered}
                       </p>
-                      <p className="text-xs text-blue-600">Answered</p>
+                      <p className="text-xs text-blue-600 dark:text-blue-400">Answered</p>
                     </div>
-                    <div className="p-3 bg-gray-50 rounded-lg text-center">
-                      <p className="text-2xl font-bold text-gray-600">
+                    <div className="p-3 bg-gray-50 dark:bg-gray-800/50 border dark:border-gray-700/50 rounded-lg text-center">
+                      <p className="text-2xl font-bold text-gray-600 dark:text-gray-300">
                         {report.detailedAnalysis.skipped}
                       </p>
-                      <p className="text-xs text-gray-600">Skipped</p>
+                      <p className="text-xs text-gray-600 dark:text-gray-400">Skipped</p>
                     </div>
-                    <div className="p-3 bg-purple-50 rounded-lg text-center">
-                      <p className="text-2xl font-bold text-purple-600">
+                    <div className="p-3 bg-purple-50 dark:bg-purple-950/40 border dark:border-purple-900/50 rounded-lg text-center">
+                      <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">
                         {report.detailedAnalysis.communicationScore?.toFixed(0) || 0}
                       </p>
-                      <p className="text-xs text-purple-600">Communication</p>
+                      <p className="text-xs text-purple-600 dark:text-purple-400">Communication</p>
                     </div>
-                    <div className="p-3 bg-green-50 rounded-lg text-center">
-                      <p className="text-2xl font-bold text-green-600">
+                    <div className="p-3 bg-green-50 dark:bg-green-950/40 border dark:border-green-900/50 rounded-lg text-center">
+                      <p className="text-2xl font-bold text-green-600 dark:text-green-400">
                         {report.detailedAnalysis.technicalScore?.toFixed(0) || 0}
                       </p>
-                      <p className="text-xs text-green-600">Technical</p>
+                      <p className="text-xs text-green-600 dark:text-green-400">Technical</p>
                     </div>
                   </div>
                 )}

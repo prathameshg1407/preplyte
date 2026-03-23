@@ -112,7 +112,7 @@ export function calculateOverallScore(
   const percentageScore = totalWeightage > 0 ? weightedScore / totalWeightage : 0;
   
   return {
-    totalScore: weightedScore,
+    totalScore: percentageScore,
     percentageScore,
   };
 }

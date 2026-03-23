@@ -11,6 +11,7 @@ import { useMockDriveDetail } from '@/lib/hooks/mock-drive/use-discovery';
 import { useAttemptStore } from '@/lib/store/mock-drive/attempt-store';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { MockInterviewProvider } from '@/lib/contexts/mock-interview-ws-context';
 
 export default function MockDriveAttemptPage() {
   const params = useParams();
@@ -122,5 +123,9 @@ export default function MockDriveAttemptPage() {
   }
 
   // Existing attempt - show attempt container
-  return <AttemptContainer driveId={driveId} driveTitle={drive.title} />;
+  return (
+    <MockInterviewProvider>
+      <AttemptContainer driveId={driveId} driveTitle={drive.title} />
+    </MockInterviewProvider>
+  );
 }

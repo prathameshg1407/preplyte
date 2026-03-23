@@ -330,7 +330,7 @@ export const API_ENDPOINTS = {
     ELIGIBILITY: (id: string) => `/api/events/hackathons/${id}/eligibility` as const,
     REGISTER: (id: string) => `/api/events/hackathons/${id}/register` as const,
     REGISTRATION_STATUS: (id: string) => `/api/events/hackathons/${id}/registration-status` as const,
-    
+
     TEAM: {
       CREATE: '/api/events/hackathons/teams',
       JOIN: '/api/events/hackathons/teams/join',

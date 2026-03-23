@@ -22,11 +22,7 @@ class ResumeParserService {
   private groq: GroqApiManager;
 
   constructor() {
-    const apiKeys = (process.env.GROQ_API_KEYS || process.env.GROQ_API_KEY || '')
-      .split(',')
-      .filter(Boolean);
-    
-    this.groq = new GroqApiManager(apiKeys);
+    this.groq = new GroqApiManager();
   }
 
   // ===================================================
@@ -203,7 +199,7 @@ class ResumeParserService {
       return this.validateAndFillDefaults(parsed);
     } catch (error) {
       logger.error('[ResumeParser] Failed to structure resume', error);
-      
+
       // Return a minimal structure if AI fails
       return this.createMinimalStructure(rawText);
     }
@@ -218,32 +214,32 @@ class ResumeParserService {
       skills: Array.isArray(data.skills) ? data.skills : [],
       experience: Array.isArray(data.experience)
         ? data.experience.map((e) => ({
-            company: e.company || 'Unknown',
-            role: e.role || 'Unknown',
-            duration: e.duration || '',
-            startDate: e.startDate,
-            endDate: e.endDate,
-            responsibilities: Array.isArray(e.responsibilities) ? e.responsibilities : [],
-            technologies: Array.isArray(e.technologies) ? e.technologies : [],
-          }))
+          company: e.company || 'Unknown',
+          role: e.role || 'Unknown',
+          duration: e.duration || '',
+          startDate: e.startDate,
+          endDate: e.endDate,
+          responsibilities: Array.isArray(e.responsibilities) ? e.responsibilities : [],
+          technologies: Array.isArray(e.technologies) ? e.technologies : [],
+        }))
         : [],
       education: Array.isArray(data.education)
         ? data.education.map((e) => ({
-            institution: e.institution || 'Unknown',
-            degree: e.degree || 'Unknown',
-            field: e.field,
-            year: e.year || '',
-            gpa: e.gpa,
-          }))
+          institution: e.institution || 'Unknown',
+          degree: e.degree || 'Unknown',
+          field: e.field,
+          year: e.year || '',
+          gpa: e.gpa,
+        }))
         : [],
       projects: Array.isArray(data.projects)
         ? data.projects.map((p) => ({
-            name: p.name || 'Unknown',
-            description: p.description || '',
-            technologies: Array.isArray(p.technologies) ? p.technologies : [],
-            highlights: Array.isArray(p.highlights) ? p.highlights : [],
-            url: p.url,
-          }))
+          name: p.name || 'Unknown',
+          description: p.description || '',
+          technologies: Array.isArray(p.technologies) ? p.technologies : [],
+          highlights: Array.isArray(p.highlights) ? p.highlights : [],
+          url: p.url,
+        }))
         : [],
       certifications: Array.isArray(data.certifications) ? data.certifications : [],
       achievements: Array.isArray(data.achievements) ? data.achievements : [],
@@ -292,7 +288,7 @@ class ResumeParserService {
         const end = exp.endDate?.toLowerCase() === 'present'
           ? new Date()
           : new Date(exp.endDate || new Date());
-        
+
         const months = (end.getFullYear() - start.getFullYear()) * 12 +
           (end.getMonth() - start.getMonth());
         totalMonths += Math.max(0, months);
@@ -300,7 +296,7 @@ class ResumeParserService {
         // Try to parse duration string like "2 years" or "Jan 2020 - Dec 2022"
         const yearMatch = exp.duration.match(/(\d+)\s*year/i);
         const monthMatch = exp.duration.match(/(\d+)\s*month/i);
-        
+
         if (yearMatch) totalMonths += parseInt(yearMatch[1]) * 12;
         if (monthMatch) totalMonths += parseInt(monthMatch[1]);
       }

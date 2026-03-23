@@ -14,6 +14,7 @@ import { useAuthStore } from "@/lib/store/auth-store";
 import { useToast } from "@/components/ui/use-toast";
 import { refreshTokenManually } from "@/lib/api/axios-instance";
 import { AUTH_STORAGE_KEYS, storage } from "@/lib/utils/storage";
+import { useAudioPlayer } from "@/lib/hooks/use-audio-player";
 
 // =====================================================
 // TYPES
@@ -81,8 +82,11 @@ interface MockInterviewContextType {
     sendStartRecording: () => void;
     sendStopRecording: () => void;
     endInterview: () => void;
-    registerAudioHandler: (handler: (data: ArrayBuffer) => void) => () => void;
-    registerAiDoneHandler: (handler: () => void) => () => void;
+    // Audio State
+    isPlaying: boolean;
+    isBuffering: boolean;
+    isPendingPlayback: boolean; // True in the gap between AI_DONE and audio actually starting
+    resumeContext: () => Promise<void>;
 }
 
 // =====================================================
@@ -112,6 +116,7 @@ export function MockInterviewProvider({ children }: { children: ReactNode }) {
     const [transcription, setTranscription] = useState<string>("");
     const [isConnected, setIsConnected] = useState(false);
     const [isConnecting, setIsConnecting] = useState(false);
+    const [isPendingPlayback, setIsPendingPlayback] = useState(false); // True between AI_DONE and first isPlaying tick
 
     // =====================================================
     // REFS (no stale closures — use refs for values needed in callbacks)
@@ -124,23 +129,42 @@ export function MockInterviewProvider({ children }: { children: ReactNode }) {
     const interviewStateRef = useRef<InterviewState>("INITIALIZING"); // Ref to avoid stale closures
     const mountedRef = useRef(true);
 
-    // Handler registries
-    const audioHandlersRef = useRef<Set<(data: ArrayBuffer) => void>>(new Set());
-    const aiDoneHandlersRef = useRef<Set<() => void>>(new Set());
+    // ─── Audio Player ─────────────────────────────────────────────────────────
+    const {
+        queueAudio,
+        playAccumulated,
+        isPlaying,
+        isBuffering,
+        resumeContext,
+    } = useAudioPlayer({
+        onPlaybackEnd: () => {
+            console.log("[MockInterview WS] Audio playback ended");
+            // Note: Consumer (InterviewModule) handles mic auto-start after playback
+        },
+    });
 
-    // =====================================================
-    // HANDLER REGISTRY
-    // =====================================================
+    // Clear isPendingPlayback as soon as audio actually starts playing
+    useEffect(() => {
+        if (isPlaying) {
+            setIsPendingPlayback(false);
+        }
+    }, [isPlaying]);
 
-    const registerAudioHandler = useCallback((handler: (data: ArrayBuffer) => void) => {
-        audioHandlersRef.current.add(handler);
-        return () => { audioHandlersRef.current.delete(handler); };
-    }, []);
+    // Register audio handler (internal use)
+    const handleAiAudio = useCallback((data: ArrayBuffer) => {
+        queueAudio(data);
+    }, [queueAudio]);
 
-    const registerAiDoneHandler = useCallback((handler: () => void) => {
-        aiDoneHandlersRef.current.add(handler);
-        return () => { aiDoneHandlersRef.current.delete(handler); };
-    }, []);
+    const handleAiDone = useCallback(async () => {
+        // Mark that playback is pending (audio will start after async decode)
+        setIsPendingPlayback(true);
+        // Resume AudioContext (may be suspended due to browser autoplay policy)
+        try { await resumeContext(); } catch { /* ignore */ }
+        await playAccumulated();
+        // Safety: if there were no chunks to play, isPlaying never flips true,
+        // so isPendingPlayback would stay stuck. Always clear it here as fallback.
+        setIsPendingPlayback(false);
+    }, [playAccumulated, resumeContext]);
 
     // =====================================================
     // HELPERS
@@ -155,10 +179,16 @@ export function MockInterviewProvider({ children }: { children: ReactNode }) {
         const ws = wsRef.current;
         if (ws?.readyState === WebSocket.OPEN) {
             try {
-                ws.send(JSON.stringify(payload));
+                const json = JSON.stringify(payload);
+                ws.send(json);
+                console.debug("[MockInterview WS] Sent JSON:", payload);
                 return true;
-            } catch { return false; }
+            } catch (e) { 
+                console.error("[MockInterview WS] sendJson error:", e);
+                return false; 
+            }
         }
+        console.warn("[MockInterview WS] sendJson failed: socket not OPEN", { state: ws?.readyState });
         return false;
     }, []);
 
@@ -195,17 +225,19 @@ export function MockInterviewProvider({ children }: { children: ReactNode }) {
             // AI is formulating a response
             case MockInterviewWSEvents.SERVER.AI_THINKING:
                 setInterviewStateWithRef("AI_PROCESSING");
+                setTranscription(""); // Clear transcription for the new turn
                 break;
 
             // AI is about to speak — text is ready
             case MockInterviewWSEvents.SERVER.AI_SPEAKING:
                 setInterviewStateWithRef("AI_SPEAKING");
+                setTranscription(""); // Clear transcription for the new turn
                 if (msg.data?.text) {
                     setCurrentQuestion(msg.data.text);
                 }
                 break;
 
-            // Audio chunk from TTS — decode and forward to audio handlers
+            // Audio chunk from TTS — decode and forward to audio player
             case MockInterviewWSEvents.SERVER.AI_AUDIO: {
                 if (msg.data?.chunk) {
                     try {
@@ -214,7 +246,7 @@ export function MockInterviewProvider({ children }: { children: ReactNode }) {
                         for (let i = 0; i < binaryString.length; i++) {
                             bytes[i] = binaryString.charCodeAt(i);
                         }
-                        audioHandlersRef.current.forEach((h) => h(bytes.buffer));
+                        handleAiAudio(bytes.buffer);
                     } catch (e) {
                         console.error("[MockInterview WS] Audio decode error:", e);
                     }
@@ -222,12 +254,11 @@ export function MockInterviewProvider({ children }: { children: ReactNode }) {
                 break;
             }
 
-            // ALL audio chunks done — signal playback start
+            // handleMessage callback depends on handleAiDone which is now async
             case MockInterviewWSEvents.SERVER.AI_DONE:
                 console.log("[MockInterview WS] AI done, triggering audio playback");
-                // Reset reconnect attempts so network drops during long pauses can recover
                 reconnectAttemptsRef.current = 0;
-                aiDoneHandlersRef.current.forEach((h) => h());
+                handleAiDone();
                 break;
 
             // Progress update or state sync (also sent on reconnect resume)
@@ -262,7 +293,7 @@ export function MockInterviewProvider({ children }: { children: ReactNode }) {
                 // Ignore unrecognized events (safe)
                 break;
         }
-    }, [setInterviewStateWithRef, toast, sendJson]);
+    }, [setInterviewStateWithRef, toast, sendJson, handleAiDone, handleAiAudio]);
 
     // =====================================================
     // DISCONNECT
@@ -374,7 +405,7 @@ export function MockInterviewProvider({ children }: { children: ReactNode }) {
                 try {
                     // Handle raw binary audio (if server ever sends binary)
                     if (event.data instanceof ArrayBuffer) {
-                        audioHandlersRef.current.forEach((h) => h(event.data));
+                        handleAiAudio(event.data);
                         return;
                     }
                     const msg: WSResponse = JSON.parse(event.data);
@@ -471,24 +502,16 @@ export function MockInterviewProvider({ children }: { children: ReactNode }) {
                     ws.send(JSON.stringify({ type: MockInterviewWSEvents.CLIENT.PING }));
                 } catch { /* ignore */ }
             }
-        }, 10_000); // every 10 seconds
+        }, 5_000); // every 5 seconds
         return () => clearInterval(interval);
     }, []);
-
-    // =====================================================
-    // CLEANUP ON UNMOUNT
-    // =====================================================
 
     useEffect(() => {
         mountedRef.current = true;
         return () => {
-            // On unmount: just mark as unmounted and clear handler sets
-            // DO NOT close the WS here — that's the consumer's (InterviewModuleInner's) job via disconnect().
-            // Closing the WS in Provider cleanup causes React StrictMode double-invoke to kill the connection
-            // before it's even established on the second mount.
+            // On unmount: just mark as unmounted
+            // DO NOT close the WS here — that's the consumer's job via disconnect().
             mountedRef.current = false;
-            audioHandlersRef.current.clear();
-            aiDoneHandlersRef.current.clear();
         };
     }, []);
 
@@ -511,8 +534,10 @@ export function MockInterviewProvider({ children }: { children: ReactNode }) {
                 sendStartRecording,
                 sendStopRecording,
                 endInterview,
-                registerAudioHandler,
-                registerAiDoneHandler,
+                isPlaying,
+                isBuffering,
+                isPendingPlayback,
+                resumeContext,
             }}
         >
             {children}

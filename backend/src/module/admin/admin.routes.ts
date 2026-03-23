@@ -15,6 +15,7 @@ import {
   reportFiltersSchema,
 } from './admin.validation';
 import lmsAdminRoutes from './lms/lms-admin.routes';
+import tokenStatsRoutes from './token-stats.routes';
 
 const router = Router();
 
@@ -23,9 +24,14 @@ const router = Router();
 // =====================================================
 router.use('/lms', lmsAdminRoutes);
 
-// All routes require PLATFORM_ADMIN
+// All routes below require PLATFORM_ADMIN
 
 router.use(authenticate, authorize('PLATFORM_ADMIN'));
+
+// =====================================================
+// TOKEN USAGE STATS (LLM token tracking)
+// =====================================================
+router.use('/token-stats', tokenStatsRoutes);
 
 // =====================================================
 // ANALYTICS

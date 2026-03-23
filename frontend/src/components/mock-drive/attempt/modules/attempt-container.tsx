@@ -24,6 +24,7 @@ import {
 } from '@/lib/hooks/mock-drive/use-attempt';
 import { useAttemptStore } from '@/lib/store/mock-drive/attempt-store';
 import { useProctoring } from '@/lib/hooks/mock-drive/use-proctoring';
+import { useMockInterviewWS } from '@/lib/contexts/mock-interview-ws-context';
 import {
   MockDriveModuleAttemptStatus,
   SubmitModuleResponse,
@@ -46,6 +47,7 @@ export const AttemptContainer: FC<AttemptContainerProps> = ({ driveId, driveTitl
   const startModuleMutation = useStartModule();
   const submitModuleMutation = useSubmitModule();
   const submitAttemptMutation = useSubmitAttempt();
+  const { resumeContext } = useMockInterviewWS();
 
   const {
     setAttemptState,
@@ -106,8 +108,17 @@ export const AttemptContainer: FC<AttemptContainerProps> = ({ driveId, driveTitl
   });
 
   // Handle starting a module
-  const handleStartModule = () => {
+  const handleStartModule = async () => {
     if (currentModule?.moduleId) {
+      // Warm up audio context if this is an AI Interview
+      if (currentModule.moduleType === 'AI_INTERVIEW') {
+        try {
+          await resumeContext();
+        } catch (e) {
+          console.error('[AttemptContainer] Failed to resume audio context:', e);
+        }
+      }
+
       startModuleMutation.mutate(
         { driveId, moduleId: currentModule.moduleId },
         {
