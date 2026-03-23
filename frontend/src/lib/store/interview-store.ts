@@ -193,7 +193,7 @@ export const useInterviewStore = create<InterviewState>()(
             if (
                 lastMessage && 
                 lastMessage.role === message.role && 
-                lastMessage.content.trim() === message.content.trim()
+                (lastMessage.content || '').trim() === (message.content || '').trim()
             ) {
                 // Optimization: If the new message has a real DB ID (doesn't start with 'ai-') 
                 // and the old one was temporary, update the ID.

@@ -45,6 +45,7 @@ interface ActiveConnection {
   isInitialized: boolean;
   isInitializing: boolean;
   pendingAudioChunks: Buffer[];
+  stopRecordingWaitTimer: NodeJS.Timeout | null;
 }
 
 interface JWTPayload {
@@ -255,6 +256,7 @@ class InterviewWebSocketGateway {
       isInitialized: false,
       isInitializing: false,
       pendingAudioChunks: [],
+      stopRecordingWaitTimer: null,
     };
 
     this.connections.set(connectionId, connection);
@@ -595,23 +597,26 @@ class InterviewWebSocketGateway {
           this.responseProcessingTimeout.delete(socket.id);
         }
 
-        // Process if we have any transcript
-        if (connection.currentTranscript.trim().length > 0) {
-          await this.processUserResponse(connection, connection.currentTranscript.trim());
-          connection.currentTranscript = '';
-        } else {
-          logger.warn('[WS Gateway] No transcript to process', { sessionId: socket.sessionId });
-          // Wait a bit for late transcriptions
-          setTimeout(async () => {
-            if (connection.currentTranscript.trim().length > 0 && !connection.isAISpeaking) {
-              logger.info('[WS Gateway] Late transcript arrived, processing', {
-                transcript: connection.currentTranscript.substring(0, 50),
-              });
-              await this.processUserResponse(connection, connection.currentTranscript.trim());
-              connection.currentTranscript = '';
-            }
-          }, 1500);
+        // Cancel any prior stop-recording wait timer
+        if (connection.stopRecordingWaitTimer) {
+          clearTimeout(connection.stopRecordingWaitTimer);
+          connection.stopRecordingWaitTimer = null;
         }
+
+        // Wait 1000ms for Deepgram to deliver the last final transcript before processing
+        connection.stopRecordingWaitTimer = setTimeout(async () => {
+          connection.stopRecordingWaitTimer = null;
+          const transcript = connection.currentTranscript.trim();
+          if (transcript.length > 0 && !connection.isAISpeaking) {
+            connection.currentTranscript = '';
+            logger.info('[WS Gateway] Processing captured transcript after stop', {
+              transcript: transcript.substring(0, 50),
+            });
+            await this.processUserResponse(connection, transcript);
+          } else if (transcript.length === 0) {
+            logger.warn('[WS Gateway] No transcript to process', { sessionId: socket.sessionId });
+          }
+        }, 1000);
         break;
 
       case WS_EVENTS.CLIENT.END_INTERVIEW:
@@ -728,10 +733,11 @@ class InterviewWebSocketGateway {
         currentTranscript: connection.currentTranscript.substring(0, 100),
         totalLength: connection.currentTranscript.length,
       });
+    }
 
-      if (result.text.trim().length > 10) {
-        this.scheduleResponseProcessing(connection);
-      }
+    // Always reset the auto-submit silence timer if the user is making any noise/speaking
+    if (result.text.trim().length > 0) {
+      this.scheduleResponseProcessing(connection);
     }
   }
 
@@ -744,15 +750,19 @@ class InterviewWebSocketGateway {
     const timeout = setTimeout(async () => {
       this.responseProcessingTimeout.delete(socket.id);
 
-      if (connection.currentTranscript.trim().length > 10 && !connection.isAISpeaking) {
-        logger.info('[WS Gateway] Auto-processing response after silence', {
+      if (
+        connection.currentTranscript.trim().length > 10 && 
+        !connection.isAISpeaking &&
+        connection.isListening // Only auto-submit if still in listening state (not stopped)
+      ) {
+        logger.info('[WS Gateway] Auto-processing response after exactly 5s silence', {
           sessionId: socket.sessionId,
           transcriptLength: connection.currentTranscript.length,
         });
         await this.processUserResponse(connection, connection.currentTranscript.trim());
         connection.currentTranscript = '';
       }
-    }, 5000); // 3 seconds of silence
+    }, 5000); // User requested exactly 5 seconds of silence before auto-submission
 
     this.responseProcessingTimeout.set(socket.id, timeout);
   }
@@ -770,7 +780,7 @@ class InterviewWebSocketGateway {
       sessionId: connection.socket.sessionId,
     });
 
-    if (this.connections.has(connection.socket.id) && connection.isListening && connection.isInitialized) {
+    if (this.connections.has(connection.socket.id) && connection.isInitialized) {
       logger.info('[WS Gateway] Attempting to reconnect transcriber', {
         sessionId: connection.socket.sessionId,
       });
@@ -981,19 +991,25 @@ class InterviewWebSocketGateway {
 
       this.send(socket, { type: WS_EVENTS.SERVER.AI_DONE });
 
-      this.send(socket, {
-        type: WS_EVENTS.SERVER.INTERVIEW_ENDED,
-        data: {
-          sessionId: socket.sessionId,
-          reason,
-          feedbackUrl: `/api/practice/interview/sessions/${socket.sessionId}/feedback`,
-        },
-      });
+      // Delay sending INTERVIEW_ENDED by a few seconds so the frontend has time
+      // to play the closing "Thank you" audio before navigating away.
+      setTimeout(() => {
+        if (socket.readyState === WebSocket.OPEN) {
+          this.send(socket, {
+            type: WS_EVENTS.SERVER.INTERVIEW_ENDED,
+            data: {
+              sessionId: socket.sessionId,
+              reason,
+              feedbackUrl: `/api/practice/interview/sessions/${socket.sessionId}/feedback`,
+            },
+          });
+        }
+      }, 3500);
 
       // Don't cleanup immediately - let client receive the messages
       setTimeout(() => {
         this.cleanupConnection(socket.id);
-      }, 5000);
+      }, 10000); // extended to wait for the interview_ended delay
 
     } catch (error) {
       logger.error('[WS Gateway] End interview error', error);
@@ -1053,6 +1069,11 @@ class InterviewWebSocketGateway {
     if (timeout) {
       clearTimeout(timeout);
       this.responseProcessingTimeout.delete(connectionId);
+    }
+
+    if (connection.stopRecordingWaitTimer) {
+      clearTimeout(connection.stopRecordingWaitTimer);
+      connection.stopRecordingWaitTimer = null;
     }
 
     if (connection.socket.readyState === WebSocket.OPEN) {

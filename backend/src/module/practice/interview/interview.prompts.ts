@@ -101,7 +101,7 @@ export function buildInterviewerSystemPrompt(
 
 ## Response Format
 Respond with ONLY the next interview question or statement. Be natural and conversational.
-Do not include labels like "Question:" or explanations.`;
+IMPORTANT: Do not include any explanations, reasoning, thinking text, or inner monologue. Output ONLY the explicit question.`;
 }
 
 function getDifficultyExpectation(difficulty: AiInterviewDifficulty): string {
@@ -188,7 +188,7 @@ Generate a natural follow-up question that:
 2. Probes for more specific details or examples
 3. Maintains conversational flow
 
-Return ONLY the follow-up question.`;
+IMPORTANT: Do not include any explanations, reasoning, thinking text, or inner monologue. Return ONLY the active follow-up question.`;
 }
 
 // =====================================================

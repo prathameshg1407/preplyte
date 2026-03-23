@@ -245,10 +245,12 @@ class ConversationEngineService {
       userPrompt = `${conversationContextPrompt}\n\nGenerate the next ${nextCategory} question based on the candidate's profile and conversation so far.`;
     }
 
+    const strictSystemPromptContext = `${systemPrompt}\n\n${conversationContextPrompt}\n\nCRITICAL INSTRUCTION: Output ONLY the requested question or statement. DO NOT output any reasoning, thinking process, or intro text. Avoid answering questions on behalf of the candidate.`;
+
     const response = await this.groq.complete(
       userPrompt,
       {
-        systemPrompt: `${systemPrompt}\n\n${conversationContextPrompt}`,
+        systemPrompt: strictSystemPromptContext,
         temperature: AI_CONFIG.LLM_TEMPERATURE,
         maxTokens: AI_CONFIG.LLM_MAX_TOKENS,
         model: AI_CONFIG.QUESTION_MODEL, // OPTIMIZATION: Use 8B model for generation
