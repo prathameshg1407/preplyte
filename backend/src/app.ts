@@ -20,6 +20,7 @@ import { departmentRoutes } from './module/instituteadmin/department';
 import instituteAnalyticsRoutes from './module/instituteadmin/institute-analytics.routes';
 import { createMockDriveRoutes } from './module/mock-drive';
 import { dashboardRoutes } from './module/dashboard';
+import resumeRoutes from './module/resume-builder/resume.routes';
 
 // Middleware & Utils
 import { errorHandler, notFoundHandler } from './middleware/error.middleware';
@@ -28,7 +29,6 @@ import { logger } from './utils/logger';
 import { AppError } from './utils/errors';
 import { prisma } from './lib/db';
 import lmsRoutes from './module/lms/lms.routes';
-import lmsAdminRoutes from './module/admin/lms/lms-admin.routes';
 import { leaderboardRoutes } from './module/leaderboard';
 
 // =====================================================
@@ -340,6 +340,9 @@ app.use('/api/mock-drives', mockDriveLimiter, createMockDriveRoutes(prisma));
 // Includes: /api/practice/aptitude, /api/practice/machine, /api/practice/interview
 app.use('/api/practice', practiceRoutes);
 
+// LMS routes
+app.use('/api/lms', lmsRoutes);
+
 // Code execution rate limiting
 app.use(
   '/api/practice/machine/sessions/:sessionId/questions/:questionId/run',
@@ -359,6 +362,7 @@ app.use(
 // Admin routes with specific rate limiter
 app.use('/api/admin', adminLimiter, adminRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/resume-builder', resumeBuilderLimiter, resumeRoutes);
 app.use('/api/leaderboard', leaderboardRoutes);
 
 // =====================================================
