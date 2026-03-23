@@ -28,6 +28,7 @@
     "lint:fix": "eslint src --ext .ts --fix",
     "format": "prettier --write \"src/**/*.ts\"",
     "type-check": "tsc --noEmit",
+    "token-report": "tsx src/scripts/generate-token-report.ts",
     "clean": "rimraf dist"
   },
   "prisma": {

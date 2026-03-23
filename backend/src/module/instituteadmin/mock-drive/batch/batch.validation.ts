@@ -52,7 +52,7 @@ export const createBatchSchema = z
       .number()
       .int('Capacity must be a whole number')
       .min(1, 'Capacity must be at least 1')
-      .max(10000, 'Capacity cannot exceed 10000')
+      .max(100, 'Capacity cannot exceed 100 (platform limit)')
       .nullable()
       .optional(),
     notes: z.string().max(1000, 'Notes cannot exceed 1000 characters').nullable().optional(),
@@ -87,7 +87,7 @@ export const updateBatchSchema = z
       .number()
       .int('Capacity must be a whole number')
       .min(1, 'Capacity must be at least 1')
-      .max(10000, 'Capacity cannot exceed 10000')
+      .max(100, 'Capacity cannot exceed 100 (platform limit)')
       .nullable()
       .optional(),
     notes: z.string().max(1000, 'Notes cannot exceed 1000 characters').nullable().optional(),
@@ -116,7 +116,7 @@ export const autoCreateBatchesSchema = z
       .number()
       .int('Batch size must be a whole number')
       .min(1, 'Batch size must be at least 1')
-      .max(500, 'Batch size cannot exceed 500'),
+      .max(100, 'Batch size cannot exceed 100 (platform limit)'),
     startTime: dateSchema,
     intervalMinutes: z
       .number()
@@ -145,7 +145,7 @@ export const assignStudentsSchema = z.object({
   registrationIds: z
     .array(cuidSchema)
     .min(1, 'At least one registration is required')
-    .max(500, 'Cannot process more than 500 students at once'),
+    .max(100, 'Cannot process more than 100 students at once (batch limit)'),
 });
 
 // ============================================

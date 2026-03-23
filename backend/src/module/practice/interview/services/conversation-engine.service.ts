@@ -3,6 +3,7 @@
 import { AiInterviewDifficulty, AiInterviewQuestionCategory } from '@prisma/client';
 import { nanoid } from 'nanoid';
 import { GroqApiManager } from '../../../../utils/groq-manager';
+import type { TokenTrackingContext } from '../../../../utils/groq-manager';
 import { logger } from '../../../../utils/logger';
 import {
   ParsedResume,
@@ -146,7 +147,7 @@ class ConversationEngineService {
   /**
    * Generate the opening message/question
    */
-  async generateOpening(context: ConversationContext): Promise<QuestionGenerationResult> {
+  async generateOpening(context: ConversationContext, tracking?: TokenTrackingContext): Promise<QuestionGenerationResult> {
     logger.debug('[ConversationEngine] Generating opening');
 
     const systemPrompt = buildInterviewerSystemPrompt(
@@ -169,6 +170,7 @@ class ConversationEngineService {
         systemPrompt,
         temperature: AI_CONFIG.LLM_TEMPERATURE,
         maxTokens: AI_CONFIG.LLM_MAX_TOKENS,
+        tracking: { callType: 'generateOpening', ...tracking },
       }
     );
 
@@ -184,7 +186,8 @@ class ConversationEngineService {
    */
   async generateNextQuestion(
     context: ConversationContext,
-    candidateResponse?: string
+    candidateResponse?: string,
+    tracking?: TokenTrackingContext
   ): Promise<QuestionGenerationResult> {
     logger.debug('[ConversationEngine] Generating next question', {
       historyLength: context.history.length,
@@ -248,6 +251,8 @@ class ConversationEngineService {
         systemPrompt: `${systemPrompt}\n\n${conversationContextPrompt}`,
         temperature: AI_CONFIG.LLM_TEMPERATURE,
         maxTokens: AI_CONFIG.LLM_MAX_TOKENS,
+        model: AI_CONFIG.QUESTION_MODEL, // OPTIMIZATION: Use 8B model for generation
+        tracking: { callType: 'generateNextQuestion', ...tracking },
       }
     );
 
@@ -294,7 +299,8 @@ class ConversationEngineService {
     question: string,
     answer: string,
     category: AiInterviewQuestionCategory,
-    context: ConversationContext
+    context: ConversationContext,
+    tracking?: TokenTrackingContext
   ): Promise<ScoringResult> {
     logger.debug('[ConversationEngine] Scoring response');
 
@@ -312,6 +318,7 @@ class ConversationEngineService {
       const result = await this.groq.generateJson<ScoringResult>(prompt, {
         temperature: AI_CONFIG.FEEDBACK_TEMPERATURE,
         maxTokens: 500,
+        tracking: { callType: 'scoreResponse', ...tracking },
       });
 
       return {
@@ -506,15 +513,10 @@ class ConversationEngineService {
     });
   }
 
-  private async generateClosingQuestion(context: ConversationContext): Promise<QuestionGenerationResult> {
-    const prompt = buildClosingPrompt(context.candidateProfile.name);
-
-    const response = await this.groq.complete(prompt, {
-      temperature: 0.5,
-      maxTokens: 300,
-    });
-
-    const question = response.trim();
+  private async generateClosingQuestion(context: ConversationContext, tracking?: TokenTrackingContext): Promise<QuestionGenerationResult> {
+    // OPTIMIZATION: Eliminate LLM call for closing entirely.
+    // We already know their name and the context. Just return a static wrapper.
+    const question = `Thank you so much for your time today, ${context.candidateProfile.name}. We have reached the end of the technical discussion. Do you have any quick questions for me about the role before we officially wrap up?`;
 
     context.questionsAsked.push({
       id: nanoid(),

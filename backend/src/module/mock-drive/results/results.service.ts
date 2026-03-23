@@ -189,7 +189,10 @@ export class ResultsService {
           weaknesses: string[];
           recommendations: string[];
           moduleFeedback: Array<{moduleId: string; feedback: string}>;
-        }>(prompt, { systemPrompt: "You are an expert technical assessor generating feedback. ALWAYS return valid JSON."});
+        }>(prompt, {
+          systemPrompt: "You are an expert technical assessor generating feedback. ALWAYS return valid JSON.",
+          tracking: { callType: 'resultsReport', sessionId: attempt.id },
+        });
 
         // Save to DB
         reportModel = await this.prisma.mockDriveReport.create({

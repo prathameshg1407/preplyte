@@ -499,7 +499,10 @@ class MockInterviewWebSocketGateway {
         connection.isAISpeaking = true;
         connection.isListening = false;
         try {
-            const opening = await conversationEngineService.generateOpening(connection.context);
+            const opening = await conversationEngineService.generateOpening(connection.context, {
+                sessionId: connection.socket.attemptId,
+                userId: connection.socket.userId,
+            });
 
             // Add opening question to context so questionsAsked count is correct
             connection.context.questionsAsked.push({
@@ -784,7 +787,11 @@ class MockInterviewWebSocketGateway {
                 questionContent,
                 response,
                 questionCat as any,
-                connection.context
+                connection.context,
+                {
+                    sessionId: connection.socket.attemptId,
+                    userId: connection.socket.userId,
+                }
             );
 
             // Build out the Mock Drive response object format
@@ -827,7 +834,14 @@ class MockInterviewWebSocketGateway {
 
             // Generate next question
             connection.isAISpeaking = true;
-            const nextQuestion = await conversationEngineService.generateNextQuestion(connection.context);
+            const nextQuestion = await conversationEngineService.generateNextQuestion(
+                connection.context,
+                undefined,
+                {
+                    sessionId: connection.socket.attemptId,
+                    userId: connection.socket.userId,
+                }
+            );
 
             const newAssisMsg = {
                 id: nanoid(),
