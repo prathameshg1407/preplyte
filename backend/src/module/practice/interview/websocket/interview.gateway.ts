@@ -46,6 +46,7 @@ interface ActiveConnection {
   isInitializing: boolean;
   pendingAudioChunks: Buffer[];
   stopRecordingWaitTimer: NodeJS.Timeout | null;
+  isProcessingResponse?: boolean;
 }
 
 interface JWTPayload {
@@ -616,7 +617,7 @@ class InterviewWebSocketGateway {
         connection.stopRecordingWaitTimer = setTimeout(async () => {
           connection.stopRecordingWaitTimer = null;
           const transcript = connection.currentTranscript.trim();
-          if (transcript.length > 0 && !connection.isAISpeaking) {
+          if (transcript.length > 0 && !connection.isAISpeaking && !connection.isProcessingResponse) {
             connection.currentTranscript = '';
             logger.info('[WS Gateway] Processing captured transcript after stop', {
               transcript: transcript.substring(0, 50),
@@ -728,14 +729,33 @@ class InterviewWebSocketGateway {
       text: result.text.substring(0, 100),
       isFinal: result.isFinal,
       confidence: result.confidence,
+      isListening: connection.isListening,
+      isAISpeaking: connection.isAISpeaking,
     });
 
-      const cleanText = result.text.trim();
-      const liveText = (connection.currentTranscript + ' ' + cleanText).trim();
-      this.send(socket, {
-        type: result.isFinal ? WS_EVENTS.SERVER.TRANSCRIPTION_FINAL : WS_EVENTS.SERVER.TRANSCRIPTION,
-        data: { text: liveText, isFinal: result.isFinal, confidence: result.confidence },
+    // CRITICAL FIX: Do not process transcription if AI is speaking.
+    // Deepgram picks up the AI's TTS voice and would create garbage transcriptions.
+    if (connection.isAISpeaking) {
+      logger.debug('[WS Gateway] Ignoring transcription — AI is currently speaking', {
+        sessionId: socket.sessionId,
       });
+      return;
+    }
+
+    // Do not process transcription if we are not in listening mode.
+    if (!connection.isListening) {
+      logger.debug('[WS Gateway] Ignoring transcription — not in listening mode', {
+        sessionId: socket.sessionId,
+      });
+      return;
+    }
+
+    const cleanText = result.text.trim();
+    const liveText = (connection.currentTranscript + ' ' + cleanText).trim();
+    this.send(socket, {
+      type: result.isFinal ? WS_EVENTS.SERVER.TRANSCRIPTION_FINAL : WS_EVENTS.SERVER.TRANSCRIPTION,
+      data: { text: liveText, isFinal: result.isFinal, confidence: result.confidence },
+    });
 
     if (result.isFinal && result.text.trim().length > 0) {
       connection.currentTranscript += ' ' + result.text;
@@ -744,11 +764,10 @@ class InterviewWebSocketGateway {
         currentTranscript: connection.currentTranscript.substring(0, 100),
         totalLength: connection.currentTranscript.length,
       });
-    }
-
-    // Always reset the auto-submit silence timer if the user is making any noise/speaking
-    if (result.text.trim().length > 0) {
-      this.scheduleResponseProcessing(connection);
+      // Only schedule auto-submit on final chunks with meaningful content
+      if (result.text.trim().length > 10) {
+        this.scheduleResponseProcessing(connection);
+      }
     }
   }
 
@@ -824,6 +843,9 @@ class InterviewWebSocketGateway {
       });
       return;
     }
+    
+    if (connection.isProcessingResponse) return; // Prevent concurrent ghost loops
+    connection.isProcessingResponse = true;
 
     const { socket } = connection;
     connection.isListening = false;
@@ -949,6 +971,7 @@ class InterviewWebSocketGateway {
       logger.error('[WS Gateway] Response processing error', error);
       this.sendError(socket, 'PROCESSING_ERROR', 'Failed to process response');
     } finally {
+      connection.isProcessingResponse = false;
       connection.isAISpeaking = false;
       connection.isListening = true;
       logger.debug('[WS Gateway] Ready for next response', {
@@ -1043,8 +1066,8 @@ class InterviewWebSocketGateway {
       isAISpeaking: connection.isAISpeaking,
       progress: {
         totalQuestions: connection.context.config.targetQuestions,
-        currentQuestionIndex: connection.context.questionsAsked.length,
-        questionsAnswered: connection.context.questionsAsked.length - 1,
+        currentQuestionIndex: Math.max(0, connection.context.questionsAsked.length - 1),
+        questionsAnswered: Math.max(0, connection.context.questionsAsked.length - 1),
         estimatedTimeRemaining:
           (connection.context.config.targetQuestions - connection.context.questionsAsked.length) * 120,
         percentComplete: Math.round(

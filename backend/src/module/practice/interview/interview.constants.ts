@@ -36,8 +36,8 @@ export const AUDIO_CONFIG = {
 export const AI_CONFIG = {
   // Primary model for quality calls: scoring, opening, results report
   LLM_MODEL: 'llama-3.3-70b-versatile',
-  // Fast/cheap model for question generation (saves ~60% on generation cost)
-  QUESTION_MODEL: 'llama-3.1-8b-instant',
+  // Use same 70B model for question generation to avoid thinking text leaks from smaller models
+  QUESTION_MODEL: 'llama-3.3-70b-versatile',
   LLM_TEMPERATURE: 0.7,
   // 200 tokens is plenty for a single interview question
   LLM_MAX_TOKENS: 200,

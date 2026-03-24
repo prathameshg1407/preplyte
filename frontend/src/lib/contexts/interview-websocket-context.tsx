@@ -1,4 +1,8 @@
 // src/lib/contexts/interview-websocket-context.tsx
+// Mirrors mock-interview-ws-context.tsx architecture:
+//  - Audio player lives INSIDE this context (so isPendingPlayback + isPlaying are authoritative)
+//  - No handler-registration pattern — audio/done handled internally
+//  - Consumer just reads isPendingPlayback / isPlaying to gate mic
 
 'use client';
 
@@ -14,6 +18,7 @@ import React, {
 import { useAuthStore } from '@/lib/store/auth-store';
 import { useInterviewStore } from '@/lib/store/interview-store';
 import { interviewService } from '@/lib/api/services/interview.service';
+import { useAudioPlayer } from '@/lib/hooks/use-audio-player';
 import type {
   WSMessage,
   WSSessionReadyData,
@@ -42,18 +47,20 @@ interface InterviewWebSocketContextValue {
   isConnecting: boolean;
   connectionAttempts: number;
   currentSessionId: string | null;
+  // Audio state (from integrated audio player)
+  isPlaying: boolean;
+  isBuffering: boolean;
+  isPendingPlayback: boolean;
+  // Actions
   connect: (sessionId: string) => void;
   disconnect: () => void;
   sendAudio: (audioData: ArrayBuffer) => void;
   startRecording: () => void;
   stopRecording: () => void;
   endInterview: (reason?: 'completed' | 'cancelled' | 'timeout') => void;
-  pause: () => void;
-  resume: () => void;
-  registerAudioHandler: (handler: (data: ArrayBuffer) => void) => () => void;
-  registerAiDoneHandler: (handler: () => void) => () => void;
+  resumeAudioContext: () => Promise<void>;
+  // End handler registration (kept for router redirect)
   registerEndHandler: (handler: (feedbackUrl: string) => void) => () => void;
-  registerErrorHandler: (handler: (error: { code: string; message: string }) => void) => () => void;
 }
 
 const InterviewWebSocketContext = createContext<InterviewWebSocketContextValue | null>(null);
@@ -71,6 +78,7 @@ export function InterviewWebSocketProvider({ children }: { children: React.React
   const [isConnecting, setIsConnecting] = useState(false);
   const [connectionAttempts, setConnectionAttempts] = useState(0);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
+  const [isPendingPlayback, setIsPendingPlayback] = useState(false);
 
   // ===================================================
   // REFS
@@ -82,13 +90,9 @@ export function InterviewWebSocketProvider({ children }: { children: React.React
   const isManualDisconnectRef = useRef(false);
   const messageIdRef = useRef(0);
   const mountedRef = useRef(true);
-  const lastServerActivityRef = useRef<number>(Date.now());
 
-  // Handler refs
-  const audioHandlersRef = useRef<Set<(data: ArrayBuffer) => void>>(new Set());
-  const aiDoneHandlersRef = useRef<Set<() => void>>(new Set());
+  // End handler refs
   const endHandlersRef = useRef<Set<(feedbackUrl: string) => void>>(new Set());
-  const errorHandlersRef = useRef<Set<(error: { code: string; message: string }) => void>>(new Set());
 
   // ===================================================
   // AUTH & STORE
@@ -103,6 +107,41 @@ export function InterviewWebSocketProvider({ children }: { children: React.React
   }, [store]);
 
   // ===================================================
+  // AUDIO PLAYER (integrated, mirrors mock-interview-ws-context)
+  // ===================================================
+
+  const {
+    queueAudio,
+    playAccumulated,
+    isPlaying,
+    isBuffering,
+    resumeContext: resumeAudioContextInternal,
+  } = useAudioPlayer({
+    onPlaybackEnd: () => {
+      // Audio finished — consumer (interview-room) will start mic in response
+      console.log('[WS Context] Audio playback ended');
+    },
+    onError: (err) => {
+      console.error('[WS Context] Audio player error:', err);
+    },
+  });
+
+  // Clear isPendingPlayback as soon as audio actually starts playing
+  useEffect(() => {
+    if (isPlaying) {
+      setIsPendingPlayback(false);
+    }
+  }, [isPlaying]);
+
+  const resumeAudioContext = useCallback(async () => {
+    try {
+      await resumeAudioContextInternal();
+    } catch {
+      // ignore
+    }
+  }, [resumeAudioContextInternal]);
+
+  // ===================================================
   // HELPERS
   // ===================================================
 
@@ -113,7 +152,6 @@ export function InterviewWebSocketProvider({ children }: { children: React.React
     }
   }, []);
 
-  // Send message helper - returns true if sent
   const sendMessage = useCallback(<T = unknown>(type: string, data?: T): boolean => {
     const ws = wsRef.current;
     if (ws?.readyState === WebSocket.OPEN) {
@@ -128,7 +166,6 @@ export function InterviewWebSocketProvider({ children }: { children: React.React
     return false;
   }, []);
 
-  // Safe store update - defers to next microtask to avoid React warnings
   const safeStoreUpdate = useCallback((updateFn: () => void): void => {
     queueMicrotask(() => {
       if (mountedRef.current) {
@@ -137,43 +174,10 @@ export function InterviewWebSocketProvider({ children }: { children: React.React
     });
   }, []);
 
-  // Notification helpers
-  const notifyAudioHandlers = useCallback((data: ArrayBuffer): void => {
-    audioHandlersRef.current.forEach((handler) => {
-      try {
-        handler(data);
-      } catch (e) {
-        console.error('[WS Context] Audio handler error:', e);
-      }
-    });
-  }, []);
-
-  const notifyAiDoneHandlers = useCallback((): void => {
-    aiDoneHandlersRef.current.forEach((handler) => {
-      try {
-        handler();
-      } catch (e) {
-        console.error('[WS Context] AI done handler error:', e);
-      }
-    });
-  }, []);
-
   const notifyEndHandlers = useCallback((feedbackUrl: string): void => {
     endHandlersRef.current.forEach((handler) => {
-      try {
-        handler(feedbackUrl);
-      } catch (e) {
+      try { handler(feedbackUrl); } catch (e) {
         console.error('[WS Context] End handler error:', e);
-      }
-    });
-  }, []);
-
-  const notifyErrorHandlers = useCallback((error: { code: string; message: string }): void => {
-    errorHandlersRef.current.forEach((handler) => {
-      try {
-        handler(error);
-      } catch (e) {
-        console.error('[WS Context] Error handler error:', e);
       }
     });
   }, []);
@@ -197,11 +201,7 @@ export function InterviewWebSocketProvider({ children }: { children: React.React
       ws.onclose = null;
 
       if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
-        try {
-          ws.close(1000, 'User disconnect');
-        } catch {
-          // Ignore
-        }
+        try { ws.close(1000, 'User disconnect'); } catch { /* ignore */ }
       }
     }
 
@@ -209,8 +209,8 @@ export function InterviewWebSocketProvider({ children }: { children: React.React
     setIsConnecting(false);
     setCurrentSessionId(null);
     setConnectionAttempts(0);
-    
-    // Defer store updates
+    setIsPendingPlayback(false);
+
     safeStoreUpdate(() => {
       storeRef.current.setConnected(false);
       storeRef.current.setConnecting(false);
@@ -230,13 +230,11 @@ export function InterviewWebSocketProvider({ children }: { children: React.React
         return;
       }
 
-      // Already connected to this session
       if (wsRef.current?.readyState === WebSocket.OPEN && currentSessionId === sessionId) {
         console.log('[WS Context] Already connected to this session');
         return;
       }
 
-      // Already connecting
       if (wsRef.current?.readyState === WebSocket.CONNECTING) {
         console.log('[WS Context] Already connecting');
         return;
@@ -264,7 +262,7 @@ export function InterviewWebSocketProvider({ children }: { children: React.React
       reconnectDelayRef.current = INITIAL_RECONNECT_DELAY;
       setIsConnecting(true);
       setCurrentSessionId(sessionId);
-      
+
       safeStoreUpdate(() => {
         storeRef.current.setConnecting(true);
         storeRef.current.setError(null);
@@ -278,33 +276,24 @@ export function InterviewWebSocketProvider({ children }: { children: React.React
 
         ws.onopen = (): void => {
           console.log('[WS Context] Connection opened');
-
           if (!mountedRef.current) {
             ws.close(1000, 'Component unmounted');
             return;
           }
-
-          // Reset activity time on connect
-          lastServerActivityRef.current = Date.now();
         };
 
         ws.onmessage = (event: MessageEvent): void => {
           if (!mountedRef.current) return;
 
-          // Update last activity on ANY message from server
-          lastServerActivityRef.current = Date.now();
-
-          // Binary audio
+          // Binary audio — queue it directly
           if (event.data instanceof ArrayBuffer) {
-            notifyAudioHandlers(event.data);
+            queueAudio(event.data);
             return;
           }
 
           if (event.data instanceof Blob) {
             event.data.arrayBuffer().then((buffer) => {
-              if (mountedRef.current) {
-                notifyAudioHandlers(buffer);
-              }
+              if (mountedRef.current) queueAudio(buffer);
             });
             return;
           }
@@ -319,14 +308,10 @@ export function InterviewWebSocketProvider({ children }: { children: React.React
                 break;
 
               case 'ping':
-                // Server is pinging us - respond immediately
-                console.log('[WS Context] Received ping from server, sending pong');
                 sendMessage('pong');
                 break;
 
               case 'pong':
-                // Server responded to our ping (if we sent one)
-                console.log('[WS Context] Received pong from server');
                 break;
 
               case 'session_ready': {
@@ -336,7 +321,7 @@ export function InterviewWebSocketProvider({ children }: { children: React.React
                 setIsConnecting(false);
                 setConnectionAttempts(0);
                 reconnectDelayRef.current = INITIAL_RECONNECT_DELAY;
-                
+
                 safeStoreUpdate(() => {
                   storeRef.current.setConnected(true);
                   storeRef.current.setConnecting(false);
@@ -365,20 +350,20 @@ export function InterviewWebSocketProvider({ children }: { children: React.React
                       }
                     });
                   }
-                  
+
                   if (data.currentQuestion) {
                     storeRef.current.setCurrentQuestion(data.currentQuestion);
-                    
-                    // FIX 1: Explicitly add message to history on RESUME/READY
-                    // This fixes the "Invisible Question" bug when resuming an interview
-                    storeRef.current.addMessage({
-                      id: data.currentQuestion.id,
-                      role: 'assistant',
-                      content: data.currentQuestion.question,
-                      timestamp: new Date(),
-                      category: data.currentQuestion.category,
-                      isFollowUp: data.currentQuestion.isFollowUp,
-                    });
+                    const isResuming = wsData.history && Array.isArray(wsData.history) && wsData.history.length > 0;
+                    if (isResuming && data.currentQuestion.question) {
+                      storeRef.current.addMessage({
+                        id: data.currentQuestion.id,
+                        role: 'assistant',
+                        content: data.currentQuestion.question,
+                        timestamp: new Date(),
+                        category: data.currentQuestion.category,
+                        isFollowUp: data.currentQuestion.isFollowUp,
+                      });
+                    }
                   }
                 });
                 break;
@@ -403,8 +388,7 @@ export function InterviewWebSocketProvider({ children }: { children: React.React
               case 'ai_thinking':
                 safeStoreUpdate(() => {
                   storeRef.current.setProcessing(true);
-                  // The user has finished speaking and the backend is processing.
-                  // Move the accumulated transcript into the chat history.
+                  // Move accumulated transcript to chat history
                   const finalUserText = useInterviewStore.getState().ui.currentTranscript;
                   if (finalUserText.trim()) {
                     storeRef.current.addMessage({
@@ -420,7 +404,7 @@ export function InterviewWebSocketProvider({ children }: { children: React.React
                 break;
 
               case 'ai_speaking': {
-                const data = message.data as WSAISpeakingData & {id?: string};
+                const data = message.data as WSAISpeakingData & { id?: string };
                 safeStoreUpdate(() => {
                   storeRef.current.setProcessing(false);
                   storeRef.current.setAISpeaking(true);
@@ -445,7 +429,7 @@ export function InterviewWebSocketProvider({ children }: { children: React.React
                   for (let i = 0; i < binaryString.length; i++) {
                     bytes[i] = binaryString.charCodeAt(i);
                   }
-                  notifyAudioHandlers(bytes.buffer);
+                  queueAudio(bytes.buffer);
                 } catch (e) {
                   console.error('[WS Context] Audio decode error:', e);
                 }
@@ -453,17 +437,17 @@ export function InterviewWebSocketProvider({ children }: { children: React.React
               }
 
               case 'ai_done':
-                console.log('[WS Context] AI done speaking (server side)');
-                
-                // FIX 2: DO NOT UPDATE STATE HERE.
-                // We must wait for the UI Audio Player to finish playing.
-                // If we flip to "Listening" now, the mic will turn on while audio is still buffering!
-                // safeStoreUpdate(() => {
-                //   storeRef.current.setAISpeaking(false);
-                //   storeRef.current.setRecording(true);
-                // });
-                
-                notifyAiDoneHandlers();
+                console.log('[WS Context] AI done — triggering audio playback');
+                // Set isPendingPlayback BEFORE playAccumulated (prevents premature mic start)
+                setIsPendingPlayback(true);
+                resumeAudioContextInternal()
+                  .catch(() => { /* ignore */ })
+                  .finally(() => {
+                    playAccumulated().finally(() => {
+                      // Safety: if no chunks, isPlaying never flips true
+                      setIsPendingPlayback(false);
+                    });
+                  });
                 break;
 
               case 'session_state': {
@@ -472,21 +456,15 @@ export function InterviewWebSocketProvider({ children }: { children: React.React
                   storeRef.current.setProgress(data.progress);
                   if (data.currentQuestion) {
                     storeRef.current.setCurrentQuestion(data.currentQuestion);
-                    
-                    // FIX 3: Also add to history on Session State update
                     storeRef.current.addMessage({
-                        id: data.currentQuestion.id,
-                        role: 'assistant',
-                        content: data.currentQuestion.question,
-                        timestamp: new Date(),
-                        category: data.currentQuestion.category,
-                        isFollowUp: data.currentQuestion.isFollowUp,
+                      id: data.currentQuestion.id,
+                      role: 'assistant',
+                      content: data.currentQuestion.question,
+                      timestamp: new Date(),
+                      category: data.currentQuestion.category,
+                      isFollowUp: data.currentQuestion.isFollowUp,
                     });
                   }
-                  
-                  // Don't auto-set recording/speaking here, let the room handle it based on activity
-                  // storeRef.current.setRecording(data.isListening);
-                  // storeRef.current.setAISpeaking(data.isAISpeaking);
                 });
                 break;
               }
@@ -508,7 +486,6 @@ export function InterviewWebSocketProvider({ children }: { children: React.React
                 safeStoreUpdate(() => {
                   storeRef.current.setError(data.message);
                 });
-                notifyErrorHandlers({ code: data.code, message: data.message });
                 if (!data.recoverable) {
                   disconnect();
                 }
@@ -540,7 +517,8 @@ export function InterviewWebSocketProvider({ children }: { children: React.React
 
           setIsConnected(false);
           setIsConnecting(false);
-          
+          setIsPendingPlayback(false);
+
           safeStoreUpdate(() => {
             storeRef.current.setConnected(false);
             storeRef.current.setConnecting(false);
@@ -552,7 +530,6 @@ export function InterviewWebSocketProvider({ children }: { children: React.React
               const newAttempts = prev + 1;
 
               if (newAttempts >= MAX_RECONNECT_ATTEMPTS) {
-                // Defer the error update to avoid React warning
                 safeStoreUpdate(() => {
                   storeRef.current.setError('Connection failed. Please refresh the page.');
                 });
@@ -590,12 +567,12 @@ export function InterviewWebSocketProvider({ children }: { children: React.React
       currentSessionId,
       clearAllTimeouts,
       disconnect,
-      notifyAudioHandlers,
-      notifyAiDoneHandlers,
-      notifyEndHandlers,
-      notifyErrorHandlers,
       sendMessage,
       safeStoreUpdate,
+      queueAudio,
+      playAccumulated,
+      resumeAudioContextInternal,
+      notifyEndHandlers,
     ]
   );
 
@@ -633,40 +610,9 @@ export function InterviewWebSocketProvider({ children }: { children: React.React
     [sendMessage]
   );
 
-  const pause = useCallback((): void => {
-    if (sendMessage('pause')) {
-      safeStoreUpdate(() => {
-        storeRef.current.setRecording(false);
-        storeRef.current.setPaused(true);
-      });
-    }
-  }, [sendMessage, safeStoreUpdate]);
-
-  const resume = useCallback((): void => {
-    if (sendMessage('resume')) {
-      safeStoreUpdate(() => {
-        storeRef.current.setPaused(false);
-      });
-    }
-  }, [sendMessage, safeStoreUpdate]);
-
   // ===================================================
-  // HANDLER REGISTRATION
+  // HANDLER REGISTRATION (end handler only, for router redirect)
   // ===================================================
-
-  const registerAudioHandler = useCallback((handler: (data: ArrayBuffer) => void): (() => void) => {
-    audioHandlersRef.current.add(handler);
-    return () => {
-      audioHandlersRef.current.delete(handler);
-    };
-  }, []);
-
-  const registerAiDoneHandler = useCallback((handler: () => void): (() => void) => {
-    aiDoneHandlersRef.current.add(handler);
-    return () => {
-      aiDoneHandlersRef.current.delete(handler);
-    };
-  }, []);
 
   const registerEndHandler = useCallback((handler: (feedbackUrl: string) => void): (() => void) => {
     endHandlersRef.current.add(handler);
@@ -675,15 +621,21 @@ export function InterviewWebSocketProvider({ children }: { children: React.React
     };
   }, []);
 
-  const registerErrorHandler = useCallback(
-    (handler: (error: { code: string; message: string }) => void): (() => void) => {
-      errorHandlersRef.current.add(handler);
-      return () => {
-        errorHandlersRef.current.delete(handler);
-      };
-    },
-    []
-  );
+  // ===================================================
+  // KEEPALIVE PING
+  // ===================================================
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const ws = wsRef.current;
+      if (ws?.readyState === WebSocket.OPEN) {
+        try {
+          ws.send(JSON.stringify({ type: 'ping' }));
+        } catch { /* ignore */ }
+      }
+    }, 5_000);
+    return () => clearInterval(interval);
+  }, []);
 
   // ===================================================
   // CLEANUP
@@ -703,10 +655,7 @@ export function InterviewWebSocketProvider({ children }: { children: React.React
         wsRef.current = null;
       }
 
-      audioHandlersRef.current.clear();
-      aiDoneHandlersRef.current.clear();
       endHandlersRef.current.clear();
-      errorHandlersRef.current.clear();
     };
   }, [clearAllTimeouts]);
 
@@ -720,36 +669,34 @@ export function InterviewWebSocketProvider({ children }: { children: React.React
       isConnecting,
       connectionAttempts,
       currentSessionId,
+      isPlaying,
+      isBuffering,
+      isPendingPlayback,
       connect,
       disconnect,
       sendAudio,
       startRecording,
       stopRecording,
       endInterview,
-      pause,
-      resume,
-      registerAudioHandler,
-      registerAiDoneHandler,
+      resumeAudioContext,
       registerEndHandler,
-      registerErrorHandler,
     }),
     [
       isConnected,
       isConnecting,
       connectionAttempts,
       currentSessionId,
+      isPlaying,
+      isBuffering,
+      isPendingPlayback,
       connect,
       disconnect,
       sendAudio,
       startRecording,
       stopRecording,
       endInterview,
-      pause,
-      resume,
-      registerAudioHandler,
-      registerAiDoneHandler,
+      resumeAudioContext,
       registerEndHandler,
-      registerErrorHandler,
     ]
   );
 
