@@ -227,7 +227,7 @@ export const useInterviewStore = create<InterviewState>()(
             // Also ensure this question exists in chat history (for resumed sessions)
             if (question) {
                 const alreadyExists = state.messages.some(
-                    m => m.id === question.id || m.content.trim() === question.question.trim()
+                    m => m.id === question.id || (m.content || '').trim() === (question.question || '').trim()
                 );
                 
                 if (!alreadyExists) {

@@ -289,7 +289,7 @@ export default function PracticePage() {
             <p className="mt-1 text-muted-foreground">Choose a module to start practicing</p>
           </div>
 
-          <div className="grid gap-6 lg:grid-cols-3">
+          <div className="grid gap-6 lg:grid-cols-2">
             {modules.map((module, index) => (
               <ModuleCard
                 key={module.id}

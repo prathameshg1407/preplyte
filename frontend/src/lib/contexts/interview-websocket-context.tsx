@@ -341,6 +341,30 @@ export function InterviewWebSocketProvider({ children }: { children: React.React
                   storeRef.current.setConnected(true);
                   storeRef.current.setConnecting(false);
                   storeRef.current.resetConnectionAttempts();
+
+                  const wsData = data as any;
+                  if (wsData.history && Array.isArray(wsData.history)) {
+                    wsData.history.forEach((histItem: any) => {
+                      if (histItem.question) {
+                        storeRef.current.addMessage({
+                          id: `ai-${histItem.id}`,
+                          role: 'assistant',
+                          content: histItem.question,
+                          timestamp: new Date(),
+                          category: histItem.category,
+                          isFollowUp: histItem.isFollowUp
+                        });
+                      }
+                      if (histItem.answer) {
+                        storeRef.current.addMessage({
+                          id: `user-${histItem.id}`,
+                          role: 'user',
+                          content: histItem.answer,
+                          timestamp: new Date()
+                        });
+                      }
+                    });
+                  }
                   
                   if (data.currentQuestion) {
                     storeRef.current.setCurrentQuestion(data.currentQuestion);
@@ -371,15 +395,7 @@ export function InterviewWebSocketProvider({ children }: { children: React.React
               case 'transcription_final': {
                 const data = message.data as WSTranscriptionData;
                 safeStoreUpdate(() => {
-                  storeRef.current.addMessage({
-                    id: `user-${Date.now()}-${++messageIdRef.current}`,
-                    role: 'user',
-                    content: data.text,
-                    timestamp: new Date(),
-                  });
-                  storeRef.current.clearTranscript();
-                  storeRef.current.setRecording(false);
-                  storeRef.current.setProcessing(true);
+                  storeRef.current.setCurrentTranscript(data.text);
                 });
                 break;
               }
@@ -387,6 +403,19 @@ export function InterviewWebSocketProvider({ children }: { children: React.React
               case 'ai_thinking':
                 safeStoreUpdate(() => {
                   storeRef.current.setProcessing(true);
+                  // The user has finished speaking and the backend is processing.
+                  // Move the accumulated transcript into the chat history.
+                  const finalUserText = useInterviewStore.getState().ui.currentTranscript;
+                  if (finalUserText.trim()) {
+                    storeRef.current.addMessage({
+                      id: `user-${Date.now()}-${++messageIdRef.current}`,
+                      role: 'user',
+                      content: finalUserText,
+                      timestamp: new Date(),
+                    });
+                  }
+                  storeRef.current.clearTranscript();
+                  storeRef.current.setRecording(false);
                 });
                 break;
 

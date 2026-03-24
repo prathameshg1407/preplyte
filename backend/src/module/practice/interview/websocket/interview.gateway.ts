@@ -416,6 +416,15 @@ class InterviewWebSocketGateway {
           currentQuestion: connection.context
             ? conversationEngineService.getCurrentQuestionState(connection.context)
             : null,
+          history: previousResponses
+            .filter(r => r.answer) // Only include completed Q&As in history
+            .map(r => ({
+              id: r.id,
+              question: r.question,
+              answer: r.answer,
+              category: r.category,
+              isFollowUp: r.isFollowup
+            }))
         },
       });
 
@@ -721,10 +730,12 @@ class InterviewWebSocketGateway {
       confidence: result.confidence,
     });
 
-    this.send(socket, {
-      type: result.isFinal ? WS_EVENTS.SERVER.TRANSCRIPTION_FINAL : WS_EVENTS.SERVER.TRANSCRIPTION,
-      data: { text: result.text, isFinal: result.isFinal, confidence: result.confidence },
-    });
+      const cleanText = result.text.trim();
+      const liveText = (connection.currentTranscript + ' ' + cleanText).trim();
+      this.send(socket, {
+        type: result.isFinal ? WS_EVENTS.SERVER.TRANSCRIPTION_FINAL : WS_EVENTS.SERVER.TRANSCRIPTION,
+        data: { text: liveText, isFinal: result.isFinal, confidence: result.confidence },
+      });
 
     if (result.isFinal && result.text.trim().length > 0) {
       connection.currentTranscript += ' ' + result.text;
