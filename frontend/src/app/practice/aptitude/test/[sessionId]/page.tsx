@@ -71,7 +71,7 @@ export default function AptitudeTestPage() {
 
       if (storeSessionId !== sessionId) {
         try {
-          await resumeSession(sessionId);
+          await resumeSession(sessionId, { navigate: false, showToast: false });
         } catch {
           router.push('/practice/aptitude');
           return;

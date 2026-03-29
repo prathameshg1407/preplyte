@@ -5,6 +5,7 @@ import { Router } from 'express';
 import aptitudeRoutes from './aptitude/aptitude.routes';
 import machineRoutes from './machine/machine.routes';
 import { interviewRoutes } from './interview';
+import { individualMockDriveRoutes } from './individual-mockdrive';
 
 import languagesRoutes from './common/languages.routes';
 import configRoutes from './common/config.routes';
@@ -19,6 +20,7 @@ router.use('/aptitude', aptitudeRoutes);
 router.use('/machine', machineRoutes);
 router.use('/interview', interviewRoutes);
 router.use('/roadmap', roadmapRoutes);
+router.use('/mockdrive', individualMockDriveRoutes);
 
 // Shared/Common APIs
 router.use('/languages', languagesRoutes);

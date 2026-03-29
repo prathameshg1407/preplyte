@@ -274,6 +274,21 @@ export const API_ENDPOINTS = {
     MY_RANK: (id: string) => `/api/mock-drives/${id}/leaderboard/my-rank` as const,
   },
 
+  // ============================================
+  // Individual MockDrive (Practice)
+  // ============================================
+  INDIVIDUAL_MOCKDRIVE: {
+    BASE: '/api/practice/mockdrive',
+    ID: (id: string) => `/api/practice/mockdrive/${id}` as const,
+    ATTEMPTS: (id: string) => `/api/practice/mockdrive/${id}/attempts` as const,
+    ATTEMPT_DETAIL: (attemptId: string) => `/api/practice/mockdrive/attempts/${attemptId}` as const,
+    ATTEMPT_MODULE_START: (attemptId: string, moduleId: string) => 
+      `/api/practice/mockdrive/attempts/${attemptId}/modules/${moduleId}/start` as const,
+    CURRENT_ATTEMPT: '/api/practice/mockdrive/attempts/current',
+    SYNC_ATTEMPT: '/api/practice/mockdrive/attempts/sync',
+    HISTORY: '/api/practice/mockdrive/attempts/history',
+  },
+
   //Leaderboard
   LEADERBOARD: {
     CONFIG: '/api/leaderboard/config',

@@ -106,7 +106,29 @@ const modules: PracticeModule[] = [
       'Industry-specific questions',
       'Communication analysis'
     ],
-    status: 'beta'
+    status: 'available'
+  },
+  {
+    id: 'mockdrive',
+    title: 'Individual MockDrive',
+    subtitle: 'Simulated Placement Drive',
+    description: 'Create your own end-to-end mock recruitment drive. Customize rounds and practice under real pressure.',
+    icon: Sparkles,
+    href: '/practice/mockdrive',
+    color: 'text-rose-600 dark:text-rose-400',
+    gradient: 'from-rose-500/20 via-rose-500/10 to-transparent',
+    stats: {
+      questions: 'Custom',
+      avgTime: '90 min',
+      completion: 'New'
+    },
+    highlights: [
+      'Multi-round simulation',
+      'Aptitude + Coding + Interview',
+      'Personalized configuration',
+      'Comprehensive performance report'
+    ],
+    status: 'available'
   },
   {
     id: 'roadmap',

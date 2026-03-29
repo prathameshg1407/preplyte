@@ -4,6 +4,7 @@ import { useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAptitudeStore } from '../store/aptitude-store';
 import { aptitudeService } from '../api/services/aptitude.service';
+import { logger } from '../utils/logger';
 import type {
   CreateSessionRequest,
   ListSessionsParams,
@@ -141,18 +142,37 @@ export function useAptitude() {
 
   const createSession = useCallback(
     async (data: CreateSessionRequest) => {
+      const startedAt = Date.now();
       try {
         setLoading(true);
+        logger.debug('[Aptitude] createSession:start', {
+          difficulty: data.difficulty,
+          questionTypes: data.questionTypes,
+          numberOfQuestions: data.numberOfQuestions,
+          timeLimit: data.timeLimit,
+        });
 
         const createResponse = await aptitudeService.createSession(data);
+        logger.debug('[Aptitude] createSession:api-response', {
+          success: createResponse.success,
+          hasData: !!createResponse.data,
+          error: createResponse.error,
+        });
 
         if (!createResponse.success || !createResponse.data) {
           throw new Error(createResponse.error?.message || 'Failed to create session');
         }
 
         const session = createResponse.data;
+        logger.debug('[Aptitude] createSession:created', { sessionId: session.id });
 
         const questionsResponse = await aptitudeService.getSessionQuestions(session.id);
+        logger.debug('[Aptitude] createSession:questions-response', {
+          sessionId: session.id,
+          success: questionsResponse.success,
+          hasData: !!questionsResponse.data,
+          questionCount: questionsResponse.data?.questions?.length,
+        });
 
         if (!questionsResponse.success || !questionsResponse.data) {
           throw new Error(questionsResponse.error?.message || 'Failed to fetch questions');
@@ -170,13 +190,26 @@ export function useAptitude() {
           questionTypes: session.questionTypes,
           status: questionsData.status,
         });
+        logger.debug('[Aptitude] createSession:store-initialized', {
+          sessionId: session.id,
+          status: questionsData.status,
+        });
 
         router.push(`/practice/aptitude/test/${session.id}`);
+        logger.debug('[Aptitude] createSession:navigate', { path: `/practice/aptitude/test/${session.id}` });
 
         toast.success('Practice session started!');
+        logger.debug('[Aptitude] createSession:success', {
+          sessionId: session.id,
+          durationMs: Date.now() - startedAt,
+        });
         return session.id;
       } catch (error: unknown) {
         const errorMessage = error instanceof Error ? error.message : 'Failed to create session';
+        logger.error('[Aptitude] createSession:error', {
+          message: errorMessage,
+          durationMs: Date.now() - startedAt,
+        });
         
         if (errorMessage.includes('SESSION_IN_PROGRESS') || errorMessage.includes('active session')) {
           toast.error('You have an active session. Please complete or wait for it to expire.');
@@ -186,17 +219,34 @@ export function useAptitude() {
         throw error;
       } finally {
         setLoading(false);
+        logger.debug('[Aptitude] createSession:loading-false');
       }
     },
     [router, setLoading, initSession]
   );
 
   const resumeSession = useCallback(
-    async (sessionIdToResume: string) => {
+    async (
+      sessionIdToResume: string,
+      options?: { navigate?: boolean; showToast?: boolean }
+    ) => {
+      const startedAt = Date.now();
       try {
         setLoading(true);
+        const shouldNavigate = options?.navigate ?? true;
+        const shouldShowToast = options?.showToast ?? true;
+        logger.debug('[Aptitude] resumeSession:start', {
+          sessionId: sessionIdToResume,
+          shouldNavigate,
+          shouldShowToast,
+        });
 
         const sessionResponse = await aptitudeService.getSession(sessionIdToResume);
+        logger.debug('[Aptitude] resumeSession:session-response', {
+          success: sessionResponse.success,
+          hasData: !!sessionResponse.data,
+          status: sessionResponse.data?.status,
+        });
 
         if (!sessionResponse.success || !sessionResponse.data) {
           throw new Error(sessionResponse.error?.message || 'Session not found');
@@ -217,6 +267,11 @@ export function useAptitude() {
         }
 
         const questionsResponse = await aptitudeService.getSessionQuestions(sessionIdToResume);
+        logger.debug('[Aptitude] resumeSession:questions-response', {
+          success: questionsResponse.success,
+          hasData: !!questionsResponse.data,
+          questionCount: questionsResponse.data?.questions?.length,
+        });
 
         if (!questionsResponse.success || !questionsResponse.data) {
           throw new Error(questionsResponse.error?.message || 'Failed to fetch questions');
@@ -235,16 +290,33 @@ export function useAptitude() {
           status: questionsData.status,
         });
 
-        router.push(`/practice/aptitude/test/${sessionIdToResume}`);
+        if (shouldNavigate) {
+          router.push(`/practice/aptitude/test/${sessionIdToResume}`);
+          logger.debug('[Aptitude] resumeSession:navigate', { path: `/practice/aptitude/test/${sessionIdToResume}` });
+        }
 
-        toast.success('Session resumed!');
+        if (shouldShowToast) {
+          toast.success('Session resumed!');
+        }
+        logger.debug('[Aptitude] resumeSession:success', {
+          sessionId: sessionIdToResume,
+          durationMs: Date.now() - startedAt,
+        });
         return true;
       } catch (error: unknown) {
         const errorMessage = error instanceof Error ? error.message : 'Failed to resume session';
+        logger.error('[Aptitude] resumeSession:error', {
+          sessionId: sessionIdToResume,
+          message: errorMessage,
+          durationMs: Date.now() - startedAt,
+        });
         toast.error(errorMessage);
         throw error;
       } finally {
         setLoading(false);
+        logger.debug('[Aptitude] resumeSession:loading-false', {
+          sessionId: sessionIdToResume,
+        });
       }
     },
     [router, setLoading, initSession]

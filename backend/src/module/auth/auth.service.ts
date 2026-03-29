@@ -253,11 +253,10 @@ async refreshToken(token: string) {
         tokenId: storedToken.id,
         revokedAt: storedToken.revokedAt,
       });
-      
-      // Revoke all tokens for this user
-      await this.logoutAll(userId);
-      
-      throw new UnauthorizedError('Token reuse detected. All sessions have been revoked for security.');
+
+      // Do not revoke all sessions here. A stale token can appear during legitimate
+      // refresh races (multi-tab/device). Reject only this refresh attempt.
+      throw new UnauthorizedError('Refresh token has already been used. Please retry.');
     }
 
     // Token expired

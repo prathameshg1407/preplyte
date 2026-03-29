@@ -58,6 +58,7 @@ import {
   ArrowRight,
 } from 'lucide-react';
 import { cn } from '../../../lib/utils';
+import { logger } from '../../../lib/utils/logger';
 
 // Icon mapping
 const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -148,6 +149,7 @@ export function PracticeConfigForm() {
     const initialize = async () => {
       setIsInitializing(true);
       try {
+        logger.debug('[AptitudeConfig] initialize:start');
         await fetchConfig();
         const sessionsData = await listSessions({
           status: 'in_progress',
@@ -155,15 +157,24 @@ export function PracticeConfigForm() {
           sortBy: 'createdAt',
           sortOrder: 'desc',
         });
+        logger.debug('[AptitudeConfig] initialize:sessions', {
+          hasSessionsData: !!sessionsData,
+          activeSessions: sessionsData?.sessions?.length || 0,
+        });
 
         if (sessionsData && sessionsData.sessions.length > 0) {
           setActiveSession(sessionsData.sessions[0]);
           setShowResumeDialog(true);
+          logger.debug('[AptitudeConfig] initialize:resume-dialog-opened', {
+            activeSessionId: sessionsData.sessions[0].id,
+          });
         }
       } catch (error) {
         console.error('Failed to initialize:', error);
+        logger.error('[AptitudeConfig] initialize:error', error);
       } finally {
         setIsInitializing(false);
+        logger.debug('[AptitudeConfig] initialize:done');
       }
     };
 
@@ -221,13 +232,21 @@ export function PracticeConfigForm() {
 
   const handleStart = async () => {
     try {
+      logger.debug('[AptitudeConfig] handleStart:clicked', {
+        selectedTypes,
+        difficulty,
+        numberOfQuestions,
+        timeLimit,
+      });
       await createSession({
         questionTypes: selectedTypes,
         difficulty,
         numberOfQuestions,
         timeLimit,
       });
+      logger.debug('[AptitudeConfig] handleStart:completed');
     } catch {
+      logger.error('[AptitudeConfig] handleStart:error');
       // Error handled in hook
     }
   };
@@ -235,8 +254,17 @@ export function PracticeConfigForm() {
   const handleResumeSession = async () => {
     if (activeSession) {
       try {
+        logger.debug('[AptitudeConfig] handleResumeSession:clicked', {
+          sessionId: activeSession.id,
+        });
         await resumeSession(activeSession.id);
+        logger.debug('[AptitudeConfig] handleResumeSession:completed', {
+          sessionId: activeSession.id,
+        });
       } catch {
+        logger.error('[AptitudeConfig] handleResumeSession:error', {
+          sessionId: activeSession.id,
+        });
         setShowResumeDialog(false);
       }
     }
