@@ -385,8 +385,16 @@ class ConversationEngineService {
    * Check if interview should end
    */
   shouldEndInterview(context: ConversationContext): boolean {
+    const questionCount = context.questionsAsked.length;
+    const targetQuestions = context.config.targetQuestions;
+    
+    // Always reach target questions if specified
+    if (questionCount < targetQuestions) {
+      return false;
+    }
+
     return (
-      context.questionsAsked.length >= context.config.targetQuestions ||
+      questionCount >= targetQuestions ||
       this.hasCompletedAllCategories(context)
     );
   }

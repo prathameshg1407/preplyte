@@ -22,7 +22,7 @@ export default function AIInterviewPage() {
   } = useInterviewSessions({ enabled: activeTab === 'history' });
 
   return (
-    <div className="container max-w-4xl py-8">
+    <div className="container max-w-6xl py-8 mx-auto">
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">AI Interview Practice</h1>
         <p className="text-muted-foreground">

@@ -256,9 +256,25 @@ export function InterviewRoom({ sessionId }: InterviewRoomProps) {
   }, [volume, isAnswering, ws.isPlaying, ws.isPendingPlayback]);
 
   const handleEndInterview = useCallback(() => {
-    stopMicRecording();
-    ws.endInterview('completed');
-  }, [stopMicRecording, ws]);
+    console.log('[InterviewRoom] End Interview requested');
+    if (micStartedRef.current) {
+      try { stopMicRecording(); } catch (e) { console.error(e); }
+    }
+    
+    // Failsafe: if disconnected, redirect anyway after a short delay
+    const redirectTimeout = setTimeout(() => {
+      console.log('[InterviewRoom] End Interview failsafe triggered');
+      router.push(`/practice/ai-interview/results/${sessionId}`);
+    }, 2000);
+
+    if (ws.isConnected) {
+      ws.endInterview('completed');
+    } else {
+      console.warn('[InterviewRoom] WS disconnected during End Interview, redirecting now');
+      router.push(`/practice/ai-interview/results/${sessionId}`);
+      clearTimeout(redirectTimeout);
+    }
+  }, [stopMicRecording, ws, router, sessionId]);
 
   const handleReconnect = useCallback(() => {
     setError(null);
