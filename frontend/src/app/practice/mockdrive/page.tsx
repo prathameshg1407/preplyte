@@ -80,10 +80,14 @@ export default function MockDriveDashboard() {
     try {
       setStartingDriveId(id);
 
-      // If an attempt is already in progress, resume it instead of creating a new one.
+      // Resume only if the active attempt belongs to the selected drive.
       const currentRes = await apiClient.get(API_ENDPOINTS.INDIVIDUAL_MOCKDRIVE.CURRENT_ATTEMPT);
       const currentAttempt = currentRes?.data;
-      if (currentAttempt?.id && currentAttempt?.mockDriveId) {
+      if (
+        currentAttempt?.id &&
+        currentAttempt?.mockDriveId &&
+        currentAttempt.mockDriveId === id
+      ) {
         router.push(`/practice/mockdrive/${currentAttempt.mockDriveId}/attempt?attemptId=${currentAttempt.id}`);
         return;
       }
@@ -98,7 +102,11 @@ export default function MockDriveDashboard() {
           const currentRes = await apiClient.get(API_ENDPOINTS.INDIVIDUAL_MOCKDRIVE.CURRENT_ATTEMPT);
           const currentAttempt = currentRes?.data;
 
-          if (currentAttempt?.id && currentAttempt?.mockDriveId) {
+          if (
+            currentAttempt?.id &&
+            currentAttempt?.mockDriveId &&
+            currentAttempt.mockDriveId === id
+          ) {
             router.push(`/practice/mockdrive/${currentAttempt.mockDriveId}/attempt?attemptId=${currentAttempt.id}`);
             return;
           }

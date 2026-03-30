@@ -38,14 +38,22 @@ import { cn } from '@/lib/utils';
 
 interface InterviewRoomProps {
   sessionId: string;
+  resultsPath?: string;
+  backPath?: string;
 }
 
 // =====================================================
 // COMPONENT
 // =====================================================
 
-export function InterviewRoom({ sessionId }: InterviewRoomProps) {
+export function InterviewRoom({
+  sessionId,
+  resultsPath,
+  backPath,
+}: InterviewRoomProps) {
   const router = useRouter();
+  const resolvedResultsPath = resultsPath || `/practice/ai-interview/results/${sessionId}`;
+  const resolvedBackPath = backPath || '/practice/ai-interview';
 
   // ─── Session data ──────────────────────────────────────────────────────────
   const { data: sessionData, isLoading: isSessionLoading } = useInterviewSession(sessionId);
@@ -173,10 +181,10 @@ export function InterviewRoom({ sessionId }: InterviewRoomProps) {
   // ─── End handler: redirect to results ─────────────────────────────────────
   useEffect(() => {
     const unsubscribe = ws.registerEndHandler(() => {
-      router.push(`/practice/ai-interview/results/${sessionId}`);
+      router.push(resolvedResultsPath);
     });
     return unsubscribe;
-  }, [ws, router, sessionId]);
+  }, [ws, router, resolvedResultsPath]);
 
   // ─── Submit answer (user's turn ends) ─────────────────────────────────────
   const handleSubmitAnswer = useCallback(() => {
@@ -371,7 +379,7 @@ export function InterviewRoom({ sessionId }: InterviewRoomProps) {
         <p className="text-muted-foreground text-center max-w-md">
           Your browser doesn&apos;t support audio recording. Please use Chrome, Firefox, or Safari.
         </p>
-        <Button onClick={() => router.push('/practice/ai-interview')}>Go Back</Button>
+        <Button onClick={() => router.push(resolvedBackPath)}>Go Back</Button>
       </div>
     );
   }

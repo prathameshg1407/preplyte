@@ -68,6 +68,7 @@ describe('IndividualMockDriveService', () => {
   it('returns completed attempt details from sync when last module completes', async () => {
     const currentAttempt = {
       id: 'attempt-1',
+      mockDriveId: 'drive-1',
       moduleAttempts: [
         {
           id: 'ma-1',
@@ -82,11 +83,33 @@ describe('IndividualMockDriveService', () => {
       ],
     };
 
+    const updatedAttempt = {
+      id: 'attempt-1',
+      mockDriveId: 'drive-1',
+      moduleAttempts: [
+        {
+          id: 'ma-1',
+          status: MockDriveModuleAttemptStatus.COMPLETED,
+          moduleData: { sessionId: 'session-1' },
+          percentage: 80,
+          module: {
+            order: 0,
+            moduleType: MockDriveModuleType.APTITUDE,
+          },
+        },
+      ],
+    };
+
     const completedAttempt = { id: 'attempt-1', status: 'COMPLETED' };
 
+    // Mock getCurrentAttempt to return current attempt first, then updated attempt
+    let callCount = 0;
     jest
       .spyOn(individualMockDriveService, 'getCurrentAttempt')
-      .mockResolvedValue(currentAttempt as any);
+      .mockImplementation(async () => {
+        callCount++;
+        return callCount === 1 ? (currentAttempt as any) : (updatedAttempt as any);
+      });
     jest
       .spyOn(individualMockDriveService, 'getAttemptById')
       .mockResolvedValue(completedAttempt as any);

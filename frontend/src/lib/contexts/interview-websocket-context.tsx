@@ -18,6 +18,8 @@ import React, {
 import { useAuthStore } from '@/lib/store/auth-store';
 import { useInterviewStore } from '@/lib/store/interview-store';
 import { interviewService } from '@/lib/api/services/interview.service';
+import { refreshTokenManually } from '@/lib/api/axios-instance';
+import { AUTH_STORAGE_KEYS, storage } from '@/lib/utils/storage';
 import { useAudioPlayer } from '@/lib/hooks/use-audio-player';
 import type {
   WSMessage,
@@ -187,7 +189,12 @@ export function InterviewWebSocketProvider({ children }: { children: React.React
   // ===================================================
 
   const disconnect = useCallback((): void => {
-    console.log('[WS Context] Disconnecting');
+    console.log('[WS Context] Disconnecting', {
+      currentSessionId,
+      readyState: wsRef.current?.readyState,
+      manualBeforeSet: isManualDisconnectRef.current,
+      stack: new Error().stack,
+    });
     isManualDisconnectRef.current = true;
 
     clearAllTimeouts();
@@ -268,11 +275,54 @@ export function InterviewWebSocketProvider({ children }: { children: React.React
         storeRef.current.setError(null);
       });
 
-      try {
-        const wsUrl = interviewService.getWebSocketUrl(sessionId, accessToken);
-        const ws = new WebSocket(wsUrl);
-        wsRef.current = ws;
-        ws.binaryType = 'arraybuffer';
+      const createSocket = async (): Promise<void> => {
+        let token: string | null = storage.getRaw
+          ? storage.getRaw(AUTH_STORAGE_KEYS.ACCESS_TOKEN)
+          : (typeof window !== 'undefined' ? localStorage.getItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN) : null);
+
+        const isTokenExpiredOrSoon = (t: string | null): boolean => {
+          if (!t) return true;
+          try {
+            const payload = JSON.parse(atob(t.split('.')[1]));
+            return payload.exp * 1000 < Date.now() + 60_000;
+          } catch {
+            return true;
+          }
+        };
+
+        if (isTokenExpiredOrSoon(token)) {
+          console.log('[WS Context] Token expired/expiring, refreshing...');
+          const ok = await refreshTokenManually();
+          if (!ok) {
+            console.error('[WS Context] Token refresh failed, cannot connect');
+            setIsConnecting(false);
+            safeStoreUpdate(() => {
+              storeRef.current.setConnecting(false);
+              storeRef.current.setError('Authentication required');
+            });
+            return;
+          }
+          token = storage.getRaw
+            ? storage.getRaw(AUTH_STORAGE_KEYS.ACCESS_TOKEN)
+            : (typeof window !== 'undefined' ? localStorage.getItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN) : null);
+        }
+
+        if (!token) {
+          console.error('[WS Context] No token available after refresh');
+          setIsConnecting(false);
+          safeStoreUpdate(() => {
+            storeRef.current.setConnecting(false);
+            storeRef.current.setError('Authentication required');
+          });
+          return;
+        }
+
+        try {
+          const wsUrl = interviewService.getWebSocketUrl(sessionId, token);
+          console.log('[WS Context] Connecting to:', wsUrl);
+          const ws = new WebSocket(wsUrl);
+          wsRef.current = ws;
+          ws.binaryType = 'arraybuffer';
 
         ws.onopen = (): void => {
           console.log('[WS Context] Connection opened');
@@ -501,7 +551,7 @@ export function InterviewWebSocketProvider({ children }: { children: React.React
         };
 
         ws.onerror = (error): void => {
-          console.error('[WS Context] WebSocket error:', error);
+          console.error('[WS Context] WebSocket error:', error, 'URL:', wsUrl);
         };
 
         ws.onclose = (event): void => {
@@ -553,14 +603,17 @@ export function InterviewWebSocketProvider({ children }: { children: React.React
             });
           }
         };
-      } catch (error) {
-        console.error('[WS Context] Failed to create WebSocket:', error);
-        setIsConnecting(false);
-        safeStoreUpdate(() => {
-          storeRef.current.setConnecting(false);
-          storeRef.current.setError('Failed to connect');
-        });
-      }
+        } catch (error) {
+          console.error('[WS Context] Failed to create WebSocket:', error);
+          setIsConnecting(false);
+          safeStoreUpdate(() => {
+            storeRef.current.setConnecting(false);
+            storeRef.current.setError('Failed to connect');
+          });
+        }
+      };
+
+      void createSocket();
     },
     [
       accessToken,

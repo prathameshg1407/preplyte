@@ -81,6 +81,7 @@ export class IndividualMockDriveController {
       const updated = await individualMockDriveService.update(id as string, userId, validatedData);
       return res.json(updated);
     } catch (error: any) {
+      logger.error('Error updating individual mockdrive', { id: req.params.id, error: error.message });
       return res.status(400).json({ message: error.message });
     }
   }
@@ -99,6 +100,7 @@ export class IndividualMockDriveController {
       await individualMockDriveService.delete(id as string, userId);
       return res.status(204).send();
     } catch (error: any) {
+      logger.error('Error deleting individual mockdrive', { id: req.params.id, error: error.message });
       return res.status(400).json({ message: error.message });
     }
   }
@@ -133,8 +135,12 @@ export class IndividualMockDriveController {
       }
 
       const attempt = await individualMockDriveService.getCurrentAttempt(userId);
+      if (!attempt) {
+        return res.status(404).json({ message: 'No active attempt found' });
+      }
       return res.json(attempt);
     } catch (error: any) {
+      logger.error('Error getting current attempt', { error: error.message });
       return res.status(500).json({ message: error.message });
     }
   }
@@ -153,6 +159,7 @@ export class IndividualMockDriveController {
       const moduleAttempt = await individualMockDriveService.startModule(attemptId as string, moduleId as string, userId);
       return res.json(moduleAttempt);
     } catch (error: any) {
+      logger.error('Error starting module', { attemptId: req.params.attemptId, moduleId: req.params.moduleId, error: error.message });
       return res.status(400).json({ message: error.message });
     }
   }
@@ -170,6 +177,7 @@ export class IndividualMockDriveController {
       const history = await individualMockDriveService.getAttemptHistory(userId);
       return res.json(history);
     } catch (error: any) {
+      logger.error('Error getting attempt history', { error: error.message });
       return res.status(500).json({ message: error.message });
     }
   }
@@ -205,6 +213,7 @@ export class IndividualMockDriveController {
       const attempt = await individualMockDriveService.syncAttempt(userId);
       return res.json(attempt);
     } catch (error: any) {
+      logger.error('Error syncing attempt', { error: error.message });
       return res.status(500).json({ message: error.message });
     }
   }

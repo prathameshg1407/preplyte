@@ -81,12 +81,17 @@ interface MockInterviewContextType {
     sendAudio: (audioData: ArrayBuffer) => void;
     sendStartRecording: () => void;
     sendStopRecording: () => void;
+    // Aliases for compatibility with InterviewRoom
+    startRecording: () => void;
+    stopRecording: () => void;
     endInterview: () => void;
     // Audio State
     isPlaying: boolean;
     isBuffering: boolean;
     isPendingPlayback: boolean; // True in the gap between AI_DONE and audio actually starting
     resumeContext: () => Promise<void>;
+    resumeAudioContext: () => Promise<void>;
+    registerEndHandler: (handler: (feedbackUrl: string) => void) => () => void;
 }
 
 // =====================================================
@@ -384,6 +389,7 @@ export function MockInterviewProvider({ children }: { children: ReactNode }) {
 
         const baseUrl = process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:4000";
         const wsUrl = `${baseUrl}/ws/mock-drive/interview/${moduleAttemptId}?token=${token}`;
+        console.log("[MockInterview WS] Connecting to:", wsUrl);
 
         try {
             const ws = new WebSocket(wsUrl);
@@ -416,7 +422,7 @@ export function MockInterviewProvider({ children }: { children: ReactNode }) {
             };
 
             ws.onerror = () => {
-                console.error("[MockInterview WS] WebSocket error");
+                console.error("[MockInterview WS] WebSocket error", "URL:", wsUrl);
                 setConnectionState("ERROR");
             };
 
@@ -491,6 +497,17 @@ export function MockInterviewProvider({ children }: { children: ReactNode }) {
         });
     }, [sendJson]);
 
+    // Aliases for compatibility with InterviewRoom
+    const startRecording = sendStartRecording;
+    const stopRecording = sendStopRecording;
+    const resumeAudioContext = resumeContext;
+    
+    // Stub for registerEndHandler (mock interviews handle this differently)
+    const registerEndHandler = useCallback((_handler: (feedbackUrl: string) => void): (() => void) => {
+        // Mock interviews don't use this pattern, return no-op unsubscribe
+        return () => {};
+    }, []);
+
     // =====================================================
     // KEEPALIVE PING — prevents code 1005 idle drops
     // =====================================================
@@ -533,11 +550,15 @@ export function MockInterviewProvider({ children }: { children: ReactNode }) {
                 sendAudio,
                 sendStartRecording,
                 sendStopRecording,
+                startRecording,
+                stopRecording,
                 endInterview,
                 isPlaying,
                 isBuffering,
                 isPendingPlayback,
                 resumeContext,
+                resumeAudioContext,
+                registerEndHandler,
             }}
         >
             {children}

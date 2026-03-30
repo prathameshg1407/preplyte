@@ -11,11 +11,8 @@ router.use(authenticate);
 // MockDrive CRUD
 router.get('/', individualMockDriveController.list.bind(individualMockDriveController));
 router.post('/', individualMockDriveController.create.bind(individualMockDriveController));
-router.get('/:id', individualMockDriveController.getDetails.bind(individualMockDriveController));
-router.patch('/:id', individualMockDriveController.update.bind(individualMockDriveController));
-router.delete('/:id', individualMockDriveController.delete.bind(individualMockDriveController));
 
-// Attempts
+// Attempts - specific routes MUST come before dynamic :id routes
 router.post('/:id/attempts', individualMockDriveController.startAttempt.bind(individualMockDriveController));
 router.get('/attempts/current', individualMockDriveController.getCurrentAttempt.bind(individualMockDriveController));
 router.get('/attempts/sync', individualMockDriveController.sync.bind(individualMockDriveController));
@@ -24,5 +21,10 @@ router.get('/attempts/:attemptId', individualMockDriveController.getAttemptDetai
 
 // Module attempts within a specific attempt
 router.post('/attempts/:attemptId/modules/:moduleId/start', individualMockDriveController.startModule.bind(individualMockDriveController));
+
+// MockDrive detail routes - MUST be last to avoid shadowing specific routes above
+router.get('/:id', individualMockDriveController.getDetails.bind(individualMockDriveController));
+router.patch('/:id', individualMockDriveController.update.bind(individualMockDriveController));
+router.delete('/:id', individualMockDriveController.delete.bind(individualMockDriveController));
 
 export default router;

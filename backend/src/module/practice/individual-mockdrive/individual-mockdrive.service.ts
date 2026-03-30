@@ -5,7 +5,9 @@ import {
   MockDriveAttemptStatus, 
   MockDriveModuleAttemptStatus,
   MockDriveModuleType,
-  Prisma
+  Prisma,
+  DifficultyLevel,
+  QuestionType
 } from '@prisma/client';
 import { 
   CreateIndividualMockDriveDTO, 
@@ -16,6 +18,143 @@ import {
 } from './individual-mockdrive.types';
 
 export class IndividualMockDriveService {
+  private shuffleArray<T>(array: T[]): T[] {
+    const shuffled = [...array];
+    for (let i = shuffled.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+  }
+
+  private parseDifficultyLevel(value: unknown): DifficultyLevel {
+    if (value === DifficultyLevel.EASY || value === DifficultyLevel.MEDIUM || value === DifficultyLevel.HARD) {
+      return value;
+    }
+    return DifficultyLevel.MEDIUM;
+  }
+
+  private parseQuestionTypes(value: unknown): QuestionType[] {
+    if (!Array.isArray(value)) {
+      return [QuestionType.QUANTITATIVE, QuestionType.LOGICAL];
+    }
+
+    const valid = value.filter(
+      (type): type is QuestionType =>
+        type === QuestionType.QUANTITATIVE ||
+        type === QuestionType.VERBAL ||
+        type === QuestionType.LOGICAL ||
+        type === QuestionType.DATA_INTERPRETATION
+    );
+
+    return valid.length > 0 ? valid : [QuestionType.QUANTITATIVE, QuestionType.LOGICAL];
+  }
+
+  private async createAptitudeSubSession(userId: string, module: { timeLimit: number; config: Prisma.JsonValue }) {
+    const config = (module.config as Record<string, unknown>) || {};
+    const numberOfQuestions = Math.max(1, Number(config.numberOfQuestions ?? 20));
+    const difficulty = this.parseDifficultyLevel(config.difficulty);
+    const questionTypes = this.parseQuestionTypes(config.questionTypes);
+
+    const questionPool = await prisma.aptitudeQuestion.findMany({
+      where: {
+        isActive: true,
+        difficulty,
+        questionType: { in: questionTypes },
+      },
+      select: { id: true },
+      take: numberOfQuestions * 3,
+    });
+
+    if (questionPool.length < numberOfQuestions) {
+      throw new Error(`Not enough aptitude questions available (found ${questionPool.length}, need ${numberOfQuestions})`);
+    }
+
+    const selectedQuestions = this.shuffleArray(questionPool).slice(0, numberOfQuestions);
+    const expiresAt = new Date(Date.now() + module.timeLimit * 60 * 1000);
+
+    const session = await prisma.aptitudePracticeSession.create({
+      data: {
+        userId,
+        difficulty,
+        questionTypes,
+        numberOfQuestions,
+        timeLimit: module.timeLimit,
+        expiresAt,
+        sessionQuestions: {
+          createMany: {
+            data: selectedQuestions.map((question, index) => ({
+              questionId: question.id,
+              order: index + 1,
+            })),
+          },
+        },
+      },
+      select: { id: true },
+    });
+
+    return session.id;
+  }
+
+  private async createMachineSubSession(userId: string, module: { timeLimit: number; config: Prisma.JsonValue }) {
+    const config = (module.config as Record<string, unknown>) || {};
+    const numberOfQuestions = Math.max(1, Number(config.numberOfQuestions ?? 2));
+    const difficulty = this.parseDifficultyLevel(config.difficulty);
+
+    const questionPool = await prisma.machineQuestion.findMany({
+      where: {
+        isActive: true,
+        difficulty,
+      },
+      select: { id: true },
+      take: numberOfQuestions * 3,
+    });
+
+    if (questionPool.length < numberOfQuestions) {
+      throw new Error(`Not enough machine coding questions available (found ${questionPool.length}, need ${numberOfQuestions})`);
+    }
+
+    const selectedQuestions = this.shuffleArray(questionPool).slice(0, numberOfQuestions);
+    const expiresAt = new Date(Date.now() + module.timeLimit * 60 * 1000);
+
+    const session = await prisma.machinePracticeSession.create({
+      data: {
+        userId,
+        difficulty,
+        numberOfQuestions,
+        timeLimit: module.timeLimit,
+        expiresAt,
+        sessionQuestions: {
+          create: selectedQuestions.map((question, index) => ({
+            questionId: question.id,
+            order: index + 1,
+          })),
+        },
+      },
+      select: { id: true },
+    });
+
+    return session.id;
+  }
+
+  private getMockDriveModuleRedirectUrl(params: {
+    mockDriveId: string;
+    attemptId: string;
+    moduleId: string;
+    moduleType: MockDriveModuleType;
+    sessionId: string;
+    moduleAttemptId: string;
+  }): string {
+    const { mockDriveId, attemptId, moduleId, moduleType, sessionId, moduleAttemptId } = params;
+    const qs = new URLSearchParams({
+      sessionId,
+      moduleType,
+      moduleAttemptId,
+    });
+
+    return `/practice/mockdrive/${mockDriveId}/attempt/${attemptId}/module/${moduleId}?${qs.toString()}`;
+  }
+
   /**
    * Create a new individual mock drive
    */
@@ -72,7 +211,7 @@ export class IndividualMockDriveService {
    */
   async findOne(id: string, userId: string): Promise<IndividualMockDriveDetails> {
     const mockDrive = await prisma.individualMockDrive.findFirst({
-      where: { id, userId },
+      where: { id, userId, isActive: true },
       include: {
         modules: {
           orderBy: { order: 'asc' }
@@ -142,7 +281,19 @@ export class IndividualMockDriveService {
       });
 
       if (existing) {
-        throw new Error('You already have an in-progress mockdrive attempt');
+        if (existing.mockDriveId === mockDriveId) {
+          // Reuse same-drive in-progress attempt.
+          return existing;
+        }
+
+        // User is starting a different drive: gracefully abandon old attempt.
+        await tx.individualMockDriveAttempt.update({
+          where: { id: existing.id },
+          data: {
+            status: MockDriveAttemptStatus.ABANDONED,
+            completedAt: new Date(),
+          },
+        });
       }
 
       // Create main attempt record
@@ -221,6 +372,7 @@ export class IndividualMockDriveService {
     const attempt = await prisma.individualMockDriveAttempt.findFirst({
       where: { id: attemptId, userId },
       include: { 
+        mockDrive: true,
         moduleAttempts: {
           include: { module: true }
         }
@@ -231,6 +383,11 @@ export class IndividualMockDriveService {
 
     const moduleAttempt = attempt.moduleAttempts.find(ma => ma.moduleId === moduleId);
     if (!moduleAttempt) throw new Error('Module attempt not found');
+    
+    // Validate that the module belongs to this mock drive
+    if (moduleAttempt.module.mockDriveId !== attempt.mockDriveId) {
+      throw new Error('Module does not belong to this mock drive');
+    }
     
     if (moduleAttempt.status === MockDriveModuleAttemptStatus.COMPLETED) {
       throw new Error('Module already completed');
@@ -245,7 +402,14 @@ export class IndividualMockDriveService {
       const sessionId = (moduleAttempt.moduleData as any).sessionId;
       return {
         moduleAttempt,
-        redirectUrl: this.getRedirectUrl(moduleAttempt.module.moduleType, sessionId)
+        redirectUrl: this.getMockDriveModuleRedirectUrl({
+          mockDriveId: attempt.mockDriveId,
+          attemptId,
+          moduleId,
+          moduleType: moduleAttempt.module.moduleType,
+          sessionId,
+          moduleAttemptId: moduleAttempt.id,
+        })
       };
     }
 
@@ -254,28 +418,15 @@ export class IndividualMockDriveService {
     const config = moduleAttempt.module.config as any;
 
     if (moduleAttempt.module.moduleType === MockDriveModuleType.APTITUDE) {
-      const session = await prisma.aptitudePracticeSession.create({
-        data: {
-          userId,
-          difficulty: config.difficulty,
-          questionTypes: config.questionTypes,
-          numberOfQuestions: config.numberOfQuestions,
-          timeLimit: moduleAttempt.module.timeLimit * 60,
-          expiresAt: new Date(Date.now() + moduleAttempt.module.timeLimit * 60 * 1000)
-        }
+      sessionId = await this.createAptitudeSubSession(userId, {
+        timeLimit: moduleAttempt.module.timeLimit,
+        config: moduleAttempt.module.config as Prisma.JsonValue,
       });
-      sessionId = session.id;
     } else if (moduleAttempt.module.moduleType === MockDriveModuleType.MACHINE_CODING) {
-      const session = await prisma.machinePracticeSession.create({
-        data: {
-          userId,
-          difficulty: config.difficulty,
-          numberOfQuestions: config.numberOfQuestions,
-          timeLimit: moduleAttempt.module.timeLimit * 60,
-          expiresAt: new Date(Date.now() + moduleAttempt.module.timeLimit * 60 * 1000)
-        }
+      sessionId = await this.createMachineSubSession(userId, {
+        timeLimit: moduleAttempt.module.timeLimit,
+        config: moduleAttempt.module.config as Prisma.JsonValue,
       });
-      sessionId = session.id;
     } else if (moduleAttempt.module.moduleType === MockDriveModuleType.AI_INTERVIEW) {
       const session = await prisma.aiInterviewSession.create({
         data: {
@@ -303,21 +454,15 @@ export class IndividualMockDriveService {
 
     return {
       moduleAttempt: updated,
-      redirectUrl: this.getRedirectUrl(moduleAttempt.module.moduleType, sessionId)
+      redirectUrl: this.getMockDriveModuleRedirectUrl({
+        mockDriveId: attempt.mockDriveId,
+        attemptId,
+        moduleId,
+        moduleType: moduleAttempt.module.moduleType,
+        sessionId,
+        moduleAttemptId: moduleAttempt.id,
+      })
     };
-  }
-
-  private getRedirectUrl(type: MockDriveModuleType, sessionId: string): string {
-    switch (type) {
-      case MockDriveModuleType.APTITUDE:
-        return `/practice/aptitude/test/${sessionId}`;
-      case MockDriveModuleType.MACHINE_CODING:
-        return `/practice/machine/test/${sessionId}`;
-      case MockDriveModuleType.AI_INTERVIEW:
-        return `/practice/ai-interview/${sessionId}`;
-      default:
-        return '/practice';
-    }
   }
 
   /**
@@ -352,7 +497,7 @@ export class IndividualMockDriveService {
           const session = await prisma.machinePracticeSession.findUnique({ where: { id: sessionId } });
           if (session?.completedAt) {
             completed = true;
-            score = session.totalScore || 0; 
+            score = session.totalSolved || 0;
             maxScore = session.numberOfQuestions || 0;
             percentage = maxScore > 0 ? (score / maxScore) * 100 : 0;
           }
@@ -360,7 +505,7 @@ export class IndividualMockDriveService {
           const session = await prisma.aiInterviewSession.findUnique({ where: { id: sessionId }, include: { feedback: true } });
           if (session?.status === 'COMPLETED' && session.feedback) {
             completed = true;
-            // Normalize Decimal overallScore to 0-100 scale
+            // Normalize feedback score to 0-100 scale
             percentage = Number(session.feedback.overallScore);
             if (percentage <= 10) percentage *= 10; // If out of 10, scale to 100
             
@@ -391,36 +536,39 @@ export class IndividualMockDriveService {
             });
           }
 
-          // Check if this was the last module
-          const allCompleted = attempt.moduleAttempts.every(ama => 
-            ama.id === ma.id ? true : ama.status === MockDriveModuleAttemptStatus.COMPLETED
-          );
-
-          if (allCompleted) {
-            // Calculate total score for the attempt
-            const totalPercentage = attempt.moduleAttempts.reduce((acc, ama) => {
-              const p = ama.id === ma.id ? percentage : (ama.percentage || 0);
-              return acc + p;
-            }, 0) / (attempt.moduleAttempts.length || 1);
-
-            await prisma.individualMockDriveAttempt.update({
-              where: { id: attempt.id },
-              data: {
-                status: MockDriveAttemptStatus.COMPLETED,
-                completedAt: new Date(),
-                totalScore: totalPercentage
-              }
-            });
-
-            completedAttemptId = attempt.id;
-          }
-
           changed = true;
         }
       }
     }
 
     if (changed) {
+      // Re-fetch attempt to get fresh data
+      const updatedAttempt = await this.getCurrentAttempt(userId);
+      if (!updatedAttempt) return null;
+
+      // Check if all modules are completed
+      const allCompleted = updatedAttempt.moduleAttempts.every(ama => 
+        ama.status === MockDriveModuleAttemptStatus.COMPLETED
+      );
+
+      if (allCompleted) {
+        // Calculate total score for the attempt
+        const totalPercentage = updatedAttempt.moduleAttempts.reduce((acc, ama) => {
+          return acc + (ama.percentage || 0);
+        }, 0) / (updatedAttempt.moduleAttempts.length || 1);
+
+        await prisma.individualMockDriveAttempt.update({
+          where: { id: updatedAttempt.id },
+          data: {
+            status: MockDriveAttemptStatus.COMPLETED,
+            completedAt: new Date(),
+            totalScore: totalPercentage
+          }
+        });
+
+        completedAttemptId = updatedAttempt.id;
+      }
+
       if (completedAttemptId) {
         return await this.getAttemptById(completedAttemptId, userId);
       }

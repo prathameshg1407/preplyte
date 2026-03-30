@@ -156,7 +156,11 @@ class InterviewWebSocketGateway {
       // Close existing connection for this session
       const existingConnection = this.findConnectionBySessionId(sessionId);
       if (existingConnection) {
-        logger.info('[WS Gateway] Closing existing connection for session', { sessionId });
+        logger.info('[WS Gateway] Closing existing connection for session', {
+          sessionId,
+          existingConnectionId: existingConnection.socket.id,
+          existingUserId: existingConnection.socket.userId,
+        });
         this.cleanupConnection(existingConnection.socket.id);
       }
 
@@ -314,6 +318,8 @@ class InterviewWebSocketGateway {
     socket.on('close', (code, reason) => {
       logger.info('[WS Gateway] Connection closed', {
         id: socket.id,
+        sessionId: socket.sessionId,
+        userId: socket.userId,
         code,
         reason: reason?.toString() || 'unknown',
       });
@@ -321,7 +327,12 @@ class InterviewWebSocketGateway {
     });
 
     socket.on('error', (error) => {
-      logger.error('[WS Gateway] Socket error', { id: socket.id, error });
+      logger.error('[WS Gateway] Socket error', {
+        id: socket.id,
+        sessionId: socket.sessionId,
+        userId: socket.userId,
+        error,
+      });
       this.cleanupConnection(socket.id);
     });
   }
