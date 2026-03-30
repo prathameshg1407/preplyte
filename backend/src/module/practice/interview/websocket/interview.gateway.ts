@@ -680,15 +680,7 @@ class InterviewWebSocketGateway {
       return;
     }
 
-    logger.debug('[WS Gateway] Audio data received', {
-      sessionId: connection.socket.sessionId,
-      bufferSize: audioBuffer.length,
-      isListening: connection.isListening,
-      isAISpeaking: connection.isAISpeaking,
-      hasTranscriber: !!connection.transcriber,
-      isInitialized: connection.isInitialized,
-      isInitializing: connection.isInitializing,
-    });
+    // Audio data received (logged at debug level only on state changes to avoid spam)
 
     // If not initialized yet, queue the audio
     if (!connection.isInitialized) {
