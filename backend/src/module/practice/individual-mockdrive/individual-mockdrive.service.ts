@@ -275,6 +275,9 @@ export class IndividualMockDriveService {
     const firstOrder = Math.min(...mockDrive.modules.map((m) => m.order));
 
     return await prisma.$transaction(async (tx) => {
+      // Serialize "start attempt" per user to avoid duplicate active attempts from concurrent requests.
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`individual-mockdrive:${userId}`}))`;
+
       // Check for existing in-progress attempt
       const existing = await tx.individualMockDriveAttempt.findFirst({
         where: { userId, status: MockDriveAttemptStatus.IN_PROGRESS }
@@ -370,7 +373,7 @@ export class IndividualMockDriveService {
    */
   async startModule(attemptId: string, moduleId: string, userId: string): Promise<{ moduleAttempt: any; redirectUrl: string }> {
     const attempt = await prisma.individualMockDriveAttempt.findFirst({
-      where: { id: attemptId, userId },
+      where: { id: attemptId, userId, status: MockDriveAttemptStatus.IN_PROGRESS },
       include: { 
         mockDrive: true,
         moduleAttempts: {
@@ -473,10 +476,25 @@ export class IndividualMockDriveService {
     if (!attempt) return null;
 
     let changed = false;
+    let timedOut = false;
     let completedAttemptId: string | null = null;
+    const now = new Date();
 
     for (const ma of attempt.moduleAttempts) {
       if (ma.status === MockDriveModuleAttemptStatus.IN_PROGRESS) {
+        if (ma.expiresAt && ma.expiresAt <= now) {
+          await prisma.individualMockDriveModuleAttempt.update({
+            where: { id: ma.id },
+            data: {
+              status: MockDriveModuleAttemptStatus.TIMED_OUT,
+              completedAt: now,
+            },
+          });
+          changed = true;
+          timedOut = true;
+          continue;
+        }
+
         const sessionId = (ma.moduleData as any)?.sessionId;
         if (!sessionId) continue;
 
@@ -539,6 +557,18 @@ export class IndividualMockDriveService {
           changed = true;
         }
       }
+    }
+
+    if (timedOut) {
+      await prisma.individualMockDriveAttempt.update({
+        where: { id: attempt.id },
+        data: {
+          status: MockDriveAttemptStatus.TIMED_OUT,
+          completedAt: now,
+        },
+      });
+
+      return await this.getAttemptById(attempt.id, userId);
     }
 
     if (changed) {

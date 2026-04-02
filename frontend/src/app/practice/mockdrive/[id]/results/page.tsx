@@ -145,7 +145,9 @@ export default function MockDriveResultsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {attempt.moduleAttempts?.sort((a: any, b: any) => a.module?.order - b.module?.order).map((ma: any) => (
+                {attempt.moduleAttempts?.sort((a: any, b: any) => a.module?.order - b.module?.order).map((ma: any) => {
+                  const modulePercentage = Number.isFinite(ma?.percentage) ? ma.percentage : 0;
+                  return (
                   <TableRow key={ma.id} className="transition-colors hover:bg-muted/30">
                     <TableCell className="font-semibold">{ma.module?.name}</TableCell>
                     <TableCell>
@@ -162,13 +164,13 @@ export default function MockDriveResultsPage() {
                     <TableCell className="text-right">
                       <span className={cn(
                         "text-lg font-bold",
-                        ma.score >= 70 ? "text-emerald-500" : ma.score >= 40 ? "text-amber-500" : "text-rose-500"
+                        modulePercentage >= 70 ? "text-emerald-500" : modulePercentage >= 40 ? "text-amber-500" : "text-rose-500"
                       )}>
-                        {ma.score || 0}%
+                        {Math.round(modulePercentage)}%
                       </span>
                     </TableCell>
                   </TableRow>
-                ))}
+                )})}
               </TableBody>
             </Table>
           </CardContent>

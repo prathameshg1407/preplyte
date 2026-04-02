@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useInterviewWebSocket } from '@/lib/contexts/interview-websocket-context';
 import { useInterviewStore } from '@/lib/store/interview-store';
 import { useInterviewSession, useStartSession } from '@/lib/hooks/use-interview';
+import { interviewService } from '@/lib/api/services/interview.service';
 import { useAudioRecorder } from '@/lib/hooks/use-audio-recorder';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -46,6 +47,20 @@ export function MockDriveInterviewRoom({
   const [hasBegun, setHasBegun] = useState(false);
   const [isAnswering, setIsAnswering] = useState(false);
   const [silenceCountdown, setSilenceCountdown] = useState<number | null>(null);
+  const [isEndingInterview, setIsEndingInterview] = useState(false);
+  const mountedRef = useRef(true);
+  const isEndingInterviewRef = useRef(false);
+
+  useEffect(() => {
+    isEndingInterviewRef.current = isEndingInterview;
+  }, [isEndingInterview]);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     console.log('[MockDriveInterviewRoom] Mounted', { sessionId });
@@ -115,6 +130,7 @@ export function MockDriveInterviewRoom({
 
   useEffect(() => {
     const unsubscribe = ws.registerEndHandler(() => {
+      setIsEndingInterview(false);
       router.replace(resultsPath);
     });
     return unsubscribe;
@@ -230,9 +246,29 @@ export function MockDriveInterviewRoom({
   ]);
 
   const handleEndInterview = useCallback(() => {
+    if (isEndingInterview) return;
+    setIsEndingInterview(true);
+
     stopMicRecording();
     ws.endInterview('completed');
-  }, [stopMicRecording, ws]);
+
+    // Fallback: if WS `interview_ended` is delayed/missed, force end via REST and navigate.
+    setTimeout(async () => {
+      if (!mountedRef.current) return;
+      if (!isEndingInterviewRef.current) return;
+
+      try {
+        await interviewService.endSession(sessionId);
+      } catch (error) {
+        console.error('[MockDriveInterviewRoom] Fallback endSession failed:', error);
+      } finally {
+        if (mountedRef.current) {
+          setIsEndingInterview(false);
+          router.replace(resultsPath);
+        }
+      }
+    }, 4500);
+  }, [isEndingInterview, stopMicRecording, ws, sessionId, router, resultsPath]);
 
   const handleReconnect = useCallback(async () => {
     console.log('[MockDriveInterviewRoom] Reconnect clicked', { sessionId });
@@ -360,7 +396,7 @@ export function MockDriveInterviewRoom({
           <ConnectionStatus isConnected={isConnected} />
           <h1 className="text-lg font-semibold">AI Interview</h1>
         </div>
-        <EndInterviewDialog onConfirm={handleEndInterview} />
+        <EndInterviewDialog onConfirm={handleEndInterview} disabled={isEndingInterview} />
       </header>
 
       {progress && (
@@ -381,6 +417,13 @@ export function MockDriveInterviewRoom({
               </Button>
             )}
           </AlertDescription>
+        </Alert>
+      )}
+
+      {isEndingInterview && (
+        <Alert className="mx-6 mt-4">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          <AlertDescription>Ending interview and saving your progress...</AlertDescription>
         </Alert>
       )}
 
