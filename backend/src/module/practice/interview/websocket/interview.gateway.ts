@@ -12,6 +12,7 @@ import {
   speechToTextService,
   textToSpeechService,
   resumeParserService,
+  feedbackGeneratorService,
   RealtimeTranscriber,
 } from '../services';
 import {
@@ -956,15 +957,34 @@ class InterviewWebSocketGateway {
 
       // TTS
       try {
+        let chunkCount = 0;
+        logger.debug('[WS Gateway] Starting TTS synthesis', { 
+          sessionId: socket.sessionId, 
+          text: nextQuestion.question.substring(0, 50) + '...'
+        });
+        
         for await (const audioChunk of textToSpeechService.streamSynthesize(nextQuestion.question)) {
-          if (!this.connections.has(socket.id)) return;
+          if (!this.connections.has(socket.id)) {
+            logger.warn('[WS Gateway] Socket disconnected during TTS synthesis', { sessionId: socket.sessionId });
+            return;
+          }
+          
+          chunkCount++;
           this.send(socket, {
             type: WS_EVENTS.SERVER.AI_AUDIO,
             data: { chunk: audioChunk.toString('base64'), isLast: false, format: 'mp3' },
           });
         }
+        
+        logger.debug('[WS Gateway] Finished sending TTS chunks', { 
+          sessionId: socket.sessionId, 
+          chunkCount 
+        });
       } catch (ttsError) {
-        logger.warn('[WS Gateway] TTS failed', ttsError);
+        logger.error('[WS Gateway] TTS synthesis failed', { 
+          sessionId: socket.sessionId,
+          error: ttsError instanceof Error ? ttsError.message : String(ttsError)
+        });
       }
 
       this.send(socket, { type: WS_EVENTS.SERVER.AI_DONE, data: { questionId: savedResponse.id } });
@@ -992,7 +1012,12 @@ class InterviewWebSocketGateway {
     const { socket } = connection;
     connection.isListening = false;
 
-    logger.info('[WS Gateway] Ending interview', { sessionId: socket.sessionId, reason });
+    logger.info('[WS Gateway] Ending interview', { 
+      sessionId: socket.sessionId, 
+      reason,
+      totalQuestions: connection.context?.config.targetQuestions,
+      questionsAsked: connection.context?.questionsAsked.length
+    });
 
     try {
       if (connection.transcriber) {
@@ -1007,6 +1032,18 @@ class InterviewWebSocketGateway {
           completedAt: new Date(),
         },
       });
+
+      // Trigger feedback generation for current responses
+      if (reason !== 'cancelled') {
+        logger.info('[WS Gateway] Triggering asynchronous feedback generation', {
+          sessionId: socket.sessionId,
+        });
+        // We don't await this to avoid blocking the WS response, 
+        // but we start it now so it's ready when the user redirects.
+        feedbackGeneratorService.generateFeedback(socket.sessionId).catch((err) => {
+          logger.error('[WS Gateway] Feedback generation background error', err);
+        });
+      }
 
       const closingMessage = 'Thank you for completing this interview. Your feedback will be generated shortly.';
 

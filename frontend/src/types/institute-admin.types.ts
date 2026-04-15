@@ -20,11 +20,16 @@ export interface Student {
   email: string;
   name?: string;
   studentId: string;
-  departmentId?: string;
-  courseYear?: string;
-  averageCgpa?: number;
+  departmentId?: string | null;
+  departmentName?: string;
+  courseYear?: string | null;
+  numberOfBacklogs?: number | null;
+  averageCgpa?: number | null;
+  marks10?: number | null;
+  marks12?: number | null;
+  skills?: string[];
   isActive: boolean;
-  createdAt: string;
+  createdAt?: string;
 }
 
 export interface InstituteProfile {
@@ -48,21 +53,4 @@ export interface InstituteDashboardStats {
   upcomingDrives: number;
 }
 
-
-//Student Profile
-
-export interface Student {
-  isActive: boolean;
-  id: string;
-  name: string;
-  email: string;
-  studentId: string;
-  departmentId: string | null;
-  departmentName?: string;
-  courseYear: string | null;
-  numberOfBacklogs: number | null;
-  averageCgpa: number | null;
-  marks10: number | null;
-  marks12: number | null;
-  skills: string[];
-}
+

@@ -48,7 +48,7 @@ export default function InterviewResultsPage() {
   // Loading skeleton
   if (isLoading) {
     return (
-      <div className="container max-w-4xl py-8 space-y-6">
+      <div className="container max-w-6xl py-8 space-y-6 mx-auto">
         <div className="flex items-center gap-4">
           <Skeleton className="h-10 w-10 rounded-full" />
           <div className="space-y-2">
@@ -66,7 +66,7 @@ export default function InterviewResultsPage() {
   // Error state
   if (error) {
     return (
-      <div className="container max-w-4xl py-8">
+      <div className="container max-w-6xl py-8 mx-auto">
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
@@ -85,7 +85,7 @@ export default function InterviewResultsPage() {
   // No feedback available
   if (!feedback) {
     return (
-      <div className="container max-w-4xl py-8">
+      <div className="container max-w-6xl py-8 mx-auto">
         <div className="text-center py-12">
           <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
           <h1 className="text-2xl font-bold mb-4">Generating Feedback</h1>
@@ -102,7 +102,7 @@ export default function InterviewResultsPage() {
   }
 
   return (
-    <div className="container max-w-4xl py-8">
+    <div className="container max-w-6xl py-8 mx-auto">
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-4">

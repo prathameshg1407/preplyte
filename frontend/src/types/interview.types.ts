@@ -269,6 +269,10 @@ export interface WSErrorData {
   recoverable: boolean;
 }
 
+export interface WSAIDoneData {
+  questionId: string;
+}
+
 // =====================================================
 // CONVERSATION TYPES
 // =====================================================

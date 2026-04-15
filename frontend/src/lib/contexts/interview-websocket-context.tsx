@@ -30,6 +30,7 @@ import type {
   WSSessionStateData,
   WSInterviewEndedData,
   WSErrorData,
+  WSAIDoneData,
 } from '@/types/interview.types';
 
 // =====================================================
@@ -473,21 +474,20 @@ export function InterviewWebSocketProvider({ children }: { children: React.React
 
               case 'ai_audio': {
                 const data = message.data as WSAIAudioData;
-                try {
-                  const binaryString = atob(data.chunk);
-                  const bytes = new Uint8Array(binaryString.length);
-                  for (let i = 0; i < binaryString.length; i++) {
-                    bytes[i] = binaryString.charCodeAt(i);
+                if (data.chunk) {
+                  const binary = atob(data.chunk);
+                  const bytes = new Uint8Array(binary.length);
+                  for (let i = 0; i < binary.length; i++) {
+                    bytes[i] = binary.charCodeAt(i);
                   }
                   queueAudio(bytes.buffer);
-                } catch (e) {
-                  console.error('[WS Context] Audio decode error:', e);
                 }
                 break;
               }
 
-              case 'ai_done':
-                console.log('[WS Context] AI done — triggering audio playback');
+              case 'ai_done': {
+                const data = message.data as WSAIDoneData;
+                console.log('[WS Context] AI_DONE received', data);
                 // Set isPendingPlayback BEFORE playAccumulated (prevents premature mic start)
                 setIsPendingPlayback(true);
                 resumeAudioContextInternal()
@@ -499,6 +499,7 @@ export function InterviewWebSocketProvider({ children }: { children: React.React
                     });
                   });
                 break;
+              }
 
               case 'session_state': {
                 const data = message.data as WSSessionStateData;
@@ -686,7 +687,7 @@ export function InterviewWebSocketProvider({ children }: { children: React.React
           ws.send(JSON.stringify({ type: 'ping' }));
         } catch { /* ignore */ }
       }
-    }, 5_000);
+    }, 2000); // 2 seconds ping (was 5s) for better stability
     return () => clearInterval(interval);
   }, []);
 
