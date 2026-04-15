@@ -1,33 +1,39 @@
-// src/app/practice/aptitude/test/[sessionId]/page.tsx
+// src/app/practice/mockdrive/[id]/attempt/[attemptId]/module/[moduleId]/aptitude/[sessionId]/page.tsx
 
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Card, CardContent, CardHeader, CardTitle } from '../../../../../components/ui/card';
-import { Button } from '../../../../../components/ui/button';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   QuestionDisplay,
   QuestionNavigator,
-  TestTimer,
   SubmitDialog,
-} from '../../../../../components/practice/aptitude';
-import { useAptitude } from '../../../../../lib/hooks/use-aptitude';
-import { useAptitudeStore } from '../../../../../lib/store/aptitude-store';
+  TestTimer,
+} from '@/components/practice/aptitude';
+import { useAptitude } from '@/lib/hooks/use-aptitude';
+import { useAptitudeStore } from '@/lib/store/aptitude-store';
+import { aptitudeService } from '@/lib/api/services/aptitude.service';
+import { toast } from 'sonner';
 import {
+  AlertCircle,
   ChevronLeft,
   ChevronRight,
   Flag,
   Loader2,
   SkipForward,
-  AlertCircle,
-  Clock,
 } from 'lucide-react';
 
-export default function AptitudeTestPage() {
+export default function IndividualMockDriveAptitudePage() {
   const params = useParams();
   const router = useRouter();
+
+  const mockDriveId = params.id as string;
+  const attemptId = params.attemptId as string;
   const sessionId = params.sessionId as string;
+
+  const attemptPath = `/practice/mockdrive/${mockDriveId}/attempt?attemptId=${attemptId}`;
 
   const {
     questions,
@@ -41,7 +47,6 @@ export default function AptitudeTestPage() {
     isSavingAnswer,
     resumeSession,
     saveAnswer,
-    submitSession,
     goToQuestion,
     nextQuestion,
     previousQuestion,
@@ -53,27 +58,41 @@ export default function AptitudeTestPage() {
     canGoPrevious,
   } = useAptitude();
 
-  const { timeRemaining, updateTimeRemaining } = useAptitudeStore();
+  const { updateTimeRemaining } = useAptitudeStore();
+  const resetSession = useAptitudeStore((state) => state.resetSession);
 
   const [showSubmitDialog, setShowSubmitDialog] = useState(false);
   const [isAutoSubmitting, setIsAutoSubmitting] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [initError, setInitError] = useState<string | null>(null);
 
-  // Initialize session
   useEffect(() => {
     const initSession = async () => {
       if (!sessionId) {
-        router.push('/practice/aptitude');
+        router.push(attemptPath);
         return;
       }
 
       const storeSessionId = useAptitudeStore.getState().sessionId;
+      const storeQuestions = useAptitudeStore.getState().questions;
 
-      if (storeSessionId !== sessionId) {
+      // Rehydrate from API when session differs OR store is missing questions
+      // for the same session (can happen after reset/hydration race).
+      if (storeSessionId !== sessionId || storeQuestions.length === 0) {
         try {
-          await resumeSession(sessionId, { navigate: false, showToast: false });
-        } catch {
-          router.push('/practice/aptitude');
+          const resumed = await resumeSession(sessionId, {
+            navigate: false,
+            showToast: false,
+          });
+
+          if (!resumed) {
+            router.push(attemptPath);
+            return;
+          }
+        } catch (error) {
+          const message = error instanceof Error ? error.message : 'Failed to load round session';
+          setInitError(message);
+          router.push(attemptPath);
           return;
         }
       }
@@ -82,32 +101,68 @@ export default function AptitudeTestPage() {
     };
 
     initSession();
-  }, [sessionId, router, resumeSession]);
+  }, [attemptPath, resumeSession, router, sessionId]);
 
-  // Redirect if session is not active
+  if (initError) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <div className="text-center">
+          <AlertCircle className="mx-auto h-10 w-10 text-destructive" />
+          <p className="mt-4 text-sm text-muted-foreground">{initError}</p>
+          <Button variant="outline" className="mt-6" onClick={() => router.push(attemptPath)}>
+            Back to Attempt
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   useEffect(() => {
-    if (isInitialized && sessionStatus && sessionStatus !== 'in_progress') {
-      if (sessionStatus === 'completed') {
-        router.push(`/practice/aptitude/result/${sessionId}`);
-      } else {
-        router.push('/practice/aptitude');
-      }
+    if (!isInitialized || !sessionStatus) return;
+    if (sessionStatus === 'completed' || sessionStatus === 'expired') {
+      router.push(attemptPath);
     }
-  }, [isInitialized, sessionStatus, sessionId, router]);
+  }, [attemptPath, isInitialized, router, sessionStatus]);
 
-  // Handle time expiration
+  const submitCurrentSession = useCallback(async () => {
+    if (!sessionId) return;
+
+    try {
+      const response = await aptitudeService.submitSession(sessionId);
+      if (!response.success) {
+        throw new Error(response.error?.message || 'Failed to submit test');
+      }
+
+      resetSession();
+      toast.success('Round submitted successfully');
+      router.push(attemptPath);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to submit test';
+      toast.error(message);
+      throw error;
+    }
+  }, [attemptPath, resetSession, router, sessionId]);
+
   const handleTimeExpire = useCallback(async () => {
     if (isAutoSubmitting || isSubmitting) return;
 
     setIsAutoSubmitting(true);
     try {
-      await submitSession();
-    } catch {
+      await submitCurrentSession();
+    } finally {
       setIsAutoSubmitting(false);
     }
-  }, [submitSession, isAutoSubmitting, isSubmitting]);
+  }, [isAutoSubmitting, isSubmitting, submitCurrentSession]);
 
-  // Handle time update
+  const handleSubmit = useCallback(async () => {
+    try {
+      await submitCurrentSession();
+      setShowSubmitDialog(false);
+    } catch {
+      // Toast already shown in submitCurrentSession.
+    }
+  }, [submitCurrentSession]);
+
   const handleTimeUpdate = useCallback(
     (seconds: number) => {
       updateTimeRemaining(seconds);
@@ -115,7 +170,6 @@ export default function AptitudeTestPage() {
     [updateTimeRemaining]
   );
 
-  // Handle answer selection
   const handleSelectAnswer = useCallback(
     (optionId: string) => {
       const currentQuestion = getCurrentQuestion();
@@ -126,17 +180,6 @@ export default function AptitudeTestPage() {
     [getCurrentQuestion, saveAnswer]
   );
 
-  // Handle manual submit
-  const handleSubmit = async () => {
-    try {
-      await submitSession();
-      setShowSubmitDialog(false);
-    } catch {
-      // Error handled in hook
-    }
-  };
-
-  // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
@@ -153,28 +196,31 @@ export default function AptitudeTestPage() {
         case '1':
         case '2':
         case '3':
-        case '4':
+        case '4': {
           const question = getCurrentQuestion();
-          if (question) {
-            const optionIndex = parseInt(e.key) - 1;
-            const option = question.options[optionIndex];
-            if (option) handleSelectAnswer(option.id);
+          if (!question) break;
+          const optionIndex = Number.parseInt(e.key, 10) - 1;
+          const option = question.options[optionIndex];
+          if (option) {
+            handleSelectAnswer(option.id);
           }
+          break;
+        }
+        default:
           break;
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [canGoPrevious, canGoNext, previousQuestion, nextQuestion, getCurrentQuestion, handleSelectAnswer]);
+  }, [canGoNext, canGoPrevious, getCurrentQuestion, handleSelectAnswer, nextQuestion, previousQuestion]);
 
-  // Loading state
   if (!isInitialized || isLoading || questions.length === 0) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
         <div className="text-center">
           <Loader2 className="mx-auto h-8 w-8 animate-spin text-muted-foreground" />
-          <p className="mt-4 text-sm text-muted-foreground">Loading questions...</p>
+          <p className="mt-4 text-sm text-muted-foreground">Loading round questions...</p>
         </div>
       </div>
     );
@@ -190,8 +236,8 @@ export default function AptitudeTestPage() {
         <div className="text-center">
           <AlertCircle className="mx-auto h-10 w-10 text-muted-foreground" />
           <p className="mt-4 text-muted-foreground">No questions found</p>
-          <Button variant="outline" className="mt-6" onClick={() => router.push('/practice/aptitude')}>
-            Go Back
+          <Button variant="outline" className="mt-6" onClick={() => router.push(attemptPath)}>
+            Back to Attempt
           </Button>
         </div>
       </div>
@@ -200,10 +246,9 @@ export default function AptitudeTestPage() {
 
   return (
     <div className="container max-w-6xl py-6 lg:py-8">
-      {/* Header */}
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">Aptitude Test</h1>
+          <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">MockDrive Aptitude Round</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Question {currentQuestionIndex + 1} of {questions.length} · {answeredCount} answered
           </p>
@@ -223,13 +268,12 @@ export default function AptitudeTestPage() {
             className="gap-2"
           >
             <Flag className="h-4 w-4" />
-            <span className="hidden sm:inline">Submit</span>
+            <span className="hidden sm:inline">Submit Round</span>
           </Button>
         </div>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-4">
-        {/* Question Area */}
         <div className="space-y-4 lg:col-span-3">
           <QuestionDisplay
             question={currentQuestion}
@@ -241,7 +285,6 @@ export default function AptitudeTestPage() {
             disabled={isSubmitting || isAutoSubmitting}
           />
 
-          {/* Navigation Controls */}
           <Card className="border-border">
             <CardContent className="py-4">
               <div className="flex items-center justify-between">
@@ -263,9 +306,7 @@ export default function AptitudeTestPage() {
                     className="gap-2 text-muted-foreground"
                   >
                     <SkipForward className="h-4 w-4" />
-                    <span className="hidden sm:inline">
-                      Skip to Unanswered ({unansweredCount})
-                    </span>
+                    <span className="hidden sm:inline">Skip to Unanswered ({unansweredCount})</span>
                     <span className="sm:hidden">{unansweredCount} left</span>
                   </Button>
                 )}
@@ -280,27 +321,10 @@ export default function AptitudeTestPage() {
                   <ChevronRight className="h-4 w-4" />
                 </Button>
               </div>
-
-              {/* Keyboard Shortcuts */}
-              <div className="mt-4 hidden items-center justify-center gap-6 border-t border-border pt-4 text-xs text-muted-foreground md:flex">
-                <span>
-                  <kbd className="rounded bg-secondary px-1.5 py-0.5 font-mono text-xs">←</kbd>
-                  {' '}
-                  <kbd className="rounded bg-secondary px-1.5 py-0.5 font-mono text-xs">→</kbd>
-                  {' '}Navigate
-                </span>
-                <span>
-                  <kbd className="rounded bg-secondary px-1.5 py-0.5 font-mono text-xs">1</kbd>
-                  {'-'}
-                  <kbd className="rounded bg-secondary px-1.5 py-0.5 font-mono text-xs">4</kbd>
-                  {' '}Select
-                </span>
-              </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Sidebar */}
         <div className="space-y-4 lg:col-span-1">
           <Card className="sticky top-6 border-border">
             <CardHeader className="pb-3">
@@ -316,50 +340,16 @@ export default function AptitudeTestPage() {
               />
             </CardContent>
           </Card>
-
-          {/* Mobile Submit */}
-          <Card className="border-border lg:hidden">
-            <CardContent className="py-4">
-              <Button
-                className="w-full gap-2"
-                onClick={() => setShowSubmitDialog(true)}
-                disabled={isSubmitting || isAutoSubmitting}
-              >
-                <Flag className="h-4 w-4" />
-                Submit Test
-              </Button>
-            </CardContent>
-          </Card>
         </div>
       </div>
 
-      {/* Auto-submit overlay */}
-      {isAutoSubmitting && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
-          <Card className="mx-4 max-w-sm border-border">
-            <CardContent className="py-8 text-center">
-              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-secondary">
-                <Clock className="h-6 w-6" />
-              </div>
-              <h3 className="mb-2 text-lg font-semibold">Time&apos;s Up!</h3>
-              <p className="mb-6 text-sm text-muted-foreground">
-                Your test is being submitted automatically...
-              </p>
-              <Loader2 className="mx-auto h-5 w-5 animate-spin text-muted-foreground" />
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {/* Submit Dialog */}
       <SubmitDialog
         open={showSubmitDialog}
         onOpenChange={setShowSubmitDialog}
         totalQuestions={questions.length}
         answeredCount={answeredCount}
         onConfirm={handleSubmit}
-        isSubmitting={isSubmitting}
-        timeRemaining={timeRemaining}
+        isSubmitting={isSubmitting || isAutoSubmitting}
       />
     </div>
   );

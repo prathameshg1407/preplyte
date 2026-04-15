@@ -158,7 +158,21 @@ export function checkEligibility(
     if (!hasSkill) failedCriteria.push(`Required Skills: ${criteria.requiredSkills.join(', ')}`);
   }
 
-  // TODO: Add backlogs check if you track them in StudentProfile
+
+  // Check backlogs if tracked in StudentProfile
+  if (criteria.maxBacklogs !== null && typeof profile.numberOfBacklogs === 'number') {
+    const passed = profile.numberOfBacklogs <= criteria.maxBacklogs;
+    checks.push({
+      criterion: 'Maximum Backlogs',
+      passed,
+      details: passed
+        ? `Backlogs ${profile.numberOfBacklogs} is within maximum ${criteria.maxBacklogs}`
+        : `Backlogs ${profile.numberOfBacklogs} exceeds maximum ${criteria.maxBacklogs}`,
+      value: profile.numberOfBacklogs,
+      required: criteria.maxBacklogs,
+    });
+    if (!passed) failedCriteria.push(`Maximum Backlogs: ${criteria.maxBacklogs}`);
+  }
 
   // Determine overall eligibility
   const isEligible = checks.every((check) => check.passed);

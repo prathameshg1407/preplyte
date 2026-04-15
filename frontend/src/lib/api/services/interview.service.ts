@@ -223,10 +223,9 @@ class InterviewService {
   // ===================================================
 
   getWebSocketUrl(sessionId: string, token: string): string {
+    // Use configured WS URL first (set in .env for development/production)
     const wsBaseUrl = process.env.NEXT_PUBLIC_WS_URL;
-    
     if (wsBaseUrl) {
-      // Use configured WS URL
       const cleanUrl = wsBaseUrl.replace(/\/$/, '');
       return `${cleanUrl}/ws/interview/${sessionId}?token=${encodeURIComponent(token)}`;
     }
@@ -240,7 +239,7 @@ class InterviewService {
     }
     
     // Server-side fallback
-    return `ws://localhost:3001/ws/interview/${sessionId}?token=${encodeURIComponent(token)}`;
+    return `ws://localhost:4000/ws/interview/${sessionId}?token=${encodeURIComponent(token)}`;
   }
 }
 

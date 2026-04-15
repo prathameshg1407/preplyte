@@ -157,7 +157,11 @@ class InterviewWebSocketGateway {
       // Close existing connection for this session
       const existingConnection = this.findConnectionBySessionId(sessionId);
       if (existingConnection) {
-        logger.info('[WS Gateway] Closing existing connection for session', { sessionId });
+        logger.info('[WS Gateway] Closing existing connection for session', {
+          sessionId,
+          existingConnectionId: existingConnection.socket.id,
+          existingUserId: existingConnection.socket.userId,
+        });
         this.cleanupConnection(existingConnection.socket.id);
       }
 
@@ -315,6 +319,8 @@ class InterviewWebSocketGateway {
     socket.on('close', (code, reason) => {
       logger.info('[WS Gateway] Connection closed', {
         id: socket.id,
+        sessionId: socket.sessionId,
+        userId: socket.userId,
         code,
         reason: reason?.toString() || 'unknown',
       });
@@ -322,7 +328,12 @@ class InterviewWebSocketGateway {
     });
 
     socket.on('error', (error) => {
-      logger.error('[WS Gateway] Socket error', { id: socket.id, error });
+      logger.error('[WS Gateway] Socket error', {
+        id: socket.id,
+        sessionId: socket.sessionId,
+        userId: socket.userId,
+        error,
+      });
       this.cleanupConnection(socket.id);
     });
   }
@@ -670,15 +681,7 @@ class InterviewWebSocketGateway {
       return;
     }
 
-    logger.debug('[WS Gateway] Audio data received', {
-      sessionId: connection.socket.sessionId,
-      bufferSize: audioBuffer.length,
-      isListening: connection.isListening,
-      isAISpeaking: connection.isAISpeaking,
-      hasTranscriber: !!connection.transcriber,
-      isInitialized: connection.isInitialized,
-      isInitializing: connection.isInitializing,
-    });
+    // Audio data received (logged at debug level only on state changes to avoid spam)
 
     // If not initialized yet, queue the audio
     if (!connection.isInitialized) {

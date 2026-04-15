@@ -27,6 +27,55 @@ export const apiClient = axios.create({
 
 let refreshPromise: Promise<string> | null = null;
 
+const REFRESH_RECENT_WINDOW_MS = 20000;
+
+const syncPersistedAuthStoreTokens = (
+  accessToken: string,
+  refreshToken: string
+): void => {
+  if (typeof window === 'undefined') return;
+
+  try {
+    const raw = window.localStorage.getItem(AUTH_STORAGE_KEYS.STORE);
+    if (!raw) return;
+
+    const parsed = JSON.parse(raw) as {
+      state?: Record<string, unknown>;
+      version?: number;
+    };
+
+    if (!parsed || typeof parsed !== 'object') return;
+
+    const nextState = {
+      ...(parsed.state || {}),
+      accessToken,
+      refreshToken,
+      isAuthenticated: true,
+    };
+
+    window.localStorage.setItem(
+      AUTH_STORAGE_KEYS.STORE,
+      JSON.stringify({ ...parsed, state: nextState })
+    );
+  } catch (error) {
+    logger.warn('[API] Failed to sync persisted auth store tokens', error);
+  }
+};
+
+const broadcastTokenUpdate = (accessToken: string, refreshToken: string): void => {
+  if (typeof window === 'undefined') return;
+
+  try {
+    window.dispatchEvent(
+      new CustomEvent('preplyte:tokens-updated', {
+        detail: { accessToken, refreshToken },
+      })
+    );
+  } catch (error) {
+    logger.warn('[API] Failed to broadcast token update event', error);
+  }
+};
+
 
 
 const getAccessToken = (): string | null => {
@@ -83,8 +132,8 @@ const performTokenRefresh = async (): Promise<string> => {
   const getRecentToken = (): string | null => {
     const lastUpdate = typeof window !== 'undefined' ? window.localStorage.getItem('token-updated') : null;
     const now = Date.now();
-    // If updated in the last 5 seconds, it's likely fresh enough
-    if (lastUpdate && now - parseInt(lastUpdate) < 5000) {
+    // If updated recently, it is very likely safe to reuse.
+    if (lastUpdate && now - parseInt(lastUpdate, 10) < REFRESH_RECENT_WINDOW_MS) {
       return getAccessToken();
     }
     return null;
@@ -156,6 +205,8 @@ const performTokenRefresh = async (): Promise<string> => {
       // Save new tokens atomically
       storage.set(AUTH_STORAGE_KEYS.ACCESS_TOKEN, newAccessToken);
       storage.set(AUTH_STORAGE_KEYS.REFRESH_TOKEN, newRefreshToken);
+      syncPersistedAuthStoreTokens(newAccessToken, newRefreshToken);
+      broadcastTokenUpdate(newAccessToken, newRefreshToken);
       
       // Update the timestamp to notify other tabs
       window.localStorage.setItem('token-updated', Date.now().toString());
@@ -244,13 +295,6 @@ apiClient.interceptors.response.use(
       const errorCode = errorData?.error?.code;
       const errorMessage = errorData?.error?.message || errorData?.message;
 
-      // Check for token reuse detection
-      if (errorMessage?.toLowerCase().includes('token reuse')) {
-        logger.warn('[API] Token reuse detected by server, clearing all sessions');
-        redirectToLogin('session_revoked');
-        return Promise.reject(error);
-      }
-
       // Check if we have a refresh token
       const refreshToken = getRefreshToken();
       
@@ -285,8 +329,29 @@ apiClient.interceptors.response.use(
           const refreshErrorMessage = refreshError?.response?.data?.error?.message || 
                                      refreshError?.response?.data?.message || 
                                      refreshError?.message;
+
+          const normalizedRefreshError = String(refreshErrorMessage || '').toLowerCase();
+          const shouldRetryRotationRace =
+            normalizedRefreshError.includes('already been used') ||
+            normalizedRefreshError.includes('please retry');
+
+          if (shouldRetryRotationRace) {
+            logger.warn('[API] Refresh token rotation race detected, retrying refresh once');
+
+            return performTokenRefresh()
+              .then((latestAccessToken) => {
+                config.headers.Authorization = `Bearer ${latestAccessToken}`;
+                config._isRetryRequest = true;
+                return apiClient(config);
+              })
+              .catch((retryError) => {
+                logger.error('[API] Retry after refresh race failed', retryError);
+                redirectToLogin('refresh_failed');
+                return Promise.reject(retryError);
+              });
+          }
           
-          const isTokenReuse = refreshErrorMessage?.toLowerCase().includes('token reuse');
+          const isTokenReuse = normalizedRefreshError.includes('token reuse');
           
           // Redirect to login with appropriate reason
           redirectToLogin(isTokenReuse ? 'token_reuse' : 'refresh_failed');

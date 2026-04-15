@@ -17,6 +17,33 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const refreshToken = useAuthStore((s) => s.refreshToken);
   const setHydrated = useAuthStore((s) => s.setHydrated);
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const onTokensUpdated = (event: Event) => {
+      const customEvent = event as CustomEvent<{ accessToken?: string; refreshToken?: string }>;
+      const nextAccessToken = customEvent.detail?.accessToken;
+      const nextRefreshToken = customEvent.detail?.refreshToken;
+
+      if (!nextAccessToken || !nextRefreshToken) return;
+
+      const state = useAuthStore.getState();
+      if (
+        state.accessToken === nextAccessToken &&
+        state.refreshToken === nextRefreshToken
+      ) {
+        return;
+      }
+
+      state.updateTokens(nextAccessToken, nextRefreshToken);
+    };
+
+    window.addEventListener('preplyte:tokens-updated', onTokensUpdated as EventListener);
+    return () => {
+      window.removeEventListener('preplyte:tokens-updated', onTokensUpdated as EventListener);
+    };
+  }, []);
+
   // Sync tokens to direct storage for axios interceptor
   const syncTokens = useCallback(() => {
     if (typeof window === 'undefined') return;
