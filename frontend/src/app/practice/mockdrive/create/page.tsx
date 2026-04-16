@@ -74,7 +74,7 @@ export default function CreateMockDrive() {
         numberOfQuestions: 2
       } : {
         difficulty: 'MID', // AI Interview uses AIInterviewDifficulty enum
-        jobTitle: 'Software Engineer',
+        jobTitle: formData.title || 'Software Engineer',
         focusAreas: ['Data Structures', 'System Design'],
         targetQuestions: 10
       }
@@ -271,6 +271,33 @@ export default function CreateMockDrive() {
                             className="border-2"
                           />
                         </div>
+                        {m.moduleType === 'AI_INTERVIEW' && (
+                          <>
+                            <div className="space-y-2 col-span-full">
+                              <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Interview Role / Job Title</label>
+                              <Input 
+                                value={m.config.jobTitle}
+                                onChange={e => updateModule(index, { config: { ...m.config, jobTitle: e.target.value } })}
+                                className="border-2"
+                                placeholder="e.g. Frontend Developer, Backend Engineer..."
+                              />
+                            </div>
+                            <div className="space-y-2 col-span-full">
+                              <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Focus Areas (Comma separated)</label>
+                              <Input 
+                                value={m.config.focusAreas.join(', ')}
+                                onChange={e => updateModule(index, { 
+                                  config: { 
+                                    ...m.config, 
+                                    focusAreas: e.target.value.split(',').map(s => s.trim()).filter(s => s !== '') 
+                                  } 
+                                })}
+                                className="border-2"
+                                placeholder="e.g. React, Node.js, System Design..."
+                              />
+                            </div>
+                          </>
+                        )}
                       </CardContent>
                     </Card>
                   );
