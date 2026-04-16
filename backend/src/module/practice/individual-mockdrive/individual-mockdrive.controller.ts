@@ -135,9 +135,6 @@ export class IndividualMockDriveController {
       }
 
       const attempt = await individualMockDriveService.getCurrentAttempt(userId);
-      if (!attempt) {
-        return res.status(404).json({ message: 'No active attempt found' });
-      }
       return res.json(attempt);
     } catch (error: any) {
       logger.error('Error getting current attempt', { error: error.message });
