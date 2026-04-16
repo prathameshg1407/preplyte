@@ -53,6 +53,7 @@ export default function MockDriveAttemptPage() {
       lastSyncAtRef.current = Date.now();
       if (res.data) {
         if (res.data.status === 'COMPLETED') {
+          setAttempt(res.data);
           router.replace(`/practice/mockdrive/${res.data.mockDriveId || mockDriveId}/results?attemptId=${res.data.id}`);
           return;
         }
@@ -97,7 +98,7 @@ export default function MockDriveAttemptPage() {
     }
   };
 
-  if (loading) return <div className="flex h-[60vh] items-center justify-center">Loading attempt...</div>;
+  if (loading || !attempt) return <div className="flex h-[60vh] items-center justify-center">Loading attempt...</div>;
   if (error) return (
     <div className="flex flex-col items-center justify-center h-[60vh] gap-4">
       <AlertCircle className="h-12 w-12 text-destructive" />
