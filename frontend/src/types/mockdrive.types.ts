@@ -586,6 +586,8 @@ export interface ResultOverview {
   totalParticipants: number;
   isPassed: boolean;
   moduleScores: ModuleScoreDetail[];
+  terminationReason?: string | null;
+  remarks?: string | null;
 }
 
 export interface ModuleScoreDetail {
@@ -755,8 +757,13 @@ export interface ProctoringSettings {
   requireFullscreen: boolean;
   detectTabSwitch: boolean;
   maxWarnings: number;
-  tabSwitchLimit: number;
+  tabSwitchLimit: number; // maxTabSwitches on admin side
   autoSubmitOnViolation: boolean;
+  detectCopyPaste: boolean;
+  webcamRequired: boolean;
+  screenshareRequired: boolean;
+  textSelectionDisabled: boolean;
+  rightClickDisabled: boolean;
   fullscreenEnabled?: boolean; // legacy support if needed
 }
 

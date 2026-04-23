@@ -32,6 +32,7 @@ import {
   Eye,
   Trophy,
   FileBarChart,
+  AlertTriangle,
 } from 'lucide-react';
 
 interface ResultsTableProps {
@@ -153,6 +154,7 @@ export function ResultsTable({
                   {getSortIcon('completedAt')}
                 </Button>
               </TableHead>
+              <TableHead>Flags</TableHead>
               <TableHead className="w-12"></TableHead>
             </TableRow>
           </TableHeader>
@@ -234,6 +236,23 @@ export function ResultsTable({
                     </span>
                   ) : (
                     '-'
+                  )}
+                </TableCell>
+                <TableCell>
+                  {(result.terminationReason === 'PROCTORING_VIOLATION' || result.remarks) ? (
+                    <div className="flex items-center gap-1 group relative">
+                      <Badge variant="destructive" className="flex items-center gap-1 px-1.5 py-0">
+                        <AlertTriangle className="h-3 w-3" />
+                        Violation
+                      </Badge>
+                      {result.remarks && (
+                        <div className="absolute bottom-full mb-2 left-0 hidden group-hover:block z-50 w-48 rounded bg-popover p-2 text-xs text-popover-foreground shadow-md border animate-in fade-in zoom-in-95">
+                          {result.remarks}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <span className="text-muted-foreground">-</span>
                   )}
                 </TableCell>
                 <TableCell>

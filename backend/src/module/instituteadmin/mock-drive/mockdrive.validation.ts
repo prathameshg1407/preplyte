@@ -21,6 +21,9 @@ export const proctoringSettingsSchema = z.object({
   detectCopyPaste: z.boolean().default(true),
   webcamRequired: z.boolean().default(false),
   screenshareRequired: z.boolean().default(false),
+  textSelectionDisabled: z.boolean().default(false),
+  rightClickDisabled: z.boolean().default(false),
+  autoSubmitOnViolation: z.boolean().default(false),
 });
 
 // ============================================

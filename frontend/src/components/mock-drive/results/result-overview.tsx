@@ -11,6 +11,7 @@ import {
   CheckCircle2,
   XCircle,
   Calendar,
+  AlertTriangle,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -27,6 +28,32 @@ export const ResultOverview: FC<ResultOverviewProps> = ({ result }) => {
 
   return (
     <div className="space-y-6">
+      {/* Proctoring Violation Warning */}
+      {(result.terminationReason === 'PROCTORING_VIOLATION' || result.remarks) && (
+        <Card className="border-destructive/50 bg-destructive/5 dark:bg-destructive/10">
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-destructive text-base">
+              <AlertTriangle className="h-5 w-5" />
+              Proctoring Incident Reported
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm font-medium text-destructive mb-1">
+              {result.terminationReason === 'PROCTORING_VIOLATION' 
+                ? 'Terminated due to strict proctoring violations.' 
+                : 'Incident Remark:'}
+            </p>
+            <p className="text-sm text-muted-foreground italic">
+              "{result.remarks || 'No detailed remark provided by the system.'}"
+            </p>
+            <p className="mt-3 text-xs text-muted-foreground flex items-center gap-1">
+              <Clock className="h-3 w-3" />
+              This incident has been logged and reported to the institute administrators.
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Summary Cards */}
       <div className="grid md:grid-cols-4 gap-4">
         <Card>

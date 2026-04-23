@@ -20,6 +20,9 @@ import {
   Camera,
   Monitor,
   AlertTriangle,
+  MousePointer2,
+  FileText,
+  Zap,
 } from 'lucide-react';
 
 // ============================================
@@ -153,8 +156,8 @@ export function StepSettings() {
   const handleMaxTabSwitchesChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const value = parseInt(e.target.value, 10);
-      if (!isNaN(value) && value >= 1) {
-        handleProctoringSettingChange('maxTabSwitches', Math.min(value, 10));
+      if (!isNaN(value) && value >= 0) {
+        handleProctoringSettingChange('maxTabSwitches', Math.min(value, 100));
       }
     },
     [handleProctoringSettingChange]
@@ -376,6 +379,87 @@ export function StepSettings() {
 
               <Separator />
 
+              {/* Right Click Restriction */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-start gap-3">
+                  <MousePointer2 className="mt-0.5 h-4 w-4 text-muted-foreground" />
+                  <div className="space-y-1">
+                    <Label
+                      htmlFor="rightClickDisabled"
+                      className="text-sm font-medium cursor-pointer"
+                    >
+                      Disable Right Click
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      Prevent students from opening context menus
+                    </p>
+                  </div>
+                </div>
+                <Switch
+                  id="rightClickDisabled"
+                  checked={settings.proctoringSettings.rightClickDisabled}
+                  onCheckedChange={(checked) =>
+                    handleProctoringSettingChange('rightClickDisabled', checked)
+                  }
+                />
+              </div>
+
+              <Separator />
+
+              {/* Text Selection Restriction */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-start gap-3">
+                  <FileText className="mt-0.5 h-4 w-4 text-muted-foreground" />
+                  <div className="space-y-1">
+                    <Label
+                      htmlFor="textSelectionDisabled"
+                      className="text-sm font-medium cursor-pointer"
+                    >
+                      Disable Text Selection
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      Prevent students from selecting and copying text
+                    </p>
+                  </div>
+                </div>
+                <Switch
+                  id="textSelectionDisabled"
+                  checked={settings.proctoringSettings.textSelectionDisabled}
+                  onCheckedChange={(checked) =>
+                    handleProctoringSettingChange('textSelectionDisabled', checked)
+                  }
+                />
+              </div>
+
+              <Separator />
+
+              {/* Auto Submit on Violation */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-start gap-3">
+                  <Zap className="mt-0.5 h-4 w-4 text-muted-foreground" />
+                  <div className="space-y-1">
+                    <Label
+                      htmlFor="autoSubmitOnViolation"
+                      className="text-sm font-medium cursor-pointer"
+                    >
+                      Immediate Submission
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      Automatically submit the test on the first violation
+                    </p>
+                  </div>
+                </div>
+                <Switch
+                  id="autoSubmitOnViolation"
+                  checked={settings.proctoringSettings.autoSubmitOnViolation}
+                  onCheckedChange={(checked) =>
+                    handleProctoringSettingChange('autoSubmitOnViolation', checked)
+                  }
+                />
+              </div>
+
+              <Separator />
+
               {/* Webcam Requirement */}
               <div className="flex items-center justify-between">
                 <div className="flex items-start gap-3">
@@ -388,7 +472,7 @@ export function StepSettings() {
                       Require Webcam
                     </Label>
                     <p className="text-xs text-muted-foreground">
-                      Students must have webcam enabled (advanced)
+                      Students must have webcam enabled before starting
                     </p>
                   </div>
                 </div>

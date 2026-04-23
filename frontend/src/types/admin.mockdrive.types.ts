@@ -73,6 +73,9 @@ export interface ProctoringSettings {
   detectCopyPaste: boolean;
   webcamRequired: boolean;
   screenshareRequired: boolean;
+  textSelectionDisabled: boolean;
+  rightClickDisabled: boolean;
+  autoSubmitOnViolation: boolean;
 }
 
 // ============================================
@@ -527,6 +530,8 @@ export interface ResultListItem {
   rank: number | null;
   isPassed: boolean | null;
   completedAt: string | null;
+  terminationReason?: string | null;
+  remarks?: string | null;
 }
 
 export interface ModuleResultSummary {
@@ -562,6 +567,8 @@ export interface DetailedResult {
   isPassed: boolean | null;
   startedAt: string | null;
   completedAt: string | null;
+  terminationReason?: string | null;
+  remarks?: string | null;
   modules: ModuleResultSummary[];
   report: {
     performanceSummary: string;

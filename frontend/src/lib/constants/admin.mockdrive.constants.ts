@@ -387,11 +387,14 @@ export type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number];
 
 export const DEFAULT_PROCTORING_SETTINGS: ProctoringSettings = {
   detectTabSwitch: true,
-  maxTabSwitches: 3,
+  maxTabSwitches: 0,
   requireFullscreen: false,
   detectCopyPaste: true,
   webcamRequired: false,
   screenshareRequired: false,
+  textSelectionDisabled: true,
+  rightClickDisabled: true,
+  autoSubmitOnViolation: true,
 };
 
 export const DEFAULT_APTITUDE_CONFIG: AptitudeModuleConfig = {

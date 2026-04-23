@@ -19,6 +19,7 @@ interface ModuleInstructionsProps {
   config: ModuleConfig;
   onStart: () => void;
   isStarting: boolean;
+  requireFullscreen?: boolean;
 }
 
 export const ModuleInstructions: FC<ModuleInstructionsProps> = ({
@@ -29,8 +30,22 @@ export const ModuleInstructions: FC<ModuleInstructionsProps> = ({
   config,
   onStart,
   isStarting,
+  requireFullscreen,
 }) => {
   const typeConfig = MODULE_TYPE_CONFIG[moduleType];
+
+  const handleStart = async () => {
+    if (requireFullscreen) {
+      try {
+        if (document.documentElement.requestFullscreen) {
+          await document.documentElement.requestFullscreen();
+        }
+      } catch (error) {
+        console.error('Fullscreen request failed:', error);
+      }
+    }
+    onStart();
+  };
 
   const getConfigDetails = () => {
     switch (moduleType) {
@@ -117,7 +132,7 @@ export const ModuleInstructions: FC<ModuleInstructionsProps> = ({
       </CardContent>
 
       <CardFooter>
-        <Button onClick={onStart} disabled={isStarting} className="w-full" size="lg">
+        <Button onClick={handleStart} disabled={isStarting} className="w-full" size="lg">
           {isStarting ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />

@@ -45,13 +45,15 @@ interface MachineModuleProps {
   data: MachineModuleData;
   isSubmitting: boolean;
   onSubmit: () => void;
+  proctoringSettings: any;
 }
 
 export function MachineModule({
   module,
   data,
   isSubmitting: isGlobalSubmitting,
-  onSubmit
+  onSubmit,
+  proctoringSettings
 }: MachineModuleProps) {
   const params = useParams();
   const driveId = params.driveId as string;
@@ -410,6 +412,7 @@ export function MachineModule({
                       onChange={handleCodeChange}
                       language={monacoLanguage}
                       height="100%"
+                      proctoringSettings={proctoringSettings}
                     />
                   </div>
                 </div>

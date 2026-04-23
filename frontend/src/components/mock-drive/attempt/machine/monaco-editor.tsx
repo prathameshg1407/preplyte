@@ -15,6 +15,10 @@ interface MonacoEditorProps {
   readOnly?: boolean;
   height?: string;
   className?: string;
+  proctoringSettings?: {
+    rightClickDisabled: boolean;
+    detectCopyPaste: boolean;
+  } | null;
 }
 
 export function MonacoEditor({
@@ -24,6 +28,7 @@ export function MonacoEditor({
   readOnly = false,
   height = "100%",
   className,
+  proctoringSettings,
 }: MonacoEditorProps) {
   const { resolvedTheme } = useTheme();
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
@@ -51,6 +56,8 @@ export function MonacoEditor({
       padding: { top: 16, bottom: 16 },
       lineHeight: 1.6,
       letterSpacing: 0.5,
+      contextmenu: !proctoringSettings?.rightClickDisabled,
+      copySelection: !proctoringSettings?.detectCopyPaste,
     });
 
     editor.focus();

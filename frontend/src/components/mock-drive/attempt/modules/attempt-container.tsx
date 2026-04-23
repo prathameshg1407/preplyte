@@ -12,6 +12,8 @@ import { ModuleComplete } from '../module-complete';
 import { AttemptComplete } from './attempt-complete';
 import { AutoSubmitWarning } from '../auto-submit-warning';
 import { FullscreenPrompt } from '../proctoring/fullscreen-prompt';
+import { WebcamVerify } from '../proctoring/webcam-verify';
+import { WebcamMonitor } from '../proctoring/webcam-monitor';
 import { AptitudeModule } from './aptitude-module';
 import { MachineModule } from './machine-module';
 import { InterviewModule } from './interview-module';
@@ -41,6 +43,8 @@ export const AttemptContainer: FC<AttemptContainerProps> = ({ driveId, driveTitl
   const router = useRouter();
   const [moduleResult, setModuleResult] = useState<SubmitModuleResponse | null>(null);
   const [attemptCompleted, setAttemptCompleted] = useState(false);
+  const [webcamStream, setWebcamStream] = useState<MediaStream | null>(null);
+  const [isWebcamVerified, setIsWebcamVerified] = useState(false);
   const isSubmittingRef = useRef(false);
 
   const { data: attemptData, isLoading, refetch } = useAttemptState(driveId);
@@ -67,8 +71,12 @@ export const AttemptContainer: FC<AttemptContainerProps> = ({ driveId, driveTitl
   }, [attemptData, moduleResult, setAttemptState, setCurrentModule]);
 
   // Handle final attempt submission (used for violations or manual finish)
-  const handleAttemptSubmit = useCallback(() => {
-    submitAttemptMutation.mutate(driveId, {
+  const handleAttemptSubmit = useCallback((terminationReason?: string, remarks?: string) => {
+    submitAttemptMutation.mutate({
+      driveId,
+      terminationReason,
+      remarks
+    }, {
       onSuccess: () => {
         setAttemptCompleted(true);
       }
@@ -77,7 +85,10 @@ export const AttemptContainer: FC<AttemptContainerProps> = ({ driveId, driveTitl
 
   const { isFullscreen, enterFullscreen, warnings } = useProctoring({
     settings: attemptData?.attempt.proctoringSettings as ProctoringSettings | null,
-    onViolationLimitExceeded: handleAttemptSubmit,
+    onViolationLimitExceeded: () => handleAttemptSubmit(
+      'PROCTORING_VIOLATION',
+      'The attempt was automatically submitted due to multiple proctoring violations (tab switching, window blurring, or other restricted actions).'
+    ),
     isAttemptActive: !attemptCompleted && attemptData?.attempt.status === 'IN_PROGRESS'
   });
 
@@ -193,6 +204,21 @@ export const AttemptContainer: FC<AttemptContainerProps> = ({ driveId, driveTitl
     return <AttemptComplete driveId={driveId} driveTitle={driveTitle} />;
   }
 
+  const proctoringSettings = attemptData?.attempt.proctoringSettings as ProctoringSettings | null;
+
+  // New: Pre-test Webcam Verification
+  if (proctoringSettings?.webcamRequired && !isWebcamVerified) {
+    return (
+      <WebcamVerify
+        onVerified={(stream) => {
+          setWebcamStream(stream);
+          setIsWebcamVerified(true);
+        }}
+        requireFullscreen={proctoringSettings.requireFullscreen}
+      />
+    );
+  }
+
   // Enforce Fullscreen if required
   if (!isFullscreen) {
     return (
@@ -256,6 +282,7 @@ export const AttemptContainer: FC<AttemptContainerProps> = ({ driveId, driveTitl
             config={currentModule.config}
             onStart={handleStartModule}
             isStarting={startModuleMutation.isPending}
+            requireFullscreen={proctoringSettings?.requireFullscreen}
           />
         )}
 
@@ -268,7 +295,8 @@ export const AttemptContainer: FC<AttemptContainerProps> = ({ driveId, driveTitl
                 config={currentModule.config}
                 data={currentModule.data}
                 onSubmit={handleSubmitModule}
-                isSubmitting={submitModuleMutation.isPending}
+                isSubmitting={submitAttemptMutation.isPending}
+                proctoringSettings={proctoringSettings}
               />
             )}
 
@@ -277,7 +305,8 @@ export const AttemptContainer: FC<AttemptContainerProps> = ({ driveId, driveTitl
                 module={currentModule}
                 data={currentModule.data as MachineModuleData}
                 onSubmit={handleSubmitModule}
-                isSubmitting={submitModuleMutation.isPending}
+                isSubmitting={submitAttemptMutation.isPending}
+                proctoringSettings={proctoringSettings}
               />
             )}
 
@@ -297,6 +326,11 @@ export const AttemptContainer: FC<AttemptContainerProps> = ({ driveId, driveTitl
 
       {/* Time Warning Dialog */}
       {showTimeWarning && <AutoSubmitWarning remainingTime={remainingFormatted} />}
+
+      {/* Proctoring Monitor Feed */}
+      {proctoringSettings?.webcamRequired && isWebcamVerified && (
+        <WebcamMonitor stream={webcamStream} />
+      )}
     </div>
   );
 };

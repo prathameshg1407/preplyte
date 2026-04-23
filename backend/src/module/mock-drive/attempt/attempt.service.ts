@@ -117,7 +117,12 @@ export class AttemptService {
     };
   }
 
-  async submitAttempt(userId: string, driveId: string): Promise<void> {
+  async submitAttempt(
+    userId: string,
+    driveId: string,
+    terminationReason?: string,
+    remarks?: string
+  ): Promise<void> {
     // 1. Check if user found registration
     const registration = await this.prisma.mockDriveRegistration.findUnique({
       where: {
@@ -166,7 +171,7 @@ export class AttemptService {
     }
 
     // Complete the attempt
-    await this.updateAttemptStatus(attempt.id, 'COMPLETED');
+    await this.updateAttemptStatus(attempt.id, 'COMPLETED', terminationReason, remarks);
   }
 
   async startModule(
@@ -757,13 +762,17 @@ export class AttemptService {
 
   private async updateAttemptStatus(
     attemptId: string,
-    status: MockDriveAttemptStatus
+    status: MockDriveAttemptStatus,
+    terminationReason?: string,
+    remarks?: string
   ): Promise<void> {
     await this.prisma.mockDriveAttempt.update({
       where: { id: attemptId },
       data: {
         status,
         ...(status === 'COMPLETED' ? { completedAt: new Date() } : {}),
+        terminationReason,
+        remarks,
       },
     });
   }
@@ -820,6 +829,8 @@ export class AttemptService {
       status: attempt.status,
       currentModuleOrder: attempt.currentModuleOrder,
       startedAt: attempt.startedAt,
+      terminationReason: attempt.terminationReason,
+      remarks: attempt.remarks,
       modules: attempt.moduleAttempts.map((ma) => ({
         moduleId: ma.moduleId,
         moduleType: ma.module.moduleType,

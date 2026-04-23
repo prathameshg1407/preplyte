@@ -312,6 +312,8 @@ export class DiscoveryService {
         _count: {
           select: { registrations: true },
         },
+        enableProctoring: true,
+        proctoringSettings: true,
       },
     });
 
@@ -353,6 +355,8 @@ export class DiscoveryService {
           maxBacklogs: drive.eligibilityCriteria.maxBacklogs,
         }
         : null,
+      enableProctoring: drive.enableProctoring,
+      proctoringSettings: drive.proctoringSettings as unknown as ProctoringSettings | null,
       totalTimeLimit,
     };
   }

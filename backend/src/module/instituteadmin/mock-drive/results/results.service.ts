@@ -99,6 +99,8 @@ export class ResultsService {
       rank: a.rank,
       isPassed: a.isPassed,
       completedAt: a.completedAt,
+      terminationReason: a.terminationReason,
+      remarks: a.remarks,
     }));
 
     return {
@@ -176,6 +178,8 @@ export class ResultsService {
       isPassed: attempt.isPassed,
       startedAt: attempt.startedAt,
       completedAt: attempt.completedAt,
+      terminationReason: attempt.terminationReason,
+      remarks: attempt.remarks,
       modules,
       report: attempt.report,
     };
@@ -331,6 +335,8 @@ export class ResultsService {
       'Percentage (%)': a.percentageScore?.toFixed(2) ?? '0.00',
       Result: a.isPassed ? 'PASSED' : 'FAILED',
       'Completed At': a.completedAt?.toISOString() ?? 'N/A',
+      'Termination Reason': a.terminationReason ?? 'N/A',
+      Remarks: a.remarks ?? 'N/A',
     }));
 
     const title = this.sanitizeFilename(mockDrive?.title ?? 'results');

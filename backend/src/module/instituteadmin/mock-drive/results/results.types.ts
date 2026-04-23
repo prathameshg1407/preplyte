@@ -38,6 +38,8 @@ export interface ResultListItem {
   rank: number | null;
   isPassed: boolean | null;
   completedAt: Date | null;
+  terminationReason?: string | null;
+  remarks?: string | null;
 }
 
 export interface PaginatedResults {
@@ -82,6 +84,8 @@ export interface DetailedResult {
   isPassed: boolean | null;
   startedAt: Date | null;
   completedAt: Date | null;
+  terminationReason?: string | null;
+  remarks?: string | null;
   modules: ModuleResultSummary[];
   report: {
     performanceSummary: string;

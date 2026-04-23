@@ -38,41 +38,46 @@ export const useProctoring = ({
         isAttemptActiveRef.current = isAttemptActive;
     }, [settings, warnings, onViolationLimitExceeded, isAttemptActive]);
 
-    const handleViolation = useCallback((type: 'TAB_SWITCH' | 'FULLSCREEN_EXIT') => {
+    const handleViolation = useCallback((type: 'TAB_SWITCH' | 'FULLSCREEN_EXIT' | 'COPY_PASTE' | 'RIGHT_CLICK') => {
         const currentSettings = settingsRef.current;
         if (!currentSettings || !isAttemptActiveRef.current) return;
 
         setViolationCount((prev) => prev + 1);
 
-        const maxWarnings = currentSettings.maxWarnings ?? 3;
+        const maxWarnings = currentSettings.maxTabSwitches ?? currentSettings.maxWarnings ?? 0;
         const currentWarnings = warningsRef.current;
 
         if (currentWarnings >= maxWarnings) {
             if (currentSettings.autoSubmitOnViolation) {
-                toast.error('Maximum proctoring violations exceeded. Submitting attempt...');
+                toast.error('Proctoring violation detected. Submitting attempt immediately...');
                 onViolationLimitExceededRef.current();
             } else {
-                toast.error('Maximum proctoring violations exceeded. Please contact the administrator.');
+                toast.error('Proctoring violation detected. Please stay within the test environment.');
             }
         } else {
             setWarnings((prev) => prev + 1);
-            const remaining = maxWarnings - currentWarnings - 1;
+            const remaining = maxWarnings - currentWarnings;
 
-            if (type === 'TAB_SWITCH') {
-                toast.warning(`Tab switching detected! Warning ${currentWarnings + 1}/${maxWarnings}.`);
-            } else if (type === 'FULLSCREEN_EXIT') {
-                toast.warning(`Fullscreen exited! Warning ${currentWarnings + 1}/${maxWarnings}.`);
-            }
+            const messages = {
+                TAB_SWITCH: 'Tab switching detected',
+                FULLSCREEN_EXIT: 'Fullscreen exited',
+                COPY_PASTE: 'Copy/Paste/Cut action detected',
+                RIGHT_CLICK: 'Right click action detected',
+            };
+
+            toast.warning(`${messages[type]}! Warning ${currentWarnings + 1}/${maxWarnings + 1}.`);
         }
     }, []);
 
     const enterFullscreen = useCallback(async () => {
         try {
-            await document.documentElement.requestFullscreen();
+            if (document.documentElement.requestFullscreen) {
+                await document.documentElement.requestFullscreen();
+            }
             setIsFullscreen(true);
         } catch (error) {
             console.error('Failed to enter fullscreen:', error);
-            toast.error('Could not enter fullscreen mode. Please try again.');
+            // Don't show toast error here as it might triggered by browser before user interaction
         }
     }, []);
 
@@ -90,11 +95,6 @@ export const useProctoring = ({
 
         document.addEventListener('fullscreenchange', handleFullscreenChange);
 
-        // Initial check
-        if (!document.fullscreenElement) {
-            setIsFullscreen(false);
-        }
-
         return () => {
             document.removeEventListener('fullscreenchange', handleFullscreenChange);
         };
@@ -110,20 +110,103 @@ export const useProctoring = ({
             }
         };
 
+        const handleWindowBlur = () => {
+            // More aggressive than visibilitychange
+            if (isAttemptActiveRef.current) {
+                handleViolation('TAB_SWITCH');
+            }
+        };
+
         document.addEventListener('visibilitychange', handleVisibilityChange);
+        window.addEventListener('blur', handleWindowBlur);
 
         return () => {
             document.removeEventListener('visibilitychange', handleVisibilityChange);
+            window.removeEventListener('blur', handleWindowBlur);
         };
     }, [settings?.detectTabSwitch, isAttemptActive, handleViolation]);
 
-    // Monitor Window Focus (Blur) implementation if needed
-    // Note: 'blur' can be too aggressive (e.g. clicking an alert), so often visibilitychange is preferred.
-    // We will stick to visibilitychange for 'detectTabSwitch' as per standard practices.
+    // Copy/Paste Restriction
+    useEffect(() => {
+        if (!settings?.detectCopyPaste || !isAttemptActive) return;
+
+        const preventCopyPaste = (e: Event) => {
+            e.preventDefault();
+            handleViolation('COPY_PASTE');
+            return false;
+        };
+
+        document.addEventListener('copy', preventCopyPaste);
+        document.addEventListener('paste', preventCopyPaste);
+        document.addEventListener('cut', preventCopyPaste);
+
+        return () => {
+            document.removeEventListener('copy', preventCopyPaste);
+            document.removeEventListener('paste', preventCopyPaste);
+            document.removeEventListener('cut', preventCopyPaste);
+        };
+    }, [settings?.detectCopyPaste, isAttemptActive, handleViolation]);
+
+    // Right Click Restriction
+    useEffect(() => {
+        if (!settings?.rightClickDisabled || !isAttemptActive) return;
+
+        const preventRightClick = (e: MouseEvent) => {
+            e.preventDefault();
+            handleViolation('RIGHT_CLICK');
+            return false;
+        };
+
+        document.addEventListener('contextmenu', preventRightClick);
+
+        return () => {
+            document.removeEventListener('contextmenu', preventRightClick);
+        };
+    }, [settings?.rightClickDisabled, isAttemptActive, handleViolation]);
+
+    // Text Selection Restriction
+    useEffect(() => {
+        if (!settings?.textSelectionDisabled || !isAttemptActive) return;
+
+        const preventSelection = (e: Event) => {
+            e.preventDefault();
+            return false;
+        };
+
+        const preventCopy = (e: Event) => {
+            e.preventDefault();
+            handleViolation('COPY_PASTE');
+            return false;
+        };
+
+        document.addEventListener('selectstart', preventSelection);
+        document.addEventListener('dragstart', preventSelection);
+        document.addEventListener('copy', preventCopy);
+        
+        // Add CSS to disable selection
+        const style = document.createElement('style');
+        style.id = 'disable-selection';
+        style.innerHTML = `
+            body {
+                -webkit-user-select: none !important;
+                -moz-user-select: none !important;
+                -ms-user-select: none !important;
+                user-select: none !important;
+            }
+        `;
+        document.head.appendChild(style);
+
+        return () => {
+            document.removeEventListener('selectstart', preventSelection);
+            document.removeEventListener('dragstart', preventSelection);
+            document.removeEventListener('copy', preventCopy);
+            document.getElementById('disable-selection')?.remove();
+        };
+    }, [settings?.textSelectionDisabled, isAttemptActive, handleViolation]);
 
     return {
         isProctoringActive: !!settings?.enableProctoring,
-        isFullscreen: settings?.requireFullscreen ? isFullscreen : true, // If not required, always consider it "valid"
+        isFullscreen: settings?.requireFullscreen ? isFullscreen : true,
         warnings,
         enterFullscreen,
         violationCount

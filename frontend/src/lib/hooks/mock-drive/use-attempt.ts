@@ -81,8 +81,16 @@ export function useSubmitAttempt() {
   const router = useRouter();
 
   return useMutation({
-    mutationFn: (driveId: string) => attemptService.submitAttempt(driveId),
-    onSuccess: (data: any, driveId) => {
+    mutationFn: ({
+      driveId,
+      terminationReason,
+      remarks,
+    }: {
+      driveId: string;
+      terminationReason?: string;
+      remarks?: string;
+    }) => attemptService.submitAttempt(driveId, { terminationReason, remarks }),
+    onSuccess: (data: any, { driveId }) => {
       queryClient.invalidateQueries({ queryKey: attemptKeys.state(driveId) });
       toast.success('Mock drive submitted successfully!');
       router.push(`/mock-drive/${driveId}/result`);

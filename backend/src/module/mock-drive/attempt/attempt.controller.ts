@@ -13,6 +13,7 @@ import {
   MachineRunInput,
   InterviewRespondInput,
   InterviewSkipInput,
+  SubmitAttemptInput,
 } from './attempt.validation';
 import { sendSuccess } from '../../../utils/response';
 import { AuthenticatedRequest } from '../../../middleware/auth.middleware';
@@ -79,15 +80,16 @@ export class AttemptController {
   };
 
   submitAttempt = async (
-    req: TypedRequest<MockDriveIdInput['params']>,
+    req: TypedRequest<SubmitAttemptInput['params'], SubmitAttemptInput['body']>,
     res: Response,
     next: NextFunction
   ): Promise<void> => {
     try {
       const userId = req.user!.id;
       const { driveId } = req.params;
+      const { terminationReason, remarks } = req.body;
 
-      await this.service.submitAttempt(userId, driveId);
+      await this.service.submitAttempt(userId, driveId, terminationReason, remarks);
 
       sendSuccess(res, null, 'Attempt submitted successfully');
     } catch (error) {

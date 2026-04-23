@@ -214,6 +214,22 @@ export interface AiInterviewModuleData {
 export type ModuleData = AptitudeModuleData | MachineModuleData | AiInterviewModuleData;
 
 // ============================================
+// Proctoring Settings Types
+// ============================================
+
+export interface ProctoringSettings {
+  detectTabSwitch: boolean;
+  maxTabSwitches: number;
+  requireFullscreen: boolean;
+  detectCopyPaste: boolean;
+  webcamRequired: boolean;
+  screenshareRequired: boolean;
+  textSelectionDisabled: boolean;
+  rightClickDisabled: boolean;
+  autoSubmitOnViolation: boolean;
+}
+
+// ============================================
 // Attempt State Types
 // ============================================
 
@@ -234,6 +250,8 @@ export interface AttemptState {
   status: MockDriveAttemptStatus;
   currentModuleOrder: number;
   startedAt: Date | null;
+  terminationReason?: string | null;
+  remarks?: string | null;
   modules: ModuleAttemptState[];
 }
 
@@ -334,5 +352,7 @@ export interface MockDriveDetail extends Omit<MockDriveListItem, 'moduleCount'> 
     requiredSkills: string[];
     maxBacklogs: number | null;
   } | null;
+  enableProctoring: boolean;
+  proctoringSettings: ProctoringSettings | null;
   totalTimeLimit: number;
 }

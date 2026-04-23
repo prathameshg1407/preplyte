@@ -31,6 +31,7 @@ interface AptitudeModuleProps {
   data: Partial<ModuleData> | null;
   onSubmit: () => void;
   isSubmitting: boolean;
+  proctoringSettings?: any;
 }
 
 export const AptitudeModule: FC<AptitudeModuleProps> = ({
@@ -40,6 +41,7 @@ export const AptitudeModule: FC<AptitudeModuleProps> = ({
   data,
   onSubmit,
   isSubmitting,
+  proctoringSettings,
 }) => {
   const aptitudeConfig = config as AptitudeModuleConfig;
   const aptitudeData = data as AptitudeModuleData | null;

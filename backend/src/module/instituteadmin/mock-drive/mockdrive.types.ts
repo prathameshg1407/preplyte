@@ -29,6 +29,9 @@ export interface ProctoringSettings {
   detectCopyPaste: boolean;
   webcamRequired: boolean;
   screenshareRequired: boolean;
+  textSelectionDisabled: boolean;
+  rightClickDisabled: boolean;
+  autoSubmitOnViolation: boolean;
 }
 
 // ============================================

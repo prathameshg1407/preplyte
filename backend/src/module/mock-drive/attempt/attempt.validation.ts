@@ -12,6 +12,16 @@ export const mockDriveIdSchema = z.object({
   }),
 });
 
+export const submitAttemptSchema = z.object({
+  params: z.object({
+    driveId: z.string().min(1, 'Invalid drive ID format'),
+  }),
+  body: z.object({
+    terminationReason: z.string().optional(),
+    remarks: z.string().optional(),
+  }),
+});
+
 export const moduleIdSchema = z.object({
   params: z.object({
     driveId: z.string().min(1, 'Invalid drive ID format'),
@@ -136,3 +146,4 @@ export type MachineRunInput = z.infer<typeof machineRunSchema>;
 export type InterviewRespondInput = z.infer<typeof interviewRespondSchema>;
 export type InterviewSkipInput = z.infer<typeof interviewSkipSchema>;
 export type InterviewAudioChunkInput = z.infer<typeof interviewAudioChunkSchema>;
+export type SubmitAttemptInput = z.infer<typeof submitAttemptSchema>;

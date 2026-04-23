@@ -42,8 +42,14 @@ export const attemptService = {
   /**
    * Submit/End an attempt
    */
-  submitAttempt: async (driveId: string): Promise<void> => {
-    const response = await apiClient.post(API_ENDPOINTS.MOCK_DRIVES.SUBMIT_ATTEMPT(driveId));
+  submitAttempt: async (
+    driveId: string,
+    payload?: { terminationReason?: string; remarks?: string }
+  ): Promise<void> => {
+    const response = await apiClient.post(
+      API_ENDPOINTS.MOCK_DRIVES.SUBMIT_ATTEMPT(driveId),
+      payload
+    );
     return response.data.data;
   },
 
